@@ -657,7 +657,12 @@ namespace Microsoft.Scripting.Generation {
                 return;
             }
 #endif
+
+#if WIN8 // TODO
+            ((dynamic)lambda).CompileToMethod(method);
+#else
             lambda.CompileToMethod(method);
+#endif
         }
 
         /// <summary>

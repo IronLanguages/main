@@ -113,6 +113,7 @@ import Namespace.")]
             }
         }
 
+#if !SILVERLIGHT
         [Documentation(@"Adds a reference to a .NET assembly.  Parameters are a partial assembly name. 
 After the load the assemblies namespaces and top-level types will be available via 
 import Namespace.")]
@@ -125,6 +126,7 @@ import Namespace.")]
                 AddReferenceByPartialName(context, name);
             }
         }
+#endif
 
 #if FEATURE_FILESYSTEM
         [Documentation(@"Adds a reference to a .NET assembly.  Parameters are a full path to an. 
@@ -162,6 +164,7 @@ the assembly object.")]
         }
 #endif
 
+#if !SILVERLIGHT
         [Documentation(@"Loads an assembly from the specified partial assembly name and returns the 
 assembly object.  Namespaces or types in the assembly can be accessed directly 
 from the assembly object.")]
@@ -171,13 +174,11 @@ from the assembly object.")]
                 throw new TypeErrorException("LoadAssemblyByPartialName: arg 1 must be a string");
             }
 
-#pragma warning disable 618 // csc
-#pragma warning disable 612 // gmcs
+#pragma warning disable 618, 612 // csc
             return Assembly.LoadWithPartialName(name);
-#pragma warning restore 618
-#pragma warning restore 612
+#pragma warning restore 618, 612
         }
-
+#endif
         [Documentation(@"Loads an assembly from the specified assembly name and returns the assembly
 object.  Namespaces or types in the assembly can be accessed directly from 
 the assembly object.")]
@@ -358,7 +359,7 @@ the assembly object.")]
             // note we don't explicit call to get the file version
             // here because the assembly resolve event will do it for us.
 
-#if FEATURE_FILESYSTEM
+#if !SILVERLIGHT
             if (asm == null) {
                 asm = LoadAssemblyByPartialName(name);
             }
@@ -385,6 +386,7 @@ the assembly object.")]
             AddReference(context, asm);
         }
 
+#if !SILVERLIGHT
         private static void AddReferenceByPartialName(CodeContext/*!*/ context, string name) {
             if (name == null) throw new TypeErrorException("Expected string, got NoneType");
             ContractUtils.RequiresNotNull(context, "context");
@@ -396,7 +398,7 @@ the assembly object.")]
 
             AddReference(context, asm);
         }
-
+#endif
         private static void AddReferenceByName(CodeContext/*!*/ context, string name) {
             if (name == null) throw new TypeErrorException("Expected string, got NoneType");
 

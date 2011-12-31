@@ -110,7 +110,7 @@ namespace IronPython.Runtime.Binding {
 
                 return (_kind == ConversionResultKind.ExplicitCast || _kind == ConversionResultKind.ImplicitCast) ?
                     Type :
-                    _type.IsValueType ?
+                    _type.IsValueType() ?
                         typeof(object) :
                         _type;
             }
@@ -118,7 +118,7 @@ namespace IronPython.Runtime.Binding {
 
         private DynamicMetaObject MyDefer(DynamicMetaObject self) {
             return new DynamicMetaObject(
-                Expression.Dynamic(
+                DynamicExpression.Dynamic(
                     this,
                     ReturnType,
                     self.Expression
@@ -168,7 +168,7 @@ namespace IronPython.Runtime.Binding {
         internal DynamicMetaObject FallbackConvert(Type returnType, DynamicMetaObject self, DynamicMetaObject errorSuggestion) {
             Type type = Type;
             DynamicMetaObject res = null;
-            switch (Type.GetTypeCode(type)) {
+            switch (type.GetTypeCode()) {
                 case TypeCode.Boolean:
                     res = MakeToBoolConversion(self);
                     break;
@@ -228,7 +228,7 @@ namespace IronPython.Runtime.Binding {
                     break;
             }
 
-            if (type.IsEnum && Enum.GetUnderlyingType(type) == self.GetLimitType()) {
+            if (type.IsEnum() && Enum.GetUnderlyingType(type) == self.GetLimitType()) {
                 // numeric type to enum, this is ok if the value is zero
                 object value = Activator.CreateInstance(type);
 
@@ -343,7 +343,7 @@ namespace IronPython.Runtime.Binding {
                         Debug.Assert(typeof(T).GetMethod("Invoke").ReturnType == Type);
                         if (typeof(T).GetMethod("Invoke").GetParameters()[1].ParameterType == typeof(object)) {
                             object identityConversion = Activator.CreateInstance(typeof(IdentityConversion<>).MakeGenericType(Type), target.GetType());
-                            res = (T)(object)Delegate.CreateDelegate(typeof(T), identityConversion, identityConversion.GetType().GetMethod("Convert"));
+                            res = (T)(object)identityConversion.GetType().GetMethod("Convert").CreateDelegate(typeof(T), identityConversion);
                         }
                     }
                 }
@@ -719,7 +719,7 @@ namespace IronPython.Runtime.Binding {
             } else if (typeof(IStrongBox).IsAssignableFrom(self.GetLimitType())) {
                 // Explictly block conversion of References to bool
                 res = MakeStrongBoxToBoolConversionError(self);
-            } else if (self.GetLimitType().IsPrimitive || self.GetLimitType().IsEnum) {
+            } else if (self.GetLimitType().IsPrimitive() || self.GetLimitType().IsEnum()) {
                 // optimization - rather than doing a method call for primitives and enums generate
                 // the comparison to zero directly.
                 res = MakePrimitiveToBoolComparison(self);
@@ -808,7 +808,7 @@ namespace IronPython.Runtime.Binding {
                                     metaUserObject.Expression,
                                     tmp
                                 ),
-                                Ast.Dynamic(
+                                DynamicExpression.Dynamic(
                                     new PythonInvokeBinder(
                                         state,
                                         new CallSignature(0)

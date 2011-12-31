@@ -465,7 +465,7 @@ namespace IronPython.Runtime {
                 return NoneTypeOps.NoneHashCode;
             }
 
-            switch (Type.GetTypeCode(o.GetType())) {
+            switch (o.GetType().GetTypeCode()) {
                 case TypeCode.String:
                     dlg = StringHasher;
                     return StringHasher(o, ref dlg);
@@ -1484,7 +1484,7 @@ namespace IronPython.Runtime {
         internal static string FormatPythonSyntaxError(SyntaxErrorException e) {
             string sourceLine = GetSourceLine(e);
 
-            if (!e.Data.Contains(_syntaxErrorNoCaret)) {
+            if (e.GetData(_syntaxErrorNoCaret) == null) {
                 return String.Format(
                     "  File \"{1}\", line {2}{0}" +
                     "    {3}{0}" +
@@ -1606,7 +1606,7 @@ namespace IronPython.Runtime {
             return PythonOps.GetDynamicStackFrames(exception);
         }
 
-#if FEATURE_STACK_TRACE
+#if !FEATURE_STACK_TRACE
         private string FormatStackTraces(Exception e) {
 
             StringBuilder result = new StringBuilder();
@@ -1840,6 +1840,7 @@ namespace IronPython.Runtime {
             if (ironPythonModules != null) {
                 LoadBuiltins(builtinTable, ironPythonModules, false);
 
+#if !WIN8
                 if (Environment.OSVersion.Platform == PlatformID.Unix) {
                     // we make our nt package show up as a posix package
                     // on unix platforms.  Because we build on top of the 
@@ -1850,6 +1851,7 @@ namespace IronPython.Runtime {
                     builtinTable["posix"] = builtinTable["nt"];
                     builtinTable.Remove("nt");
                 }
+#endif
             }
 
             return builtinTable;
@@ -2943,7 +2945,7 @@ namespace IronPython.Runtime {
 
         internal static int Hash(object o) {
             if (o != null) {
-                switch (Type.GetTypeCode(o.GetType())) {
+                switch (o.GetType().GetTypeCode()) {
                     case TypeCode.Int32: return Int32Ops.__hash__((int)o);
                     case TypeCode.String: return ((string)o).GetHashCode();
                     case TypeCode.Double: return DoubleOps.__hash__((double)o);

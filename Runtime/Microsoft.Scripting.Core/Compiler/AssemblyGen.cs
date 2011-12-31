@@ -66,7 +66,7 @@ namespace System.Linq.Expressions.Compiler {
 
             // mark the assembly transparent so that it works in partial trust:
             var attributes = new[] { 
-                new CustomAttributeBuilder(typeof(SecurityTransparentAttribute).GetConstructor(Type.EmptyTypes), new object[0])
+                new CustomAttributeBuilder(typeof(SecurityTransparentAttribute).GetConstructor(ReflectionUtils.EmptyTypes), new object[0])
             };
 
 #if !FEATURE_CORE_DLR

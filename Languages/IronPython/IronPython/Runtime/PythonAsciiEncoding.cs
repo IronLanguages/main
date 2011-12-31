@@ -36,9 +36,10 @@ namespace IronPython.Runtime {
         }
 
         internal static Encoding MakeNonThrowing() {
-            // we need to Clone the new instance here so that the base class marks us as non-readonly
-            Encoding enc = (Encoding)new PythonAsciiEncoding().Clone();
+            Encoding enc = new PythonAsciiEncoding();
 #if FEATURE_ENCODING
+            // we need to Clone the new instance here so that the base class marks us as non-readonly
+            enc = (Encoding)enc.Clone();
             enc.DecoderFallback = new NonStrictDecoderFallback();
             enc.EncoderFallback = new NonStrictEncoderFallback();
 #endif
@@ -46,9 +47,10 @@ namespace IronPython.Runtime {
         }
 
         private static Encoding MakeSourceEncoding() {
-            // we need to Clone the new instance here so that the base class marks us as non-readonly
-            Encoding enc = (Encoding)new PythonAsciiEncoding().Clone();
+            Encoding enc = new PythonAsciiEncoding();
 #if FEATURE_ENCODING
+            // we need to Clone the new instance here so that the base class marks us as non-readonly
+            enc = (Encoding)enc.Clone();
             enc.DecoderFallback = new SourceNonStrictDecoderFallback();
 #endif
             return enc;

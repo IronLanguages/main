@@ -384,7 +384,7 @@ namespace IronPython.Runtime.Binding {
                         AstUtils.Constant(metaType),
                         _tmp
                     ),
-                    Ast.Dynamic(
+                    DynamicExpression.Dynamic(
                             _state.InvokeOne,
                             typeof(object),
                             _codeContext,
@@ -782,7 +782,7 @@ namespace IronPython.Runtime.Binding {
                         new DynamicMetaObject(
                             Ast.Block(
                                 new[] { tmp },
-                                Ast.Dynamic(
+                                DynamicExpression.Dynamic(
                                     state.Invoke(new CallSignature(2)),
                                     typeof(object),
                                     AstUtils.Constant(state.SharedContext),

@@ -71,7 +71,7 @@
     <NoStdLib>true</NoStdLib>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkIdentifier>.NETCore</TargetFrameworkIdentifier>
-    <Features>FEATURE_XMLDOC;FEATURE_DEFAULT_PARAMETER_VALUE;FEATURE_FUNCS_5_16;FEATURE_VARIANCE;FEATURE_CORE_DLR;FEATURE_TASKS;FEATURE_NUMERICS;FEATURE_REFEMIT</Features>
+    <Features>FEATURE_DEFAULT_PARAMETER_VALUE;FEATURE_FUNCS_5_16;FEATURE_VARIANCE;FEATURE_CORE_DLR;FEATURE_TASKS;FEATURE_NUMERICS;FEATURE_REFEMIT</Features>
     <PlatformSymbols>WIN8;CLR4;CLR45</PlatformSymbols>
     <IsSilverlight>false</IsSilverlight>
     <IsFullFramework>false</IsFullFramework>

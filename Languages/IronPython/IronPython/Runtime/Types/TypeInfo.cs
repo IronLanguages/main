@@ -366,7 +366,7 @@ namespace IronPython.Runtime.Types {
         /// </summary>
         class OperatorResolver : MemberResolver {
             public override MemberGroup/*!*/ ResolveMember(MemberBinder/*!*/ binder, MemberRequestKind/*!*/ action, Type/*!*/ type, string/*!*/ name) {
-                if (type.IsSealed && type.IsAbstract) {
+                if (type.IsSealed() && type.IsAbstract()) {
                     // static types don't have PythonOperationKind
                     return MemberGroup.EmptyGroup;
                 }
@@ -787,7 +787,7 @@ namespace IronPython.Runtime.Types {
                 && type != typeof(Complex)
 #endif
             ) {
-                MethodInfo tostr = type.GetMethod("ToString", Type.EmptyTypes);
+                MethodInfo tostr = type.GetMethod("ToString", ReflectionUtils.EmptyTypes);
                 if (tostr != null && tostr.DeclaringType != typeof(object)) {
                     return GetInstanceOpsMethod(type, "ToStringMethod");
                 }
@@ -803,7 +803,7 @@ namespace IronPython.Runtime.Types {
             // __repr__ for normal .NET types is special, if we're a Python type then
             // we'll use one of the built-in reprs (from object or from the type)
             if (!PythonBinder.IsPythonType(type) &&
-                (!type.IsSealed || !type.IsAbstract)) {     // static types don't get __repr__
+                (!type.IsSealed() || !type.IsAbstract())) {     // static types don't get __repr__
                 // check and see if __repr__ has been overridden by the base type.
                 foreach (Type t in binder.GetContributingTypes(type)) {
                     if (t == typeof(ObjectOps) && type != typeof(object)) {
@@ -1190,7 +1190,7 @@ namespace IronPython.Runtime.Types {
 
             // search for IDictionary<K, V> first because it's ICollection<KVP<K, V>> and we want to call ContainsKey
             foreach (Type t in intf) {
-                if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IDictionary<,>)) {
+                if (t.IsGenericType() && t.GetGenericTypeDefinition() == typeof(IDictionary<,>)) {
                     if (t.GetGenericArguments()[0] == typeof(object)) {
                         hasObjectContains = true;
                     }
@@ -1206,7 +1206,7 @@ namespace IronPython.Runtime.Types {
             if (containsMembers == null) {
                 // then look for ICollection<T> for generic __contains__ first if we're not an IDictionary<K, V>
                 foreach (Type t in intf) {
-                    if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(ICollection<>)) {
+                    if (t.IsGenericType() && t.GetGenericTypeDefinition() == typeof(ICollection<>)) {
                         if (t.GetGenericArguments()[0] == typeof(object)) {
                             hasObjectContains = true;
                         }
@@ -1256,7 +1256,7 @@ namespace IronPython.Runtime.Types {
         /// </summary>
         private static void GetEnumeratorContains(Type type, IList<Type> intf, ref List<MemberTracker> containsMembers, ref bool hasObjectContains, Type ienumOfT, Type ienum, string name) {
             foreach (Type t in intf) {
-                if (t.IsGenericType && t.GetGenericTypeDefinition() == ienumOfT) {
+                if (t.IsGenericType() && t.GetGenericTypeDefinition() == ienumOfT) {
                     if (t.GetGenericArguments()[0] == typeof(object)) {
                         hasObjectContains = true;
                     }
@@ -1297,7 +1297,7 @@ namespace IronPython.Runtime.Types {
             }
 
             public MemberGroup/*!*/ Resolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-                if (type.IsSealed && type.IsAbstract) {
+                if (type.IsSealed() && type.IsAbstract()) {
                     // static types don't have PythonOperationKind
                     return MemberGroup.EmptyGroup;
                 }
@@ -1324,7 +1324,7 @@ namespace IronPython.Runtime.Types {
             }
 
             public MemberGroup/*!*/ Resolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-                if (type.IsSealed && type.IsAbstract) {
+                if (type.IsSealed() && type.IsAbstract()) {
                     // static types don't have PythonOperationKind
                     return MemberGroup.EmptyGroup;
                 }

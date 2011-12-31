@@ -86,9 +86,9 @@ namespace IronPython.Runtime.Types {
 
             NewTypeInfo typeInfo = NewTypeInfo.GetTypeInfo(typeName, bases);
 
-            if (typeInfo.BaseType.IsValueType) {
+            if (typeInfo.BaseType.IsValueType()) {
                 throw PythonOps.TypeError("cannot derive from {0} because it is a value type", typeInfo.BaseType.FullName);
-            } else if (typeInfo.BaseType.IsSealed) {
+            } else if (typeInfo.BaseType.IsSealed()) {
                 throw PythonOps.TypeError("cannot derive from {0} because it is sealed", typeInfo.BaseType.FullName);
             }
 
@@ -115,9 +115,9 @@ namespace IronPython.Runtime.Types {
 
             AssemblyGen ag = new AssemblyGen(new AssemblyName(assemblyName), ".", ".dll", false);
             TypeBuilder tb = ag.DefinePublicType(_constructorTypeName, typeof(object), true);
-            tb.SetCustomAttribute(new CustomAttributeBuilder(typeof(PythonCachedTypeInfoAttribute).GetConstructor(Type.EmptyTypes), new object[0]));
+            tb.SetCustomAttribute(new CustomAttributeBuilder(typeof(PythonCachedTypeInfoAttribute).GetConstructor(ReflectionUtils.EmptyTypes), new object[0]));
 
-            MethodBuilder mb = tb.DefineMethod(_constructorMethodName, MethodAttributes.Public | MethodAttributes.Static, typeof(CachedNewTypeInfo[]), Type.EmptyTypes);
+            MethodBuilder mb = tb.DefineMethod(_constructorMethodName, MethodAttributes.Public | MethodAttributes.Static, typeof(CachedNewTypeInfo[]), ReflectionUtils.EmptyTypes);
             ILGenerator ilg = mb.GetILGenerator();
             
             // new CachedTypeInfo[types.Count]
@@ -206,7 +206,7 @@ namespace IronPython.Runtime.Types {
             var typeInfo = (CachedNewTypeInfo[])mi.Invoke(null, new object[0]);
             foreach (var v in typeInfo) {
                 _newTypes.GetOrCreateValue(
-                    new NewTypeInfo(v.Type.BaseType, v.InterfaceTypes),
+                    new NewTypeInfo(v.Type.GetBaseType(), v.InterfaceTypes),
                     () => {
                         // type wasn't already created, go ahead and publish
                         // the info and return the type.
@@ -225,7 +225,7 @@ namespace IronPython.Runtime.Types {
             return type.FullName.IndexOf(NewTypeMaker.TypePrefix) == 0 ||
                 // Users can create sub-types of instance-types using __clrtype__ without using 
                 // NewTypeMaker.TypePrefix
-                ((type.BaseType != null) && IsInstanceType(type.BaseType));
+                ((type.GetBaseType() != null) && IsInstanceType(type.GetBaseType()));
         }
 
         #endregion
@@ -418,10 +418,10 @@ namespace IronPython.Runtime.Types {
 
                     if (pi.IsDefined(typeof(ParamArrayAttribute), false)) {
                         pb.SetCustomAttribute(new CustomAttributeBuilder(
-                            typeof(ParamArrayAttribute).GetConstructor(Type.EmptyTypes), ArrayUtils.EmptyObjects));
+                            typeof(ParamArrayAttribute).GetConstructor(ReflectionUtils.EmptyTypes), ArrayUtils.EmptyObjects));
                     } else if (pi.IsDefined(typeof(ParamDictionaryAttribute), false)) {
                         pb.SetCustomAttribute(new CustomAttributeBuilder(
-                            typeof(ParamDictionaryAttribute).GetConstructor(Type.EmptyTypes), ArrayUtils.EmptyObjects));
+                            typeof(ParamDictionaryAttribute).GetConstructor(ReflectionUtils.EmptyTypes), ArrayUtils.EmptyObjects));
                     }
 
                     if ((pi.Attributes & ParameterAttributes.HasDefault) != 0) {
@@ -460,7 +460,7 @@ namespace IronPython.Runtime.Types {
 
             if (_explicitMO != null) {
                 il.Emit(OpCodes.Ldarg_0);
-                il.EmitNew(_explicitMO.FieldType.GetConstructor(Type.EmptyTypes));
+                il.EmitNew(_explicitMO.FieldType.GetConstructor(ReflectionUtils.EmptyTypes));
                 il.Emit(OpCodes.Stfld, _explicitMO);
             }
 
@@ -913,10 +913,9 @@ namespace IronPython.Runtime.Types {
                 }
             }
             
-            if (type.IsAbstract && !type.IsInterface) {
+            if (type.IsAbstract() && !type.IsInterface()) {
                 // abstract types can define interfaces w/o implementations
-                Type[] interfaces = type.GetInterfaces();
-                foreach (Type iface in interfaces) {
+                foreach (Type iface in type.GetInterfaces()) {
                     InterfaceMapping mapping = type.GetInterfaceMap(iface);
                     for (int i = 0; i < mapping.TargetMethods.Length; i++) {
                         
@@ -1116,7 +1115,7 @@ namespace IronPython.Runtime.Types {
                 basePythonType = DynamicHelpers.GetPythonTypeFromType(_baseType);
             } else {
                 // We must be inherting from an interface
-                Debug.Assert(mi.DeclaringType.IsInterface);
+                Debug.Assert(mi.DeclaringType.IsInterface());
                 basePythonType = DynamicHelpers.GetPythonTypeFromType(mi.DeclaringType);
             }
             return basePythonType;
@@ -1579,7 +1578,7 @@ namespace IronPython.Runtime.Types {
         }
         
         private static void StoreOverriddenField(MethodInfo mi, string newName) {
-            Type baseType = mi.DeclaringType.BaseType;
+            Type baseType = mi.DeclaringType.GetBaseType();
             string fieldName = newName.Substring(FieldGetterPrefix.Length); // get_ or set_
             lock (PythonTypeOps._propertyCache) {
                 foreach (FieldInfo pi in baseType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy)) {
@@ -1637,7 +1636,7 @@ namespace IronPython.Runtime.Types {
         }
 
         private static void StoreOverriddenMethod(MethodInfo mi, string newName) {
-            Type baseType = mi.DeclaringType.BaseType;
+            Type baseType = mi.DeclaringType.GetBaseType();
 
             MemberInfo[] members = baseType.GetMember(newName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy);
             Debug.Assert(members.Length > 0, String.Format("{0} from {1}", newName, baseType.Name));
@@ -1674,7 +1673,7 @@ namespace IronPython.Runtime.Types {
         }
 
         private static void StoreOverriddenProperty(MethodInfo mi, string newName) {
-            Type baseType = mi.DeclaringType.BaseType;
+            Type baseType = mi.DeclaringType.GetBaseType();
 
             lock (PythonTypeOps._propertyCache) {
                 string propName = newName.Substring(4); // get_ or set_
@@ -1751,7 +1750,7 @@ namespace IronPython.Runtime.Types {
                         }
                     }
                 }
-                curType = curType.BaseType;
+                curType = curType.GetBaseType();
             }
             if (res != null) {
                 return res;

@@ -193,7 +193,7 @@ namespace IronPython.Runtime.Binding {
             return BindingHelpers.AddDynamicTestAndDefer(
                 this,
                 new DynamicMetaObject(
-                    Expression.Dynamic(
+                    DynamicExpression.Dynamic(
                         _context.CompatInvoke(callInfo),
                         typeof(object),
                         metaArgs.ToArray()

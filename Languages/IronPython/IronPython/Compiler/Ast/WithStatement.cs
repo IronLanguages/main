@@ -237,7 +237,7 @@ namespace IronPython.Compiler.Ast {
                         exc,
                         GlobalParent.AddDebugInfoAndVoid(
                             Ast.Block(
-                                Ast.Dynamic(
+                                MSAst.DynamicExpression.Dynamic(
                                     GlobalParent.PyContext.Invoke(
                                         new CallSignature(3)        // signature doesn't include function
                                     ),

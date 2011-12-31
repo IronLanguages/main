@@ -205,7 +205,7 @@ namespace System.Linq.Expressions.Compiler {
             }
 
             // No visible variables
-            lc.IL.Emit(OpCodes.Call, typeof(RuntimeOps).GetMethod("CreateRuntimeVariables", Type.EmptyTypes));
+            lc.IL.Emit(OpCodes.Call, typeof(RuntimeOps).GetMethod("CreateRuntimeVariables", ReflectionUtils.EmptyTypes));
             return;
         }
 
@@ -327,7 +327,7 @@ namespace System.Linq.Expressions.Compiler {
                     lc.IL.Emit(OpCodes.Newobj, boxType.GetConstructor(new Type[] { v.Type }));
 #else
                     // array[i] = new StrongBox<T>();
-                    lc.IL.Emit(OpCodes.Newobj, boxType.GetConstructor(Type.EmptyTypes));
+                    lc.IL.Emit(OpCodes.Newobj, boxType.GetConstructor(ReflectionUtils.EmptyTypes));
 #endif
                 }
                 // if we want to cache this into a local, do it now

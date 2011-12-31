@@ -346,7 +346,7 @@ namespace IronPython.Runtime.Binding {
 
             MemberGroup members = Context.Binder.GetMember(MemberRequestKind.Get, type, name);
 
-            if (members.Count == 0 && type.IsInterface) {
+            if (members.Count == 0 && type.IsInterface()) {
                 // all interfaces have object members
                 type = typeof(object);
                 members = Context.Binder.GetMember(MemberRequestKind.Get, type, name);
@@ -638,7 +638,7 @@ namespace IronPython.Runtime.Binding {
 
             // Default binder can return something typed to boolean or int.
             // If that happens, we need to apply Python's boxing rules.
-            if (res.Expression.Type.IsValueType) {
+            if (res.Expression.Type.IsValueType()) {
                 res = new DynamicMetaObject(
                     AstUtils.Convert(res.Expression, typeof(object)),
                     res.Restrictions

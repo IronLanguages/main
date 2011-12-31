@@ -186,7 +186,7 @@ namespace IronPython.Runtime.Binding {
                                     types[0].Expression
                                 )
                             ),
-                            Ast.Dynamic(
+                            DynamicExpression.Dynamic(
                                 state.Invoke(
                                     new CallSignature(args.Length)
                                 ),

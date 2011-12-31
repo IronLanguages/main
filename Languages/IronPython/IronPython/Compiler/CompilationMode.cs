@@ -147,26 +147,26 @@ namespace IronPython.Compiler {
         }
 
         public virtual MSAst.Expression/*!*/ ReduceDynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, MSAst.Expression/*!*/ arg0) {
-            return MSAst.Expression.Dynamic(binder, retType, arg0);
+            return MSAst.DynamicExpression.Dynamic(binder, retType, arg0);
         }
 
         public virtual MSAst.Expression/*!*/ ReduceDynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, MSAst.Expression/*!*/ arg0, MSAst.Expression/*!*/ arg1) {
-            return MSAst.Expression.Dynamic(binder, retType, arg0, arg1);
+            return MSAst.DynamicExpression.Dynamic(binder, retType, arg0, arg1);
         }
 
         public virtual MSAst.Expression/*!*/ ReduceDynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, MSAst.Expression/*!*/ arg0, MSAst.Expression/*!*/ arg1, MSAst.Expression/*!*/ arg2) {
-            return MSAst.Expression.Dynamic(binder, retType, arg0, arg1, arg2);
+            return MSAst.DynamicExpression.Dynamic(binder, retType, arg0, arg1, arg2);
         }
 
         public virtual MSAst.Expression/*!*/ ReduceDynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, MSAst.Expression/*!*/ arg0, MSAst.Expression/*!*/ arg1, MSAst.Expression/*!*/ arg2, MSAst.Expression/*!*/ arg3) {
-            return MSAst.Expression.Dynamic(binder, retType, arg0, arg1, arg2, arg3);
+            return MSAst.DynamicExpression.Dynamic(binder, retType, arg0, arg1, arg2, arg3);
         }
 
         public virtual MSAst.Expression/*!*/ ReduceDynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, MSAst.Expression/*!*/[]/*!*/ args) {
             Assert.NotNull(binder, retType, args);
             Assert.NotNullItems(args);
 
-            return MSAst.Expression.Dynamic(binder, retType, args);
+            return MSAst.DynamicExpression.Dynamic(binder, retType, args);
         }
 
         public abstract MSAst.Expression GetGlobal(MSAst.Expression globalContext, int arrayIndex, PythonVariable variable, PythonGlobal global);

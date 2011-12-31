@@ -213,7 +213,7 @@ namespace System.Linq.Expressions {
             }
             ConstructorInfo ci = null;
             if (!type.IsValueType) {
-                ci = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, System.Type.EmptyTypes, null);
+                ci = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, System.ReflectionUtils.EmptyTypes, null);
                 if (ci == null) {
                     throw Error.TypeMissingDefaultConstructor(type);
                 }

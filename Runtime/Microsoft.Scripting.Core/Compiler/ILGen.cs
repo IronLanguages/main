@@ -878,7 +878,7 @@ namespace System.Linq.Expressions.Compiler {
 
 
         internal static void EmitGetValueOrDefault(this ILGenerator il, Type nullableType) {
-            MethodInfo mi = nullableType.GetMethod("GetValueOrDefault", System.Type.EmptyTypes);
+            MethodInfo mi = nullableType.GetMethod("GetValueOrDefault", System.ReflectionUtils.EmptyTypes);
             Debug.Assert(nullableType.IsValueType);
             il.Emit(OpCodes.Call, mi);
         }

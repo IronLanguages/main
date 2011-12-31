@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Types {
     public class CachedNewTypeInfo {
@@ -26,7 +27,7 @@ namespace IronPython.Runtime.Types {
         public CachedNewTypeInfo(Type type, Dictionary<string, string[]> specialNames, Type[] interfaceTypes) {
             _type = type;
             _specialNames = specialNames;
-            _interfaceTypes = interfaceTypes ?? Type.EmptyTypes;
+            _interfaceTypes = interfaceTypes ?? ReflectionUtils.EmptyTypes;
         }
 
         public IList<Type> InterfaceTypes {

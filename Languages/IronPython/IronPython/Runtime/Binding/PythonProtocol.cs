@@ -101,7 +101,7 @@ namespace IronPython.Runtime.Binding {
 
             Expression callAsInt = call;
             if (call.Type != typeof(int)) {
-                callAsInt = Ast.Dynamic(
+                callAsInt = DynamicExpression.Dynamic(
                     state.Convert(typeof(int), ConversionResultKind.ExplicitCast),
                     typeof(int),
                     call
@@ -165,7 +165,7 @@ namespace IronPython.Runtime.Binding {
                     DynamicUtils.GetExpressions(args)
                 );
 
-                body = Ast.Dynamic(
+                body = DynamicExpression.Dynamic(
                     PythonContext.GetPythonContext(call).Invoke(
                         BindingHelpers.GetCallSignature(call)
                     ),

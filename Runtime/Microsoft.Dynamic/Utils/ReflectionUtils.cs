@@ -983,6 +983,10 @@ namespace Microsoft.Scripting.Utils {
             return type.GetTypeInfo().IsSealed;
         }
 
+        public static bool IsAbstract(this Type type) {
+            return type.GetTypeInfo().IsAbstract;
+        }
+
         public static bool IsPublic(this Type type) {
             return type.GetTypeInfo().IsPublic;
         }
@@ -1433,7 +1437,7 @@ namespace Microsoft.Scripting.Utils {
             try {
                 return asm.GetTypes();
             } catch (Exception) {
-                return Type.EmptyTypes;
+                return ReflectionUtils.EmptyTypes;
             }
 #elif WIN8
             return asm.DefinedTypes;

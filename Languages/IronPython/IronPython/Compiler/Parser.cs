@@ -3090,7 +3090,7 @@ namespace IronPython.Compiler {
 
         public void Dispose() {
             if (_sourceReader != null) {
-                _sourceReader.Close();
+                _sourceReader.Dispose();
             }
         }
 
