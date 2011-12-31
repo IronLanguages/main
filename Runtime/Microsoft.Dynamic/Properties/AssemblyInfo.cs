@@ -50,7 +50,7 @@ using System.Security;
 //
 // You can specify all the values or you can default the Revision and Build Numbers 
 // by using the '*' as shown below:
-#if !CLR2 && !SILVERLIGHT && !WIN8
+#if !CLR2 && !SILVERLIGHT && !WIN8 && !ANDROID
 [assembly: System.Security.SecurityRules(SecurityRuleSet.Level1)]
 #endif
 [assembly: SecurityTransparent]

@@ -12006,7 +12006,7 @@ namespace IronRuby.StandardLibrary.Win32API {
             IronRuby.Builtins.RubyClass classRef0 = GetClass(typeof(IronRuby.Builtins.RubyObject));
             
             
-            #if !SILVERLIGHT && !WIN8
+            #if !SILVERLIGHT && !WIN8 && !ANDROID
             DefineGlobalClass("Win32API", typeof(IronRuby.StandardLibrary.Win32API.Win32API), 0x00000008, classRef0, LoadWin32API_Instance, null, null, IronRuby.Builtins.RubyModule.EmptyArray, 
                 new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.StandardLibrary.Win32API.Win32API>(IronRuby.StandardLibrary.Win32API.Win32API.Create), 
                 new Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubySymbol, IronRuby.StandardLibrary.Win32API.Win32API>(IronRuby.StandardLibrary.Win32API.Win32API.Create), 
@@ -12015,7 +12015,7 @@ namespace IronRuby.StandardLibrary.Win32API {
             #endif
         }
         
-        #if !SILVERLIGHT && !WIN8
+        #if !SILVERLIGHT && !WIN8 && !ANDROID
         private static void LoadWin32API_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
             DefineRuleGenerator(module, "call", 0x11, IronRuby.StandardLibrary.Win32API.Win32API.Call());
             

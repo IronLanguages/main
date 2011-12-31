@@ -15,6 +15,9 @@
 
 #if !CLR2
 using BigInt = System.Numerics.BigInteger;
+#endif
+
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #endif
 

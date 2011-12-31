@@ -889,7 +889,7 @@ namespace IronRuby.Runtime {
 
         [Conditional("DEBUG")]
         public static void Log(string/*!*/ message, string/*!*/ category) {
-#if WIN8
+#if WIN8 || ANDROID
             Debug.WriteLine(category + ": " + message);
 #elif !SILVERLIGHT
             Debug.WriteLine((object)message, category);

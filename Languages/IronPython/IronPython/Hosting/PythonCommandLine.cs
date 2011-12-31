@@ -374,7 +374,7 @@ namespace IronPython.Hosting {
 
             try {
                 result = RunOneInteraction();
-#if SILVERLIGHT // ThreadAbortException.ExceptionState
+#if !FEATURE_EXCEPTION_STATE
             } catch (ThreadAbortException) {
 #else
             } catch (ThreadAbortException tae) {

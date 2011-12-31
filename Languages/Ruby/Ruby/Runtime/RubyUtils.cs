@@ -1006,17 +1006,7 @@ namespace IronRuby.Runtime {
         #region Exceptions
 
 #if FEATURE_THREAD
-#if SILVERLIGHT // Thread.ExceptionState, Thread.Abort(stateInfo)
-        public static Exception GetVisibleException(Exception e) { return e; }
-
-        public static void ExitThread(Thread/*!*/ thread) {
-            thread.Abort();
-        }
-
-        public static bool IsRubyThreadExit(Exception e) {
-            return e is ThreadAbortException;
-        }
-#else
+#if FEATURE_EXCEPTION_STATE
         /// <summary>
         /// Thread#raise is implemented on top of System.Threading.Thread.ThreadAbort, and squirreling
         /// the Ruby exception expected by the use in ThreadAbortException.ExceptionState.
@@ -1072,8 +1062,17 @@ namespace IronRuby.Runtime {
                 }
             }
             return e;
+        }   
+#else
+        public static Exception GetVisibleException(Exception e) { return e; }
+
+        public static void ExitThread(Thread/*!*/ thread) {
+            thread.Abort();
         }
 
+        public static bool IsRubyThreadExit(Exception e) {
+            return e is ThreadAbortException;
+        }
 #endif
 #else
         public static Exception GetVisibleException(Exception e) { return e; }

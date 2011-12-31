@@ -134,7 +134,7 @@ namespace System.Reflection.RuntimeExtensions {
 namespace Microsoft.Scripting.Utils {
     // CF doesn't support DefaultParameterValue attribute. Define our own, but not in System.Runtime.InteropServices namespace as that would 
     // make C# compiler emit the parameter's default value metadata not the attribute itself. The default value metadata are not accessible on CF.
-#if WP75
+#if !FEATURE_DEFAULT_PARAMETER_VALUE
     /// <summary>
     /// The Default Parameter Value Attribute.
     /// </summary>

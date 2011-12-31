@@ -112,7 +112,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
             try {
                 _exitCode = Run();
 
-#if !SILVERLIGHT // ThreadAbortException.ExceptionState
+#if FEATURE_EXCEPTION_STATE
             } catch (System.Threading.ThreadAbortException tae) {
                 if (tae.ExceptionState is KeyboardInterruptException) {
                     Thread.ResetAbort();
@@ -197,7 +197,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
             }
         }
 
-        #region Interactivity
+#region Interactivity
 
         /// <summary>
         /// Starts the interactive loop.  Performs any initialization necessary before
@@ -262,7 +262,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
         internal static bool IsFatalException(Exception e) {
             ThreadAbortException tae = e as ThreadAbortException;
             if (tae != null) {
-#if SILVERLIGHT // ThreadAbortException.ExceptionState
+#if !FEATURE_EXCEPTION_STATE
                 return true;
 #else
                 if ((tae.ExceptionState as KeyboardInterruptException) == null) {
@@ -290,7 +290,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
 
             try {
                 result = RunOneInteraction();
-#if SILVERLIGHT // ThreadAbortException.ExceptionState
+#if !FEATURE_EXCEPTION_STATE
             } catch (ThreadAbortException) {
 #else
             } catch (ThreadAbortException tae) {
@@ -446,7 +446,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
             return res;
         }
 
-        #endregion
+#endregion
 
         class SimpleCommandDispatcher : ICommandDispatcher {
             public object Execute(CompiledCode compiledCode, ScriptScope scope) {

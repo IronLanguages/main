@@ -215,11 +215,11 @@ namespace Microsoft.Scripting.Interpreter {
                 if ((currentThread.ThreadState & System.Threading.ThreadState.AbortRequested) != 0) {
                     Debug.Assert(_anyAbortException != null);
 
+#if FEATURE_EXCEPTION_STATE
                     // The current abort reason needs to be preserved.
-#if SILVERLIGHT
-                    currentThread.Abort();
-#else
                     currentThread.Abort(_anyAbortException.ExceptionState);
+#else
+                    currentThread.Abort();
 #endif
                 }
             }

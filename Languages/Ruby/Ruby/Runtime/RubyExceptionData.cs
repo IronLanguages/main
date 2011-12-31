@@ -236,7 +236,7 @@ namespace IronRuby.Runtime {
             return newException;
         }
 
-#if FEATURE_THREAD && !SILVERLIGHT // Thread.ExceptionState
+#if FEATURE_THREAD && FEATURE_EXCEPTION_STATE
         public static void ActiveExceptionHandled(Exception visibleException) {
             Debug.Assert(RubyUtils.GetVisibleException(visibleException) == visibleException);
 

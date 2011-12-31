@@ -35,10 +35,10 @@ using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
 
 #if !WIN8
-#if CLR2
-namespace Microsoft.Scripting.Ast {
-#else
+#if FEATURE_CORE_DLR
 namespace System.Linq.Expressions {
+#else
+namespace Microsoft.Scripting.Ast {
 #endif
     public abstract class DynamicExpressionVisitor : ExpressionVisitor {
     }

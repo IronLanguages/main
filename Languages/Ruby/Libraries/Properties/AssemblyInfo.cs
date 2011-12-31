@@ -33,10 +33,10 @@ using System.Security;
 [assembly: Guid("ca75230d-3011-485d-b1db-dfe924b6c434")]
 
 [assembly: SecurityTransparent]
-
-#if !SILVERLIGHT && !WIN8
 [assembly: AssemblyVersion(RubyContext.IronRubyVersionString)]
 [assembly: AssemblyFileVersion(RubyContext.IronRubyVersionString)]
+
+#if !SILVERLIGHT && !WIN8 && !ANDROID
 [assembly: AllowPartiallyTrustedCallers]
 #if !CLR2
 [assembly: SecurityRules(SecurityRuleSet.Level1)]

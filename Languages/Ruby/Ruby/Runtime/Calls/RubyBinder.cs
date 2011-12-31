@@ -80,7 +80,7 @@ namespace IronRuby.Runtime.Calls {
             return result;
         }
 
-#if DEBUG && !SILVERLIGHT && !WIN8
+#if DEBUG && !SILVERLIGHT && !WIN8 && !ANDROID
         // ExpressionWriter might call ToString on a live object that might dynamically invoke a method.
         // We need to prevent recursion in such case.
         [ThreadStatic]

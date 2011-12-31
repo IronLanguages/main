@@ -291,7 +291,7 @@ namespace IronRuby.Builtins {
                 exception = new RuntimeError();
             }
 
-#if DEBUG && FEATURE_THREAD && !SILVERLIGHT
+#if DEBUG && FEATURE_THREAD && FEATURE_EXCEPTION_STATE
             if (RubyOptions.UseThreadAbortForSyncRaise) {
                 RubyUtils.RaiseAsyncException(Thread.CurrentThread, exception);
             }
@@ -308,7 +308,7 @@ namespace IronRuby.Builtins {
         public static void RaiseException(object self, [NotNull]MutableString/*!*/ message) {
             Exception exception = RubyExceptionData.InitializeException(new RuntimeError(message.ToString()), message);
 
-#if DEBUG && FEATURE_THREAD && !SILVERLIGHT
+#if DEBUG && FEATURE_THREAD && FEATURE_EXCEPTION_STATE
             if (RubyOptions.UseThreadAbortForSyncRaise) {
                 RubyUtils.RaiseAsyncException(Thread.CurrentThread, exception);
             }
@@ -326,7 +326,7 @@ namespace IronRuby.Builtins {
             object self, object/*!*/ obj, [Optional]object arg, [Optional]RubyArray backtrace) {
 
             Exception exception = CreateExceptionToRaise(respondToStorage, storage0, storage1, setBackTraceStorage, obj, arg, backtrace);
-#if DEBUG && FEATURE_THREAD && !SILVERLIGHT
+#if DEBUG && FEATURE_THREAD && FEATURE_EXCEPTION_STATE
             if (RubyOptions.UseThreadAbortForSyncRaise) {
                 RubyUtils.RaiseAsyncException(Thread.CurrentThread, exception);
             }
@@ -1458,13 +1458,13 @@ namespace IronRuby.Builtins {
         private static RubyIO CheckOpenPipe(RubyContext/*!*/ context, MutableString path, IOMode mode) {
             string fileName = path.ConvertToString();
             if (fileName.Length > 0 && fileName[0] == '|') {
-#if SILVERLIGHT || WIN8
-                throw new NotSupportedException("open cannot create a subprocess");
-#else
+#if FEATURE_PROCESS
                 if (fileName.Length > 1 && fileName[1] == '-') {
                     throw new NotImplementedError("forking a process is not supported");
                 }
                 return RubyIOOps.OpenPipe(context, path.GetSlice(1), (IOMode)mode);
+#else
+                throw new NotSupportedException("open cannot create a subprocess");
 #endif
             }
             return null;

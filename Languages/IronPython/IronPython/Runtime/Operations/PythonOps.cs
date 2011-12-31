@@ -2124,7 +2124,7 @@ namespace IronPython.Runtime.Operations {
             // we reset the abort.
             object res = PythonExceptions.ToPython(clrException);
 
-#if !SILVERLIGHT
+#if FEATURE_EXCEPTION_STATE
             // Check for thread abort exceptions.
             // This is necessary to be able to catch python's KeyboardInterrupt exceptions.
             // CLR restrictions require that this must be called from within a catch block.  This gets
