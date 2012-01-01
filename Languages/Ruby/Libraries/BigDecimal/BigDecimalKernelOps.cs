@@ -17,6 +17,7 @@ using System.Runtime.InteropServices;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.StandardLibrary.BigDecimal {
     [RubyModule(Extends = typeof(Kernel))]

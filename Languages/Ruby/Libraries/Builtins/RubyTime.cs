@@ -34,7 +34,7 @@ namespace IronRuby.Builtins {
         
         #region Time Zones
 
-#if SILVERLIGHT || WIN8 // TODO: Use TimeZoneInfo
+#if SILVERLIGHT || WIN8 || WP75 // TODO: Use TimeZoneInfo
         public TimeSpan GetCurrentZoneOffset() {
             DateTime time = DateTime.Now;
             return time.ToLocalTime() - time.ToUniversalTime();

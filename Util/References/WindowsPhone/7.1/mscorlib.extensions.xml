@@ -1,0 +1,840 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright (c) Microsoft Corporation.  All rights reserved.
+-->
+<doc>
+  <assembly>
+    <name>mscorlib.Extensions</name>
+  </assembly>
+  <members>
+    <member name="T:System.ApplicationException">
+      <summary>The exception that is thrown when a non-fatal application error occurs.</summary>
+    </member>
+    <member name="M:System.ApplicationException.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.ApplicationException" /> class.</summary>
+    </member>
+    <member name="M:System.ApplicationException.#ctor(System.String)">
+      <summary>Initializes a new instance of the <see cref="T:System.ApplicationException" /> class with a specified error message.</summary>
+      <param name="message">A message that describes the error. </param>
+    </member>
+    <member name="M:System.ApplicationException.#ctor(System.String,System.Exception)">
+      <summary>Initializes a new instance of the <see cref="T:System.ApplicationException" /> class with a specified error message and a reference to the inner exception that is the cause of this exception.</summary>
+      <param name="message">The error message that explains the reason for the exception. </param>
+      <param name="innerException">The exception that is the cause of the current exception. If the <paramref name="innerException" /> parameter is not a null reference, the current exception is raised in a catch block that handles the inner exception. </param>
+    </member>
+    <member name="T:System.ComponentModel.INotifyPropertyChanging">
+      <summary>Defines an event for notifying clients that a property value is changing.</summary>
+    </member>
+    <member name="E:System.ComponentModel.INotifyPropertyChanging.PropertyChanging">
+      <summary>Occurs when a property value is changing.</summary>
+    </member>
+    <member name="T:System.ComponentModel.PropertyChangingEventArgs">
+      <summary>Provides data for the <see cref="E:System.ComponentModel.INotifyPropertyChanging.PropertyChanging" /> event.</summary>
+    </member>
+    <member name="M:System.ComponentModel.PropertyChangingEventArgs.#ctor(System.String)">
+      <summary>Initializes a new instance of the <see cref="T:System.ComponentModel.PropertyChangingEventArgs" /> class.</summary>
+      <param name="propertyName">The name of the property that is changing.</param>
+    </member>
+    <member name="P:System.ComponentModel.PropertyChangingEventArgs.PropertyName">
+      <summary>Gets the name of the property that is changing.</summary>
+      <returns>The name of the property that is changing.</returns>
+    </member>
+    <member name="T:System.ComponentModel.PropertyChangingEventHandler">
+      <summary>Represents a method that will handle the <see cref="E:System.ComponentModel.INotifyPropertyChanging.PropertyChanging" /> event.</summary>
+      <param name="sender">The source of the event.</param>
+      <param name="e">The event data.</param>
+    </member>
+    <member name="T:System.Runtime.CompilerServices.CodeGenerationAttribute">
+      <summary>Specifies settings for code generation.</summary>
+    </member>
+    <member name="M:System.Runtime.CompilerServices.CodeGenerationAttribute.#ctor(System.Runtime.CompilerServices.CodeGenerationFlags)">
+      <summary>Initializes a new instance of the <see cref="T:System.Runtime.CompilerServices.CodeGenerationAttribute" /> class.</summary>
+    </member>
+    <member name="P:System.Runtime.CompilerServices.CodeGenerationAttribute.CodeGenerationFlags">
+      <summary>Gets the flags that specify how code is generated.</summary>
+      <returns>The flags that specify how code is generated.</returns>
+    </member>
+    <member name="T:System.Runtime.CompilerServices.CodeGenerationFlags">
+      <summary>Defines flags that specify how code is generated.</summary>
+    </member>
+    <member name="F:System.Runtime.CompilerServices.CodeGenerationFlags.EnableFPIntrinsicsUsingSIMD">
+      <summary>Specifies that the just-in-time (JIT) compiler may use SIMD instructions for certain vector and matrix operations.</summary>
+    </member>
+    <member name="T:System.Security.Cryptography.AsymmetricAlgorithm">
+      <summary>Represents the abstract base class from which all implementations of asymmetric algorithms must inherit.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricAlgorithm.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.AsymmetricAlgorithm" /> class.</summary>
+      <exception cref="T:System.Security.Cryptography.CryptographicException">The implementation of the derived class is not valid. </exception>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricAlgorithm.Clear">
+      <summary>Releases all resources used by the <see cref="T:System.Security.Cryptography.AsymmetricAlgorithm" /> class.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricAlgorithm.Create">
+      <summary>Creates a default cryptographic object used to perform the asymmetric algorithm.</summary>
+      <returns>A new <see cref="T:System.Security.Cryptography.RSACryptoServiceProvider" /> instance.</returns>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricAlgorithm.Create(System.String)">
+      <summary>Creates an instance of the specified implementation of an asymmetric algorithm.</summary>
+      <returns>A new instance of the specified asymmetric algorithm implementation.</returns>
+      <param name="algName">The asymmetric algorithm implementation to use. The following table shows the valid values for the <paramref name="algName" /> parameter and the algorithms they map to.Parameter valueImplements System.Security.Cryptography.AsymmetricAlgorithm<see cref="T:System.Security.Cryptography.AsymmetricAlgorithm" />RSA<see cref="T:System.Security.Cryptography.RSA" />System.Security.Cryptography.RSA<see cref="T:System.Security.Cryptography.RSA" /></param>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricAlgorithm.Dispose">
+      <summary>Releases all resources used by the current instance of the <see cref="T:System.Security.Cryptography.AsymmetricAlgorithm" /> class.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricAlgorithm.Dispose(System.Boolean)">
+      <summary>Releases the unmanaged resources used by the <see cref="T:System.Security.Cryptography.AsymmetricAlgorithm" /> class and optionally releases the managed resources.</summary>
+      <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources. </param>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricAlgorithm.FromXmlString(System.String)">
+      <summary>When overridden in a derived class, reconstructs an <see cref="T:System.Security.Cryptography.AsymmetricAlgorithm" /> object from an XML string.</summary>
+      <param name="xmlString">The XML string to use to reconstruct the <see cref="T:System.Security.Cryptography.AsymmetricAlgorithm" /> object. </param>
+    </member>
+    <member name="P:System.Security.Cryptography.AsymmetricAlgorithm.KeyExchangeAlgorithm">
+      <summary>When overridden in a derived class, gets the name of the key exchange algorithm.</summary>
+      <returns>The name of the key exchange algorithm.</returns>
+    </member>
+    <member name="P:System.Security.Cryptography.AsymmetricAlgorithm.KeySize">
+      <summary>Gets or sets the size, in bits, of the key modulus used by the asymmetric algorithm.</summary>
+      <returns>The size, in bits, of the key modulus used by the asymmetric algorithm.</returns>
+      <exception cref="T:System.Security.Cryptography.CryptographicException">The key modulus size is invalid. </exception>
+    </member>
+    <member name="F:System.Security.Cryptography.AsymmetricAlgorithm.KeySizeValue">
+      <summary>Represents the size, in bits, of the key modulus used by the asymmetric algorithm.</summary>
+    </member>
+    <member name="P:System.Security.Cryptography.AsymmetricAlgorithm.LegalKeySizes">
+      <summary>Gets the key sizes that are supported by the asymmetric algorithm.</summary>
+      <returns>An array that contains the key sizes supported by the asymmetric algorithm.</returns>
+    </member>
+    <member name="F:System.Security.Cryptography.AsymmetricAlgorithm.LegalKeySizesValue">
+      <summary>Specifies the key sizes that are supported by the asymmetric algorithm.</summary>
+    </member>
+    <member name="P:System.Security.Cryptography.AsymmetricAlgorithm.SignatureAlgorithm">
+      <summary>Gets the name of the signature algorithm.</summary>
+      <returns>The name of the signature algorithm.</returns>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricAlgorithm.ToXmlString(System.Boolean)">
+      <summary>When overridden in a derived class, creates and returns an XML string representation of the current <see cref="T:System.Security.Cryptography.AsymmetricAlgorithm" /> object.</summary>
+      <returns>An XML string encoding of the current <see cref="T:System.Security.Cryptography.AsymmetricAlgorithm" /> object.</returns>
+      <param name="includePrivateParameters">true to include private parameters; otherwise, false. </param>
+    </member>
+    <member name="T:System.Security.Cryptography.AsymmetricKeyExchangeDeformatter">
+      <summary>Represents the base class from which all asymmetric key exchange deformatters derive.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricKeyExchangeDeformatter.#ctor">
+      <summary>Initializes a new instance of <see cref="T:System.Security.Cryptography.AsymmetricKeyExchangeDeformatter" />.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricKeyExchangeDeformatter.DecryptKeyExchange(System.Byte[])">
+      <summary>When overridden in a derived class, extracts secret information from the encrypted key exchange data.</summary>
+      <returns>The secret information derived from the key exchange data.</returns>
+      <param name="rgb">The key exchange data within which the secret information is hidden. </param>
+    </member>
+    <member name="P:System.Security.Cryptography.AsymmetricKeyExchangeDeformatter.Parameters">
+      <summary>When overridden in a derived class, gets or sets the parameters for the asymmetric key exchange.</summary>
+      <returns>A string in XML format containing the parameters of the asymmetric key exchange operation.</returns>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricKeyExchangeDeformatter.SetKey(System.Security.Cryptography.AsymmetricAlgorithm)">
+      <summary>When overridden in a derived class, sets the private key to use for decrypting the secret information.</summary>
+      <param name="key">The instance of the implementation of <see cref="T:System.Security.Cryptography.AsymmetricAlgorithm" /> that holds the private key. </param>
+    </member>
+    <member name="T:System.Security.Cryptography.AsymmetricKeyExchangeFormatter">
+      <summary>Represents the base class from which all asymmetric key exchange formatters derive.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricKeyExchangeFormatter.#ctor">
+      <summary>Initializes a new instance of <see cref="T:System.Security.Cryptography.AsymmetricKeyExchangeFormatter" />.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricKeyExchangeFormatter.CreateKeyExchange(System.Byte[])">
+      <summary>When overridden in a derived class, creates the encrypted key exchange data from the specified input data.</summary>
+      <returns>The encrypted key exchange data to be sent to the intended recipient.</returns>
+      <param name="data">The secret information to be passed in the key exchange. </param>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricKeyExchangeFormatter.CreateKeyExchange(System.Byte[],System.Type)">
+      <summary>When overridden in a derived class, creates the encrypted key exchange data from the specified input data.</summary>
+      <returns>The encrypted key exchange data to be sent to the intended recipient.</returns>
+      <param name="data">The secret information to be passed in the key exchange. </param>
+      <param name="symAlgType">This parameter is not used in the current version. </param>
+    </member>
+    <member name="P:System.Security.Cryptography.AsymmetricKeyExchangeFormatter.Parameters">
+      <summary>When overridden in a derived class, gets the parameters for the asymmetric key exchange.</summary>
+      <returns>A string in XML format containing the parameters of the asymmetric key exchange operation.</returns>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricKeyExchangeFormatter.SetKey(System.Security.Cryptography.AsymmetricAlgorithm)">
+      <summary>When overridden in a derived class, sets the public key to use for encrypting the secret information.</summary>
+      <param name="key">The instance of the implementation of <see cref="T:System.Security.Cryptography.AsymmetricAlgorithm" /> that holds the public key. </param>
+    </member>
+    <member name="T:System.Security.Cryptography.AsymmetricSignatureDeformatter">
+      <summary>Represents the abstract base class from which all implementations of asymmetric signature deformatters derive.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricSignatureDeformatter.#ctor">
+      <summary>Initializes a new instance of <see cref="T:System.Security.Cryptography.AsymmetricSignatureDeformatter" />.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricSignatureDeformatter.SetHashAlgorithm(System.String)">
+      <summary>When overridden in a derived class, sets the hash algorithm to use for verifying the signature.</summary>
+      <param name="strName">The name of the hash algorithm to use for verifying the signature. </param>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricSignatureDeformatter.SetKey(System.Security.Cryptography.AsymmetricAlgorithm)">
+      <summary>When overridden in a derived class, sets the public key to use for verifying the signature.</summary>
+      <param name="key">The instance of an implementation of <see cref="T:System.Security.Cryptography.AsymmetricAlgorithm" /> that holds the public key. </param>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricSignatureDeformatter.VerifySignature(System.Byte[],System.Byte[])">
+      <summary>When overridden in a derived class, verifies the signature for the specified data.</summary>
+      <returns>true if <paramref name="rgbSignature" /> matches the signature computed using the specified hash algorithm and key on <paramref name="rgbHash" />; otherwise, false.</returns>
+      <param name="rgbHash">The data signed with <paramref name="rgbSignature" />. </param>
+      <param name="rgbSignature">The signature to be verified for <paramref name="rgbHash" />. </param>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricSignatureDeformatter.VerifySignature(System.Security.Cryptography.HashAlgorithm,System.Byte[])">
+      <summary>Verifies the signature from the specified hash value.</summary>
+      <returns>true if the signature is valid for the hash; otherwise, false.</returns>
+      <param name="hash">The hash algorithm to use to verify the signature. </param>
+      <param name="rgbSignature">The signature to be verified. </param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="hash" /> parameter is null. </exception>
+    </member>
+    <member name="T:System.Security.Cryptography.AsymmetricSignatureFormatter">
+      <summary>Represents the base class from which all implementations of asymmetric signature formatters derive.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricSignatureFormatter.#ctor">
+      <summary>Initializes a new instance of <see cref="T:System.Security.Cryptography.AsymmetricSignatureFormatter" />.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricSignatureFormatter.CreateSignature(System.Byte[])">
+      <summary>When overridden in a derived class, creates the signature for the specified data.</summary>
+      <returns>The digital signature for the <paramref name="rgbHash" /> parameter.</returns>
+      <param name="rgbHash">The data to be signed. </param>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricSignatureFormatter.CreateSignature(System.Security.Cryptography.HashAlgorithm)">
+      <summary>Creates the signature from the specified hash value.</summary>
+      <returns>The signature for the specified hash value.</returns>
+      <param name="hash">The hash algorithm to use to create the signature. </param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="hash" /> parameter is null. </exception>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricSignatureFormatter.SetHashAlgorithm(System.String)">
+      <summary>When overridden in a derived class, sets the hash algorithm to use for creating the signature.</summary>
+      <param name="strName">The name of the hash algorithm to use for creating the signature. </param>
+    </member>
+    <member name="M:System.Security.Cryptography.AsymmetricSignatureFormatter.SetKey(System.Security.Cryptography.AsymmetricAlgorithm)">
+      <summary>When overridden in a derived class, sets the asymmetric algorithm to use to create the signature.</summary>
+      <param name="key">The instance of the implementation of <see cref="T:System.Security.Cryptography.AsymmetricAlgorithm" /> to use to create the signature. </param>
+    </member>
+    <member name="T:System.Security.Cryptography.CspKeyContainerInfo">
+      <summary>Provides additional information about a cryptographic key pair. This class cannot be inherited.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.CspKeyContainerInfo.#ctor(System.Security.Cryptography.CspParameters)">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.CspKeyContainerInfo" /> class using the specified parameters.</summary>
+      <param name="parameters">A <see cref="T:System.Security.Cryptography.CspParameters" /> object that provides information about the key.</param>
+    </member>
+    <member name="P:System.Security.Cryptography.CspKeyContainerInfo.KeyContainerName">
+      <summary>Gets a key container name.</summary>
+      <returns>The key container name.</returns>
+    </member>
+    <member name="P:System.Security.Cryptography.CspKeyContainerInfo.KeyNumber">
+      <summary>Gets a value that describes whether an asymmetric key was created as a signature key or an exchange key.</summary>
+      <returns>One of the <see cref="T:System.Security.Cryptography.KeyNumber" /> values that describes whether an asymmetric key was created as a signature key or an exchange key.</returns>
+    </member>
+    <member name="P:System.Security.Cryptography.CspKeyContainerInfo.MachineKeyStore">
+      <summary>Gets a value indicating whether a key is from a machine key set.</summary>
+      <returns>true if the key is from the machine key set; otherwise, false.</returns>
+    </member>
+    <member name="P:System.Security.Cryptography.CspKeyContainerInfo.ProviderName">
+      <summary>Gets the provider name of a key.</summary>
+      <returns>The provider name.</returns>
+    </member>
+    <member name="P:System.Security.Cryptography.CspKeyContainerInfo.ProviderType">
+      <summary>Gets the provider type of a key.</summary>
+      <returns>The provider type. The default is 1.</returns>
+    </member>
+    <member name="P:System.Security.Cryptography.CspKeyContainerInfo.RandomlyGenerated">
+      <summary>Gets a value indicating whether a key container was randomly generated by a managed cryptography class.</summary>
+      <returns>true if the key container was randomly generated; otherwise, false.</returns>
+    </member>
+    <member name="T:System.Security.Cryptography.CspParameters">
+      <summary>Contains parameters that are passed to the cryptographic service provider (CSP) that performs cryptographic computations. This class cannot be inherited.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.CspParameters.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.CspParameters" /> class.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.CspParameters.#ctor(System.Int32)">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.CspParameters" /> class with the specified provider type code.</summary>
+      <param name="dwTypeIn">A provider type code that specifies the kind of provider to create. </param>
+    </member>
+    <member name="M:System.Security.Cryptography.CspParameters.#ctor(System.Int32,System.String)">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.CspParameters" /> class with the specified provider type code and name.</summary>
+      <param name="dwTypeIn">A provider type code that specifies the kind of provider to create.</param>
+      <param name="strProviderNameIn">A provider name. </param>
+    </member>
+    <member name="M:System.Security.Cryptography.CspParameters.#ctor(System.Int32,System.String,System.String)">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.CspParameters" /> class with the specified provider type code and name, and the specified container name.</summary>
+      <param name="dwTypeIn">The provider type code that specifies the kind of provider to create.</param>
+      <param name="strProviderNameIn">A provider name. </param>
+      <param name="strContainerNameIn">A container name. </param>
+    </member>
+    <member name="P:System.Security.Cryptography.CspParameters.Flags">
+      <summary>Represents the flags for <see cref="T:System.Security.Cryptography.CspParameters" /> that modify the behavior of the cryptographic service provider (CSP).</summary>
+      <returns>An enumeration value, or a bitwise combination of enumeration values.</returns>
+      <exception cref="T:System.ArgumentException">Value is not a valid enumeration value.</exception>
+    </member>
+    <member name="F:System.Security.Cryptography.CspParameters.KeyContainerName">
+      <summary>Represents the key container name for <see cref="T:System.Security.Cryptography.CspParameters" />.</summary>
+    </member>
+    <member name="F:System.Security.Cryptography.CspParameters.KeyNumber">
+      <summary>Specifies whether an asymmetric key is created as a signature key or an exchange key.</summary>
+    </member>
+    <member name="F:System.Security.Cryptography.CspParameters.ProviderName">
+      <summary>Represents the provider name for <see cref="T:System.Security.Cryptography.CspParameters" />.</summary>
+    </member>
+    <member name="F:System.Security.Cryptography.CspParameters.ProviderType">
+      <summary>Represents the provider type code for <see cref="T:System.Security.Cryptography.CspParameters" />.</summary>
+    </member>
+    <member name="T:System.Security.Cryptography.CspProviderFlags">
+      <summary>Specifies flags that modify the behavior of the cryptographic service providers (CSP).</summary>
+    </member>
+    <member name="F:System.Security.Cryptography.CspProviderFlags.NoFlags">
+      <summary>Do not specify any settings.</summary>
+    </member>
+    <member name="F:System.Security.Cryptography.CspProviderFlags.UseMachineKeyStore">
+      <summary>Use key information from the computer's key store.</summary>
+    </member>
+    <member name="F:System.Security.Cryptography.CspProviderFlags.UseDefaultKeyContainer">
+      <summary>Use key information from the default key container.</summary>
+    </member>
+    <member name="F:System.Security.Cryptography.CspProviderFlags.UseNonExportableKey">
+      <summary>Use key information that cannot be exported.</summary>
+    </member>
+    <member name="F:System.Security.Cryptography.CspProviderFlags.UseExistingKey">
+      <summary>Use key information from the current key.</summary>
+    </member>
+    <member name="F:System.Security.Cryptography.CspProviderFlags.UseArchivableKey">
+      <summary>Allow a key to be exported for archival or recovery.</summary>
+    </member>
+    <member name="F:System.Security.Cryptography.CspProviderFlags.UseUserProtectedKey">
+      <summary>Notify the user through a dialog box or another method when certain actions are attempting to use a key.  This flag is not compatible with the <see cref="F:System.Security.Cryptography.CspProviderFlags.NoPrompt" /> flag.</summary>
+    </member>
+    <member name="F:System.Security.Cryptography.CspProviderFlags.NoPrompt">
+      <summary>Prevent the CSP from displaying any user interface (UI) for this context.</summary>
+    </member>
+    <member name="T:System.Security.Cryptography.ICspAsymmetricAlgorithm">
+      <summary>Defines methods that allow an <see cref="T:System.Security.Cryptography.AsymmetricAlgorithm" /> class to enumerate key container information, and import and export Microsoft Cryptographic API (CAPI)–compatible key blobs.</summary>
+    </member>
+    <member name="P:System.Security.Cryptography.ICspAsymmetricAlgorithm.CspKeyContainerInfo">
+      <summary>Gets a <see cref="T:System.Security.Cryptography.CspKeyContainerInfo" /> object that describes additional information about a cryptographic key pair.</summary>
+      <returns>A <see cref="T:System.Security.Cryptography.CspKeyContainerInfo" /> object that describes additional information about a cryptographic key pair.</returns>
+    </member>
+    <member name="M:System.Security.Cryptography.ICspAsymmetricAlgorithm.ExportCspBlob(System.Boolean)">
+      <summary>[SECURITY CRITICAL] Exports a blob that contains the key information associated with an <see cref="T:System.Security.Cryptography.AsymmetricAlgorithm" /> object.  </summary>
+      <returns>A byte array that contains the key information associated with an <see cref="T:System.Security.Cryptography.AsymmetricAlgorithm" /> object.</returns>
+      <param name="includePrivateParameters">true to include the private key; otherwise, false.</param>
+    </member>
+    <member name="M:System.Security.Cryptography.ICspAsymmetricAlgorithm.ImportCspBlob(System.Byte[])">
+      <summary>[SECURITY CRITICAL] Imports a blob that represents asymmetric key information.  </summary>
+      <param name="rawData">A byte array that represents an asymmetric key blob.</param>
+    </member>
+    <member name="T:System.Security.Cryptography.KeyNumber">
+      <summary>Specifies whether to create an asymmetric signature key or an asymmetric exchange key. </summary>
+    </member>
+    <member name="F:System.Security.Cryptography.KeyNumber.Exchange">
+      <summary>An exchange key pair used to encrypt session keys so that they can be safely stored and exchanged with other users.  </summary>
+    </member>
+    <member name="F:System.Security.Cryptography.KeyNumber.Signature">
+      <summary>A signature key pair used for authenticating digitally signed messages or files.</summary>
+    </member>
+    <member name="T:System.Security.Cryptography.MaskGenerationMethod">
+      <summary>Represents the abstract class from which all mask generator algorithms must derive.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.MaskGenerationMethod.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.MaskGenerationMethod" /> class. </summary>
+    </member>
+    <member name="M:System.Security.Cryptography.MaskGenerationMethod.GenerateMask(System.Byte[],System.Int32)">
+      <summary>When overridden in a derived class, generates a mask with the specified length using the specified random seed.</summary>
+      <returns>A randomly generated mask whose length is equal to the <paramref name="cbReturn" /> parameter.</returns>
+      <param name="rgbSeed">The random seed to use to compute the mask. </param>
+      <param name="cbReturn">The length of the generated mask in bytes. </param>
+    </member>
+    <member name="T:System.Security.Cryptography.PKCS1MaskGenerationMethod">
+      <summary>Computes masks according to PKCS #1 for use by key exchange algorithms.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.PKCS1MaskGenerationMethod.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.PKCS1MaskGenerationMethod" /> class.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.PKCS1MaskGenerationMethod.GenerateMask(System.Byte[],System.Int32)">
+      <summary>Generates and returns a mask from the specified random seed of the specified length.</summary>
+      <returns>A randomly generated mask whose length is equal to the <paramref name="cbReturn" /> parameter.</returns>
+      <param name="rgbSeed">The random seed to use for computing the mask. </param>
+      <param name="cbReturn">The length of the generated mask in bytes. </param>
+    </member>
+    <member name="P:System.Security.Cryptography.PKCS1MaskGenerationMethod.HashName">
+      <summary>Gets or sets the name of the hash algorithm type to use for generating the mask.</summary>
+      <returns>The name of the type that implements the hash algorithm to use for computing the mask.</returns>
+    </member>
+    <member name="T:System.Security.Cryptography.ProtectedData">
+      <summary>Provides methods for encrypting and decrypting data. This class cannot be inherited.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.ProtectedData.Protect(System.Byte[],System.Byte[])">
+      <summary>Encrypts the data in a specified byte array and returns a byte array that contains the encrypted data.</summary>
+      <returns>A byte array representing the encrypted data.</returns>
+      <param name="userData">A byte array that contains data to encrypt. </param>
+      <param name="optionalEntropy">An optional additional byte array used to increase the complexity of the encryption, or null for no additional complexity.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="userData" /> parameter is null.</exception>
+      <exception cref="T:System.Security.Cryptography.CryptographicException">The encryption failed.</exception>
+      <exception cref="T:System.NotSupportedException">The operating system does not support this method. </exception>
+      <exception cref="T:System.OutOfMemoryException">The system ran out of memory while encrypting the data.</exception>
+    </member>
+    <member name="M:System.Security.Cryptography.ProtectedData.Unprotect(System.Byte[],System.Byte[])">
+      <summary>Decrypts the data in a specified byte array and returns a byte array that contains the decrypted data.</summary>
+      <returns>A byte array representing the decrypted data.</returns>
+      <param name="encryptedData">A byte array containing data encrypted using the <see cref="M:System.Security.Cryptography.ProtectedData.Protect(System.Byte[],System.Byte[])" /> method. </param>
+      <param name="optionalEntropy">An optional additional byte array that was used to encrypt the data, or null if the additional byte array was not used.</param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="encryptedData" /> parameter is null.</exception>
+      <exception cref="T:System.Security.Cryptography.CryptographicException">The decryption failed.</exception>
+      <exception cref="T:System.NotSupportedException">The operating system does not support this method. </exception>
+      <exception cref="T:System.OutOfMemoryException">Out of memory.</exception>
+    </member>
+    <member name="T:System.Security.Cryptography.RSA">
+      <summary>Represents the base class from which all implementations of the <see cref="T:System.Security.Cryptography.RSA" /> algorithm inherit.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.RSA.#ctor">
+      <summary>Initializes a new instance of <see cref="T:System.Security.Cryptography.RSA" />.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.RSA.Create">
+      <summary>Creates an instance of the default implementation of the <see cref="T:System.Security.Cryptography.RSA" /> algorithm.</summary>
+      <returns>A new instance of the default implementation of <see cref="T:System.Security.Cryptography.RSA" />.</returns>
+    </member>
+    <member name="M:System.Security.Cryptography.RSA.Create(System.String)">
+      <summary>Creates an instance of the specified implementation of <see cref="T:System.Security.Cryptography.RSA" />.</summary>
+      <returns>A new instance of the specified implementation of <see cref="T:System.Security.Cryptography.RSA" />.</returns>
+      <param name="algName">The name of the implementation of <see cref="T:System.Security.Cryptography.RSA" /> to use. </param>
+    </member>
+    <member name="M:System.Security.Cryptography.RSA.DecryptValue(System.Byte[])">
+      <summary>When overridden in a derived class, decrypts the input data using the private key.</summary>
+      <returns>The resulting decryption of the <paramref name="rgb" /> parameter in plain text.</returns>
+      <param name="rgb">The cipher text to be decrypted. </param>
+    </member>
+    <member name="M:System.Security.Cryptography.RSA.EncryptValue(System.Byte[])">
+      <summary>When overridden in a derived class, encrypts the input data using the public key.</summary>
+      <returns>The resulting encryption of the <paramref name="rgb" /> parameter as cipher text.</returns>
+      <param name="rgb">The plain text to be encrypted. </param>
+    </member>
+    <member name="M:System.Security.Cryptography.RSA.ExportParameters(System.Boolean)">
+      <summary>When overridden in a derived class, exports the <see cref="T:System.Security.Cryptography.RSAParameters" />.</summary>
+      <returns>The RSA parameters.</returns>
+      <param name="includePrivateParameters">true to include private parameters; otherwise, false. </param>
+    </member>
+    <member name="M:System.Security.Cryptography.RSA.FromXmlString(System.String)">
+      <summary>Initializes an <see cref="T:System.Security.Cryptography.RSA" /> object from the key information from an XML string.</summary>
+      <param name="xmlString">The XML string containing <see cref="T:System.Security.Cryptography.RSA" /> key information. </param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="xmlString" /> parameter is null. </exception>
+      <exception cref="T:System.Security.Cryptography.CryptographicException">The format of the <paramref name="xmlString" /> parameter is not valid. </exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSA.ImportParameters(System.Security.Cryptography.RSAParameters)">
+      <summary>When overridden in a derived class, imports the specified <see cref="T:System.Security.Cryptography.RSAParameters" />.</summary>
+      <param name="parameters">The parameters for <see cref="T:System.Security.Cryptography.RSA" />. </param>
+    </member>
+    <member name="M:System.Security.Cryptography.RSA.ToXmlString(System.Boolean)">
+      <summary>Creates and returns an XML string containing the key of the current <see cref="T:System.Security.Cryptography.RSA" /> object.</summary>
+      <returns>An XML string containing the key of the current <see cref="T:System.Security.Cryptography.RSA" /> object.</returns>
+      <param name="includePrivateParameters">true to include a public and private RSA key; false to include only the public key. </param>
+    </member>
+    <member name="T:System.Security.Cryptography.RSACryptoServiceProvider">
+      <summary>Performs asymmetric encryption and decryption using the implementation of the <see cref="T:System.Security.Cryptography.RSA" /> algorithm provided by the cryptographic service provider (CSP). This class cannot be inherited.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.RSACryptoServiceProvider.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.RSACryptoServiceProvider" /> class using the default key.</summary>
+      <exception cref="T:System.Security.Cryptography.CryptographicException">The cryptographic service provider (CSP) cannot be acquired. </exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSACryptoServiceProvider.#ctor(System.Int32)">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.RSACryptoServiceProvider" /> class with the specified key size.</summary>
+      <exception cref="T:System.Security.Cryptography.CryptographicException">The cryptographic service provider (CSP) cannot be acquired. </exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSACryptoServiceProvider.#ctor(System.Int32,System.Security.Cryptography.CspParameters)">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.RSACryptoServiceProvider" /> class with the specified key size and parameters.</summary>
+      <param name="parameters">The parameters to be passed to the cryptographic service provider (CSP). </param>
+      <exception cref="T:System.Security.Cryptography.CryptographicException">The CSP cannot be acquired.-or- The key cannot be created. </exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSACryptoServiceProvider.#ctor(System.Security.Cryptography.CspParameters)">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.RSACryptoServiceProvider" /> class with the specified parameters.</summary>
+      <param name="parameters">The parameters to be passed to the cryptographic service provider (CSP). </param>
+      <exception cref="T:System.Security.Cryptography.CryptographicException">The CSP cannot be acquired. </exception>
+    </member>
+    <member name="P:System.Security.Cryptography.RSACryptoServiceProvider.CspKeyContainerInfo">
+      <summary>Gets a <see cref="T:System.Security.Cryptography.CspKeyContainerInfo" /> object that describes additional information about a cryptographic key pair. </summary>
+      <returns>A <see cref="T:System.Security.Cryptography.CspKeyContainerInfo" /> object that describes additional information about a cryptographic key pair.</returns>
+    </member>
+    <member name="M:System.Security.Cryptography.RSACryptoServiceProvider.Decrypt(System.Byte[],System.Boolean)">
+      <summary>Decrypts data with the <see cref="T:System.Security.Cryptography.RSA" /> algorithm.</summary>
+      <returns>The decrypted data, which is the original plain text before encryption.</returns>
+      <param name="rgb">The data to be decrypted. </param>
+      <param name="fOAEP">true to perform direct <see cref="T:System.Security.Cryptography.RSA" /> decryption using OAEP padding; otherwise, false to use PKCS#1 v1.5 padding. </param>
+      <exception cref="T:System.Security.Cryptography.CryptographicException">The cryptographic service provider (CSP) cannot be acquired.-or- The <paramref name="fOAEP" /> parameter is true and the length of the <paramref name="rgb" /> parameter is greater than <see cref="P:System.Security.Cryptography.RSACryptoServiceProvider.KeySize" />.-or- The <paramref name="fOAEP" /> parameter is true and OAEP is not supported. </exception>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="rgb " />is null.</exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSACryptoServiceProvider.DecryptValue(System.Byte[])">
+      <summary>This method is not supported in the current version.</summary>
+      <returns>The decrypted data, which is the original plain text before encryption.</returns>
+      <param name="rgb">The data to be decrypted. </param>
+      <exception cref="T:System.NotSupportedException">This method is not supported in the current version. </exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSACryptoServiceProvider.Encrypt(System.Byte[],System.Boolean)">
+      <summary>Encrypts data with the <see cref="T:System.Security.Cryptography.RSA" /> algorithm.</summary>
+      <returns>The encrypted data.</returns>
+      <param name="rgb">The data to be encrypted. </param>
+      <param name="fOAEP">true to perform direct <see cref="T:System.Security.Cryptography.RSA" /> encryption using OAEP padding; otherwise, false to use PKCS#1 v1.5 padding. </param>
+      <exception cref="T:System.Security.Cryptography.CryptographicException">The cryptographic service provider (CSP) cannot be acquired.-or- The length of the <paramref name="rgb" /> parameter is greater than the maximum allowed length.-or- The <paramref name="fOAEP" /> parameter is true and OAEP padding is not supported. </exception>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="rgb " />is null.</exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSACryptoServiceProvider.EncryptValue(System.Byte[])">
+      <summary>This method is not supported in the current version.</summary>
+      <returns>The encrypted data.</returns>
+      <param name="rgb">The data to be encrypted. </param>
+      <exception cref="T:System.NotSupportedException">This method is not supported in the current version. </exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSACryptoServiceProvider.ExportCspBlob(System.Boolean)">
+      <summary>[SECURITY CRITICAL] Exports a blob containing the key information associated with an <see cref="T:System.Security.Cryptography.RSACryptoServiceProvider" /> object.  </summary>
+      <returns>A byte array containing the key information associated with an <see cref="T:System.Security.Cryptography.RSACryptoServiceProvider" /> object.</returns>
+      <param name="includePrivateParameters">true to include the private key; otherwise, false.</param>
+    </member>
+    <member name="M:System.Security.Cryptography.RSACryptoServiceProvider.ExportParameters(System.Boolean)">
+      <summary>Exports the <see cref="T:System.Security.Cryptography.RSAParameters" />.</summary>
+      <returns>The parameters for <see cref="T:System.Security.Cryptography.RSA" />.</returns>
+      <param name="includePrivateParameters">true to include private parameters; otherwise, false. </param>
+      <exception cref="T:System.Security.Cryptography.CryptographicException">The key cannot be exported. </exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSACryptoServiceProvider.ImportCspBlob(System.Byte[])">
+      <summary>[SECURITY CRITICAL] Imports a blob that represents RSA key information.  </summary>
+      <param name="keyBlob">A byte array that represents an RSA key blob.</param>
+    </member>
+    <member name="M:System.Security.Cryptography.RSACryptoServiceProvider.ImportParameters(System.Security.Cryptography.RSAParameters)">
+      <summary>Imports the specified <see cref="T:System.Security.Cryptography.RSAParameters" />.</summary>
+      <param name="parameters">The parameters for <see cref="T:System.Security.Cryptography.RSA" />. </param>
+      <exception cref="T:System.Security.Cryptography.CryptographicException">The cryptographic service provider (CSP) cannot be acquired.-or- The <paramref name="parameters" /> parameter has missing fields. </exception>
+    </member>
+    <member name="P:System.Security.Cryptography.RSACryptoServiceProvider.KeyExchangeAlgorithm">
+      <summary>Gets the name of the key exchange algorithm available with this implementation of <see cref="T:System.Security.Cryptography.RSA" />.</summary>
+      <returns>The name of the key exchange algorithm if it exists; otherwise, null.</returns>
+    </member>
+    <member name="P:System.Security.Cryptography.RSACryptoServiceProvider.KeySize">
+      <summary>Gets the size of the current key.</summary>
+      <returns>The size of the key in bits.</returns>
+    </member>
+    <member name="P:System.Security.Cryptography.RSACryptoServiceProvider.PersistKeyInCsp">
+      <summary>Gets or sets a value indicating whether the key should be persisted in the cryptographic service provider (CSP).</summary>
+      <returns>true if the key should be persisted in the CSP; otherwise, false.</returns>
+    </member>
+    <member name="P:System.Security.Cryptography.RSACryptoServiceProvider.PublicOnly">
+      <summary>Gets a value that indicates whether the <see cref="T:System.Security.Cryptography.RSACryptoServiceProvider" /> object contains only a public key.</summary>
+      <returns>true if the <see cref="T:System.Security.Cryptography.RSACryptoServiceProvider" /> object contains only a public key; otherwise, false.</returns>
+    </member>
+    <member name="P:System.Security.Cryptography.RSACryptoServiceProvider.SignatureAlgorithm">
+      <summary>Gets the name of the signature algorithm available with this implementation of <see cref="T:System.Security.Cryptography.RSA" />.</summary>
+      <returns>The name of the signature algorithm.</returns>
+    </member>
+    <member name="M:System.Security.Cryptography.RSACryptoServiceProvider.SignData(System.Byte[],System.Int32,System.Int32,System.Object)">
+      <summary>Computes the hash value of a subset of the specified byte array using the specified hash algorithm, and signs the resulting hash value.</summary>
+      <returns>The <see cref="T:System.Security.Cryptography.RSA" /> signature for the specified data.</returns>
+      <param name="buffer">The input data for which to compute the hash. </param>
+      <param name="offset">The offset into the array from which to begin using data. </param>
+      <param name="count">The number of bytes in the array to use as data. </param>
+      <param name="halg">The hash algorithm to use to create the hash value. </param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="halg" /> parameter is null. </exception>
+      <exception cref="T:System.ArgumentException">The <paramref name="halg" /> parameter is not a valid type. </exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSACryptoServiceProvider.SignData(System.Byte[],System.Object)">
+      <summary>Computes the hash value of the specified byte array using the specified hash algorithm, and signs the resulting hash value.</summary>
+      <returns>The <see cref="T:System.Security.Cryptography.RSA" /> signature for the specified data.</returns>
+      <param name="buffer">The input data for which to compute the hash. </param>
+      <param name="halg">The hash algorithm to use to create the hash value. </param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="halg" /> parameter is null. </exception>
+      <exception cref="T:System.ArgumentException">The <paramref name="halg" /> parameter is not a valid type. </exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSACryptoServiceProvider.SignData(System.IO.Stream,System.Object)">
+      <summary>Computes the hash value of the specified input stream using the specified hash algorithm, and signs the resulting hash value.</summary>
+      <returns>The <see cref="T:System.Security.Cryptography.RSA" /> signature for the specified data.</returns>
+      <param name="inputStream">The input data for which to compute the hash. </param>
+      <param name="halg">The hash algorithm to use to create the hash value. </param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="halg" /> parameter is null. </exception>
+      <exception cref="T:System.ArgumentException">The <paramref name="halg" /> parameter is not a valid type. </exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSACryptoServiceProvider.SignHash(System.Byte[],System.String)">
+      <summary>Computes the signature for the specified hash value by encrypting it with the private key.</summary>
+      <returns>The <see cref="T:System.Security.Cryptography.RSA" /> signature for the specified hash value.</returns>
+      <param name="rgbHash">The hash value of the data to be signed. </param>
+      <param name="str">The hash algorithm identifier (OID) used to create the hash value of the data. </param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="rgbHash" /> parameter is null. </exception>
+      <exception cref="T:System.Security.Cryptography.CryptographicException">The cryptographic service provider (CSP) cannot be acquired.-or- There is no private key. </exception>
+    </member>
+    <member name="P:System.Security.Cryptography.RSACryptoServiceProvider.UseMachineKeyStore">
+      <summary>Gets or sets a value indicating whether the key should be persisted in the computer's key store instead of the user profile store.</summary>
+      <returns>true if the key should be persisted in the computer key store; otherwise, false.</returns>
+    </member>
+    <member name="M:System.Security.Cryptography.RSACryptoServiceProvider.VerifyData(System.Byte[],System.Object,System.Byte[])">
+      <summary>Verifies that a digital signature is valid by determining the hash value in the signature using the provided public key and comparing it to the hash value of the provided data.</summary>
+      <returns>true if the signature is valid; otherwise, false.</returns>
+      <param name="buffer">The data that was signed. </param>
+      <param name="halg">The name of the hash algorithm used to create the hash value of the data. </param>
+      <param name="signature">The signature data to be verified. </param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="halg" /> parameter is null. </exception>
+      <exception cref="T:System.ArgumentException">The <paramref name="halg" /> parameter is not a valid type. </exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSACryptoServiceProvider.VerifyHash(System.Byte[],System.String,System.Byte[])">
+      <summary>Verifies that a digital signature is valid by determining the hash value in the signature using the provided public key and comparing it to the provided hash value.</summary>
+      <returns>true if the signature is valid; otherwise, false.</returns>
+      <param name="rgbHash">The hash value of the signed data. </param>
+      <param name="str">The hash algorithm identifier (OID) used to create the hash value of the data. </param>
+      <param name="rgbSignature">The signature data to be verified. </param>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="rgbHash" /> parameter is null.-or- The <paramref name="rgbSignature" /> parameter is null. </exception>
+      <exception cref="T:System.Security.Cryptography.CryptographicException">The cryptographic service provider (CSP) cannot be acquired.-or- The signature cannot be verified. </exception>
+    </member>
+    <member name="T:System.Security.Cryptography.RSAOAEPKeyExchangeDeformatter">
+      <summary>Decrypts Optimal Asymmetric Encryption Padding (OAEP) key exchange data.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAOAEPKeyExchangeDeformatter.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.RSAOAEPKeyExchangeDeformatter" /> class.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAOAEPKeyExchangeDeformatter.#ctor(System.Security.Cryptography.AsymmetricAlgorithm)">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.RSAOAEPKeyExchangeDeformatter" /> class with the specified key.</summary>
+      <param name="key">The instance of the <see cref="T:System.Security.Cryptography.RSA" /> algorithm that holds the private key. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="key " />is null.</exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAOAEPKeyExchangeDeformatter.DecryptKeyExchange(System.Byte[])">
+      <summary>Extracts secret information from the encrypted key exchange data.</summary>
+      <returns>The secret information derived from the key exchange data.</returns>
+      <param name="rgbData">The key exchange data within which the secret information is hidden. </param>
+      <exception cref="T:System.Security.Cryptography.CryptographicException">The key exchange data verification has failed. </exception>
+      <exception cref="T:System.Security.Cryptography.CryptographicUnexpectedOperationException">The key is missing.</exception>
+    </member>
+    <member name="P:System.Security.Cryptography.RSAOAEPKeyExchangeDeformatter.Parameters">
+      <summary>Gets the parameters for the Optimal Asymmetric Encryption Padding (OAEP) key exchange.</summary>
+      <returns>An XML string containing the parameters of the OAEP key exchange operation.</returns>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAOAEPKeyExchangeDeformatter.SetKey(System.Security.Cryptography.AsymmetricAlgorithm)">
+      <summary>Sets the private key to use for decrypting the secret information.</summary>
+      <param name="key">The instance of the <see cref="T:System.Security.Cryptography.RSA" /> algorithm that holds the private key. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="key" /> is null.</exception>
+    </member>
+    <member name="T:System.Security.Cryptography.RSAOAEPKeyExchangeFormatter">
+      <summary>Creates Optimal Asymmetric Encryption Padding (OAEP) key exchange data using <see cref="T:System.Security.Cryptography.RSA" />.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAOAEPKeyExchangeFormatter.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.RSAOAEPKeyExchangeFormatter" /> class.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAOAEPKeyExchangeFormatter.#ctor(System.Security.Cryptography.AsymmetricAlgorithm)">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.RSAOAEPKeyExchangeFormatter" /> class with the specified key.</summary>
+      <param name="key">The instance of the <see cref="T:System.Security.Cryptography.RSA" /> algorithm that holds the public key. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="key " />is null.</exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAOAEPKeyExchangeFormatter.CreateKeyExchange(System.Byte[])">
+      <summary>Creates the encrypted key exchange data from the specified input data.</summary>
+      <returns>The encrypted key exchange data to be sent to the intended recipient.</returns>
+      <param name="rgbData">The secret information to be passed in the key exchange. </param>
+      <exception cref="T:System.Security.Cryptography.CryptographicUnexpectedOperationException">The key is missing.</exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAOAEPKeyExchangeFormatter.CreateKeyExchange(System.Byte[],System.Type)">
+      <summary>Creates the encrypted key exchange data from the specified input data.</summary>
+      <returns>The encrypted key exchange data to be sent to the intended recipient.</returns>
+      <param name="rgbData">The secret information to be passed in the key exchange. </param>
+      <param name="symAlgType">This parameter is not used in the current version. </param>
+    </member>
+    <member name="P:System.Security.Cryptography.RSAOAEPKeyExchangeFormatter.Parameter">
+      <summary>Gets or sets the parameter used to create padding in the key exchange creation process.</summary>
+      <returns>The parameter value.</returns>
+    </member>
+    <member name="P:System.Security.Cryptography.RSAOAEPKeyExchangeFormatter.Parameters">
+      <summary>Gets the parameters for the Optimal Asymmetric Encryption Padding (OAEP) key exchange.</summary>
+      <returns>An XML string containing the parameters of the OAEP key exchange operation.</returns>
+    </member>
+    <member name="P:System.Security.Cryptography.RSAOAEPKeyExchangeFormatter.Rng">
+      <summary>Gets or sets the random number generator algorithm to use in the creation of the key exchange.</summary>
+      <returns>The instance of a random number generator algorithm to use.</returns>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAOAEPKeyExchangeFormatter.SetKey(System.Security.Cryptography.AsymmetricAlgorithm)">
+      <summary>Sets the public key to use for encrypting the key exchange data.</summary>
+      <param name="key">The instance of the <see cref="T:System.Security.Cryptography.RSA" /> algorithm that holds the public key. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="key " />is null.</exception>
+    </member>
+    <member name="T:System.Security.Cryptography.RSAParameters">
+      <summary>Represents the standard parameters for the <see cref="T:System.Security.Cryptography.RSA" /> algorithm.</summary>
+    </member>
+    <member name="F:System.Security.Cryptography.RSAParameters.D">
+      <summary>Represents the D parameter for the <see cref="T:System.Security.Cryptography.RSA" /> algorithm.</summary>
+    </member>
+    <member name="F:System.Security.Cryptography.RSAParameters.DP">
+      <summary>Represents the DP parameter for the <see cref="T:System.Security.Cryptography.RSA" /> algorithm.</summary>
+    </member>
+    <member name="F:System.Security.Cryptography.RSAParameters.DQ">
+      <summary>Represents the DQ parameter for the <see cref="T:System.Security.Cryptography.RSA" /> algorithm.</summary>
+    </member>
+    <member name="F:System.Security.Cryptography.RSAParameters.Exponent">
+      <summary>Represents the Exponent parameter for the <see cref="T:System.Security.Cryptography.RSA" /> algorithm.</summary>
+    </member>
+    <member name="F:System.Security.Cryptography.RSAParameters.InverseQ">
+      <summary>Represents the InverseQ parameter for the <see cref="T:System.Security.Cryptography.RSA" /> algorithm.</summary>
+    </member>
+    <member name="F:System.Security.Cryptography.RSAParameters.Modulus">
+      <summary>Represents the Modulus parameter for the <see cref="T:System.Security.Cryptography.RSA" /> algorithm.</summary>
+    </member>
+    <member name="F:System.Security.Cryptography.RSAParameters.P">
+      <summary>Represents the P parameter for the <see cref="T:System.Security.Cryptography.RSA" /> algorithm.</summary>
+    </member>
+    <member name="F:System.Security.Cryptography.RSAParameters.Q">
+      <summary>Represents the Q parameter for the <see cref="T:System.Security.Cryptography.RSA" /> algorithm.</summary>
+    </member>
+    <member name="T:System.Security.Cryptography.RSAPKCS1KeyExchangeDeformatter">
+      <summary>Decrypts the PKCS #1 key exchange data.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAPKCS1KeyExchangeDeformatter.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.RSAPKCS1KeyExchangeDeformatter" /> class.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAPKCS1KeyExchangeDeformatter.#ctor(System.Security.Cryptography.AsymmetricAlgorithm)">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.RSAPKCS1KeyExchangeDeformatter" /> class with the specified key.</summary>
+      <param name="key">The instance of the <see cref="T:System.Security.Cryptography.RSA" /> algorithm that holds the private key. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="key" /> is null.</exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAPKCS1KeyExchangeDeformatter.DecryptKeyExchange(System.Byte[])">
+      <summary>Extracts secret information from the encrypted key exchange data.</summary>
+      <returns>The secret information derived from the key exchange data.</returns>
+      <param name="rgbIn">The key exchange data within which the secret information is hidden. </param>
+      <exception cref="T:System.Security.Cryptography.CryptographicUnexpectedOperationException">The key is missing.</exception>
+    </member>
+    <member name="P:System.Security.Cryptography.RSAPKCS1KeyExchangeDeformatter.Parameters">
+      <summary>Gets the parameters for the PKCS #1 key exchange.</summary>
+      <returns>An XML string containing the parameters of the PKCS #1 key exchange operation.</returns>
+    </member>
+    <member name="P:System.Security.Cryptography.RSAPKCS1KeyExchangeDeformatter.RNG">
+      <summary>Gets or sets the random number generator algorithm to use in the creation of the key exchange.</summary>
+      <returns>The instance of a random number generator algorithm to use.</returns>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAPKCS1KeyExchangeDeformatter.SetKey(System.Security.Cryptography.AsymmetricAlgorithm)">
+      <summary>Sets the private key to use for decrypting the secret information.</summary>
+      <param name="key">The instance of the <see cref="T:System.Security.Cryptography.RSA" /> algorithm that holds the private key. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="key" /> is null.</exception>
+    </member>
+    <member name="T:System.Security.Cryptography.RSAPKCS1KeyExchangeFormatter">
+      <summary>Creates the PKCS#1 key exchange data using <see cref="T:System.Security.Cryptography.RSA" />.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAPKCS1KeyExchangeFormatter.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.RSAPKCS1KeyExchangeFormatter" /> class.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAPKCS1KeyExchangeFormatter.#ctor(System.Security.Cryptography.AsymmetricAlgorithm)">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.RSAPKCS1KeyExchangeFormatter" /> class with the specified key.</summary>
+      <param name="key">The instance of the <see cref="T:System.Security.Cryptography.RSA" /> algorithm that holds the public key. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="key " />is null.</exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAPKCS1KeyExchangeFormatter.CreateKeyExchange(System.Byte[])">
+      <summary>Creates the encrypted key exchange data from the specified input data.</summary>
+      <returns>The encrypted key exchange data to be sent to the intended recipient.</returns>
+      <param name="rgbData">The secret information to be passed in the key exchange. </param>
+      <exception cref="T:System.Security.Cryptography.CryptographicException">
+        <paramref name="rgbData " />is too big.</exception>
+      <exception cref="T:System.Security.Cryptography.CryptographicUnexpectedOperationException">The key is null.</exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAPKCS1KeyExchangeFormatter.CreateKeyExchange(System.Byte[],System.Type)">
+      <summary>Creates the encrypted key exchange data from the specified input data.</summary>
+      <returns>The encrypted key exchange data to be sent to the intended recipient.</returns>
+      <param name="rgbData">The secret information to be passed in the key exchange. </param>
+      <param name="symAlgType">This parameter is not used in the current version. </param>
+    </member>
+    <member name="P:System.Security.Cryptography.RSAPKCS1KeyExchangeFormatter.Parameters">
+      <summary>Gets the parameters for the PKCS #1 key exchange.</summary>
+      <returns>An XML string containing the parameters of the PKCS #1 key exchange operation.</returns>
+    </member>
+    <member name="P:System.Security.Cryptography.RSAPKCS1KeyExchangeFormatter.Rng">
+      <summary>Gets or sets the random number generator algorithm to use in the creation of the key exchange.</summary>
+      <returns>The instance of a random number generator algorithm to use.</returns>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAPKCS1KeyExchangeFormatter.SetKey(System.Security.Cryptography.AsymmetricAlgorithm)">
+      <summary>Sets the public key to use for encrypting the key exchange data.</summary>
+      <param name="key">The instance of the <see cref="T:System.Security.Cryptography.RSA" /> algorithm that holds the public key. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="key " />is null.</exception>
+    </member>
+    <member name="T:System.Security.Cryptography.RSAPKCS1SignatureDeformatter">
+      <summary>Verifies an <see cref="T:System.Security.Cryptography.RSA" /> PKCS #1 version 1.5 signature.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAPKCS1SignatureDeformatter.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.RSAPKCS1SignatureDeformatter" /> class.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAPKCS1SignatureDeformatter.#ctor(System.Security.Cryptography.AsymmetricAlgorithm)">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.RSAPKCS1SignatureDeformatter" /> class with the specified key.</summary>
+      <param name="key">The instance of <see cref="T:System.Security.Cryptography.RSA" /> that holds the public key. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="key " />is null.</exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAPKCS1SignatureDeformatter.SetHashAlgorithm(System.String)">
+      <summary>Sets the hash algorithm to use for verifying the signature.</summary>
+      <param name="strName">The name of the hash algorithm to use for verifying the signature. </param>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAPKCS1SignatureDeformatter.SetKey(System.Security.Cryptography.AsymmetricAlgorithm)">
+      <summary>Sets the public key to use for verifying the signature.</summary>
+      <param name="key">The instance of <see cref="T:System.Security.Cryptography.RSA" /> that holds the public key. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="key " />is null.</exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAPKCS1SignatureDeformatter.VerifySignature(System.Byte[],System.Byte[])">
+      <summary>Verifies the <see cref="T:System.Security.Cryptography.RSA" /> PKCS#1 signature for the specified data.</summary>
+      <returns>true if <paramref name="rgbSignature" /> matches the signature computed using the specified hash algorithm and key on <paramref name="rgbHash" />; otherwise, false.</returns>
+      <param name="rgbHash">The data signed with <paramref name="rgbSignature" />. </param>
+      <param name="rgbSignature">The signature to be verified for <paramref name="rgbHash" />. </param>
+      <exception cref="T:System.Security.Cryptography.CryptographicUnexpectedOperationException">The key is null.-or- The hash algorithm is null. </exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="rgbHash" /> parameter is null.-or- The <paramref name="rgbSignature" /> parameter is null. </exception>
+    </member>
+    <member name="T:System.Security.Cryptography.RSAPKCS1SignatureFormatter">
+      <summary>Creates an <see cref="T:System.Security.Cryptography.RSA" /> PKCS #1 version 1.5 signature.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAPKCS1SignatureFormatter.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.RSAPKCS1SignatureFormatter" /> class.</summary>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAPKCS1SignatureFormatter.#ctor(System.Security.Cryptography.AsymmetricAlgorithm)">
+      <summary>Initializes a new instance of the <see cref="T:System.Security.Cryptography.RSAPKCS1SignatureFormatter" /> class with the specified key.</summary>
+      <param name="key">The instance of the <see cref="T:System.Security.Cryptography.RSA" /> algorithm that holds the private key. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="key" /> is null.</exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAPKCS1SignatureFormatter.CreateSignature(System.Byte[])">
+      <summary>Creates the <see cref="T:System.Security.Cryptography.RSA" /> PKCS #1 signature for the specified data.</summary>
+      <returns>The digital signature for <paramref name="rgbHash" />.</returns>
+      <param name="rgbHash">The data to be signed. </param>
+      <exception cref="T:System.Security.Cryptography.CryptographicUnexpectedOperationException">The key is null.-or- The hash algorithm is null. </exception>
+      <exception cref="T:System.ArgumentNullException">The <paramref name="rgbHash" /> parameter is null. </exception>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAPKCS1SignatureFormatter.SetHashAlgorithm(System.String)">
+      <summary>Sets the hash algorithm to use for creating the signature.</summary>
+      <param name="strName">The name of the hash algorithm to use for creating the signature. </param>
+    </member>
+    <member name="M:System.Security.Cryptography.RSAPKCS1SignatureFormatter.SetKey(System.Security.Cryptography.AsymmetricAlgorithm)">
+      <summary>Sets the private key to use for creating the signature.</summary>
+      <param name="key">The instance of the <see cref="T:System.Security.Cryptography.RSA" /> algorithm that holds the private key. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="key" /> is null.</exception>
+    </member>
+    <member name="T:System.Threading.Mutex">
+      <summary>A synchronization primitive that can also be used for interprocess synchronization. </summary>
+    </member>
+    <member name="M:System.Threading.Mutex.#ctor(System.Boolean,System.String)">
+      <summary>Initializes a new instance of the <see cref="T:System.Threading.Mutex" /> class with a Boolean value that indicates whether the calling thread should have initial ownership of the mutex, and a string that is the name of the mutex.</summary>
+      <param name="initiallyOwned">true to give the calling thread initial ownership of the named system mutex if the named system mutex is created as a result of this call; otherwise, false. </param>
+      <param name="name">The name of the <see cref="T:System.Threading.Mutex" />. If the value is null, the <see cref="T:System.Threading.Mutex" /> is unnamed. </param>
+      <exception cref="T:System.UnauthorizedAccessException">The named mutex exists and has access control security, but the user does not have <see cref="F:System.Security.AccessControl.MutexRights.FullControl" />.</exception>
+      <exception cref="T:System.ApplicationException">The named mutex cannot be created, perhaps because a wait handle of a different type has the same name.</exception>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="name" /> is longer than 260 characters.</exception>
+    </member>
+    <member name="M:System.Threading.Mutex.ReleaseMutex">
+      <summary>Releases the <see cref="T:System.Threading.Mutex" /> once.</summary>
+      <exception cref="T:System.ApplicationException">The calling thread does not own the mutex. </exception>
+    </member>
+    <member name="M:System.Threading.Mutex.WaitOne">
+      <summary>Blocks the current thread until the current <see cref="T:System.Threading.Mutex" /> receives a signal.</summary>
+      <returns>true if the current instance receives a signal. If the current instance is never signaled, <see cref="M:System.Threading.Mutex.WaitOne" /> never returns.</returns>
+    </member>
+    <member name="M:System.Threading.Mutex.WaitOne(System.Int32)">
+      <summary>Blocks the calling thread for the specified time until the current <see cref="T:System.Threading.WaitHandle" /> receives a signal.</summary>
+      <returns>true if the current instance receives a signal. If the current instance is never signaled, <see cref="M:System.Threading.Mutex.WaitOne" /> never returns.</returns>
+      <param name="millisecondsTimeout">The time to block the current thread.</param>
+    </member>
+  </members>
+</doc>

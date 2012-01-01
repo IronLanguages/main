@@ -225,7 +225,11 @@ namespace IronRuby.Runtime.Calls {
                                 ArrayUtils.ToArray(overload.Parameters, (pi) => pi.ParameterType),
                                 genericArguments,
                                 underlyingType,
+#if FEATURE_REFEMIT // TODO: should we always prefix with #base# ???
                                 ClsTypeEmitter.BaseMethodPrefix + overload.Name,
+#else
+                                overload.Name,
+#endif
                                 BindingFlags.Public | bindingFlags
                             );
 

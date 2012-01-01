@@ -80,7 +80,7 @@ namespace IronRuby.Runtime.Calls {
             return result;
         }
 
-#if DEBUG && !SILVERLIGHT && !WIN8 && !ANDROID
+#if DEBUG && !CLR2 && !SILVERLIGHT && !WIN8 && !ANDROID && !WP75
         // ExpressionWriter might call ToString on a live object that might dynamically invoke a method.
         // We need to prevent recursion in such case.
         [ThreadStatic]
@@ -88,9 +88,7 @@ namespace IronRuby.Runtime.Calls {
 
         private static int _precompiledRuleCounter;
         private static int _ruleCounter;
-#if !CLR2
         private static MethodInfo _dumpViewMethod; 
-#endif
 #endif
 
         [Conditional("DEBUG")]
@@ -109,7 +107,7 @@ namespace IronRuby.Runtime.Calls {
 
         [Conditional("DEBUG")]
         internal static void DumpRule(CallSiteBinder/*!*/ binder, BindingRestrictions/*!*/ restrictions, Expression/*!*/ expr) {
-#if DEBUG && FEATURE_FULL_CONSOLE
+#if DEBUG && FEATURE_FULL_CONSOLE && !CLR2
             if (RubyOptions.ShowRules) {
                 var oldColor = Console.ForegroundColor;
                 try {
@@ -119,9 +117,7 @@ namespace IronRuby.Runtime.Calls {
                     if (!_DumpingExpression) {
                         var d = (restrictions != BindingRestrictions.Empty) ? Expression.IfThen(restrictions.ToExpression(), expr) : expr;
                         _DumpingExpression = true;
-#if CLR2
                         d.DumpExpression(Console.Out);
-#else
                         try {
                             if (_dumpViewMethod == null) {
                                 _dumpViewMethod = typeof(Expression).GetMethod("get_DebugView", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -131,7 +127,6 @@ namespace IronRuby.Runtime.Calls {
                         } catch {
                             // nop
                         }
-#endif
                     }
                 } finally {
                     _DumpingExpression = false;

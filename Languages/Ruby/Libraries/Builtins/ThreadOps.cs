@@ -391,7 +391,7 @@ namespace IronRuby.Builtins {
             return info.GetKeys();
         }
 
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !WP75
         #region priority, priority=
         [RubyMethod("priority", BuildConfig = "!SILVERLIGHT")]
         public static object Priority(Thread/*!*/ self) {
@@ -710,7 +710,7 @@ namespace IronRuby.Builtins {
                     // we will get that here instead
                     Utils.Log(String.Format("Thread {0} exited.", info.Thread.ManagedThreadId), "THREAD");
                     info.Result = false;
-#if !SILVERLIGHT
+#if FEATURE_EXCEPTION_STATE
                     Thread.ResetAbort();
 #endif
                 } else {

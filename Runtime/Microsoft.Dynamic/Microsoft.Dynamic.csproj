@@ -127,6 +127,7 @@
     <Compile Include="Debugging\TracePipeline\ITracePipeline.cs" />
     <Compile Include="Debugging\TracePipeline\TracePipeline.cs" />
     <Compile Include="Debugging\VariableInfo.cs" />
+    <Compile Include="Generation\SymbolGuids.cs" />
     <Compile Include="Utils\ThreadingUtils.cs" />
     <Compile Include="Utils\TypeMemberCache.cs" />
     <Compile Include="Xaml\DynamicXamlReader.cs" />
@@ -438,7 +439,7 @@
     <Reference Include="System.Xaml" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.Scripting.Core\Microsoft.Scripting.Core.csproj" Condition="'$(TargetFrameworkVersion)' == 'v3.5'">
+    <ProjectReference Include="..\Microsoft.Scripting.Core\Microsoft.Scripting.Core.csproj" Condition="'$(FeatureCoreDlr)' != 'true'">
       <Project>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</Project>
       <Name>Microsoft.Scripting.Core</Name>
       <Private>False</Private>

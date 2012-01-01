@@ -38,6 +38,7 @@ namespace System.Runtime.CompilerServices {
     /// Generates debug information for lambdas in an expression tree.
     /// </summary>
     public abstract class DebugInfoGenerator {
+#if FEATURE_PDBEMIT
         /// <summary>
         /// Creates PDB symbol generator.
         /// </summary>
@@ -45,7 +46,7 @@ namespace System.Runtime.CompilerServices {
         public static DebugInfoGenerator CreatePdbGenerator() {
             return new SymbolDocumentGenerator();
         }
-
+#endif
         /// <summary>
         /// Marks a sequence point.
         /// </summary>

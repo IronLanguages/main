@@ -131,6 +131,7 @@
     <Compile Include="Compiler\StackSpiller.Temps.cs" />
     <Compile Include="Compiler\StackSpiller.cs" />
     <Compile Include="Compiler\SymbolDocumentGenerator.cs" />
+    <Compile Include="Compiler\SymbolGuids.cs" />
     <Compile Include="Compiler\VariableBinder.cs" />
     <Compile Include="Compiler\AssemblyGen.cs" />
     <Compile Include="Compiler\ILGen.cs" />
@@ -147,6 +148,7 @@
     <Compile Include="Utils\ReadOnlyCollectionBuilder.cs" />
     <Compile Include="Utils\ReadOnlyDictionary.cs" />
     <Compile Include="Utils\ReferenceEqualityComparer.cs" />
+    <Compile Include="Utils\ReflectionUtils.cs" />
     <Compile Include="Utils\TrueReadOnlyCollection.cs" />
     <Compile Include="Utils\TypeExtensions.cs" />
     <Compile Include="Stubs.cs" />

@@ -235,7 +235,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 if (Options.HandleExceptions) {
                     try {
                         res = TryInteractiveAction();
-#if SILVERLIGHT 
+#if !FEATURE_PROCESS
                     } catch (ExitProcessException e) {
                         res = e.ExitCode;
 #endif

@@ -19,10 +19,6 @@ using Microsoft.Scripting.Ast;
 using System.Linq.Expressions;
 #endif
 
-#if SILVERLIGHT
-using System.Core;
-#endif
-
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;

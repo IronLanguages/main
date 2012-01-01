@@ -210,8 +210,9 @@ namespace IronRuby.Runtime {
         [ThreadStatic]
         private bool _traceListenerSuspended;
         
+#if FEATURE_FILESYSTEM
         private readonly Stopwatch _upTime;
-
+#endif
         // TODO: thread-safety
         internal Action<Expression, MSA.DynamicExpression> CallSiteCreated { get; set; }
 
@@ -444,9 +445,10 @@ namespace IronRuby.Runtime {
             _options = new RubyOptions(options);
 
             _runtimeId = Interlocked.Increment(ref _RuntimeIdGenerator);
+#if FEATURE_FILESYSTEM
             _upTime = new Stopwatch();
             _upTime.Start();
-            
+#endif
             _binder = new RubyBinder(this);
 
             _symbols = new Dictionary<MutableString, RubySymbol>();
@@ -635,8 +637,10 @@ namespace IronRuby.Runtime {
         }
 
         private static MutableString/*!*/ MakePlatformString() {
-#if WIN8
+#if WIN8 
             return MutableString.CreateAscii("Windows Runtime");
+#elif WP75
+            return MutableString.CreateAscii("Windows Phone");
 #else
             switch (Environment.OSVersion.Platform) {
                 case PlatformID.MacOSX:

@@ -17,10 +17,6 @@ using System;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 
-#if SILVERLIGHT
-using System.Core;
-#endif
-
 #if !FEATURE_CORE_DLR
 namespace Microsoft.Scripting.Ast {
 #else
@@ -31,9 +27,7 @@ namespace System.Linq.Expressions {
     /// Represents a catch statement in a try block. 
     /// This must have the same return type (i.e., the type of <see cref="P:CatchBlock.Body"/>) as the try block it is associated with.
     /// </summary>
-#if !SILVERLIGHT
     [DebuggerTypeProxy(typeof(Expression.CatchBlockProxy))]
-#endif
     public sealed class CatchBlock {
         private readonly Type _test;
         private readonly ParameterExpression _var;

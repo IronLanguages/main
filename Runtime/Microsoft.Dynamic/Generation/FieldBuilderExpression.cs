@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_REFEMIT
 
 #if FEATURE_CORE_DLR
 using System.Linq.Expressions;
@@ -88,3 +89,5 @@ namespace Microsoft.Scripting.Generation {
         }
     }
 }
+
+#endif

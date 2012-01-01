@@ -19,10 +19,6 @@ using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-#if SILVERLIGHT
-using System.Core;
-#endif
-
 #if !FEATURE_CORE_DLR
 namespace Microsoft.Scripting.Ast {
 #else
@@ -32,9 +28,7 @@ namespace System.Linq.Expressions {
     /// <summary>
     /// Represents an expression that has a unary operator.
     /// </summary>
-#if !SILVERLIGHT
     [DebuggerTypeProxy(typeof(Expression.UnaryExpressionProxy))]
-#endif
     public sealed class UnaryExpression : Expression {
         private readonly Expression _operand;
         private readonly MethodInfo _method;
@@ -788,9 +782,6 @@ namespace System.Linq.Expressions {
         public static UnaryExpression Quote(Expression expression) {
             RequiresCanRead(expression, "expression");
             bool validQuote = expression is LambdaExpression;
-#if SILVERLIGHT
-            validQuote |= SilverlightQuirks;
-#endif
             if (!validQuote) throw Error.QuotedExpressionMustBeLambda();
             return new UnaryExpression(ExpressionType.Quote, expression, expression.GetType(), null);
         }

@@ -76,7 +76,7 @@ namespace IronRuby.Runtime {
 
         int _version, _cleanupVersion;
 
-#if SILVERLIGHT || WIN8 // GC
+#if SILVERLIGHT || WIN8 || WP75 // GC
         WeakReference _cleanupGC = new WeakReference(new object());
 #else
         int _cleanupGC = 0;
@@ -87,7 +87,7 @@ namespace IronRuby.Runtime {
 
             // WeakReferences can become zero only during the GC.
             bool garbage_collected;
-#if SILVERLIGHT || WIN8 // GC.CollectionCount
+#if SILVERLIGHT || WIN8 || WP75 // GC.CollectionCount
             garbage_collected = !_cleanupGC.IsAlive;
             if (garbage_collected) {
                 _cleanupGC = new WeakReference(new object());

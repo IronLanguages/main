@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_REFEMIT
 
 using System;
 using System.Reflection;
@@ -104,3 +105,4 @@ namespace Microsoft.Scripting.Generation {
         }
     }
 }
+#endif

@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_REFEMIT && FEATURE_PDBEMIT
 
 #if !FEATURE_CORE_DLR
 using Microsoft.Scripting.Ast;
@@ -19,10 +20,6 @@ using Microsoft.Scripting.Ast.Compiler;
 #else
 using System.Linq.Expressions;
 using System.Linq.Expressions.Compiler;
-#endif
-
-#if SILVERLIGHT
-using System.Core;
 #endif
 
 using System.Collections.Generic;
@@ -72,3 +69,4 @@ namespace System.Runtime.CompilerServices {
         }
     }
 }
+#endif

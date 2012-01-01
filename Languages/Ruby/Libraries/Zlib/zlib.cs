@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT && !WIN8
+#if !SILVERLIGHT && !WIN8 && !WP75
 using System.IO.Compression;
 #endif
 
@@ -685,13 +685,13 @@ namespace IronRuby.StandardLibrary.Zlib {
 
         #endregion
 
-#if !SILVERLIGHT && !WIN8
+#if !SILVERLIGHT && !WIN8 && !WP75
         #region GzipFile class
 
         // TODO: implement spec:
         // http://www.gzip.org/zlib/rfc-gzip.html#specification
 
-        [RubyClass("GzipFile", BuildConfig="!SILVERLIGHT && !WIN8")]
+        [RubyClass("GzipFile", BuildConfig="!SILVERLIGHT && !WIN8 && !WP75")]
         public abstract class GZipFile : RubyObject, IDisposable {
             private GZipStream _stream;
             private const int BufferSize = 2048;
@@ -833,7 +833,7 @@ namespace IronRuby.StandardLibrary.Zlib {
         #region GzipReader class
 
         // TODO: Includes(typeof(Enumerable)
-        [RubyClass("GzipReader", BuildConfig="!SILVERLIGHT && !WIN8")]
+        [RubyClass("GzipReader", BuildConfig="!SILVERLIGHT && !WIN8 && !WP75")]
         public class GZipReader : GZipFile {
             private GZipReader(RubyClass/*!*/ cls, object io)
                 : base(cls, io, CompressionMode.Decompress) {
@@ -876,8 +876,8 @@ namespace IronRuby.StandardLibrary.Zlib {
         #endregion
 
         #region GzipWriter class
-
-        [RubyClass("GzipWriter", BuildConfig="!SILVERLIGHT && !WIN8")]
+         
+        [RubyClass("GzipWriter", BuildConfig="!SILVERLIGHT && !WIN8 && !WP75")]
         // TODO: [Includes(typeof(PrintOps), Copy = true)]
         public class GzipWriter : GZipFile {
             private GzipWriter(RubyClass/*!*/ cls, object io) 

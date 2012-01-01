@@ -30,9 +30,7 @@ namespace System.Linq.Expressions {
     /// <summary>
     /// Represents an expression that has a constant value.
     /// </summary>
-#if !SILVERLIGHT
     [DebuggerTypeProxy(typeof(Expression.ConstantExpressionProxy))]
-#endif
     public class ConstantExpression : Expression {
         // Possible optimization: we could have a Constant<T> subclass that
         // stores the unboxed value.

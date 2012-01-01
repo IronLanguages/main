@@ -12,7 +12,6 @@
  *
  *
  * ***************************************************************************/
-
 using System;
 using System.Collections.Generic;
 using System.Reflection.Emit;
@@ -75,10 +74,6 @@ namespace IronRuby.Compiler.Generation {
             return (_interfaces.Length == 0);
         }
 
-        public IFeatureBuilder/*!*/ MakeBuilder(TypeBuilder/*!*/ tb) {
-            return new InterfacesBuilder(tb, _interfaces);
-        }
-
         public override int GetHashCode() {
             return typeof(InterfaceImplFeature).GetHashCode();
         }
@@ -96,5 +91,11 @@ namespace IronRuby.Compiler.Generation {
 
             return true;
         }
+
+#if FEATURE_REFEMIT
+        public IFeatureBuilder/*!*/ MakeBuilder(TypeBuilder/*!*/ tb) {
+            return new InterfacesBuilder(tb, _interfaces);
+        }
+#endif
     }
 }

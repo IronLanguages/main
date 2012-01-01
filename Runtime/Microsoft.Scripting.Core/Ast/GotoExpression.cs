@@ -17,10 +17,6 @@ using System;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 
-#if SILVERLIGHT
-using System.Core;
-#endif
-
 #if !FEATURE_CORE_DLR
 namespace Microsoft.Scripting.Ast {
 #else
@@ -51,9 +47,7 @@ namespace System.Linq.Expressions {
     /// <summary>
     /// Represents an unconditional jump. This includes return statements, break and continue statements, and other jumps.
     /// </summary>
-#if !SILVERLIGHT
     [DebuggerTypeProxy(typeof(Expression.GotoExpressionProxy))]
-#endif
     public sealed class GotoExpression : Expression {
         private readonly GotoExpressionKind _kind;
         private readonly Expression _value;

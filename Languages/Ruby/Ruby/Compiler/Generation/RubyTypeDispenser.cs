@@ -12,7 +12,6 @@
  *
  *
  * ***************************************************************************/
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -31,14 +30,15 @@ namespace IronRuby.Compiler.Generation {
 
         private static readonly Publisher<TypeDescription/*!*/, Type/*!*/>/*!*/ _newTypes;
         private static readonly Dictionary<Type/*!*/, IList<ITypeFeature/*!*/>/*!*/>/*!*/ _typeFeatures;
+
         private static readonly ITypeFeature/*!*/[]/*!*/ _defaultFeatures = new ITypeFeature[] {
             RubyTypeFeature.Instance,
             InterfaceImplFeature.Create(ReflectionUtils.EmptyTypes)
         };
 
         static RubyTypeDispenser() {
-            _newTypes = new Publisher<TypeDescription, Type>();
             _typeFeatures = new Dictionary<Type, IList<ITypeFeature>>();
+            _newTypes = new Publisher<TypeDescription, Type>();
             AddBuiltinType(typeof(object), typeof(RubyObject), false);
             AddBuiltinType(typeof(MutableString), typeof(MutableString.Subclass), true);
             AddBuiltinType(typeof(Proc), typeof(Proc.Subclass), true);
@@ -108,6 +108,7 @@ namespace IronRuby.Compiler.Generation {
                 );
             }
 
+#if FEATURE_REFEMIT
             string typeName = GetName(baseType);
             TypeBuilder tb = Snippets.Shared.DefinePublicType(typeName, baseType);
             Utils.Log(typeName, "TYPE_BUILDER");
@@ -132,6 +133,9 @@ namespace IronRuby.Compiler.Generation {
                 _typeFeatures.Add(result, typeInfo.Features);
             }
             return result;
+#else
+            throw new NotSupportedException("Creating new CLR types is not supported on this platform.");
+#endif
         }
 
         private static string GetName(Type/*!*/ baseType) {

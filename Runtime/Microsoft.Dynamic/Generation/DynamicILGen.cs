@@ -53,7 +53,7 @@ namespace Microsoft.Scripting.Generation {
             return _dm;
         }
     }
-
+#if FEATURE_REFEMIT
     class DynamicILGenType : DynamicILGen {
         private readonly TypeBuilder _tb;
         private readonly MethodBuilder _mb;
@@ -79,4 +79,5 @@ namespace Microsoft.Scripting.Generation {
             return CreateMethod();
         }
     }
+#endif
 }

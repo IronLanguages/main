@@ -412,7 +412,7 @@ namespace IronRuby.Builtins {
                 return MutableString.CreateMutable(path.Encoding).Append((char)path.GetLastChar()).TaintBy(path);
             }
 
-#if WIN8
+#if WIN8 || WP75
             bool isWindows = true;
 #else
             bool isWindows = Environment.OSVersion.Platform != PlatformID.Unix && Environment.OSVersion.Platform != PlatformID.MacOSX;

@@ -368,7 +368,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
             int result = 0;
             try {
                 return _engine.CreateScriptSourceFromFile(Options.RunFile).ExecuteProgram();
-#if SILVERLIGHT 
+#if !FEATURE_PROCESS 
             } catch (ExitProcessException e) {
                 result = e.ExitCode;
 #endif

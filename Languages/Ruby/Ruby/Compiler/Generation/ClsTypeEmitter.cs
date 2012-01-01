@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-
+#if FEATURE_REFEMIT
 #if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
@@ -469,3 +469,4 @@ namespace IronRuby.Compiler.Generation {
         }
     }
 }
+#endif

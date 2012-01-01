@@ -14,9 +14,10 @@
  * ***************************************************************************/
 
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
-using System.Runtime.Serialization;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.StandardLibrary.Yaml {
 

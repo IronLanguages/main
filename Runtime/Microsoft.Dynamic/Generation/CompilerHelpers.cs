@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_NUMERICS
 using BigInt = System.Numerics.BigInteger;
 #endif
 
@@ -379,7 +379,7 @@ namespace Microsoft.Scripting.Generation {
             }
 
             if (t.IsValueType()
-#if !SILVERLIGHT && !WIN8
+#if !SILVERLIGHT && !WIN8 && !WP75
                 && t != typeof(ArgIterator)
 #endif
 ) {
@@ -642,6 +642,7 @@ namespace Microsoft.Scripting.Generation {
             return (T)(object)LightCompile((LambdaExpression)lambda, compilationThreshold);
         }
 
+#if FEATURE_REFEMIT
         /// <summary>
         /// Compiles the lambda into a method definition.
         /// </summary>
@@ -664,6 +665,7 @@ namespace Microsoft.Scripting.Generation {
             lambda.CompileToMethod(method);
 #endif
         }
+#endif
 
         /// <summary>
         /// Compiles the LambdaExpression.
@@ -679,7 +681,7 @@ namespace Microsoft.Scripting.Generation {
         /// <param name="emitDebugSymbols">true to generate a debuggable method, false otherwise</param>
         /// <returns>the compiled delegate</returns>
         public static T Compile<T>(this Expression<T> lambda, bool emitDebugSymbols) {
-#if FEATURE_PDBEMIT
+#if FEATURE_PDBEMIT && FEATURE_REFEMIT
             if (emitDebugSymbols) {
                 return CompileToMethod(lambda, DebugInfoGenerator.CreatePdbGenerator(), true);
             }
@@ -687,6 +689,7 @@ namespace Microsoft.Scripting.Generation {
             return lambda.Compile();
         }
 
+#if FEATURE_REFEMIT
         /// <summary>
         /// Compiles the LambdaExpression, emitting it into a new type, and
         /// optionally making it debuggable.
@@ -723,73 +726,6 @@ namespace Microsoft.Scripting.Generation {
             rewriter.InitializeFields(finished);
             
             return finished.GetMethod(method.Name).CreateDelegate(lambda.Type);
-        }
-
-        public static string GetUniqueMethodName() {
-            return "lambda_method" + "$" + System.Threading.Interlocked.Increment(ref _Counter);
-        }
-
-        // Matches ILGen.TryEmitConstant
-        public static bool CanEmitConstant(object value, Type type) {
-            if (value == null || CanEmitILConstant(type)) {
-                return true;
-            }
-
-            Type t = value as Type;
-            if (t != null && ILGen.ShouldLdtoken(t)) {
-                return true;
-            }
-
-            MethodBase mb = value as MethodBase;
-            if (mb != null && ILGen.ShouldLdtoken(mb)) {
-                return true;
-            }
-
-            return false;
-        }
-
-        // Matches ILGen.TryEmitILConstant
-        internal static bool CanEmitILConstant(Type type) {
-            switch (type.GetTypeCode()) {
-                case TypeCode.Boolean:
-                case TypeCode.SByte:
-                case TypeCode.Int16:
-                case TypeCode.Int32:
-                case TypeCode.Int64:
-                case TypeCode.Single:
-                case TypeCode.Double:
-                case TypeCode.Char:
-                case TypeCode.Byte:
-                case TypeCode.UInt16:
-                case TypeCode.UInt32:
-                case TypeCode.UInt64:
-                case TypeCode.Decimal:
-                case TypeCode.String:
-                    return true;
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Reduces the provided DynamicExpression into site.Target(site, *args).
-        /// </summary>
-        public static Expression Reduce(DynamicExpression node) {
-            // Store the callsite as a constant
-            var siteConstant = AstUtils.Constant(CallSite.Create(node.DelegateType, node.Binder));
-
-            // ($site = siteExpr).Target.Invoke($site, *args)
-            var site = Expression.Variable(siteConstant.Type, "$site");
-            return Expression.Block(
-                new[] { site },
-                Expression.Call(
-                    Expression.Field(
-                        Expression.Assign(site, siteConstant),
-                        siteConstant.Type.GetDeclaredField("Target")
-                    ),
-                    node.DelegateType.GetMethod("Invoke"),
-                    ArrayUtils.Insert(site, node.Arguments)
-                )
-            );
         }
 
         /// <summary>
@@ -868,6 +804,74 @@ namespace Microsoft.Scripting.Generation {
             protected override Expression VisitDynamic(DynamicExpression node) {
                 return Visit(Reduce(node));
             }
+        }
+#endif
+
+        public static string GetUniqueMethodName() {
+            return "lambda_method" + "$" + System.Threading.Interlocked.Increment(ref _Counter);
+        }
+
+        // Matches ILGen.TryEmitConstant
+        public static bool CanEmitConstant(object value, Type type) {
+            if (value == null || CanEmitILConstant(type)) {
+                return true;
+            }
+
+            Type t = value as Type;
+            if (t != null && ILGen.ShouldLdtoken(t)) {
+                return true;
+            }
+
+            MethodBase mb = value as MethodBase;
+            if (mb != null && ILGen.ShouldLdtoken(mb)) {
+                return true;
+            }
+
+            return false;
+        }
+
+        // Matches ILGen.TryEmitILConstant
+        internal static bool CanEmitILConstant(Type type) {
+            switch (type.GetTypeCode()) {
+                case TypeCode.Boolean:
+                case TypeCode.SByte:
+                case TypeCode.Int16:
+                case TypeCode.Int32:
+                case TypeCode.Int64:
+                case TypeCode.Single:
+                case TypeCode.Double:
+                case TypeCode.Char:
+                case TypeCode.Byte:
+                case TypeCode.UInt16:
+                case TypeCode.UInt32:
+                case TypeCode.UInt64:
+                case TypeCode.Decimal:
+                case TypeCode.String:
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Reduces the provided DynamicExpression into site.Target(site, *args).
+        /// </summary>
+        public static Expression Reduce(DynamicExpression node) {
+            // Store the callsite as a constant
+            var siteConstant = AstUtils.Constant(CallSite.Create(node.DelegateType, node.Binder));
+
+            // ($site = siteExpr).Target.Invoke($site, *args)
+            var site = Expression.Variable(siteConstant.Type, "$site");
+            return Expression.Block(
+                new[] { site },
+                Expression.Call(
+                    Expression.Field(
+                        Expression.Assign(site, siteConstant),
+                        siteConstant.Type.GetDeclaredField("Target")
+                    ),
+                    node.DelegateType.GetMethod("Invoke"),
+                    ArrayUtils.Insert(site, node.Arguments)
+                )
+            );
         }
 
         #region Factories

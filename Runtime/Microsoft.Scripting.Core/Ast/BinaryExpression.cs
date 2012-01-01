@@ -20,10 +20,6 @@ using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
 
-#if SILVERLIGHT
-using System.Core;
-#endif
-
 #if !FEATURE_CORE_DLR
 namespace Microsoft.Scripting.Ast {
 #else
@@ -33,9 +29,7 @@ namespace System.Linq.Expressions {
     /// <summary>
     /// Represents an expression that has a binary operator.
     /// </summary>
-#if !SILVERLIGHT
     [DebuggerTypeProxy(typeof(Expression.BinaryExpressionProxy))]
-#endif
     public class BinaryExpression : Expression {
         private readonly Expression _left;
         private readonly Expression _right;

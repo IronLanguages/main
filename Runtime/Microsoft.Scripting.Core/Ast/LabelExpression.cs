@@ -27,9 +27,7 @@ namespace System.Linq.Expressions {
     /// <see cref="GotoExpression"/>. Otherwise, it gets the value in <see cref="LabelExpression.DefaultValue"/>. If the
     /// <see cref="Type"/> equals System.Void, no value should be provided.
     /// </summary>
-#if !SILVERLIGHT
     [DebuggerTypeProxy(typeof(Expression.LabelExpressionProxy))]
-#endif
     public sealed class LabelExpression : Expression {
         private readonly Expression _defaultValue;
         private readonly LabelTarget _target;

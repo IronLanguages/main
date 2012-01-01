@@ -35,7 +35,7 @@ namespace IronRuby.Builtins {
 
         private static void SetEnvironmentVariable(RubyContext/*!*/ context, string/*!*/ name, string value) {
             context.DomainManager.Platform.SetEnvironmentVariable(name, value);
-#if !SILVERLIGHT && !WIN8
+#if !SILVERLIGHT && !WIN8 && !WP75
             if (name == "TZ") {
                 TimeZone zone;
                 if (RubyTime.TryParseTimeZone(value, out zone)) {

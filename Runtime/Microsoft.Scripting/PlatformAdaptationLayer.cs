@@ -31,7 +31,7 @@ using System.Collections;
 
 namespace Microsoft.Scripting {
 
-#if SILVERLIGHT
+#if !FEATURE_PROCESS
     public class ExitProcessException : Exception {
 
         public int ExitCode { get { return exitCode; } }
@@ -146,9 +146,7 @@ namespace Microsoft.Scripting {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadFile")]
         public virtual Assembly LoadAssemblyFromPath(string path) {
-#if WIN8
-            throw new NotImplementedException();
-#elif !SILVERLIGHT
+#if FEATURE_FILESYSTEM
             return Assembly.LoadFile(path);
 #else
             throw new NotImplementedException();
@@ -156,9 +154,7 @@ namespace Microsoft.Scripting {
         }
 
         public virtual void TerminateScriptExecution(int exitCode) {
-#if WIN8
-            // TODO: ???
-#elif !SILVERLIGHT
+#if FEATURE_PROCESS
             System.Environment.Exit(exitCode);
 #else
             throw new ExitProcessException(exitCode);
@@ -171,27 +167,27 @@ namespace Microsoft.Scripting {
 
         private static bool IsSingleRootFileSystem {
             get {
-#if WIN8
-                return false;
-#else
+#if FEATURE_FILESYSTEM
                 return Environment.OSVersion.Platform == PlatformID.Unix
                     || Environment.OSVersion.Platform == PlatformID.MacOSX;
+#else
+                return true;
 #endif
             }
         }
 
         public virtual StringComparer PathComparer {
             get {
-#if WIN8
-                return StringComparer.OrdinalIgnoreCase;
-#else
+#if FEATURE_FILESYSTEM
                 return Environment.OSVersion.Platform == PlatformID.Unix ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+#else
+                return StringComparer.OrdinalIgnoreCase;
 #endif
             }
         }
 
         public virtual bool FileExists(string path) {
-#if !SILVERLIGHT && !WIN8
+#if FEATURE_FILESYSTEM
             return File.Exists(path);
 #else
             throw new NotImplementedException();
@@ -199,7 +195,7 @@ namespace Microsoft.Scripting {
         }
 
         public virtual bool DirectoryExists(string path) {
-#if !SILVERLIGHT && !WIN8
+#if FEATURE_FILESYSTEM
             return Directory.Exists(path);
 #else
             throw new NotImplementedException();
@@ -208,7 +204,7 @@ namespace Microsoft.Scripting {
 
         // TODO: better APIs
         public virtual Stream OpenInputFileStream(string path, FileMode mode, FileAccess access, FileShare share) {
-#if !SILVERLIGHT && !WIN8
+#if FEATURE_FILESYSTEM
             return new FileStream(path, mode, access, share);
 #else
             throw new NotImplementedException();
@@ -217,7 +213,7 @@ namespace Microsoft.Scripting {
 
         // TODO: better APIs
         public virtual Stream OpenInputFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize) {
-#if !SILVERLIGHT && !WIN8
+#if FEATURE_FILESYSTEM
             return new FileStream(path, mode, access, share, bufferSize);
 #else
             throw new NotImplementedException();
@@ -226,7 +222,7 @@ namespace Microsoft.Scripting {
 
         // TODO: better APIs
         public virtual Stream OpenInputFileStream(string path) {
-#if !SILVERLIGHT && !WIN8
+#if FEATURE_FILESYSTEM
             return new FileStream(path, FileMode.Open, FileAccess.Read);
 #else
             throw new NotImplementedException();
@@ -235,7 +231,7 @@ namespace Microsoft.Scripting {
 
         // TODO: better APIs
         public virtual Stream OpenOutputFileStream(string path) {
-#if !SILVERLIGHT && !WIN8
+#if FEATURE_FILESYSTEM
             return new FileStream(path, FileMode.Create, FileAccess.Write);
 #else
             throw new NotImplementedException();
@@ -243,7 +239,7 @@ namespace Microsoft.Scripting {
         }
 
         public virtual void DeleteFile(string path, bool deleteReadOnly) {
-#if !SILVERLIGHT && !WIN8 && !ANDROID
+#if FEATURE_FILESYSTEM
             FileInfo info = new FileInfo(path);
             if (deleteReadOnly && info.IsReadOnly) {
                 info.IsReadOnly = false;
@@ -267,7 +263,7 @@ namespace Microsoft.Scripting {
         }
 
         public virtual string[] GetFileSystemEntries(string path, string searchPattern, bool includeFiles, bool includeDirectories) {
-#if !SILVERLIGHT && !WIN8
+#if FEATURE_FILESYSTEM
             if (includeFiles && includeDirectories) {
                 return Directory.GetFileSystemEntries(path, searchPattern);
             }
@@ -285,7 +281,7 @@ namespace Microsoft.Scripting {
 
         /// <exception cref="ArgumentException">Invalid path.</exception>
         public virtual string GetFullPath(string path) {
-#if !SILVERLIGHT && !WIN8
+#if FEATURE_FILESYSTEM
             try {
                 return Path.GetFullPath(path);
             } catch (Exception) {
@@ -318,7 +314,7 @@ namespace Microsoft.Scripting {
 
         /// <exception cref="ArgumentException">Invalid path.</exception>
         public virtual bool IsAbsolutePath(string path) {
-#if !SILVERLIGHT
+#if FEATURE_FILESYSTEM
             // GetPathRoot returns either :
             // "" -> relative to the current dir
             // "\" -> relative to the drive of the current dir
@@ -336,14 +332,14 @@ namespace Microsoft.Scripting {
 
         public virtual string CurrentDirectory {
             get {
-#if !SILVERLIGHT && !WIN8
+#if FEATURE_FILESYSTEM
                 return Directory.GetCurrentDirectory();
 #else
                 throw new NotImplementedException();
 #endif
             }
             set {
-#if !SILVERLIGHT && !WIN8
+#if FEATURE_FILESYSTEM
                 Directory.SetCurrentDirectory(value);
 #else
                 throw new NotImplementedException();
@@ -352,7 +348,7 @@ namespace Microsoft.Scripting {
         }
 
         public virtual void CreateDirectory(string path) {
-#if !SILVERLIGHT && !WIN8
+#if FEATURE_FILESYSTEM
             Directory.CreateDirectory(path);
 #else
             throw new NotImplementedException();
@@ -360,7 +356,7 @@ namespace Microsoft.Scripting {
         }
 
         public virtual void DeleteDirectory(string path, bool recursive) {
-#if !SILVERLIGHT && !WIN8
+#if FEATURE_FILESYSTEM
             Directory.Delete(path, recursive);
 #else
             throw new NotImplementedException();
@@ -368,7 +364,7 @@ namespace Microsoft.Scripting {
         }
 
         public virtual void MoveFileSystemEntry(string sourcePath, string destinationPath) {
-#if !SILVERLIGHT && !WIN8
+#if FEATURE_FILESYSTEM
             Directory.Move(sourcePath, destinationPath);
 #else
             throw new NotImplementedException();
@@ -380,7 +376,7 @@ namespace Microsoft.Scripting {
         #region Environmental Variables
 
         public virtual string GetEnvironmentVariable(string key) {
-#if !SILVERLIGHT && !WIN8
+#if FEATURE_PROCESS
             return Environment.GetEnvironmentVariable(key);
 #else
             throw new NotImplementedException();
@@ -389,7 +385,7 @@ namespace Microsoft.Scripting {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         public virtual void SetEnvironmentVariable(string key, string value) {
-#if !SILVERLIGHT && !WIN8 && !ANDROID
+#if FEATURE_PROCESS
             if (value != null && value.Length == 0) {
                 SetEmptyEnvironmentVariable(key);
             } else {
@@ -400,7 +396,7 @@ namespace Microsoft.Scripting {
 #endif
         }
 
-#if !SILVERLIGHT && !WIN8
+#if FEATURE_PROCESS
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2149:TransparentMethodsMustNotCallNativeCodeFxCopRule")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2140:TransparentMethodsMustNotReferenceCriticalCodeFxCopRule")]
@@ -418,7 +414,7 @@ namespace Microsoft.Scripting {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         public virtual Dictionary<string, string> GetEnvironmentVariables() {
-#if !SILVERLIGHT && !WIN8
+#if FEATURE_PROCESS
             var result = new Dictionary<string, string>();
 
             foreach (DictionaryEntry entry in Environment.GetEnvironmentVariables())

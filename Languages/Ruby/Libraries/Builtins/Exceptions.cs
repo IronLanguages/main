@@ -248,7 +248,7 @@ namespace IronRuby.Builtins {
         
         [RubyConstructor]
         public static ExternalException/*!*/ Factory(RubyClass/*!*/ self, [DefaultProtocol]MutableString message) {
-#if SILVERLIGHT || WIN8
+#if SILVERLIGHT || WIN8 || WP75
             ExternalException result = new ExternalException(RubyExceptions.MakeMessage(ref message, "unknown error"));
 #else
             ExternalException result = new ExternalException(RubyExceptions.MakeMessage(ref message, "unknown error"), int.MinValue);
@@ -346,7 +346,7 @@ namespace IronRuby.Builtins {
                 // case 10071: return RubyExceptions.CreateEREMOTE();
             }
 
-#if SILVERLIGHT || WIN8
+#if SILVERLIGHT || WIN8 || WP75
             ExternalException result = new ExternalException(RubyExceptions.MakeMessage(ref message, "Unknown Error"));
 #else
             ExternalException result = new ExternalException(RubyExceptions.MakeMessage(ref message, "Unknown Error"), errorCode);
