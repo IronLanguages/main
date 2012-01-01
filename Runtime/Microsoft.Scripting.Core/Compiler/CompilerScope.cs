@@ -21,10 +21,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Dynamic;
 using System.Dynamic.Utils;
-
-#if SILVERLIGHT
-using System.Core;
-#endif
+using Microsoft.Scripting.Utils;
 
 #if !FEATURE_CORE_DLR
 namespace Microsoft.Scripting.Ast.Compiler {

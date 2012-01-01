@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_NUMERICS
 using BigInt = System.Numerics.BigInteger;
 using Complex = System.Numerics.Complex;
 #endif
@@ -161,7 +161,7 @@ namespace Microsoft.Scripting.Utils {
         /// Needed because CoreCLR doesn't support this particular overload of Math.Round
         /// </summary>
         public static double RoundAwayFromZero(double value) {
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !WP75
             return Math.Round(value, MidpointRounding.AwayFromZero);
 #else
             if (value < 0) {
@@ -684,7 +684,7 @@ namespace Microsoft.Scripting.Utils {
             return four;
         }
 
-#if CLR2
+#if !FEATURE_NUMERICS
         public static BigInteger GetRandBits(this Random generator, int bits) {
             ContractUtils.Requires(bits > 0);
 
@@ -852,7 +852,7 @@ namespace Microsoft.Scripting.Utils {
             return x.Abs().GetBitCount();
         }
 
-#if !CLR2
+#if FEATURE_NUMERICS
         public static int BitLength(BigInt x) {
             if (x.IsZero) {
                 return 0;
@@ -957,7 +957,7 @@ namespace Microsoft.Scripting.Utils {
         }
 
         #region Extending BigInt with BigInteger API
-#if !CLR2
+#if FEATURE_NUMERICS
 
         public static bool AsInt32(this BigInt self, out int ret) {
             if (self >= Int32.MinValue && self <= Int32.MaxValue) {
@@ -1074,7 +1074,7 @@ namespace Microsoft.Scripting.Utils {
         #endregion
 
         #region Exposing underlying data
-#if !CLR2
+#if FEATURE_NUMERICS
 
         [CLSCompliant(false)]
         public static uint[] GetWords(this BigInt self) {
@@ -1165,7 +1165,7 @@ namespace Microsoft.Scripting.Utils {
 
         #region Complex
 
-#if CLR2
+#if !FEATURE_NUMERICS
         public static Complex64 MakeReal(double real) {
             return new Complex64(real, 0.0);
         }

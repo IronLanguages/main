@@ -251,15 +251,15 @@ namespace IronRuby.Runtime {
 
         // TODO: partial trust
         private static bool DetectFileAccessPermissions() {
-#if SILVERLIGHT
-                return false;
-#else
+#if FEATURE_FILESYSTEM
             try {
                 new System.Security.Permissions.FileIOPermission(System.Security.Permissions.PermissionState.Unrestricted).Demand();
                 return true;
             } catch (SecurityException) {
                 return false;
             }
+#else
+            return false;
 #endif
         }
 #endif

@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-#if !CLR2
+#if FEATURE_NUMERICS
 
 using System;
 using System.Collections.Generic;

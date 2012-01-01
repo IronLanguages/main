@@ -67,7 +67,7 @@ namespace Microsoft.Scripting.Utils {
             try {
                 return new AssemblyQualifiedTypeName(str);
             } catch (ArgumentException e) {
-#if SILVERLIGHT
+#if SILVERLIGHT || WP75
                 throw new ArgumentException(e.Message, argumentName);
 #else
                 throw new ArgumentException(e.Message, argumentName, e.InnerException);

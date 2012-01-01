@@ -605,7 +605,7 @@ namespace IronRuby.Builtins {
         }
 
         // implements Class#new
-        public static object CreateAnonymousClass(RubyScope/*!*/ scope, BlockParam body, RubyClass/*!*/ self, [Optional]RubyClass superClass) {
+        public static object CreateAnonymousClass(RubyScope/*!*/ scope, BlockParam body, RubyClass/*!*/ self, [DefaultParameterValue(null)]RubyClass superClass) {
             RubyContext context = scope.RubyContext;
             RubyModule owner = scope.GetInnerMostModuleForConstantLookup();
             

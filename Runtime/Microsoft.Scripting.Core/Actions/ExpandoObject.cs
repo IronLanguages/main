@@ -19,9 +19,6 @@ using Microsoft.Scripting.Utils;
 #else
 using System.Linq.Expressions;
 #endif
-#if SILVERLIGHT
-using System.Core;
-#endif
 
 using System.Collections.Generic;
 using System.ComponentModel;

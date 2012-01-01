@@ -27,9 +27,7 @@ namespace System.Linq.Expressions {
     /// <summary>
     /// Represents one case of a <see cref="SwitchExpression"/>.
     /// </summary>
-#if !SILVERLIGHT
     [DebuggerTypeProxy(typeof(Expression.SwitchCaseProxy))]
-#endif
     public sealed class SwitchCase {
         private readonly ReadOnlyCollection<Expression> _testValues;
         private readonly Expression _body;

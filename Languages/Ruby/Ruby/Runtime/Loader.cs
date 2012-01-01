@@ -345,7 +345,7 @@ namespace IronRuby.Runtime {
         
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods")]
         private Assembly GetAssembly(string/*!*/ assemblyName, bool throwOnError, bool tryPartialName) {
-#if SILVERLIGHT || WIN8
+#if SILVERLIGHT || WIN8 || WP75
             tryPartialName = false;
 #endif
             try {
@@ -360,7 +360,7 @@ namespace IronRuby.Runtime {
                 }
             }
 
-#if SILVERLIGHT || WIN8
+#if SILVERLIGHT || WIN8 || WP75
             throw Assert.Unreachable;
 #else
 #pragma warning disable 618,612 // csc, gmcs

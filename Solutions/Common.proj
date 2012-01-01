@@ -51,19 +51,21 @@
   <!-- References -->
   <PropertyGroup Condition="'$(ReferencedPlatform)' == 'V2'">
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-    <Features>FEATURE_NATIVE;FEATURE_EXCEPTION_STATE;FEATURE_DEFAULT_PARAMETER_VALUE;FEATURE_CRYPTOGRAPHY;FEATURE_SYNC_SOCKETS;FEATURE_ASSEMBLY_RESOLVE;FEATURE_CUSTOM_TYPE_DESCRIPTOR;FEATURE_ENCODING;FEATURE_DBNULL;FEATURE_FILESYSTEM;FEATURE_THREAD;FEATURE_PROCESS;FEATURE_STACK_TRACE;FEATURE_TYPECONVERTER;FEATURE_PDBEMIT;FEATURE_COM;FEATURE_FULL_CONSOLE;FEATURE_BASIC_CONSOLE;FEATURE_SERIALIZATION;FEATURE_REMOTING;FEATURE_CONFIGURATION;FEATURE_REFEMIT;FEATURE_CODEDOM</Features>
+    <Features>FEATURE_CUSTOM_MODIFIERS;FEATURE_NATIVE;FEATURE_EXCEPTION_STATE;FEATURE_DEFAULT_PARAMETER_VALUE;FEATURE_CRYPTOGRAPHY;FEATURE_SYNC_SOCKETS;FEATURE_ASSEMBLY_RESOLVE;FEATURE_CUSTOM_TYPE_DESCRIPTOR;FEATURE_ENCODING;FEATURE_DBNULL;FEATURE_FILESYSTEM;FEATURE_THREAD;FEATURE_PROCESS;FEATURE_STACK_TRACE;FEATURE_TYPECONVERTER;FEATURE_PDBEMIT;FEATURE_COM;FEATURE_FULL_CONSOLE;FEATURE_BASIC_CONSOLE;FEATURE_SERIALIZATION;FEATURE_REMOTING;FEATURE_CONFIGURATION;FEATURE_REFEMIT;FEATURE_CODEDOM</Features>
     <PlatformSymbols>CLR2</PlatformSymbols>
     <IsSilverlight>false</IsSilverlight>
     <IsFullFramework>true</IsFullFramework>
+    <FeatureCoreDlr>false</FeatureCoreDlr>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(ReferencedPlatform)' == 'V4'">
     <WpfReferences Condition="'$(FrameworkReferences)' == ''">$(SolutionDir)..\Util\References\WPF\4.0</WpfReferences>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <Features>FEATURE_NATIVE;FEATURE_XMLDOC;FEATURE_EXCEPTION_STATE;FEATURE_DEFAULT_PARAMETER_VALUE;FEATURE_FUNCS_5_16;FEATURE_VARIANCE;FEATURE_CORE_DLR;FEATURE_TASKS;FEATURE_CRYPTOGRAPHY;FEATURE_SYNC_SOCKETS;FEATURE_ASSEMBLY_RESOLVE;FEATURE_CUSTOM_TYPE_DESCRIPTOR;FEATURE_ENCODING;FEATURE_DBNULL;FEATURE_FILESYSTEM;FEATURE_THREAD;FEATURE_PROCESS;FEATURE_STACK_TRACE;FEATURE_TYPE_EQUIVALENCE;FEATURE_NUMERICS;FEATURE_TYPECONVERTER;FEATURE_PDBEMIT;FEATURE_METADATA_READER;FEATURE_COM;FEATURE_WPF;FEATURE_FULL_CONSOLE;FEATURE_BASIC_CONSOLE;FEATURE_SERIALIZATION;FEATURE_REMOTING;FEATURE_CONFIGURATION;FEATURE_REFEMIT;FEATURE_CODEDOM</Features>
+    <Features>FEATURE_CUSTOM_MODIFIERS;FEATURE_NATIVE;FEATURE_XMLDOC;FEATURE_EXCEPTION_STATE;FEATURE_DEFAULT_PARAMETER_VALUE;FEATURE_FUNCS_5_16;FEATURE_VARIANCE;FEATURE_CORE_DLR;FEATURE_TASKS;FEATURE_CRYPTOGRAPHY;FEATURE_SYNC_SOCKETS;FEATURE_ASSEMBLY_RESOLVE;FEATURE_CUSTOM_TYPE_DESCRIPTOR;FEATURE_ENCODING;FEATURE_DBNULL;FEATURE_FILESYSTEM;FEATURE_THREAD;FEATURE_PROCESS;FEATURE_STACK_TRACE;FEATURE_TYPE_EQUIVALENCE;FEATURE_NUMERICS;FEATURE_TYPECONVERTER;FEATURE_PDBEMIT;FEATURE_METADATA_READER;FEATURE_COM;FEATURE_WPF;FEATURE_FULL_CONSOLE;FEATURE_BASIC_CONSOLE;FEATURE_SERIALIZATION;FEATURE_REMOTING;FEATURE_CONFIGURATION;FEATURE_REFEMIT;FEATURE_CODEDOM</Features>
     <PlatformSymbols>CLR4</PlatformSymbols>
     <IsSilverlight>false</IsSilverlight>
     <IsFullFramework>true</IsFullFramework>
+    <FeatureCoreDlr>true</FeatureCoreDlr>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(ReferencedPlatform)' == 'Win8'">
@@ -75,18 +77,20 @@
     <PlatformSymbols>WIN8;CLR4;CLR45</PlatformSymbols>
     <IsSilverlight>false</IsSilverlight>
     <IsFullFramework>false</IsFullFramework>
+    <FeatureCoreDlr>true</FeatureCoreDlr>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(ReferencedPlatform)' == 'WP75'">
-    <!-- TODO: use WP 7.5 reference assemblies instead -->
-    <FrameworkReferences Condition="'$(FrameworkReferences)' == ''">$(SolutionDir)..\Util\References\Silverlight\3.0.50106.0</FrameworkReferences>
+    <FrameworkReferences Condition="'$(FrameworkReferences)' == ''">$(SolutionDir)..\Util\References\WindowsPhone\7.1</FrameworkReferences>
     <NoStdLib>true</NoStdLib>
-    <!-- TODO: what features are available? -->
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-    <Features>FEATURE_ASSEMBLY_RESOLVE;FEATURE_DBNULL;FEATURE_THREAD;FEATURE_STACK_TRACE</Features>
-    <PlatformSymbols>SILVERLIGHT;CLR2;WP75</PlatformSymbols>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>WindowsPhone71</TargetFrameworkProfile>
+    <TargetFrameworkIdentifier>Silverlight</TargetFrameworkIdentifier>
+    <Features>FEATURE_DBNULL;FEATURE_THREAD;FEATURE_STACK_TRACE</Features>
+    <PlatformSymbols>WP75</PlatformSymbols>
     <IsSilverlight>true</IsSilverlight>
     <IsFullFramework>false</IsFullFramework>
+    <FeatureCoreDlr>false</FeatureCoreDlr>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(ReferencedPlatform)' == 'Android'">
@@ -94,10 +98,11 @@
     <NoStdLib>true</NoStdLib>
     <!-- TODO: what features are available? -->
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-    <Features>FEATURE_FUNCS_5_16;FEATURE_SERIALIZATION;FEATURE_ASSEMBLY_RESOLVE;FEATURE_DBNULL;FEATURE_THREAD;FEATURE_STACK_TRACE</Features>
+    <Features>FEATURE_CUSTOM_MODIFIERS;FEATURE_FUNCS_5_16;FEATURE_SERIALIZATION;FEATURE_ASSEMBLY_RESOLVE;FEATURE_DBNULL;FEATURE_THREAD;FEATURE_STACK_TRACE</Features>
     <PlatformSymbols>ANDROID</PlatformSymbols>
     <IsSilverlight>false</IsSilverlight>
     <IsFullFramework>false</IsFullFramework>
+    <FeatureCoreDlr>false</FeatureCoreDlr>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(ReferencedPlatform)' == 'Silverlight4'">
@@ -109,6 +114,7 @@
     <PlatformSymbols>SILVERLIGHT;SILVERLIGHT4;CLR4</PlatformSymbols>
     <IsSilverlight>true</IsSilverlight>
     <IsFullFramework>false</IsFullFramework>
+    <FeatureCoreDlr>true</FeatureCoreDlr>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(ReferencedPlatform)' == 'Silverlight5'">
@@ -120,6 +126,7 @@
     <PlatformSymbols>SILVERLIGHT;SILVERLIGHT5;CLR4</PlatformSymbols>
     <IsSilverlight>true</IsSilverlight>
     <IsFullFramework>false</IsFullFramework>
+    <FeatureCoreDlr>true</FeatureCoreDlr>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -165,10 +172,14 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
   </ItemGroup>
-  <ItemGroup Condition="'$(ReferencedPlatform)' == 'WP7'">
+  <ItemGroup Condition="'$(ReferencedPlatform)' == 'WP75'">
     <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\mscorlib.dll</HintPath>
+    </Reference>
+    <Reference Include="mscorlib.Extensions, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
+      <SpecificVersion>True</SpecificVersion>
+      <HintPath>$(FrameworkReferences)\mscorlib.Extensions.dll</HintPath>
     </Reference>
     <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>True</SpecificVersion>

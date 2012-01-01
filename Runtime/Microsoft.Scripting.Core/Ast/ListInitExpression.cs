@@ -21,10 +21,6 @@ using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-#if SILVERLIGHT
-using System.Core;
-#endif
-
 #if !FEATURE_CORE_DLR
 namespace Microsoft.Scripting.Ast {
 #else
@@ -37,9 +33,7 @@ namespace System.Linq.Expressions {
     /// Use the <see cref="M:ListInit"/> factory methods to create a ListInitExpression. 
     /// The value of the NodeType property of a ListInitExpression is ListInit. 
     /// </remarks>
-#if !SILVERLIGHT
     [DebuggerTypeProxy(typeof(Expression.ListInitExpressionProxy))]
-#endif
     public sealed class ListInitExpression : Expression {
         private readonly NewExpression _newExpression;
         private readonly ReadOnlyCollection<ElementInit> _initializers;

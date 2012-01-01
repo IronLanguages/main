@@ -30,6 +30,7 @@ namespace System.Linq.Expressions.Compiler {
         private static readonly Type[] _DelegateCtorSignature = new Type[] { typeof(object), typeof(IntPtr) };
 
         private static Type MakeNewCustomDelegate(Type[] types) {
+#if FEATURE_REFEMIT
             Type returnType = types[types.Length - 1];
             Type[] parameters = types.RemoveLast();
 
@@ -37,6 +38,9 @@ namespace System.Linq.Expressions.Compiler {
             builder.DefineConstructor(CtorAttributes, CallingConventions.Standard, _DelegateCtorSignature).SetImplementationFlags(ImplAttributes);
             builder.DefineMethod("Invoke", InvokeAttributes, returnType, parameters).SetImplementationFlags(ImplAttributes);
             return builder.CreateType();
+#else
+            throw new NotSupportedException("Method signature not supported on this platform");
+#endif
         }
     }
 }

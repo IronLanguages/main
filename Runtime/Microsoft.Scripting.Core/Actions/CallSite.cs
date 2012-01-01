@@ -22,10 +22,6 @@ using System.Linq.Expressions;
 using System.Linq.Expressions.Compiler;
 #endif
 
-#if SILVERLIGHT
-using System.Core;
-#endif
-
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;

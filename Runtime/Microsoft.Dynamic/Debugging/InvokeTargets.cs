@@ -36,7 +36,11 @@ namespace Microsoft.Scripting.Debugging {
             if (typeArgs.Length <= 16) {
                 return Ast.GetFuncType(typeArgs);
             } else {
+#if FEATURE_REFEMIT
                 return DelegateHelpers.MakeNewCustomDelegateType(typeArgs);
+#else
+                throw new NotSupportedException("Signature not supported on this platform.");
+#endif
             }
         }
     }

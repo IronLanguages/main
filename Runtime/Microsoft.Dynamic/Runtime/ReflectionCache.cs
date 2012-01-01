@@ -104,7 +104,7 @@ namespace Microsoft.Scripting.Runtime {
                     return x.GetMetadataToken() - y.GetMetadataToken();
                 }
                 
-#if SILVERLIGHT || WIN8
+#if SILVERLIGHT || WIN8 || WP75
                 int xHash = xModule.GetHashCode();
                 int yHash = yModule.GetHashCode();
                 if (xHash != yHash) {

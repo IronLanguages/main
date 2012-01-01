@@ -49,11 +49,14 @@ namespace IronRuby.Compiler {
     
     public static partial class Methods {
         private static ConstructorInfo _RubyCallSignatureCtor;
-        private static MethodInfo _Stopwatch_GetTimestamp, _WeakReference_get_Target, _IList_get_Item;
+        private static MethodInfo _WeakReference_get_Target, _IList_get_Item;
 
         public static ConstructorInfo RubyCallSignatureCtor { get { return _RubyCallSignatureCtor ?? (_RubyCallSignatureCtor = GetConstructor(typeof(RubyCallSignature), typeof(uint))); } }
         
+#if !WP75
+        private static MethodInfo _Stopwatch_GetTimestamp;
         public static MethodInfo Stopwatch_GetTimestamp { get { return _Stopwatch_GetTimestamp ?? (_Stopwatch_GetTimestamp = GetMethod(typeof(Stopwatch), "GetTimestamp")); } }
+#endif
         public static MethodInfo IList_get_Item { get { return _IList_get_Item ?? (_IList_get_Item = GetMethod(typeof(IList), "get_Item")); } }
         public static MethodInfo WeakReference_get_Target { get { return _WeakReference_get_Target ?? (_WeakReference_get_Target = GetMethod(typeof(WeakReference), "get_Target", BindingFlags.Instance, ReflectionUtils.EmptyTypes)); } }
 

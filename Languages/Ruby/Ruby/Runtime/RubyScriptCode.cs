@@ -118,24 +118,26 @@ namespace IronRuby.Runtime {
         internal static Delegate/*!*/ CompileLambda(LambdaExpression/*!*/ lambda, bool debugMode, bool noAdaptiveCompilation, 
             int compilationThreshold) {
 
+#if FEATURE_REFEMIT
             if (debugMode) {
                 return CompileDebug(lambda);
-            } else if (noAdaptiveCompilation) {
+            } 
+#endif
+            if (noAdaptiveCompilation) {
                 Delegate result = lambda.Compile();
                 // DLR closures should not be used:
                 Debug.Assert(!(result.Target is Closure) || ((Closure)result.Target).Locals == null);
                 return result;
-            } else {
-                return lambda.LightCompile(compilationThreshold);
-            }
+            } 
+
+            return lambda.LightCompile(compilationThreshold);
         }
 
 #if FEATURE_PDBEMIT
         private static bool _HasPdbPermissions = true;
 #endif
 
-        // Avoid loading Ref.Emit types (Compact Framework):
-        [MethodImpl(MethodImplOptions.NoInlining)]
+#if FEATURE_REFEMIT
         private static Delegate/*!*/ CompileDebug(LambdaExpression/*!*/ lambda) {
 #if FEATURE_PDBEMIT
             // try to use PDBs and fallback to CustomGenerator if not allowed to:
@@ -150,5 +152,6 @@ namespace IronRuby.Runtime {
 #endif
             return CompilerHelpers.CompileToMethod(lambda, new CustomGenerator(), false);
         }
+#endif
     }
 }

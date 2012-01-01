@@ -40,7 +40,7 @@ namespace Microsoft.Scripting.Utils {
         IDictionary<object, TValue> dict = new Dictionary<object, TValue>(comparer);
         int version, cleanupVersion;
 
-#if SILVERLIGHT || WIN8 // GC
+#if SILVERLIGHT || WIN8 || WP75 // GC
         WeakReference cleanupGC = new WeakReference(new object());
 #else
         int cleanupGC = 0;
@@ -125,7 +125,7 @@ namespace Microsoft.Scripting.Utils {
                 // WeakReferences can become zero only during the GC.
 
                 bool garbage_collected;
-#if SILVERLIGHT || WIN8 // GC.CollectionCount
+#if SILVERLIGHT || WIN8 || WP75 // GC.CollectionCount
                 garbage_collected = !cleanupGC.IsAlive;
                 if (garbage_collected) {
                     cleanupGC = new WeakReference(new object());

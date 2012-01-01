@@ -64,12 +64,12 @@ namespace Microsoft.Scripting.Runtime {
                         String.Format(
                             "Failed to load language '{0}': assembly '{1}' does not contain type '{2}'",
                             _displayName, 
-#if SILVERLIGHT || WIN8 // Assembly.Location not available on CF
-                            assembly.FullName,
-#else
+#if FEATURE_FILESYSTEM
                             assembly.Location,
+#else
+                            assembly.FullName,
 #endif
-                            _providerName.TypeName
+                             _providerName.TypeName
                     ));
                 }
 

@@ -23,7 +23,7 @@ namespace Microsoft.Scripting.Utils {
 
         public static Encoding DefaultEncoding {
             get {
-#if !SILVERLIGHT && !WIN8
+#if FEATURE_ENCODING
                 return Encoding.Default;
 #else
                 return Encoding.UTF8;
@@ -57,7 +57,7 @@ namespace Microsoft.Scripting.Utils {
 
         public static string[] Split(string str, string separator, int maxComponents, StringSplitOptions options) {
             ContractUtils.RequiresNotNull(str, "str");
-#if SILVERLIGHT
+#if SILVERLIGHT || WP75
             if (string.IsNullOrEmpty(separator)) throw new ArgumentNullException("separator");
 
             bool keep_empty = (options & StringSplitOptions.RemoveEmptyEntries) != StringSplitOptions.RemoveEmptyEntries;
@@ -88,7 +88,7 @@ namespace Microsoft.Scripting.Utils {
 
         public static string[] Split(string str, char[] separators, int maxComponents, StringSplitOptions options) {
             ContractUtils.RequiresNotNull(str, "str");
-#if SILVERLIGHT
+#if SILVERLIGHT || WP75
             if (separators == null) return SplitOnWhiteSpace(str, maxComponents, options);
 
             bool keep_empty = (options & StringSplitOptions.RemoveEmptyEntries) != StringSplitOptions.RemoveEmptyEntries;
@@ -117,7 +117,7 @@ namespace Microsoft.Scripting.Utils {
 #endif
         }
 
-#if SILVERLIGHT
+#if SILVERLIGHT|| WP75
         public static string[] SplitOnWhiteSpace(string str, int maxComponents, StringSplitOptions options) {
             ContractUtils.RequiresNotNull(str, "str");
 
@@ -270,7 +270,7 @@ namespace Microsoft.Scripting.Utils {
 #endif
         }
 
-#if !WIN8
+#if !WIN8 && !WP75
 #if SILVERLIGHT
         private static Dictionary<string, CultureInfo> _cultureInfoCache = new Dictionary<string, CultureInfo>();
 #endif

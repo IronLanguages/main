@@ -43,43 +43,6 @@ namespace Microsoft.Scripting.Utils {
         public static IComparer<T> ToComparer<T>(Comparison<T> comparison) {
             return new FunctorComparer<T>(comparison);
         }
-
-        public static TOutput[] ConvertAll<TInput, TOutput>(TInput[] input, Converter<TInput, TOutput> conv) {
-#if SILVERLIGHT
-            ContractUtils.RequiresNotNull(input, "input");
-            ContractUtils.RequiresNotNull(conv, "conv");
-
-            TOutput[] res = new TOutput[input.Length];
-            for (int i = 0; i < input.Length; i++) {
-                res[i] = conv(input[i]);
-            }
-            return res;
-#else
-            return System.Array.ConvertAll<TInput, TOutput>(input, conv);
-#endif
-        }
-
-        public static T[] FindAll<T>(T[] array, Predicate<T> match) {
-#if SILVERLIGHT
-            if (array == null) {
-                throw new ArgumentNullException("array");
-            }
-
-            if (match == null) {
-                throw new ArgumentNullException("match");
-            }
-
-            List<T> list = new List<T>();
-            for (int i = 0; i < array.Length; i++) {
-                if (match(array[i])) {
-                    list.Add(array[i]);
-                }
-            }
-            return list.ToArray();
-#else
-            return System.Array.FindAll(array, match);
-#endif
-        }
 #endif
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1814:PreferJaggedArraysOverMultidimensional", MessageId = "1#")] // TODO: fix

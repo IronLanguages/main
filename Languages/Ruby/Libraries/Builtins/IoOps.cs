@@ -373,7 +373,7 @@ namespace IronRuby.Builtins {
                 handles = GetWaitHandles(context, read, write, error);
                 int index;
                 try {
-#if SILVERLIGHT || WIN8
+#if SILVERLIGHT || WIN8 || WP75
                     index = WaitHandle.WaitAny(handles, timeout);
 #else
                     index = WaitHandle.WaitAny(handles, timeout, false);
@@ -407,7 +407,7 @@ namespace IronRuby.Builtins {
             RubyArray result = new RubyArray();
             if (ioObjects != null) {
                 for (int i = 0; i < ioObjects.Count; i++) {
-#if SILVERLIGHT || WIN8
+#if SILVERLIGHT || WIN8 || WP75
                     if (handleIndex == signaling || handles[handleIndex].WaitOne(0)) {
 #else
                     if (handleIndex == signaling || handles[handleIndex].WaitOne(0, false)) {
@@ -592,9 +592,9 @@ namespace IronRuby.Builtins {
 
         #region isatty
 
-#if !SILVERLIGHT && !WIN8
-        [RubyMethod("isatty", BuildConfig = "!SILVERLIGHT && !WIN8")]
-        [RubyMethod("tty?", BuildConfig = "!SILVERLIGHT && !WIN8")]
+#if !SILVERLIGHT && !WIN8 && !WP75
+        [RubyMethod("isatty", BuildConfig = "!SILVERLIGHT && !WIN8 && !WP75")]
+        [RubyMethod("tty?", BuildConfig = "!SILVERLIGHT && !WIN8 && !WP75")]
         public static bool IsAtty(RubyIO/*!*/ self) {
             ConsoleStreamType? console = self.ConsoleStreamType;
             if (console == null) {

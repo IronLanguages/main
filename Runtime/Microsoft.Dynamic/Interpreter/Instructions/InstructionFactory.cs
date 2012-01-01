@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_NUMERICS
 using BigInt = System.Numerics.BigInteger;
 #endif
 
@@ -45,7 +45,7 @@ namespace Microsoft.Scripting.Interpreter {
                     { typeof(double), InstructionFactory<double>.Factory },
                     { typeof(char), InstructionFactory<char>.Factory },
                     { typeof(string), InstructionFactory<string>.Factory },
-#if !CLR2
+#if FEATURE_NUMERICS
                     { typeof(BigInt), InstructionFactory<BigInt>.Factory },
 #endif
                     { typeof(BigInteger), InstructionFactory<BigInteger>.Factory }  

@@ -17,10 +17,6 @@ using System;
 using System.Dynamic.Utils;
 using System.Diagnostics;
 
-#if SILVERLIGHT
-using System.Core;
-#endif
-
 #if !FEATURE_CORE_DLR
 namespace Microsoft.Scripting.Ast {
 #else
@@ -30,9 +26,7 @@ namespace System.Linq.Expressions {
     /// <summary>
     /// Represents an expression that has a conditional operator.
     /// </summary>
-#if !SILVERLIGHT
     [DebuggerTypeProxy(typeof(Expression.ConditionalExpressionProxy))]
-#endif
     public class ConditionalExpression : Expression {
         private readonly Expression _test;
         private readonly Expression _true;

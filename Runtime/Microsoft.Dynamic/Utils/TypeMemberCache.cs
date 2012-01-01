@@ -23,7 +23,7 @@ namespace Microsoft.Scripting.Utils {
 
         // TODO: some memory can be saved here
         // { queried-type -> immutable { member-name, members } }
-#if CLR2
+#if CLR2 || WP75
         private readonly Dictionary<Type, Dictionary<string, List<T>>> _typeMembersByName =
             new Dictionary<Type, Dictionary<string, List<T>>>();
 

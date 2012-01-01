@@ -15,7 +15,7 @@
 // debug only:
 // #define USE_SNIPPETS
 
-#if !SILVERLIGHT && !WIN8 && !ANDROID
+#if !SILVERLIGHT && !WIN8 && !ANDROID && !WP75
 #if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else

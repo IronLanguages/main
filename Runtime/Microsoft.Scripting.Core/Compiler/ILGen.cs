@@ -20,10 +20,7 @@ using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
-
-#if SILVERLIGHT
-using System.Core;
-#endif
+using Microsoft.Scripting.Utils;
 
 #if !FEATURE_CORE_DLR
 namespace Microsoft.Scripting.Ast.Compiler {
@@ -526,7 +523,12 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         internal static bool ShouldLdtoken(Type t) {
-            return t is TypeBuilder || t.IsGenericParameter || t.IsVisible;
+#if FEATURE_REFEMIT
+            if (t is TypeBuilder) {
+                return true;
+            }
+#endif
+            return t.IsGenericParameter || t.IsVisible;
         }
 
         internal static bool ShouldLdtoken(MethodBase mb) {
@@ -878,7 +880,7 @@ namespace System.Linq.Expressions.Compiler {
 
 
         internal static void EmitGetValueOrDefault(this ILGenerator il, Type nullableType) {
-            MethodInfo mi = nullableType.GetMethod("GetValueOrDefault", System.ReflectionUtils.EmptyTypes);
+            MethodInfo mi = nullableType.GetMethod("GetValueOrDefault", ReflectionUtils.EmptyTypes);
             Debug.Assert(nullableType.IsValueType);
             il.Emit(OpCodes.Call, mi);
         }

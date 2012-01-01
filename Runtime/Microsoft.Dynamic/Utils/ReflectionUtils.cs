@@ -40,6 +40,16 @@ using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+#if WIN8 || WP75
+namespace System.Runtime.CompilerServices {
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Event)]
+    public sealed class SpecialNameAttribute : Attribute {
+        public SpecialNameAttribute() {
+        }
+    }
+}
+#endif
+
 #if WIN8
 namespace System {
     public enum TypeCode {
@@ -67,15 +77,6 @@ namespace System {
 namespace System.Reflection {
     [Flags]
     public enum BindingFlags {
-#if F
-        /// <summary>Specifies no binding flag.</summary>
-        Default = 0,
-        /// <summary>
-        /// Specifies that only members declared at the level of the supplied type's hierarchy should be considered. 
-        /// Inherited members are not considered.
-        /// </summary>
-        DeclaredOnly = 2,
-#endif
         /// <summary>Specifies that instance members are to be included in the search.</summary>
         Instance = 4,
         /// <summary>Specifies that static members are to be included in the search.</summary>
@@ -83,38 +84,7 @@ namespace System.Reflection {
         /// <summary>Specifies that public members are to be included in the search.</summary>
         Public = 16,
         /// <summary>Specifies that non-public members are to be included in the search.</summary>
-        NonPublic = 32,
-
-        All = Instance | Static | Public | NonPublic
-#if F
-        /// <summary>
-        /// Specifies that public and protected static members up the hierarchy should be returned. 
-        /// Private static members in inherited classes are not returned. 
-        /// Static members include fields, methods, events, and properties. 
-        /// Nested types are not returned.
-        /// </summary>
-        FlattenHierarchy = 64,
-        /// <summary>Specifies that a method is to be invoked. This must not be a constructor or a type initializer.</summary>
-        InvokeMethod = 256,
-        /// <summary>Specifies that Reflection should create an instance of the specified type. Calls the constructor that matches the given arguments. The supplied member name is ignored. If the type of lookup is not specified, (Instance | Public) will apply. It is not possible to call a type initializer.</summary>
-        CreateInstance = 512,
-        /// <summary>Specifies that the value of the specified field should be returned.</summary>
-        GetField = 1024,
-        /// <summary>Specifies that the value of the specified field should be set.</summary>
-        SetField = 2048,
-        /// <summary>Specifies that the value of the specified property should be returned.</summary>
-        GetProperty = 4096,
-        /// <summary>Specifies that the value of the specified property should be set. For COM properties, specifying this binding flag is equivalent to specifying PutDispProperty and PutRefDispProperty.</summary>
-        SetProperty = 8192,
-#endif
-    }
-}
-
-namespace System.Runtime.CompilerServices {
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Event)]
-    public sealed class SpecialNameAttribute : Attribute {
-        public SpecialNameAttribute() {
-        }
+        NonPublic = 32
     }
 }
 #else
@@ -156,6 +126,10 @@ namespace Microsoft.Scripting.Utils {
             _value = value;
         }
     }
+
+	[AttributeUsage(AttributeTargets.Parameter, Inherited = false), ComVisible(true)]
+	public sealed class OptionalAttribute : Attribute {
+	}
 #endif
 
     public static class ReflectionUtils {
@@ -881,10 +855,6 @@ namespace Microsoft.Scripting.Utils {
             return type.GetTypeInfo().ImplementedInterfaces;
         }
 
-        public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access) {
-            return AssemblyBuilder.DefineDynamicAssembly(name, access);
-        }
-
         public static Type[] GetRequiredCustomModifiers(this ParameterInfo parameter) {
             return EmptyTypes;
         }
@@ -920,10 +890,6 @@ namespace Microsoft.Scripting.Utils {
 
         public static IEnumerable<Module> GetModules(this Assembly assembly) {
             return assembly.GetModules();
-        }
-
-        public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access) {
-            return AppDomain.CurrentDomain.DefineDynamicAssembly(name, access);
         }
 
         public static IEnumerable<Type> GetImplementedInterfaces(this Type type) {
@@ -1019,11 +985,22 @@ namespace Microsoft.Scripting.Utils {
 
         #endregion
 
+#if FEATURE_REFEMIT
+#if WIN8
+        public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access) {
+            return AssemblyBuilder.DefineDynamicAssembly(name, access);
+        }
+#else
+        public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access) {
+            return AppDomain.CurrentDomain.DefineDynamicAssembly(name, access);
+        }
+#endif
 #if !FEATURE_PDBEMIT
         public static ModuleBuilder DefineDynamicModule(this AssemblyBuilder assembly, string name, bool emitDebugInfo) {
             // ignore the flag
             return assembly.DefineDynamicModule(name);
         }
+#endif
 #endif
 
         #region Signature and Type Formatting
@@ -1049,6 +1026,7 @@ namespace Microsoft.Scripting.Utils {
                 result.Append(' ');
             }
 
+#if FEATURE_REFEMIT
             MethodBuilder builder = method as MethodBuilder;
             if (builder != null) {
                 result.Append(builder.Signature);
@@ -1060,7 +1038,7 @@ namespace Microsoft.Scripting.Utils {
                 result.Append(cb.Signature);
                 return result;
             }
-
+#endif
             FormatTypeName(result, method.DeclaringType, nameDispenser);
             result.Append("::");
             result.Append(method.Name);
@@ -1175,7 +1153,7 @@ namespace Microsoft.Scripting.Utils {
 
         #endregion
 
-        #region Delegates
+        #region Delegates and Dynamic Methods
 
 #if WP75
         /// <summary>
@@ -1253,6 +1231,7 @@ namespace Microsoft.Scripting.Utils {
                 case 13: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object, object, object, object>);
                 case 14: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object, object, object, object, object>);
                 default:
+#if FEATURE_REFEMIT
                     Type[] paramTypes = new Type[paramCnt + 2];
                     paramTypes[0] = typeof(CallSite);
                     paramTypes[1] = typeof(object);
@@ -1260,7 +1239,24 @@ namespace Microsoft.Scripting.Utils {
                         paramTypes[i + 2] = typeof(object);
                     }
                     return Snippets.Shared.DefineDelegate("InvokeDelegate" + paramCnt, typeof(object), paramTypes);
+#else
+                    throw new NotSupportedException("Signature not supported on this platform.");
+#endif
             }
+        }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Portability", "CA1903:UseOnlyApiFromTargetedFramework")]
+        internal static DynamicMethod RawCreateDynamicMethod(string name, Type returnType, Type[] parameterTypes) {
+#if SILVERLIGHT // Module-hosted DynamicMethod is not available in SILVERLIGHT
+            return new DynamicMethod(name, returnType, parameterTypes);
+#else
+            //
+            // WARNING: we set restrictedSkipVisibility == true  (last parameter)
+            //          setting this bit will allow accessing nonpublic members
+            //          for more information see http://msdn.microsoft.com/en-us/library/bb348332.aspx
+            //
+            return new DynamicMethod(name, returnType, parameterTypes, true);
+#endif
         }
 
         #endregion
@@ -1486,6 +1482,7 @@ namespace Microsoft.Scripting.Utils {
         #endregion
 
         #region Type Builder
+#if FEATURE_REFEMIT
 
 #if WIN8 // TODO: what is ReservedMask?
         private const MethodAttributes MethodAttributesToEraseInOveride = MethodAttributes.Abstract | (MethodAttributes)0xD000;
@@ -1510,44 +1507,16 @@ namespace Microsoft.Scripting.Utils {
             return impl;
         }
 
-#if CLR2 && !SILVERLIGHT
-        // ParameterInfo.GetRequiredCustomModifiers is broken on method signatures that contain generic parameters on CLR < 2.0.50727.4918
-        private static bool? _modopsSupported;
-        private static bool ModopsSupported {
-            get {
-                if (_modopsSupported == null) {
-                    Assembly mscorlib = typeof(object).Assembly;
-                    var companyAttrs = mscorlib.GetCustomAttributes(typeof(AssemblyCompanyAttribute), false);
-                    if (companyAttrs.Length != 1 || ((AssemblyCompanyAttribute)companyAttrs[0]).Company.IndexOf("Microsoft") == -1) {
-                        _modopsSupported = true;
-                    } else {
-                        Version version = new Version(((AssemblyFileVersionAttribute)mscorlib.GetCustomAttributes(typeof(AssemblyFileVersionAttribute), false)[0]).Version);
-                        _modopsSupported = version.Revision >= 4918;
-                    }
-                }
-                return _modopsSupported.Value;
-            }
-        }
-#endif
-
         public static void CopyMethodSignature(MethodInfo from, MethodBuilder to, bool substituteDeclaringType) {
             ParameterInfo[] paramInfos = from.GetParameters();
             Type[] parameterTypes = new Type[paramInfos.Length];
             Type[][] parameterRequiredModifiers = null, parameterOptionalModifiers = null;
             Type[] returnRequiredModifiers = null, returnOptionalModifiers = null;
 
-#if !SILVERLIGHT
-#if CLR2
-            bool copyModopts = !from.IsGenericMethodDefinition || ModopsSupported;
-#else
-            bool copyModopts = true;
+#if FEATURE_CUSTOM_MODIFIERS
+            returnRequiredModifiers = from.ReturnParameter.GetRequiredCustomModifiers();
+            returnOptionalModifiers = from.ReturnParameter.GetOptionalCustomModifiers();
 #endif
-            if (copyModopts) {    
-                returnRequiredModifiers = from.ReturnParameter.GetRequiredCustomModifiers();
-                returnOptionalModifiers = from.ReturnParameter.GetOptionalCustomModifiers();
-            }
-#endif
-
             for (int i = 0; i < paramInfos.Length; i++) {
                 if (substituteDeclaringType && paramInfos[i].ParameterType == from.DeclaringType) {
                     parameterTypes[i] = to.DeclaringType;
@@ -1555,25 +1524,23 @@ namespace Microsoft.Scripting.Utils {
                     parameterTypes[i] = paramInfos[i].ParameterType;
                 }
 
-#if !SILVERLIGHT
-                if (copyModopts) {
-                    var mods = paramInfos[i].GetRequiredCustomModifiers();
-                    if (mods.Length > 0) {
-                        if (parameterRequiredModifiers == null) {
-                            parameterRequiredModifiers = new Type[paramInfos.Length][];
-                        }
-
-                        parameterRequiredModifiers[i] = mods;
+#if FEATURE_CUSTOM_MODIFIERS
+                var mods = paramInfos[i].GetRequiredCustomModifiers();
+                if (mods.Length > 0) {
+                    if (parameterRequiredModifiers == null) {
+                        parameterRequiredModifiers = new Type[paramInfos.Length][];
                     }
 
-                    mods = paramInfos[i].GetOptionalCustomModifiers();
-                    if (mods.Length > 0) {
-                        if (parameterOptionalModifiers == null) {
-                            parameterOptionalModifiers = new Type[paramInfos.Length][];
-                        }
+                    parameterRequiredModifiers[i] = mods;
+                }
 
-                        parameterOptionalModifiers[i] = mods;
+                mods = paramInfos[i].GetOptionalCustomModifiers();
+                if (mods.Length > 0) {
+                    if (parameterOptionalModifiers == null) {
+                        parameterOptionalModifiers = new Type[paramInfos.Length][];
                     }
+
+                    parameterOptionalModifiers[i] = mods;
                 }
 #endif
             }
@@ -1618,7 +1585,7 @@ namespace Microsoft.Scripting.Utils {
                 }
             }
         }
-
+#endif
         #endregion
 
         #region Extension Methods
@@ -1674,7 +1641,7 @@ namespace Microsoft.Scripting.Utils {
         /// Uses a global cache if <paramref name="useCache"/> is true.
         /// </summary>
         public static IEnumerable<KeyValuePair<string, IEnumerable<ExtensionMethodInfo>>> GetVisibleExtensionMethodGroups(Assembly/*!*/ assembly, bool useCache) {
-#if !CLR2
+#if !CLR2 && FEATURE_REFEMIT
             useCache &= !assembly.IsDynamic;
 #endif
             if (useCache) {

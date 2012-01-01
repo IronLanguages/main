@@ -48,6 +48,15 @@ namespace Microsoft.Scripting.Utils {
         }
 #endif
 
+        public static IEnumerable<TSuper> ToCovariant<T, TSuper>(IEnumerable<T> enumerable)
+            where T : TSuper {
+#if FEATURE_VARIANCE
+            return (IEnumerable<TSuper>)enumerable;
+#else
+            return new CovariantConvertor<T, TSuper>(enumerable);
+#endif
+        }
+
         public static void AddRange<T>(ICollection<T> collection, IEnumerable<T> items) {
             ContractUtils.RequiresNotNull(collection, "collection");
             ContractUtils.RequiresNotNull(items, "items");
@@ -82,11 +91,6 @@ namespace Microsoft.Scripting.Utils {
             while (enumerator.MoveNext()) {
                 yield return enumerator.Current;
             }
-        }
-
-        public static IEnumerable<TSuper> ToCovariant<T, TSuper>(IEnumerable<T> enumerable)
-            where T : TSuper {
-            return new CovariantConvertor<T, TSuper>(enumerable);
         }
 
         private class CovariantConvertor<T, TSuper> : IEnumerable<TSuper> where T : TSuper {
@@ -242,7 +246,7 @@ namespace Microsoft.Scripting.Utils {
         }
 
 
-#if SILVERLIGHT || WIN8
+#if SILVERLIGHT || WIN8 || WP75
         // HashSet.CreateSetComparer not available on Silverlight
         public static IEqualityComparer<HashSet<T>> CreateSetComparer<T>() {
             return new HashSetEqualityComparer<T>();

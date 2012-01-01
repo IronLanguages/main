@@ -231,7 +231,7 @@ namespace Microsoft.Scripting.Generation {
             _ilg.Emit(opcode, arg);
         }
 
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !WP75
         /// <summary>
         /// Emits an instruction with a signature token.
         /// </summary>
@@ -261,7 +261,7 @@ namespace Microsoft.Scripting.Generation {
             _ilg.EmitCall(opcode, methodInfo, optionalParameterTypes);
         }
 
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !WP75
 #if !WIN8
         /// <summary>
         /// Emits an unmanaged indirect call instruction.
@@ -813,7 +813,12 @@ namespace Microsoft.Scripting.Generation {
 
         // TODO: Can we always ldtoken and let restrictedSkipVisibility sort things out?
         public static bool ShouldLdtoken(Type t) {
-            return t.GetTypeInfo() is TypeBuilder || t.IsGenericParameter || t.IsVisible();
+#if FEATURE_REFEMIT
+            if (t.GetTypeInfo() is TypeBuilder) {
+                return true;
+            }
+#endif
+            return t.IsGenericParameter || t.IsVisible();
         }
 
         public static bool ShouldLdtoken(MethodBase mb) {

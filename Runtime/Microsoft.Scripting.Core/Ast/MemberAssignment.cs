@@ -17,10 +17,6 @@ using System;
 using System.Dynamic.Utils;
 using System.Reflection;
 
-#if SILVERLIGHT
-using System.Core;
-#endif
-
 #if !FEATURE_CORE_DLR
 namespace Microsoft.Scripting.Ast {
 #else

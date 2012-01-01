@@ -56,28 +56,6 @@ namespace Microsoft.Scripting.Utils {
             return res;
         }
 
-        public static T[] FindAll<T>(T[] array, Predicate<T> match) {
-#if SILVERLIGHT
-            if (array == null) {
-                throw new ArgumentNullException("array");
-            }
-
-            if (match == null) {
-                throw new ArgumentNullException("match");
-            }
-
-            List<T> list = new List<T>();
-            for (int i = 0; i < array.Length; i++) {
-                if (match(array[i])) {
-                    list.Add(array[i]);
-                }
-            }
-            return list.ToArray();
-#else
-            return System.Array.FindAll(array, match);
-#endif
-        }
-
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1814:PreferJaggedArraysOverMultidimensional", MessageId = "1#")] // TODO: fix
         public static void PrintTable(StringBuilder output, string[,] table) {
             ContractUtils.RequiresNotNull(output, "output");

@@ -17,10 +17,6 @@ using System;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 
-#if SILVERLIGHT
-using System.Core;
-#endif
-
 #if !FEATURE_CORE_DLR
 namespace Microsoft.Scripting.Ast {
 #else
@@ -29,9 +25,7 @@ namespace System.Linq.Expressions {
     /// <summary>
     /// Represents an infinite loop. It can be exited with "break".
     /// </summary>
-#if !SILVERLIGHT
     [DebuggerTypeProxy(typeof(Expression.LoopExpressionProxy))]
-#endif
     public sealed class LoopExpression : Expression {
         private readonly Expression _body;
         private readonly LabelTarget _break;
