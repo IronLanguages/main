@@ -551,7 +551,6 @@ C().foo()
             Assert(result == 123);
         }
 
-        [Run]
         public void PythonInterop2() {
             if (!_driver.RunPython) return;
 
