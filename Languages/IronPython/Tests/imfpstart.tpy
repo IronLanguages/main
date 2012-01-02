@@ -1,8 +1,0 @@
-
-try:
-    from impmodfrmpkg.mod import mod
-except ImportError, e:
-    pass
-else:
-    raise AssertionError("Import of mod from pkg.mod unexpectedly succeeded")
-    
