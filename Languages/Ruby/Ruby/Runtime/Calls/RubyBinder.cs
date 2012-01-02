@@ -117,7 +117,6 @@ namespace IronRuby.Runtime.Calls {
                     if (!_DumpingExpression) {
                         var d = (restrictions != BindingRestrictions.Empty) ? Expression.IfThen(restrictions.ToExpression(), expr) : expr;
                         _DumpingExpression = true;
-                        d.DumpExpression(Console.Out);
                         try {
                             if (_dumpViewMethod == null) {
                                 _dumpViewMethod = typeof(Expression).GetMethod("get_DebugView", BindingFlags.NonPublic | BindingFlags.Instance);

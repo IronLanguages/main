@@ -565,8 +565,10 @@ namespace IronPython.Runtime.Types {
         class ProtectedMemberResolver : MemberResolver {
             public override MemberGroup/*!*/ ResolveMember(MemberBinder/*!*/ binder, MemberRequestKind/*!*/ action, Type/*!*/ type, string/*!*/ name) {
                 foreach (Type t in binder.GetContributingTypes(type)) {
-                    MemberGroup res = new MemberGroup(ArrayUtils.FindAll(
-                        t.GetMember(name, BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy), ProtectedOnly));
+                    MemberGroup res = new MemberGroup(
+                        t.GetMember(name, BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy)
+                        .Where(ProtectedOnly)
+                        .ToArray());
 
                     for (int i = 0; i < res.Count; i++) {
                         MethodTracker meth = res[i] as MethodTracker;                        
@@ -599,9 +601,10 @@ namespace IronPython.Runtime.Types {
             protected override IEnumerable<string/*!*/>/*!*/ GetCandidateNames(MemberBinder/*!*/ binder, MemberRequestKind/*!*/ action, Type/*!*/ type) {
                 // these members are visible but only accept derived types.
                 foreach (Type t in binder.GetContributingTypes(type)) {
-                    MemberInfo[] mems = ArrayUtils.FindAll(t.GetMembers(BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic), ProtectedOnly);
-                    foreach (MemberInfo mi in mems) {
-                        yield return mi.Name;
+                    foreach (MemberInfo mi in t.GetMembers(BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic)) {
+                        if (ProtectedOnly(mi)) {
+                            yield return mi.Name;
+                        }
                     }
                 }
             }
