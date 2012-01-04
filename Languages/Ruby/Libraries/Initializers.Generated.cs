@@ -8140,6 +8140,13 @@ namespace IronRuby.Builtins {
                 new Func<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.BlockParam, System.Collections.IList, System.Object, System.Object>(IronRuby.Builtins.IListOps.ReverseIndex)
             );
             
+            DefineLibraryMethod(module, "sample", 0x51, 
+                0x00000000U, 0x00000000U, 0x00020000U, 
+                new Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Object>(IronRuby.Builtins.IListOps.Sample), 
+                new Func<IronRuby.Runtime.UnaryOpStorage, IronRuby.Runtime.ConversionStorage<System.Int32>, System.Collections.IList, System.Object, System.Collections.IList>(IronRuby.Builtins.IListOps.Sample), 
+                new Func<IronRuby.Runtime.UnaryOpStorage, System.Collections.IList, System.Int32, System.Collections.IList>(IronRuby.Builtins.IListOps.Sample)
+            );
+            
             DefineLibraryMethod(module, "select!", 0x51, 
                 0x00000000U, 
                 new Func<IronRuby.Runtime.BlockParam, System.Collections.IList, System.Object>(IronRuby.Builtins.IListOps.SelectInPlace)

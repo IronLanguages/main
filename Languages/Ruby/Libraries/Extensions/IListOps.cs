@@ -1882,7 +1882,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region shuffle, shuffle!
+        #region shuffle, shuffle!, sample
 
         [RubyMethod("shuffle")]
         public static IList/*!*/ Shuffle(UnaryOpStorage/*!*/ allocateStorage, RubyArray/*!*/ self) {
@@ -1919,6 +1919,45 @@ namespace IronRuby.Builtins {
                 self[j] = value;
             }
             return self;
+        }
+
+        [RubyMethod("sample")]
+        public static object Sample(RubyContext/*!*/ context, IList/*!*/ self) {
+            var generator = context.RandomNumberGenerator;
+            if (self.Count == 0) {
+                return null;
+            }
+            return self[generator.Next(self.Count)];
+        }
+
+        [RubyMethod("sample")]
+        public static IList/*!*/ Sample(UnaryOpStorage/*!*/ allocateStorage, ConversionStorage<int>/*!*/ fixnumCast, IList/*!*/ self, object elementCount) {
+            return Sample(allocateStorage, self, Protocols.CastToFixnum(fixnumCast, elementCount));
+        }
+
+        [RubyMethod("sample")]
+        public static IList/*!*/ Sample(UnaryOpStorage/*!*/ allocateStorage, IList/*!*/ self, [DefaultProtocol]int elementCount) {
+            if (elementCount < 0) {
+                throw RubyExceptions.CreateArgumentError("negative sample number");
+            }
+
+            IList result = CreateResultArray(allocateStorage, self);
+            if (self.Count == 0) {
+                return result;
+            }
+
+            var generator = allocateStorage.Context.RandomNumberGenerator;
+
+            // we can't pick the same element twice, so remove items from a copy of the list as we pick them
+            var itemsRemaining = new ArrayList(self);
+
+            while (itemsRemaining.Count > 0 && elementCount--> 0) {
+                var idx = generator.Next(itemsRemaining.Count);
+                result.Add(itemsRemaining[idx]);
+                itemsRemaining.RemoveAt(idx);
+            }
+
+            return result;
         }
 
         #endregion
