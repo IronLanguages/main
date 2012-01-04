@@ -782,7 +782,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region delete, delete_at, reject, reject!
+        #region delete, delete_at, reject, reject!, select!
 
         public static bool Remove(BinaryOpStorage/*!*/ equals, IList/*!*/ self, object item) {
             int i = 0;
@@ -834,7 +834,7 @@ namespace IronRuby.Builtins {
 
         private static object DeleteIfImpl(BlockParam/*!*/ block, IList/*!*/ self) {
             bool changed, jumped;
-            DeleteIf(block, self, out changed, out jumped);
+            DeleteIf(block, self, RubyOps.IsTrue, out changed, out jumped);
             return self;
         }
 
@@ -845,7 +845,7 @@ namespace IronRuby.Builtins {
 
         private static object RejectInPlaceImpl(BlockParam/*!*/ block, IList/*!*/ self) {
             bool changed, jumped;
-            object result = DeleteIf(block, self, out changed, out jumped);
+            object result = DeleteIf(block, self, RubyOps.IsTrue, out changed, out jumped);
             return jumped ? result : changed ? self : null;
         }
 
@@ -875,7 +875,18 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        private static object DeleteIf(BlockParam/*!*/ block, IList/*!*/ self, out bool changed, out bool jumped) {
+        [RubyMethod("select!")]
+        public static object SelectInPlace(BlockParam block, IList/*!*/ self) {
+            return (block != null) ? SelectInPlaceImpl(block, self) : new Enumerator((_, innerBlock) => SelectInPlaceImpl(innerBlock, self));
+        }
+
+        private static object SelectInPlaceImpl(BlockParam/*!*/ block, IList/*!*/ self) {
+            bool changed, jumped;
+            object result = DeleteIf(block, self, RubyOps.IsFalse, out changed, out jumped);
+            return jumped ? result : changed ? self : null;
+        }
+        
+        private static object DeleteIf(BlockParam/*!*/ block, IList/*!*/ self, Func<object, bool> predicate, out bool changed, out bool jumped) {
             Assert.NotNull(block, self);
 
             changed = false;
@@ -892,7 +903,7 @@ namespace IronRuby.Builtins {
                     return result;
                 }
 
-                if (RubyOps.IsTrue(result)) {
+                if (predicate(result)) {
                     changed = true;
                     self.RemoveAt(i);
                 } else {
