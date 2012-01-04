@@ -519,7 +519,7 @@ namespace IronRuby.Builtins {
 
             return self[index] = value;
         }
-
+        
         [RubyMethod("[]=")]
         public static object SetElement(IList/*!*/ self, [DefaultProtocol]int index, object value) {
             index = NormalizeIndexThrowIfNegative(self, index);
@@ -531,6 +531,21 @@ namespace IronRuby.Builtins {
                 self.Add(value);
             }
             return value;
+        }
+
+        [RubyMethod("[]=")]
+        public static object SetElement(ConversionStorage<IList>/*!*/ arrayTryCast, ConversionStorage<int> fixnumCast,
+            RubyArray/*!*/ self, object index, object length, object value) {
+
+            self.RequireNotFrozen(); // rubyspec says we must check for frozen before trying to coerce the index
+            return SetElement(arrayTryCast, self as IList, Protocols.CastToFixnum(fixnumCast, index), Protocols.CastToFixnum(fixnumCast, length), value);
+        }
+
+        [RubyMethod("[]=")]
+        public static object SetElement(ConversionStorage<IList>/*!*/ arrayTryCast, RubyArray/*!*/ self,
+            [DefaultProtocol]int index, [DefaultProtocol]int length, object value) {
+
+            return SetElement(arrayTryCast, self as IList, index, length, value);
         }
 
         [RubyMethod("[]=")]
@@ -584,11 +599,24 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("[]=")]
         public static object SetElement(ConversionStorage<IList>/*!*/ arrayTryCast, ConversionStorage<int>/*!*/ fixnumCast, 
-            IList/*!*/ self, [NotNull]Range/*!*/ range, object value) {
+            RubyArray/*!*/ self, object rangeOrIndex, object value) {
 
-            int start, count;
-            RangeToStartAndCount(fixnumCast, range, self.Count, out start, out count);
-            return SetElement(arrayTryCast, self, start, count, value);
+            self.RequireNotFrozen(); // rubyspec says we must check for frozen before trying to coerce the index
+            return SetElement(arrayTryCast, fixnumCast, self as IList, rangeOrIndex, value);
+        }
+
+        [RubyMethod("[]=")]
+        public static object SetElement(ConversionStorage<IList>/*!*/ arrayTryCast, ConversionStorage<int>/*!*/ fixnumCast, 
+            IList/*!*/ self, object rangeOrIndex, object value) {
+
+            var range = rangeOrIndex as Range;
+            if (range == null) {
+                return SetElement(self, Protocols.CastToFixnum(fixnumCast, rangeOrIndex), value);
+            } else {
+                int start, count;
+                RangeToStartAndCount(fixnumCast, range, self.Count, out start, out count);
+                return SetElement(arrayTryCast, self, start, count, value);
+            }
         }
 
         private static void RangeToStartAndCount(ConversionStorage<int>/*!*/ fixnumCast, Range/*!*/ range, int length, out int start, out int count) {

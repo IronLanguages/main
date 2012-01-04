@@ -7840,11 +7840,14 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "[]=", 0x51, 
-                0x00010000U, 0x00010000U, 0x00060000U, 0x00000008U, 
+                new[] { 0x00010000U, 0x00010000U, 0x00000000U, 0x00060000U, 0x00060000U, 0x00000000U, 0x00000000U}, 
                 new Func<IronRuby.Builtins.RubyArray, System.Int32, System.Object, System.Object>(IronRuby.Builtins.IListOps.SetElement), 
                 new Func<System.Collections.IList, System.Int32, System.Object, System.Object>(IronRuby.Builtins.IListOps.SetElement), 
+                new Func<IronRuby.Runtime.ConversionStorage<System.Collections.IList>, IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Builtins.RubyArray, System.Object, System.Object, System.Object, System.Object>(IronRuby.Builtins.IListOps.SetElement), 
+                new Func<IronRuby.Runtime.ConversionStorage<System.Collections.IList>, IronRuby.Builtins.RubyArray, System.Int32, System.Int32, System.Object, System.Object>(IronRuby.Builtins.IListOps.SetElement), 
                 new Func<IronRuby.Runtime.ConversionStorage<System.Collections.IList>, System.Collections.IList, System.Int32, System.Int32, System.Object, System.Object>(IronRuby.Builtins.IListOps.SetElement), 
-                new Func<IronRuby.Runtime.ConversionStorage<System.Collections.IList>, IronRuby.Runtime.ConversionStorage<System.Int32>, System.Collections.IList, IronRuby.Builtins.Range, System.Object, System.Object>(IronRuby.Builtins.IListOps.SetElement)
+                new Func<IronRuby.Runtime.ConversionStorage<System.Collections.IList>, IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Builtins.RubyArray, System.Object, System.Object, System.Object>(IronRuby.Builtins.IListOps.SetElement), 
+                new Func<IronRuby.Runtime.ConversionStorage<System.Collections.IList>, IronRuby.Runtime.ConversionStorage<System.Int32>, System.Collections.IList, System.Object, System.Object, System.Object>(IronRuby.Builtins.IListOps.SetElement)
             );
             
             DefineLibraryMethod(module, "|", 0x51, 
