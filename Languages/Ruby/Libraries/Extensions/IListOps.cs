@@ -1865,6 +1865,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("shuffle!")]
         public static RubyArray/*!*/ ShuffleInPlace(RubyContext/*!*/ context, RubyArray/*!*/ self) {
+            self.RequireNotFrozen();
             var generator = context.RandomNumberGenerator;
             for (int i = self.Count - 1; i >= 0; i--) {
                 int j = generator.Next(i + 1);
