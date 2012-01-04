@@ -997,6 +997,11 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("fill")]
         public static IList/*!*/ Fill(IList/*!*/ self, object obj, [DefaultParameterValue(0)]int start) {
+            var rubyArray = self as RubyArray;
+            if (rubyArray != null) {
+                rubyArray.RequireNotFrozen(); // rubyspec says we must check for frozen before doing anything else
+            }
+            
             // Note: Array#fill(obj, start) is not equivalent to Array#fill(obj, start, 0)
             // (as per MRI behavior, the latter can expand the array if start > length, but the former doesn't)
             start = Math.Max(0, NormalizeIndex(self, start));
@@ -1009,6 +1014,10 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("fill")]
         public static IList/*!*/ Fill(IList/*!*/ self, object obj, int start, int length) {
+            if (length > (int.MaxValue / 20)) { // This is roughly what MRI array max size is
+                throw RubyExceptions.CreateArgumentError("argument too big");
+            }
+
             // Note: Array#fill(obj, start) is not equivalent to Array#fill(obj, start, 0)
             // (as per MRI behavior, the latter can expand the array if start > length, but the former doesn't)
             start = Math.Max(0, NormalizeIndex(self, start));
@@ -1023,7 +1032,11 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("fill")]
-        public static IList/*!*/ Fill(ConversionStorage<int>/*!*/ fixnumCast, IList/*!*/ self, object obj, object start, [DefaultParameterValue(null)]object length) {
+        public static IList/*!*/ Fill(ConversionStorage<int>/*!*/ fixnumCast, BlockParam block, IList/*!*/ self, object obj, object start, [DefaultParameterValue(null)]object length) {
+            if (block != null) { // 3 arguments requires no block be passed, but because of the way IronRuby selects methods, we must explicitly check for the block
+                throw RubyExceptions.CreateArgumentError("wrong number of arguments (3 for 0..2)");
+            }
+
             int startFixnum = (start == null) ? 0 : Protocols.CastToFixnum(fixnumCast, start);
             if (length == null) {
                 return Fill(self, obj, startFixnum);
@@ -1036,6 +1049,9 @@ namespace IronRuby.Builtins {
         public static IList/*!*/ Fill(ConversionStorage<int>/*!*/ fixnumCast, IList/*!*/ self, object obj, [NotNull]Range/*!*/ range) {
             int begin = NormalizeIndex(self, Protocols.CastToFixnum(fixnumCast, range.Begin));
             int end = NormalizeIndex(self, Protocols.CastToFixnum(fixnumCast, range.End));
+            if (begin < 0 || end < 0) {
+                throw RubyExceptions.CreateRangeError("{0} out of range", range);
+            }
             int length = Math.Max(0, end - begin + (range.ExcludeEnd ? 0 : 1));
 
             return Fill(self, obj, begin, length);
@@ -1086,6 +1102,9 @@ namespace IronRuby.Builtins {
         public static object Fill(ConversionStorage<int>/*!*/ fixnumCast, [NotNull]BlockParam/*!*/ block, IList/*!*/ self, [NotNull]Range/*!*/ range) {
             int begin = NormalizeIndex(self, Protocols.CastToFixnum(fixnumCast, range.Begin));
             int end = NormalizeIndex(self, Protocols.CastToFixnum(fixnumCast, range.End));
+            if (begin < 0 || end < 0) {
+                throw RubyExceptions.CreateRangeError("{0} out of range", range);
+            }
             int length = Math.Max(0, end - begin + (range.ExcludeEnd ? 0 : 1));
 
             return Fill(block, self, begin, length);
