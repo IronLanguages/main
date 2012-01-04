@@ -633,18 +633,23 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        private static void AddUniqueItems(IList/*!*/ list, IList/*!*/ result, Dictionary<object, bool> seen, ref bool nilSeen) {
+        private static void AddUniqueItems(BlockParam block, IList/*!*/ list, IList/*!*/ result, Dictionary<object, bool> seen, ref bool nilSeen) {
             foreach (object item in list) {
-                if (item == null) {
+                object key;
+                if (block == null || block.Yield(item, out key)) {
+                    key = item;
+                }
+
+                if (key == null) {
                     if (!nilSeen) {
                         nilSeen = true;
-                        result.Add(null);
+                        result.Add(item);
                     }
                     continue;
                 }
 
-                if (!seen.ContainsKey(item)) {
-                    seen.Add(item, true);
+                if (!seen.ContainsKey(key)) {
+                    seen.Add(key, true);
                     result.Add(item);
                 }
             }
@@ -658,9 +663,9 @@ namespace IronRuby.Builtins {
             var result = new RubyArray();
 
             // Union merges the two arrays, removing duplicates
-            AddUniqueItems(self, result, seen, ref nilSeen);
+            AddUniqueItems(null, self, result, seen, ref nilSeen);
 
-            AddUniqueItems(other, result, seen, ref nilSeen);
+            AddUniqueItems(null, other, result, seen, ref nilSeen);
 
             return result;
         }
@@ -1881,30 +1886,36 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("uniq")]
-        public static IList/*!*/ Unique(UnaryOpStorage/*!*/ allocateStorage, IList/*!*/ self) {
+        public static IList/*!*/ Unique(UnaryOpStorage/*!*/ allocateStorage, BlockParam block, IList/*!*/ self) {
             IList result = CreateResultArray(allocateStorage, self);
 
             var seen = new Dictionary<object, bool>(allocateStorage.Context.EqualityComparer);
             bool nilSeen = false;
             
-            AddUniqueItems(self, result, seen, ref nilSeen);
+            AddUniqueItems(block, self, result, seen, ref nilSeen);
             return result;
         }
 
         [RubyMethod("uniq!")]
-        public static IList UniqueSelf(UnaryOpStorage/*!*/ hashStorage, BinaryOpStorage/*!*/ eqlStorage, RubyArray/*!*/ self) {
+        public static IList UniqueSelf(UnaryOpStorage/*!*/ hashStorage, BinaryOpStorage/*!*/ eqlStorage, BlockParam block, RubyArray/*!*/ self) {
             self.RequireNotFrozen();
-            return UniqueSelf(hashStorage, eqlStorage, (IList)self);
+            return UniqueSelf(hashStorage, eqlStorage, block, (IList)self);
         }
 
         [RubyMethod("uniq!")]
-        public static IList UniqueSelf(UnaryOpStorage/*!*/ hashStorage, BinaryOpStorage/*!*/ eqlStorage, IList/*!*/ self) {
-            var seen = new Dictionary<object, bool>(new EqualityComparer(hashStorage, eqlStorage));
+        public static IList UniqueSelf(UnaryOpStorage/*!*/ hashStorage, BinaryOpStorage/*!*/ eqlStorage, BlockParam block, IList/*!*/ self) {
+            IEqualityComparer<object> comparer = new EqualityComparer(hashStorage, eqlStorage);
+            var seen = new Dictionary<object, bool>(comparer);
             bool nilSeen = false;
             bool modified = false;
             int i = 0;
             while (i < self.Count) {
-                object key = self[i];
+                object item = self[i];
+                object key;
+                if (block == null || block.Yield(item, out key)) {
+                    key = item;
+                }
+
                 if (key != null && !seen.ContainsKey(key)) {
                     seen.Add(key, true);
                     i++;
@@ -1912,8 +1923,15 @@ namespace IronRuby.Builtins {
                     nilSeen = true;
                     i++;
                 } else {
-                    self.RemoveAt(i);
+                    // removing objects modifies the array... which breaks the dictionary if "seen" is a self-referential array
+                    bool isRecursiveArray = seen.Remove(self);
+
+                    self.RemoveAt(i); 
                     modified = true;
+
+                    if (isRecursiveArray) {
+                        seen.Add(self, true); // self.hash will change
+                    }
                 }
             }
 

@@ -8203,13 +8203,13 @@ namespace IronRuby.Builtins {
             
             DefineLibraryMethod(module, "uniq", 0x51, 
                 0x00000000U, 
-                new Func<IronRuby.Runtime.UnaryOpStorage, System.Collections.IList, System.Collections.IList>(IronRuby.Builtins.IListOps.Unique)
+                new Func<IronRuby.Runtime.UnaryOpStorage, IronRuby.Runtime.BlockParam, System.Collections.IList, System.Collections.IList>(IronRuby.Builtins.IListOps.Unique)
             );
             
             DefineLibraryMethod(module, "uniq!", 0x51, 
                 0x00000000U, 0x00000000U, 
-                new Func<IronRuby.Runtime.UnaryOpStorage, IronRuby.Runtime.BinaryOpStorage, IronRuby.Builtins.RubyArray, System.Collections.IList>(IronRuby.Builtins.IListOps.UniqueSelf), 
-                new Func<IronRuby.Runtime.UnaryOpStorage, IronRuby.Runtime.BinaryOpStorage, System.Collections.IList, System.Collections.IList>(IronRuby.Builtins.IListOps.UniqueSelf)
+                new Func<IronRuby.Runtime.UnaryOpStorage, IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyArray, System.Collections.IList>(IronRuby.Builtins.IListOps.UniqueSelf), 
+                new Func<IronRuby.Runtime.UnaryOpStorage, IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.BlockParam, System.Collections.IList, System.Collections.IList>(IronRuby.Builtins.IListOps.UniqueSelf)
             );
             
             DefineLibraryMethod(module, "unshift", 0x51, 
