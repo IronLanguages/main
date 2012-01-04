@@ -8146,8 +8146,9 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "shift", 0x51, 
-                0x00000000U, 
-                new Func<System.Collections.IList, System.Object>(IronRuby.Builtins.IListOps.Shift)
+                0x00000000U, 0x00020000U, 
+                new Func<System.Collections.IList, System.Object>(IronRuby.Builtins.IListOps.Shift), 
+                new Func<IronRuby.Runtime.UnaryOpStorage, System.Collections.IList, System.Int32, System.Object>(IronRuby.Builtins.IListOps.Shift)
             );
             
             DefineLibraryMethod(module, "shuffle", 0x51, 

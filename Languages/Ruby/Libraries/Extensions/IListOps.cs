@@ -1739,6 +1739,11 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("shift")]
         public static object Shift(IList/*!*/ self) {
+            var rubyArray = self as RubyArray;
+            if (rubyArray != null) {
+                rubyArray.RequireNotFrozen();
+            }
+
             if (self.Count == 0) {
                 return null;
             }
@@ -1746,6 +1751,35 @@ namespace IronRuby.Builtins {
             object result = self[0];
             self.RemoveAt(0);
             return result;
+        }
+
+        [RubyMethod("shift")]
+        public static object Shift(UnaryOpStorage/*!*/ allocateStorage, IList/*!*/ self, [DefaultProtocol]int elementCount) {
+            if (elementCount < 0) {
+                throw RubyExceptions.CreateArgumentError("negative array size");
+            }
+
+            var rubyArray = self as RubyArray;
+            if (rubyArray != null) {
+                rubyArray.RequireNotFrozen();
+            }
+
+            IList resultList = CreateResultArray(allocateStorage, self);
+
+            if (self.Count == 0) {
+                return resultList;
+            }
+
+            while (elementCount-- > 0) {
+                if (self.Count == 0) {
+                    break;
+                }
+
+                object result = self[0];
+                self.RemoveAt(0);
+                resultList.Add(result);
+            }
+            return resultList;
         }
 
         [RubyMethod("unshift")]
