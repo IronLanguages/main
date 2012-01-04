@@ -227,12 +227,15 @@ namespace IronPython.Runtime.Operations {
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext context, PythonType cls, object x) {
-            if (cls == TypeCache.Int32) return FastNew(context, x); // TODO: Call site?
+            object value = FastNew(context, x);
+            if (cls == TypeCache.Int32) {
+                return value;
+            } else {
+                ValidateType(cls);
 
-            ValidateType(cls);
-
-            // derived int creation...
-            return cls.CreateInstance(context, x);
+                // derived int creation...
+                return cls.CreateInstance(context, value);
+            }
         }
 
         // "int()" calls ReflectedType.Call(), which calls "Activator.CreateInstance" and return directly.
