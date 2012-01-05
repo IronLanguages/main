@@ -1962,6 +1962,74 @@ namespace IronRuby.Builtins {
 
         #endregion
 
+        #region rotate, rotate!
+
+        [RubyMethod("rotate")]
+        public static IList/*!*/ Rotate(UnaryOpStorage/*!*/ allocateStorage, IList/*!*/ self) {
+            return Rotate(allocateStorage, self, 1);
+        }
+
+        [RubyMethod("rotate")]
+        public static IList/*!*/ Rotate(UnaryOpStorage/*!*/ allocateStorage, IList/*!*/ self, [DefaultProtocol]int n) {
+            IList result = CreateResultArray(allocateStorage, self);
+            if (result is RubyArray) {
+                (result as RubyArray).AddCapacity(self.Count);
+            }
+            for (int i = 0; i< self.Count; i++ ) {
+                var idx = NormalizeIndex(self, (i + n) % self.Count ); // we can have negative n which rotates backwards
+                result.Add(self[idx]);
+            }
+            return result;
+        }
+
+        [RubyMethod("rotate!")]
+        public static IList/*!*/ InPlaceRotate(IList/*!*/ self) {
+            return InPlaceRotate(self, 1);
+        }
+
+        [RubyMethod("rotate!")]
+        public static IList/*!*/ InPlaceRotate(IList/*!*/ self, [DefaultProtocol]int n) {
+            if (self is RubyArray) {
+                ((RubyArray)self).RequireNotFrozen(); // check frozen first, for consistency with shuffle, fill, etc
+            }
+
+            var count = self.Count;
+            if (count == 0 || count == 1)
+                return self;
+
+            n = n % count;
+            if (n == 0)
+                return self;
+
+            var tmp = new object[Math.Abs(n)];
+            if (n > 0) {
+                for (int i = 0; i < n; i++) { // copy parts that will get overwritten
+                    tmp[i] = self[i];
+                }
+                for (int i = n; i < count; i++) { // shift down
+                    self[i - n] = self[i];
+                }
+                for (int i = 0; i < n; i++) { // restore overwritten
+                    self[count - n + i] = tmp[i];
+                }
+            } else { // negative n
+                n = -n;
+                for (int i = n; i > 0; i--) { // copy parts that will get overwritten
+                    tmp[n - i] = self[count - i];
+                }
+                for (int i = count - n - 1; i >= 0; i--) { // shift up
+                    self[i + n] = self[i];
+                }
+                for (int i = 0; i < n; i++) { // restore overwritten
+                    self[i] = tmp[i];
+                }
+            }
+
+            return self;
+        }
+
+        #endregion
+
         #region reverse, reverse!, transpose, uniq, uniq!
 
         [RubyMethod("reverse")]
