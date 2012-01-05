@@ -1385,6 +1385,23 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("rindex")]
+        public static Enumerator/*!*/ GetReverseIndexEnumerator(IList/*!*/ self) { // when rindex is called with no args and no block, we produce a reverse value enumerator. When the enumerator is each'ed over, if the block returns true, we return the index at which that happened
+            return new Enumerator((_, innerBlock) => {
+                object result;
+                for(int i=self.Count - 1; i >= 0; i--) {
+                    if(innerBlock.Yield(self[i], out result)) {
+                        return null; // block exited with break or similar
+                    }
+                    if(RubyOps.IsTrue(result)) {
+                        return i;
+                    }
+                }
+
+                return null;
+            });
+        }
+
+        [RubyMethod("rindex")]
         public static object ReverseIndex([NotNull]BlockParam/*!*/ predicate, IList/*!*/ self) {
             foreach (int i in IListOps.ReverseEnumerateIndexes(self)) {
                 object blockResult;
