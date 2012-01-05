@@ -41,7 +41,7 @@ namespace IronRuby.Builtins {
         private static void RequireNotFrozen(IList/*!*/ self) {
             RubyArray array = self as RubyArray;
             if (array != null && array.IsFrozen) {
-                throw RubyExceptions.CreateObjectFrozenError();
+                throw RubyExceptions.CreateArrayFrozenError();
             }
         }
 
@@ -1725,6 +1725,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("pop")]
         public static object Pop(IList/*!*/ self) {
+            RequireNotFrozen(self);
             if (self.Count == 0) {
                 return null;
             }
@@ -1756,11 +1757,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("shift")]
         public static object Shift(IList/*!*/ self) {
-            var rubyArray = self as RubyArray;
-            if (rubyArray != null) {
-                rubyArray.RequireNotFrozen();
-            }
-
+            RequireNotFrozen(self);
             if (self.Count == 0) {
                 return null;
             }
@@ -1776,10 +1773,7 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.CreateArgumentError("negative array size");
             }
 
-            var rubyArray = self as RubyArray;
-            if (rubyArray != null) {
-                rubyArray.RequireNotFrozen();
-            }
+            RequireNotFrozen(self);
 
             IList resultList = CreateResultArray(allocateStorage, self);
 
@@ -2006,9 +2000,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("rotate!")]
         public static IList/*!*/ InPlaceRotate(IList/*!*/ self, [DefaultProtocol]int n) {
-            if (self is RubyArray) {
-                ((RubyArray)self).RequireNotFrozen(); // check frozen first, for consistency with shuffle, fill, etc
-            }
+            RequireNotFrozen(self);
 
             var count = self.Count;
             if (count == 0 || count == 1)
