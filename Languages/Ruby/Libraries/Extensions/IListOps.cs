@@ -318,9 +318,16 @@ namespace IronRuby.Builtins {
             if (self.Count == 0) {
                 return result;
             }
+            
+            int requiredCapacity = 1;
             for (int i = 0; i < arrays.Length; i++) {
                 if (arrays[i].Count == 0) {
                     return result;
+                }
+                try {
+                    requiredCapacity = checked(requiredCapacity * arrays[i].Count);
+                } catch (OverflowException) {
+                    throw RubyExceptions.CreateRangeError("too big to product");
                 }
             }
             
