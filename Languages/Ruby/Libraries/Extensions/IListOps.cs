@@ -542,17 +542,10 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("[]=")]
         public static object SetElement(ConversionStorage<IList>/*!*/ arrayTryCast, ConversionStorage<int> fixnumCast,
-            RubyArray/*!*/ self, object index, object length, object value) {
+            IList/*!*/ self, object index, object length, object value) {
 
-            self.RequireNotFrozen(); // rubyspec says we must check for frozen before trying to coerce the index
+            RequireNotFrozen(self); // rubyspec says we must check for frozen before trying to coerce the index
             return SetElement(arrayTryCast, self as IList, Protocols.CastToFixnum(fixnumCast, index), Protocols.CastToFixnum(fixnumCast, length), value);
-        }
-
-        [RubyMethod("[]=")]
-        public static object SetElement(ConversionStorage<IList>/*!*/ arrayTryCast, RubyArray/*!*/ self,
-            [DefaultProtocol]int index, [DefaultProtocol]int length, object value) {
-
-            return SetElement(arrayTryCast, self as IList, index, length, value);
         }
 
         [RubyMethod("[]=")]
@@ -561,6 +554,7 @@ namespace IronRuby.Builtins {
             if (length < 0) {
                 throw RubyExceptions.CreateIndexError("negative length ({0})", length);
             }
+            RequireNotFrozen(self);
 
             index = NormalizeIndexThrowIfNegative(self, index);
 
@@ -606,15 +600,9 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("[]=")]
         public static object SetElement(ConversionStorage<IList>/*!*/ arrayTryCast, ConversionStorage<int>/*!*/ fixnumCast, 
-            RubyArray/*!*/ self, object rangeOrIndex, object value) {
-
-            self.RequireNotFrozen(); // rubyspec says we must check for frozen before trying to coerce the index
-            return SetElement(arrayTryCast, fixnumCast, self as IList, rangeOrIndex, value);
-        }
-
-        [RubyMethod("[]=")]
-        public static object SetElement(ConversionStorage<IList>/*!*/ arrayTryCast, ConversionStorage<int>/*!*/ fixnumCast, 
             IList/*!*/ self, object rangeOrIndex, object value) {
+            
+            RequireNotFrozen(self);
 
             var range = rangeOrIndex as Range;
             if (range == null) {
@@ -1015,10 +1003,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("fill")]
         public static IList/*!*/ Fill(IList/*!*/ self, object obj, [DefaultParameterValue(0)]int start) {
-            var rubyArray = self as RubyArray;
-            if (rubyArray != null) {
-                rubyArray.RequireNotFrozen(); // rubyspec says we must check for frozen before doing anything else
-            }
+            RequireNotFrozen(self);
             
             // Note: Array#fill(obj, start) is not equivalent to Array#fill(obj, start, 0)
             // (as per MRI behavior, the latter can expand the array if start > length, but the former doesn't)
