@@ -872,6 +872,7 @@ namespace IronPython.Runtime.Binding {
             NewTypeMaker.LoadNewTypes(asm);
         }
 
+#if FEATURE_REFEMIT
         private static void LoadScriptCode(PythonContext/*!*/ pc, Assembly/*!*/ asm) {
             ScriptCode[] codes = SavableScriptCode.LoadFromAssembly(pc.DomainManager, asm);
 
@@ -879,6 +880,7 @@ namespace IronPython.Runtime.Binding {
                 pc.GetCompiledLoader().AddScriptCode(sc);
             }
         }
+#endif
 
         internal PythonContext/*!*/ Context {
             get {

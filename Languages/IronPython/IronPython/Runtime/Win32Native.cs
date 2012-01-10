@@ -4,7 +4,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 
 namespace IronPython.Runtime {
-#if !SILVERLIGHT
+#if FEATURE_NATIVE
     class NativeMethods {
         [Serializable]
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]

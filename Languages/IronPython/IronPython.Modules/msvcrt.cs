@@ -13,6 +13,8 @@
  *
  * ***********************************************************************/
 
+#if FEATURE_NATIVE
+
 using System;
 using System.ComponentModel;
 using System.IO;
@@ -23,13 +25,11 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
-#if CLR2
-using Microsoft.Scripting.Math;
-#else
+#if FEATURE_NUMERICS
 using System.Numerics;
+#else
+using Microsoft.Scripting.Math;
 #endif
-
-#if !SILVERLIGHT
 
 [assembly: PythonModule("msvcrt", typeof(IronPython.Modules.PythonMsvcrt))]
 namespace IronPython.Modules {

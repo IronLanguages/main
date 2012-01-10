@@ -15,7 +15,6 @@
 
 #if FEATURE_CORE_DLR
 using System.Linq.Expressions;
-using System.Numerics;
 #else
 using Microsoft.Scripting.Ast;
 #endif
@@ -35,6 +34,10 @@ using Microsoft.Scripting.Utils;
 using Microsoft.Scripting;
 using System.Reflection;
 using System.Diagnostics;
+
+#if FEATURE_NUMERICS
+using System.Numerics;
+#endif
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;

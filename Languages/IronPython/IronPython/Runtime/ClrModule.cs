@@ -164,7 +164,7 @@ the assembly object.")]
         }
 #endif
 
-#if !SILVERLIGHT
+#if FEATURE_LOADWITHPARTIALNAME
         [Documentation(@"Loads an assembly from the specified partial assembly name and returns the 
 assembly object.  Namespaces or types in the assembly can be accessed directly 
 from the assembly object.")]
@@ -359,7 +359,7 @@ the assembly object.")]
             // note we don't explicit call to get the file version
             // here because the assembly resolve event will do it for us.
 
-#if !SILVERLIGHT
+#if FEATURE_LOADWITHPARTIALNAME
             if (asm == null) {
                 asm = LoadAssemblyByPartialName(name);
             }
@@ -386,7 +386,7 @@ the assembly object.")]
             AddReference(context, asm);
         }
 
-#if !SILVERLIGHT
+#if FEATURE_LOADWITHPARTIALNAME
         private static void AddReferenceByPartialName(CodeContext/*!*/ context, string name) {
             if (name == null) throw new TypeErrorException("Expected string, got NoneType");
             ContractUtils.RequiresNotNull(context, "context");

@@ -127,9 +127,11 @@ namespace Microsoft.Scripting.Utils {
         }
     }
 
+#if !ANDROID
 	[AttributeUsage(AttributeTargets.Parameter, Inherited = false), ComVisible(true)]
 	public sealed class OptionalAttribute : Attribute {
 	}
+#endif
 #endif
 
     public static class ReflectionUtils {

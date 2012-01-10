@@ -3650,6 +3650,7 @@ namespace IronPython.Runtime.Operations {
             return PythonContext.GetContext(context).DeleteSlice;
         }
 
+#if FEATURE_REFEMIT
         /// <summary>
         /// Provides access to AppDomain.DefineDynamicAssembly which cannot be called from a DynamicMethod
         /// </summary>
@@ -3728,6 +3729,7 @@ namespace IronPython.Runtime.Operations {
 
             return 0;
         }
+#endif
 #endif
 
         public static CodeContext GetPythonTypeContext(PythonType pt) {
@@ -4084,7 +4086,7 @@ namespace IronPython.Runtime.Operations {
             return new System.OverflowException(string.Format(format, args));
         }
         public static Exception WindowsError(string format, params object[] args) {
-#if !SILVERLIGHT // System.ComponentModel.Win32Exception
+#if FEATURE_WIN32EXCEPTION // System.ComponentModel.Win32Exception
             return new System.ComponentModel.Win32Exception(string.Format(format, args));
 #else
             return new System.SystemException(string.Format(format, args));

@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if SILVERLIGHT
+#if !FEATURE_APPLICATIONEXCEPTION
 using System;
 
 namespace IronPython.Runtime.Exceptions {
