@@ -28,18 +28,24 @@ namespace IronPython.Runtime.Types {
 
             string methodName = mi.Name;
             string prefix = "";
+
+#if FEATURE_REFEMIT
             if (methodName.StartsWith(NewTypeMaker.BaseMethodPrefix)) {
                 methodName = methodName.Substring(NewTypeMaker.BaseMethodPrefix.Length);
                 prefix = NewTypeMaker.BaseMethodPrefix;
             }
+#endif
 
             if (methodName.StartsWith("Get") || methodName.StartsWith("Set")) {
                 GetPropertyMethods(mi, methodName, prefix, "Get", "Set", "Delete");
             } else if(methodName.StartsWith("get_") || methodName.StartsWith("set_")) {
                 GetPropertyMethods(mi, methodName, prefix, "get_", "set_", null);
-            } else if (methodName.StartsWith(NewTypeMaker.FieldGetterPrefix) || methodName.StartsWith(NewTypeMaker.FieldSetterPrefix)) {
+            } 
+#if FEATURE_REFEMIT
+            else if (methodName.StartsWith(NewTypeMaker.FieldGetterPrefix) || methodName.StartsWith(NewTypeMaker.FieldSetterPrefix)) {
                 GetPropertyMethods(mi, methodName, prefix, NewTypeMaker.FieldGetterPrefix, NewTypeMaker.FieldSetterPrefix, null);
             }
+#endif
         }
 
         private void GetPropertyMethods(MethodInfo mi, string methodName, string prefix, string get, string set, string delete) {

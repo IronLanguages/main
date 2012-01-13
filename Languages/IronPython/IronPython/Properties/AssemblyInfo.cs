@@ -50,6 +50,6 @@ using System.Security;
 
 [assembly: SecurityTransparent]
 [assembly: CLSCompliant(false)]
-#if !CLR2 && !SILVERLIGHT && !WIN8 && !ANDROID
+#if FEATURE_SECURITY_RULES
 [assembly: SecurityRules(SecurityRuleSet.Level1)]
 #endif

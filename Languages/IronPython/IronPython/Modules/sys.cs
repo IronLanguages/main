@@ -13,10 +13,10 @@
  *
  * ***************************************************************************/
 
-#if CLR2
-using Microsoft.Scripting.Math;
-#else
+#if FEATURE_NUMERICS
 using System.Numerics;
+#else
+using Microsoft.Scripting.Math;
 #endif
 
 using System;
@@ -51,14 +51,14 @@ namespace IronPython.Modules {
 
         private static string GetPrefix() {
             string prefix;
-#if SILVERLIGHT
-            prefix = String.Empty;
-#else
+#if FEATURE_ASSEMBLY_LOCATION
             try {
                 prefix = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             } catch (SecurityException) {
                 prefix = String.Empty;
             }
+#else
+            prefix = String.Empty;
 #endif
             return prefix;
         }
@@ -187,18 +187,18 @@ namespace IronPython.Modules {
             return ObjectOps.__sizeof__(o);
         }
 
-#if !SILVERLIGHT
         public static PythonTuple getwindowsversion() {
             var osVer = Environment.OSVersion;
             return PythonTuple.MakeTuple(
                 osVer.Version.Major,
                 osVer.Version.Minor,
                 osVer.Version.Build,
-                (int)osVer.Platform,
-                osVer.ServicePack
-            );
+                (int)osVer.Platform
+#if FEATURE_OS_SERVICEPACK
+                , osVer.ServicePack
+#endif      
+                );
         }
-#endif
 
         // hex_version is set by PythonContext
         public const int maxint = Int32.MaxValue;
@@ -209,11 +209,9 @@ namespace IronPython.Modules {
 
         // path is set by PythonContext and only on the initial load
 
-#if SILVERLIGHT
-        public const string platform = "silverlight";
-#else
         public const string platform = "cli";
-#endif
+
+        // TODO Add a cli_platform attribute
 
         public static readonly string prefix = GetPrefix();
 

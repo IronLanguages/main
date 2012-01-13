@@ -19,7 +19,7 @@ using System.Linq.Expressions;
 using Microsoft.Scripting.Ast;
 #endif
 
-#if !CLR2
+#if FEATURE_NUMERICS
 using System.Numerics;
 #else
 using Microsoft.Scripting.Math;

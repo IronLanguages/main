@@ -882,7 +882,7 @@ namespace IronPython.Runtime.Operations {
 
         #endregion
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         /// <summary>
         /// Implements __reduce_ex__ for .NET types which are serializable.  This uses the .NET
         /// serializer to get a string of raw data which can be serialized.

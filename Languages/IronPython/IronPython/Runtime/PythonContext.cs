@@ -1999,7 +1999,7 @@ namespace IronPython.Runtime {
         }
 
         private static string GetInitialPrefix() {
-#if !SILVERLIGHT
+#if FEATURE_ASSEMBLY_CODEBASE
             try {
                 return typeof(PythonContext).Assembly.CodeBase;
             } catch (SecurityException) {

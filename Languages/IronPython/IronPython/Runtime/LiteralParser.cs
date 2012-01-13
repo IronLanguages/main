@@ -25,11 +25,11 @@ using IronPython.Runtime.Operations;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-#if CLR2
+#if FEATURE_NUMERICS
+using System.Numerics;
+#else
 using Microsoft.Scripting.Math;
 using Complex = Microsoft.Scripting.Math.Complex64;
-#else
-using System.Numerics;
 #endif
 
 namespace IronPython.Runtime {
@@ -101,7 +101,7 @@ namespace IronPython.Runtime {
                             case '\"': buf.Append('\"'); continue;
                             case '\r': if (i < l && text[i] == '\n') i++; continue;
                             case '\n': continue;
-#if !SILVERLIGHT
+#if FEATURE_COMPRESSION
                             case 'N': {
                                     if (i < l && text[i] == '{') {
                                         i++;

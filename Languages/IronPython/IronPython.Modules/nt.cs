@@ -69,7 +69,7 @@ namespace IronPython.Modules {
 
             if (mode == F_OK) {
                 return context.LanguageContext.DomainManager.Platform.FileExists(path) ||
-			context.LanguageContext.DomainManager.Platform.DirectoryExists(path);
+            context.LanguageContext.DomainManager.Platform.DirectoryExists(path);
             }
 #if FEATURE_FILESYSTEM
             // match the behavior of the VC C Runtime
@@ -1503,9 +1503,8 @@ are defined in the signal module.")]
                 // rethrow reasonable exceptions
                 return ExceptionHelpers.UpdateForRethrow(e);
             }
-#if !SILVERLIGHT
+            
             int error = Marshal.GetLastWin32Error();
-#endif
             string message = e.Message;
             int errorCode = 0;
 
@@ -1527,7 +1526,6 @@ are defined in the signal module.")]
                     }
                 }
 
-#if !SILVERLIGHT
                 IOException ioe = e as IOException;
                 if (ioe != null) {
                     switch (error) {
@@ -1540,6 +1538,7 @@ are defined in the signal module.")]
                     }
                 }
 
+#if !SILVERLIGHT5
                 errorCode = System.Runtime.InteropServices.Marshal.GetHRForException(e);
                 if ((errorCode & ~0xfff) == (unchecked((int)0x80070000))) {
                     // Win32 HR, translate HR to Python error code if possible, otherwise

@@ -28,6 +28,7 @@ using System.Security.Permissions;
 using System.Threading;
 
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
@@ -37,7 +38,6 @@ using IronPython.Runtime.Types;
 using Microsoft.Scripting.Math;
 #else
 using System.Numerics;
-using Microsoft.Scripting.Utils;
 #endif
 
 [assembly: PythonModule("_ctypes", typeof(IronPython.Modules.CTypes))]
