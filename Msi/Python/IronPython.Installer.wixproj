@@ -40,6 +40,9 @@
     <WixConstant Include="StdLibDir">
       <Value>Lib</Value>
     </WixConstant>
+    <WixConstant Include="PlatformsAndroidDir">
+      <Value>Platforms\Android</Value>
+    </WixConstant>
     <WixConstant Include="PlatformsNet35Dir">
       <Value>Platforms\Net35</Value>
     </WixConstant>
@@ -48,6 +51,9 @@
     </WixConstant>
     <WixConstant Include="PlatformsSl4Dir">
       <Value>Platforms\Sl4</Value>
+    </WixConstant>
+    <WixConstant Include="PlatformsSl5Dir">
+      <Value>Platforms\Sl5</Value>
     </WixConstant>
     <WixConstant Include="SilverlightToolsDir">
       <Value>Silverlight</Value>
@@ -106,6 +112,12 @@
       <ComponentGroupName>IronPythonStdLib</ComponentGroupName>
       <PreprocessorVariable>var.StdLibDir</PreprocessorVariable>
     </HarvestDirectory>
+    
+    <HarvestDirectory Include="$(BaseInputPaths)\Platforms\Android">
+      <DirectoryRefId>IronPythonPlatformsDir</DirectoryRefId>
+      <ComponentGroupName>IronPythonPlatformsAndroid</ComponentGroupName>
+      <PreprocessorVariable>var.PlatformsAndroidDir</PreprocessorVariable>
+    </HarvestDirectory>
 
     <HarvestDirectory Include="$(BaseInputPaths)\Platforms\Net35">
       <DirectoryRefId>IronPythonPlatformsDir</DirectoryRefId>
@@ -123,6 +135,12 @@
       <DirectoryRefId>IronPythonPlatformsDir</DirectoryRefId>
       <ComponentGroupName>IronPythonPlatformsSl4</ComponentGroupName>
       <PreprocessorVariable>var.PlatformsSl4Dir</PreprocessorVariable>
+    </HarvestDirectory>
+    
+    <HarvestDirectory Include="$(BaseInputPaths)\Platforms\Sl5">
+      <DirectoryRefId>IronPythonPlatformsDir</DirectoryRefId>
+      <ComponentGroupName>IronPythonPlatformsSl5</ComponentGroupName>
+      <PreprocessorVariable>var.PlatformsSl5Dir</PreprocessorVariable>
     </HarvestDirectory>
 
     <HarvestDirectory Include="$(BaseInputPaths)\Silverlight">
