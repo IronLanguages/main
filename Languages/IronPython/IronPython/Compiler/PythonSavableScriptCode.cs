@@ -12,6 +12,8 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_REFEMIT
+
 #if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
@@ -83,3 +85,5 @@ namespace IronPython.Compiler {
         #endregion
     }
 }
+
+#endif

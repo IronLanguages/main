@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT && !WIN8
+#if FEATURE_COMPRESSION
 
 using System;
 using System.Collections;

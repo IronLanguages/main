@@ -303,7 +303,11 @@ namespace IronPython.Runtime.Binding {
         }
 
         internal static MethodCallExpression/*!*/ CheckTypeVersion(Expression/*!*/ tested, int version) {
+#if FEATURE_REFEMIT
             FieldInfo fi = tested.Type.GetField(NewTypeMaker.ClassFieldName);
+#else
+            FieldInfo fi = null;
+#endif
             if (fi == null) {
                 return Ast.Call(
                     typeof(PythonOps).GetMethod("CheckTypeVersion"),
