@@ -1952,12 +1952,14 @@ namespace IronRuby.Builtins {
             var generator = allocateStorage.Context.RandomNumberGenerator;
 
             // we can't pick the same element twice, so remove items from a copy of the list as we pick them
-            var itemsRemaining = new ArrayList(self);
+            var remaining = new List<object>(self.Count); // can't use ArrayList here as silverlight doesn't have it
+            foreach (var x in self)
+                remaining.Add(x);
 
-            while (itemsRemaining.Count > 0 && elementCount--> 0) {
-                var idx = generator.Next(itemsRemaining.Count);
-                result.Add(itemsRemaining[idx]);
-                itemsRemaining.RemoveAt(idx);
+            while (remaining.Count > 0 && elementCount-- > 0) {
+                var idx = generator.Next(remaining.Count);
+                result.Add(remaining[idx]);
+                remaining.RemoveAt(idx);
             }
 
             return result;
