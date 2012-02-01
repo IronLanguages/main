@@ -782,7 +782,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region delete, delete_at, reject, reject!, select!
+        #region delete, delete_at, reject, reject!, select!, keep_if
 
         public static bool Remove(BinaryOpStorage/*!*/ equals, IList/*!*/ self, object item) {
             int i = 0;
@@ -885,7 +885,19 @@ namespace IronRuby.Builtins {
             object result = DeleteIf(block, self, RubyOps.IsFalse, out changed, out jumped);
             return jumped ? result : changed ? self : null;
         }
-        
+
+        [RubyMethod("keep_if")]
+        public static object KeepIf(BlockParam block, IList/*!*/ self) {
+            // as far as I can tell the only difference between select! and keep_if, is that keep_if returns self if it doesn't modify the array whereas select! returns nil
+            return (block != null) ? KeepIfImpl(block, self) : new Enumerator((_, innerBlock) => KeepIfImpl(innerBlock, self));
+        }
+
+        private static object KeepIfImpl(BlockParam/*!*/ block, IList/*!*/ self) {
+            bool changed, jumped;
+            object result = DeleteIf(block, self, RubyOps.IsFalse, out changed, out jumped);
+            return jumped ? result : self;
+        }
+                
         private static object DeleteIf(BlockParam/*!*/ block, IList/*!*/ self, Func<object, bool> predicate, out bool changed, out bool jumped) {
             Assert.NotNull(block, self);
 

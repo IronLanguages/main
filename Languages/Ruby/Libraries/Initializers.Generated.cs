@@ -8049,6 +8049,11 @@ namespace IronRuby.Builtins {
                 new Func<IronRuby.Runtime.JoinConversionStorage, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, System.Collections.IList, System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.IListOps.JoinWithLazySeparatorConversion)
             );
             
+            DefineLibraryMethod(module, "keep_if", 0x51, 
+                0x00000000U, 
+                new Func<IronRuby.Runtime.BlockParam, System.Collections.IList, System.Object>(IronRuby.Builtins.IListOps.KeepIf)
+            );
+            
             DefineLibraryMethod(module, "last", 0x51, 
                 0x00000000U, 0x00010000U, 
                 new Func<System.Collections.IList, System.Object>(IronRuby.Builtins.IListOps.Last), 
