@@ -1606,6 +1606,10 @@ namespace IronRuby.Builtins {
                     return MutableString.CreateAscii("[...]");
                 }
                 MutableString str = MutableString.CreateMutable(RubyEncoding.Binary);
+                if (self.Count > 0) { // tainted empty arrays don't taint the inspect string if the array is empty
+                    str.TaintBy(self, context);
+                }
+
                 str.Append('[');
                 bool first = true;
                 foreach (object obj in self) {
@@ -1614,7 +1618,10 @@ namespace IronRuby.Builtins {
                     } else {
                         str.Append(", ");
                     }
-                    str.Append(context.Inspect(obj));
+
+                    var objInspected = context.Inspect(obj);
+                    str.Append(objInspected);
+                    str.TaintBy(objInspected);
                 }
                 str.Append(']');
                 return str;
