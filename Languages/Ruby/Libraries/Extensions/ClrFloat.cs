@@ -18,6 +18,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Math;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
     /// <summary>
@@ -646,7 +647,18 @@ namespace IronRuby.Builtins {
             if (Double.IsNaN(self)) {
                 return null;
             }
-            return self.CompareTo(Protocols.ConvertToDouble(context, other));
+
+            double otherFloat;
+            if (!other.TryToFloat64(out otherFloat)) { // out of range, treat it as positive or negative infinity
+                otherFloat = other.Sign > 0 ? double.PositiveInfinity : double.NegativeInfinity;
+
+                if (self == double.NegativeInfinity) {
+                    return -1;
+                } else if (self == double.PositiveInfinity) {
+                    return 1;
+                }
+            }
+            return self.CompareTo(otherFloat);
         }
 
         /// <summary>
