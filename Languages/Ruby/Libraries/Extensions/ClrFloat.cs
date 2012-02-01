@@ -366,6 +366,10 @@ namespace IronRuby.Builtins {
         /// </remarks>
         [RubyMethod("divmod")]
         public static RubyArray DivMod(double self, double other) {
+            if (other == 0.0) {
+                throw CreateZeroDivisionError("divided by 0");
+            }
+
             RubyArray result = InternalDivMod(self, other);
             // Unlike modulo, divmod blows up if the quotient or modulus are not finite, so we can't put this inside InternalDivMod
             // We only need to test if the quotient is double since it should have been converted to Integer (Fixnum or Bignum) if it was OK.
@@ -940,6 +944,10 @@ namespace IronRuby.Builtins {
 
         public static Exception CreateFloatDomainError(string message) {
             return new FloatDomainError("NaN");
+        }
+
+        public static Exception CreateZeroDivisionError(string message) {
+            return new DivideByZeroException(message);
         }
 
         public static Exception CreateFloatDomainError(string message, Exception inner) {
