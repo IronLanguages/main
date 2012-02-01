@@ -3609,8 +3609,9 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "round", 0x51, 
-                0x00000000U, 
-                new Func<System.Double, System.Object>(IronRuby.Builtins.ClrFloat.Round)
+                0x00000000U, 0x00000000U, 
+                new Func<System.Double, System.Object>(IronRuby.Builtins.ClrFloat.Round), 
+                new Func<System.Double, System.Int32, System.Object>(IronRuby.Builtins.ClrFloat.Round)
             );
             
             DefineLibraryMethod(module, "to_f", 0x51, 

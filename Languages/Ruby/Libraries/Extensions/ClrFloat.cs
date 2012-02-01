@@ -539,6 +539,39 @@ namespace IronRuby.Builtins {
             return 0;
         }
 
+        /// <summary>
+        /// Rounds <code>self</code> to the <code>decimalPlaces</code> places.
+        /// </summary>
+        /// <remarks>
+        /// This is equivalent to:
+        /// <code>
+        /// def round
+        ///     return (self+0.5).floor if self &gt; 0.0
+        ///     return (self-0.5).ceil  if self &lt; 0.0
+        ///     return 0
+        /// end
+        /// </code>
+        /// </remarks>
+        /// <example>
+        /// 312.12570.round(1) == 312.1
+        /// 312.12570.round(2) == 312.13
+        /// 312.12570.round(3) == 312.126
+        /// 312.12570.round(4) == 312.1257
+        /// 312.12570.round(5) == 312.12570
+        /// 312.12570.round(10) == 312.12570
+        /// </example>
+        [RubyMethod("round")]
+        public static object Round(double self, int decimalPlaces) {
+            if (decimalPlaces == 0) {
+                return Round(self);
+            }
+
+            double exponent = Math.Pow(10.0, decimalPlaces);
+            if (self > 0) { return Math.Floor(self * exponent + 0.5) / exponent; }
+            if (self < 0) { return Math.Ceiling(self * exponent - 0.5) / exponent; }
+            return 0;
+        }
+
         #endregion
 
         #region inspect, to_s
