@@ -243,6 +243,9 @@ namespace IronRuby.Builtins {
         /// <returns>Float</returns>
         [RubyMethod("%"), RubyMethod("modulo")]
         public static double Modulo(double self, int other) {
+            if (other == 0) {
+                throw CreateZeroDivisionError();
+            }
             return (double)InternalDivMod(self, (double)other)[1];
         }
 
@@ -252,6 +255,9 @@ namespace IronRuby.Builtins {
         /// <returns>Float</returns>
         [RubyMethod("%"), RubyMethod("modulo")]
         public static double Modulo(RubyContext/*!*/ context, double self, [NotNull]BigInteger/*!*/ other) {
+            if (other == BigInteger.Zero) {
+                throw CreateZeroDivisionError();
+            }
             return (double)InternalDivMod(self, Protocols.ConvertToDouble(context, other))[1];
         }
 
@@ -261,6 +267,9 @@ namespace IronRuby.Builtins {
         /// <returns>Float</returns>
         [RubyMethod("%"), RubyMethod("modulo")]
         public static double Modulo(double self, double other) {
+            if (other == 0.0) {
+                throw CreateZeroDivisionError();
+            }
             return (double)InternalDivMod(self, other)[1];
         }
 
@@ -371,7 +380,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("divmod")]
         public static RubyArray DivMod(double self, double other) {
             if (other == 0.0) {
-                throw CreateZeroDivisionError("divided by 0");
+                throw CreateZeroDivisionError();
             }
 
             RubyArray result = InternalDivMod(self, other);
@@ -952,6 +961,10 @@ namespace IronRuby.Builtins {
 
         public static Exception CreateZeroDivisionError(string message) {
             return new DivideByZeroException(message);
+        }
+
+        public static Exception CreateZeroDivisionError() {
+            return new DivideByZeroException("divided by 0");
         }
 
         public static Exception CreateFloatDomainError(string message, Exception inner) {
