@@ -8092,8 +8092,8 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "product", 0x51, 
-                0x80010002U, 
-                new Func<System.Collections.IList, System.Collections.IList[], IronRuby.Builtins.RubyArray>(IronRuby.Builtins.IListOps.Product)
+                0x80020004U, 
+                new Func<IronRuby.Runtime.BlockParam, System.Collections.IList, System.Collections.IList[], System.Collections.IList>(IronRuby.Builtins.IListOps.Product)
             );
             
             DefineLibraryMethod(module, "push", 0x51, 

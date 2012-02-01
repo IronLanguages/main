@@ -312,16 +312,20 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("product")]
-        public static RubyArray/*!*/ Product(IList/*!*/ self, [DefaultProtocol, NotNullItems]params IList/*!*/[]/*!*/ arrays) {
+        public static IList/*!*/ Product(BlockParam block, IList/*!*/ self, [DefaultProtocol, NotNullItems]params IList/*!*/[]/*!*/ arrays) {
             var result = new RubyArray();
+            object blockResult = null;
             
             if (self.Count == 0) {
-                return result;
+                return self;
             }
             
             int requiredCapacity = 1;
             for (int i = 0; i < arrays.Length; i++) {
                 if (arrays[i].Count == 0) {
+                    if (block != null) { // [1,2].product([]) should produce [], but [1,2].product([]){ } should produce [1,2] due to empty block
+                        return self;
+                    }
                     return result;
                 }
                 try {
@@ -330,13 +334,21 @@ namespace IronRuby.Builtins {
                     throw RubyExceptions.CreateRangeError("too big to product");
                 }
             }
-            
+                        
             int[] indices = new int[1 + arrays.Length];
             while (true) {
                 var current = new RubyArray(indices.Length);
                 for (int i = 0; i < indices.Length; i++) {
                     current[i] = GetNth(i, self, arrays)[indices[i]];
                 }
+
+                if (block != null) {
+                    block.Yield(current, out blockResult);
+                    if (blockResult == null) {
+                        return self;
+                    }
+                }
+
                 result.Add(current);
 
                 // increment indices:
