@@ -609,22 +609,27 @@ namespace IronRuby.Builtins {
                 return SetElement(self, Protocols.CastToFixnum(fixnumCast, rangeOrIndex), value);
             } else {
                 int start, count;
-                RangeToStartAndCount(fixnumCast, range, self.Count, out start, out count);
-                return SetElement(arrayTryCast, self, start, count, value);
+                if (TryRangeToStartAndCount(fixnumCast, range, self.Count, out start, out count)) {
+                    return SetElement(arrayTryCast, self, start, count, value);
+                } else {
+                    throw RubyExceptions.CreateRangeError("{0} out of range", range);
+                }
             }
         }
 
-        private static void RangeToStartAndCount(ConversionStorage<int>/*!*/ fixnumCast, Range/*!*/ range, int length, out int start, out int count) {
+        private static bool TryRangeToStartAndCount(ConversionStorage<int>/*!*/ fixnumCast, Range/*!*/ range, int length, out int start, out int count) {
             start = Protocols.CastToFixnum(fixnumCast, range.Begin);
             int end = Protocols.CastToFixnum(fixnumCast, range.End);
 
             start = start < 0 ? start + length : start;
             if (start < 0) {
-                throw RubyExceptions.CreateRangeError("{0}..{1} out of range", start, end);
+                count = -1;
+                return false;
             }
 
             end = end < 0 ? end + length : end;
             count = Math.Max(range.ExcludeEnd ? end - start : end - start + 1, 0);
+            return true;
         }
 
         #endregion
@@ -1825,14 +1830,24 @@ namespace IronRuby.Builtins {
 
             IList result = GetElements(fixnumCast, allocateStorage, self, range);
             int start, count;
-            RangeToStartAndCount(fixnumCast, range, self.Count, out start, out count);
-            DeleteElements(self, start, count);
-            return result;
+            if (TryRangeToStartAndCount(fixnumCast, range, self.Count, out start, out count)) {
+                return SliceInPlace(allocateStorage, self, start, count);
+            } else { // out of range
+                return null;
+            }
         }
 
         [RubyMethod("slice!")]
         public static IList SliceInPlace(UnaryOpStorage/*!*/ allocateStorage, 
             IList/*!*/ self, [DefaultProtocol]int start, [DefaultProtocol]int length) {
+
+            start = NormalizeIndex(self, start);
+
+            if (start > self.Count || start < 0) {
+                return null;
+            } else if (start == self.Count) {
+                return CreateResultArray(allocateStorage, self);
+            }
 
             IList result = GetElements(allocateStorage, self, start, length);
             DeleteElements(self, start, length);
