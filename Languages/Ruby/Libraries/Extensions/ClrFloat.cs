@@ -198,6 +198,7 @@ namespace IronRuby.Builtins {
         /// </summary>
         /// <returns>Float</returns>
         [RubyMethod("/")]
+        [RubyMethod("fdiv")]
         public static double Divide(double self, int other) {
             return self / (double)other;
         }
@@ -207,6 +208,7 @@ namespace IronRuby.Builtins {
         /// </summary>
         /// <returns>Float</returns>
         [RubyMethod("/")]
+        [RubyMethod("fdiv")]
         public static double Divide(RubyContext/*!*/ context, double self, [NotNull]BigInteger/*!*/ other) {
             return self / Protocols.ConvertToDouble(context, other);
         }
@@ -216,6 +218,7 @@ namespace IronRuby.Builtins {
         /// </summary>
         /// <returns>Float</returns>
         [RubyMethod("/")]
+        [RubyMethod("fdiv")]
         public static double Divide(double self, double other) {
             return self / other;
         }
@@ -225,6 +228,7 @@ namespace IronRuby.Builtins {
         /// </summary>
         /// <returns></returns>
         [RubyMethod("/")]
+        [RubyMethod("fdiv")]
         public static object Divide(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, double self, object other) {
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "/", self, other);
         }
