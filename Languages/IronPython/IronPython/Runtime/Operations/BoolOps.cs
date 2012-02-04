@@ -87,6 +87,11 @@ namespace IronPython.Runtime.Operations {
             return self ? "True" : "False";
         }
 
+        public static string/*!*/ __format__(CodeContext/*!*/ context, bool self, [NotNull]string/*!*/ formatSpec)
+        {
+            return __repr__(self);
+        }
+
         // Binary Operations - Comparisons
         [SpecialName]
         public static bool Equals(bool x, bool y) {
