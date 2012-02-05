@@ -5,7 +5,7 @@
     <MinorVersion>7</MinorVersion>
     <MicroVersion>2</MicroVersion>
     <ReleaseLevel>alpha</ReleaseLevel>
-    <ReleaseSerial>1</ReleaseSerial>
+    <ReleaseSerial>2</ReleaseSerial>
 
     <AssemblyRevision>40</AssemblyRevision>
   </PropertyGroup>
