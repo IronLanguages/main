@@ -123,7 +123,7 @@ namespace Microsoft.Scripting.Interpreter {
                 runMethod = typeof(LightLambda).GetMethod(name + paramInfos.Length, BindingFlags.NonPublic | BindingFlags.Instance);
             }
 
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !WP75
             try {
                 DynamicMethod dm = new DynamicMethod("FastCtor", typeof(Delegate), new[] { typeof(LightLambda) }, typeof(LightLambda), true);
                 var ilgen = dm.GetILGenerator();

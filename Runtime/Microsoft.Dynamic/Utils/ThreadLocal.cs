@@ -102,7 +102,7 @@ namespace Microsoft.Scripting.Utils {
 
         #region Storage implementation
 
-#if WP7
+#if WP75
         private static int _cfThreadIdDispenser = 1;
 
         [ThreadStatic]

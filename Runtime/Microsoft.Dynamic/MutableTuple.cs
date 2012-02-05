@@ -31,7 +31,7 @@ using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting {
     public abstract class MutableTuple {
-#if WP7
+#if WP75
         // CF doesn't support more than 64 generic type parameters:
         public static readonly int MaxSize = PlatformAdaptationLayer.IsCompactFramework ? 64 : 128;
 #else
