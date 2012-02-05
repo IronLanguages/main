@@ -2050,7 +2050,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
 #else
             _underlyingSystemType = null; // some static class ...
-            throw new NotImplementedException();
+            // throw new NotImplementedException();
 #endif
 
             // finally assign the ctors from the real type the user provided
