@@ -15,11 +15,8 @@
 
 #if FEATURE_CORE_DLR
 using System.Linq.Expressions;
-using System.Numerics;
 #else
 using Microsoft.Scripting.Ast;
-using Microsoft.Scripting.Math;
-using Complex = Microsoft.Scripting.Math.Complex64;
 #endif
 
 using System;
@@ -41,6 +38,13 @@ using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
+
+#if FEATURE_NUMERICS
+using System.Numerics;
+#else
+using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
+#endif
 
 namespace IronPython.Runtime.Types {
 
@@ -2049,8 +2053,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 throw PythonOps.ValueError("__clrtype__ must return a type, not None");
             }
 #else
-            _underlyingSystemType = null; // some static class ...
-            // throw new NotImplementedException();
+            _underlyingSystemType = typeof(IronPython.NewTypes.System.Object_1_1);
 #endif
 
             // finally assign the ctors from the real type the user provided
@@ -2349,7 +2352,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 PythonType pt = newBases[i] as PythonType;
                 if (pt != null && pt.IsSystemType && pt != TypeCache.Object) {
                     // The only supported CLR base class w/o refemit is object
-                    throw new NotSupportedException(string.Format("{0} is not a valid CLR base class. Only object is supported w/o refemit."));
+                    throw new NotSupportedException(string.Format("{0} is not a valid CLR base class. Only object is supported w/o refemit.", pt.UnderlyingSystemType.FullName));
                 }
 #endif
 

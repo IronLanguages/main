@@ -790,7 +790,7 @@ import Namespace.")]
             return Converter.Convert(o, toType);
         }
 
-#if FEATURE_FILESYSTEM
+#if FEATURE_FILESYSTEM && FEATURE_REFEMIT
         /// <summary>
         /// Provides a helper for compiling a group of modules into a single assembly.  The assembly can later be
         /// reloaded using the clr.AddReference API.

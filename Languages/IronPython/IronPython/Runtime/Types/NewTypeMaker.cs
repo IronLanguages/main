@@ -68,7 +68,11 @@ namespace IronPython.Runtime.Types {
         public const string TypePrefix = "IronPython.NewTypes.";
         public const string BaseMethodPrefix = "#base#";
         public const string FieldGetterPrefix = "#field_get#", FieldSetterPrefix = "#field_set#";
+#if FEATURE_REFEMIT
         public const string ClassFieldName = ".class", DictFieldName = ".dict", SlotsAndWeakRefFieldName = ".slots_and_weakref";
+#else
+        public const string ClassFieldName = "_class", DictFieldName = "_dict", SlotsAndWeakRefFieldName = "_slots_and_weakref";
+#endif
         private const string _constructorTypeName = "PythonCachedTypeConstructor";
         private const string _constructorMethodName = "GetTypeInfo";
 

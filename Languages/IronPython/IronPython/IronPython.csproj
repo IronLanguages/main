@@ -427,6 +427,7 @@
     <Compile Include="Runtime\Types\PythonAssemblyOps.cs" />
     <Compile Include="Runtime\PythonModule.cs" />
     <Compile Include="Runtime\Types\ReflectedSlotProperty.cs" />
+    <Compile Include="Runtime\Types\StaticUnderlyingSystemType.cs" />
     <Compile Include="Runtime\Types\TypeCache.Generated.cs" />
     <Compile Include="Runtime\Types\TypeInfo.cs" />
     <Compile Include="Runtime\Types\TypeInfo.Generated.cs" />
