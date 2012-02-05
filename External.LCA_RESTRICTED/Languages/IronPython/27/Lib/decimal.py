@@ -536,6 +536,12 @@ class Decimal(object):
         # digits.
 
         self = object.__new__(cls)
+        
+        import sys
+        if sys.platform == 'cli':
+            import System
+            if isinstance(value, System.Decimal):
+                value = str(value)
 
         # From a string
         # REs insist on real strings, so we can too.
@@ -5778,6 +5784,12 @@ def _convert_other(other, raiseit=False, allow_float=False):
         return Decimal(other)
     if allow_float and isinstance(other, float):
         return Decimal.from_float(other)
+    
+    import sys
+    if sys.platform == 'cli':
+        import System
+        if isinstance(other, System.Decimal):
+            return Decimal(other)
 
     if raiseit:
         raise TypeError("Unable to convert %s to Decimal" % other)
