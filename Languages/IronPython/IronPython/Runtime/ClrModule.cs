@@ -871,6 +871,8 @@ import Namespace.")]
             SavableScriptCode.SaveToAssembly(assemblyName, code.ToArray());
         }
 #endif
+
+#if FEATURE_REFEMIT
         /// <summary>
         /// clr.CompileSubclassTypes(assemblyName, *typeDescription)
         /// 
@@ -908,6 +910,7 @@ import Namespace.")]
 
             NewTypeMaker.SaveNewTypes(assemblyName, typesToCreate);
         }
+#endif
 
         /// <summary>
         /// clr.GetSubclassedTypes() -> tuple

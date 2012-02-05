@@ -47,14 +47,22 @@ namespace IronPython.Runtime.Types {
     /// </summary>
     sealed class NewTypeMaker {
         private Type _baseType;
+        private IList<Type> _interfaceTypes;
+
+#if FEATURE_REFEMIT
         private TypeBuilder _tg;
+
         private FieldInfo _typeField;
         private FieldInfo _dictField;
         private FieldInfo _slotsField;
         private FieldInfo _explicitMO;
-        private IList<Type> _interfaceTypes;
+        
         private ILGen _cctor;
         private int _site;
+
+        [MultiRuntimeAware]
+        private static int _typeCount;
+#endif
 
         public const string VtableNamesField = "#VTableNames#";
         public const string TypePrefix = "IronPython.NewTypes.";
@@ -64,8 +72,6 @@ namespace IronPython.Runtime.Types {
         private const string _constructorTypeName = "PythonCachedTypeConstructor";
         private const string _constructorMethodName = "GetTypeInfo";
 
-        [MultiRuntimeAware]
-        private static int _typeCount;
         [MultiRuntimeAware]
         internal static readonly Publisher<NewTypeInfo, Type> _newTypes = new Publisher<NewTypeInfo, Type>();
         [MultiRuntimeAware]
@@ -81,6 +87,7 @@ namespace IronPython.Runtime.Types {
 
         #region Public API
 
+#if FEATURE_REFEMIT
         public static Type/*!*/ GetNewType(string/*!*/ typeName, PythonTuple/*!*/ bases) {
             Assert.NotNull(typeName, bases);
 
@@ -189,6 +196,7 @@ namespace IronPython.Runtime.Types {
             tb.CreateType();
             ag.SaveAssembly();
         }
+#endif
 
         /// <summary>
         /// Loads any available new types from the provided assembly and makes them
@@ -232,6 +240,7 @@ namespace IronPython.Runtime.Types {
 
         #region Type Generation
 
+#if FEATURE_REFEMIT
         private Type CreateNewType() {
             string name = GetName();
             _tg = Snippets.Shared.DefinePublicType(TypePrefix + name, _baseType);
@@ -1533,7 +1542,7 @@ namespace IronPython.Runtime.Types {
             }
             return sig;
         }
-
+#endif
         #endregion
 
         #region Base type helper data updates

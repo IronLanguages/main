@@ -512,10 +512,12 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 ldt.Add(adt);
             }
 
+#if FEATURE_REFEMIT
             // Ensure that we are not switching the CLI type
             Type newType = NewTypeMaker.GetNewType(type.Name, t);
             if (type.UnderlyingSystemType != newType)
                 throw PythonOps.TypeErrorForIncompatibleObjectLayout("__bases__ assignment", type, newType);
+#endif
 
             // set bases & the new resolution order
             List<PythonType> mro = CalculateMro(type, ldt);
@@ -2036,6 +2038,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             PopulateDictionary(context, name, bases, vars);
 
+#if FEATURE_REFEMIT
             // calculate the .NET type once so it can be used for things like super calls
             _underlyingSystemType = NewTypeMaker.GetNewType(name, bases);
 
@@ -2045,7 +2048,11 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             if (_underlyingSystemType == null) {
                 throw PythonOps.ValueError("__clrtype__ must return a type, not None");
             }
-            
+#else
+            _underlyingSystemType = null; // some static class ...
+            throw new NotImplementedException();
+#endif
+
             // finally assign the ctors from the real type the user provided
 
             lock (_userTypeCtors) {
@@ -2337,6 +2344,15 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private static PythonTuple ValidateBases(PythonTuple bases) {
             PythonTuple newBases = PythonTypeOps.EnsureBaseType(bases);
             for (int i = 0; i < newBases.__len__(); i++) {
+
+#if !FEATURE_REFEMIT
+                PythonType pt = newBases[i] as PythonType;
+                if (pt != null && pt.IsSystemType && pt != TypeCache.Object) {
+                    // The only supported CLR base class w/o refemit is object
+                    throw new NotSupportedException(string.Format("{0} is not a valid CLR base class. Only object is supported w/o refemit."));
+                }
+#endif
+
                 for (int j = 0; j < newBases.__len__(); j++) {
                     if (i != j && newBases[i] == newBases[j]) {
                         OldClass oc = newBases[i] as OldClass;
