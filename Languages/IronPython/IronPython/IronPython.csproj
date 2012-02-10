@@ -117,6 +117,7 @@
     <Compile Include="Runtime\InstancedModuleDictionaryStorage.cs" />
     <Compile Include="Runtime\MemoryView.cs" />
     <Compile Include="Runtime\Method.Generated.cs" />
+    <Compile Include="Runtime\Operations\MarshalOps.cs" />
     <Compile Include="Runtime\PythonDocumentationProvider.cs" />
     <Compile Include="Runtime\PythonHiddenBaseClassAttribute.cs" />
     <Compile Include="Runtime\SequenceTypeInfoAttribute.cs" />
