@@ -70,6 +70,8 @@
     
     <IronPythonModules Include="DLLs\IronPython.Wpf.dll" Condition="'$(Mono)' != 'true'" />
     <IronPythonModules Include="DLLs\IronPython.Wpf.xml" Condition="'$(Mono)' != 'true'" />
+    <IronPythonModules Include="DLLs\IronPython.SQLite.dll" />
+    <IronPythonModules Include="DLLs\IronPython.SQLite.xml" />
     
     <IronPythonBins Include="ipy.exe" />
     <IronPythonBins Include="ipy64.exe" />
