@@ -425,9 +425,7 @@ Global
 		{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}.Win8Debug|Any CPU.ActiveCfg = Win8Debug|Any CPU
 		{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}.Win8Release|Any CPU.ActiveCfg = Win8Release|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.AndroidDebug|Any CPU.ActiveCfg = AndroidDebug|Any CPU
-		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.AndroidDebug|Any CPU.Build.0 = AndroidDebug|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.AndroidRelease|Any CPU.ActiveCfg = AndroidRelease|Any CPU
-		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.AndroidRelease|Any CPU.Build.0 = AndroidRelease|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.FxCop|Any CPU.ActiveCfg = FxCop|Any CPU
@@ -435,25 +433,17 @@ Global
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Silverlight3Debug|Any CPU.ActiveCfg = Silverlight3Debug|Any CPU
-		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Silverlight3Debug|Any CPU.Build.0 = Silverlight3Debug|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Silverlight3Release|Any CPU.ActiveCfg = Silverlight3Release|Any CPU
-		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Silverlight3Release|Any CPU.Build.0 = Silverlight3Release|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Silverlight4Debug|Any CPU.ActiveCfg = Silverlight4Debug|Any CPU
-		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Silverlight4Debug|Any CPU.Build.0 = Silverlight4Debug|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Silverlight4Release|Any CPU.ActiveCfg = Silverlight4Release|Any CPU
-		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Silverlight4Release|Any CPU.Build.0 = Silverlight4Release|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Silverlight5Debug|Any CPU.ActiveCfg = Silverlight5Debug|Any CPU
-		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Silverlight5Debug|Any CPU.Build.0 = Silverlight5Debug|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Silverlight5Release|Any CPU.ActiveCfg = Silverlight5Release|Any CPU
-		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Silverlight5Release|Any CPU.Build.0 = Silverlight5Release|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.v2Debug|Any CPU.ActiveCfg = v2Debug|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.v2Debug|Any CPU.Build.0 = v2Debug|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.v2Release|Any CPU.ActiveCfg = v2Release|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.v2Release|Any CPU.Build.0 = v2Release|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Win8Debug|Any CPU.ActiveCfg = Win8Debug|Any CPU
-		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Win8Debug|Any CPU.Build.0 = Win8Debug|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Win8Release|Any CPU.ActiveCfg = Win8Release|Any CPU
-		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Win8Release|Any CPU.Build.0 = Win8Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
