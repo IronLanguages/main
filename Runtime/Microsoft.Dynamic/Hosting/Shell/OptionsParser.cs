@@ -148,7 +148,9 @@ namespace Microsoft.Scripting.Hosting.Shell {
        
         private TConsoleOptions _consoleOptions;
 
+#if FEATURE_REFEMIT
         private bool _saveAssemblies = false;
+#endif
         private string _assembliesDir = null;
 
         public OptionsParser() {
@@ -207,9 +209,11 @@ namespace Microsoft.Scripting.Hosting.Shell {
                     _assembliesDir = PopNextArg();
                     break;
 
+#if FEATURE_REFEMIT
                 case "-X:SaveAssemblies":
                     _saveAssemblies = true;
                     break;
+#endif
 
                 case "-X:TrackPerformance":
                     SetDlrOption(arg.Substring(3));
@@ -247,9 +251,11 @@ namespace Microsoft.Scripting.Hosting.Shell {
                     break;
             }
 
+#if FEATURE_REFEMIT
             if (_saveAssemblies) {
                 Snippets.SetSaveAssemblies(true, _assembliesDir);
             }
+#endif
         }
 
         internal static void SetDlrOption(string option) {

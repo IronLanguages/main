@@ -161,7 +161,7 @@ namespace IronPython.Runtime {
                 return;
             }
 
-            WeakReference codeRef = new WeakReference(this, true);
+            WeakReference codeRef = new WeakReference(this);
             CodeList prevCode;
             lock (_CodeCreateAndUpdateDelegateLock) {
                 Debug.Assert(context._allCodes != _CodeCreateAndUpdateDelegateLock);

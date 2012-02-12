@@ -22,16 +22,16 @@ using System.Text;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-#if CLR2
-using Microsoft.Scripting.Math;
-#else
+#if FEATURE_NUMERICS
 using System.Numerics;
-using Microsoft.Scripting.Utils;
+#else
+using Microsoft.Scripting.Math;
 #endif
 
 [assembly: PythonModule("datetime", typeof(IronPython.Modules.PythonDateTime))]

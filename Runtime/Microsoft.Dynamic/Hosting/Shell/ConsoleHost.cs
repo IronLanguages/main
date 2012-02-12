@@ -376,11 +376,13 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 UnhandledException(Engine, e);
                 result = 1;
             } finally {
+#if FEATURE_REFEMIT
                 try {
                     Snippets.SaveAndVerifyAssemblies();
                 } catch (Exception) {
                     result = 1;
                 }
+#endif
             }
 
             return result;
@@ -413,11 +415,13 @@ namespace Microsoft.Scripting.Hosting.Shell {
                     _commandLine.Run(Engine, _console, _consoleOptions);
                 }
             } finally {
+#if FEATURE_REFEMIT
                 try {
                     Snippets.SaveAndVerifyAssemblies();
                 } catch (Exception) {
                     exitCodeOverride = 1;
                 }
+#endif
             }
 
             if (exitCodeOverride == null) {

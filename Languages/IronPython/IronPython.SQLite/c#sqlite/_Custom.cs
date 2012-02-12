@@ -6,7 +6,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-#if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE)
+#if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE || ANDROID)
 using System.Management;
 #endif
 using System.Text;
@@ -449,7 +449,7 @@ public struct FILETIME
 // Example (C#)
 public static int GetbytesPerSector( StringBuilder diskPath )
 {
-#if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE)
+#if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE || ANDROID)
   ManagementObjectSearcher mosLogicalDisks = new ManagementObjectSearcher( "select * from Win32_LogicalDisk where DeviceID = '" + diskPath.ToString().Remove( diskPath.Length - 1, 1 ) + "'" );
   try
   {

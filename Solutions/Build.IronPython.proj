@@ -174,9 +174,9 @@
     <Copy SourceFiles="@(IronPythonLibs->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" />
 
     <!-- Windows Phone 7.5 -->
-    <!--<Copy SourceFiles="@(DlrLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\WP7" />
+    <Copy SourceFiles="@(DlrLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\WP7" />
     <Copy SourceFiles="@(v2DlrLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\WP7" />
-    <Copy SourceFiles="@(IronPythonLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\WP7" />-->
+    <Copy SourceFiles="@(IronPythonLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\WP7" />
 
     <!-- Mono for Android -->
     <Copy SourceFiles="@(DlrLibs->'$(AndroidBuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Android" />

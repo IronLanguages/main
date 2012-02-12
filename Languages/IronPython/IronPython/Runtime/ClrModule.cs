@@ -790,7 +790,7 @@ import Namespace.")]
             return Converter.Convert(o, toType);
         }
 
-#if FEATURE_FILESYSTEM
+#if FEATURE_FILESYSTEM && FEATURE_REFEMIT
         /// <summary>
         /// Provides a helper for compiling a group of modules into a single assembly.  The assembly can later be
         /// reloaded using the clr.AddReference API.
@@ -871,6 +871,8 @@ import Namespace.")]
             SavableScriptCode.SaveToAssembly(assemblyName, code.ToArray());
         }
 #endif
+
+#if FEATURE_REFEMIT
         /// <summary>
         /// clr.CompileSubclassTypes(assemblyName, *typeDescription)
         /// 
@@ -908,6 +910,7 @@ import Namespace.")]
 
             NewTypeMaker.SaveNewTypes(assemblyName, typesToCreate);
         }
+#endif
 
         /// <summary>
         /// clr.GetSubclassedTypes() -> tuple

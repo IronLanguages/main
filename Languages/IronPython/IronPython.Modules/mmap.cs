@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2 && !SILVERLIGHT && !WIN8 && !ANDROID
+#if FEATURE_MMAP
 
 using System;
 using System.Diagnostics;

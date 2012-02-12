@@ -67,10 +67,7 @@
       <Name>IronPython</Name>
       <Private>false</Private>
     </ProjectReference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Management" />
-    <Reference Include="System.Numerics" Condition=" '$(TargetFrameworkVersion)' == 'v4.0' " />
+    <Reference Include="System.Management" Condition=" '$(IsFullFramework)' == 'true'" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="c#sqlite\alter_c.cs" />

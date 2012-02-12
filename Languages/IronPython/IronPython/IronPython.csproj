@@ -33,9 +33,9 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
     <NoWarn>1591;0429</NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight3Debug|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'WP7Debug|AnyCPU' ">
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight3Release|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'WP7Release|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight4Debug|AnyCPU' ">
     <NoWarn>1591;0429</NoWarn>
@@ -433,6 +433,7 @@
     <Compile Include="Runtime\Types\PythonAssemblyOps.cs" />
     <Compile Include="Runtime\PythonModule.cs" />
     <Compile Include="Runtime\Types\ReflectedSlotProperty.cs" />
+    <Compile Include="Runtime\Types\StaticUnderlyingSystemType.cs" />
     <Compile Include="Runtime\Types\TypeCache.Generated.cs" />
     <Compile Include="Runtime\Types\TypeInfo.cs" />
     <Compile Include="Runtime\Types\TypeInfo.Generated.cs" />
