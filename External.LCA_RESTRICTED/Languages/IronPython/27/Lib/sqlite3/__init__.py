@@ -21,4 +21,12 @@
 #    misrepresented as being the original software.
 # 3. This notice may not be removed or altered from any source distribution.
 
+def _():
+    import sys
+    if sys.platform == 'cli':
+        import clr
+        clr.AddReference('IronPython.SQLite')
+_()
+del _
+
 from dbapi2 import *
