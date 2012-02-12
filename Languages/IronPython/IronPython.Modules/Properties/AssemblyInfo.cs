@@ -47,7 +47,7 @@ using System.Security;
 
 [assembly: SecurityTransparent]
 
-#if !SILVERLIGHT && !WIN8 && !ANDROID
+#if FEATURE_APTCA
 [assembly: AllowPartiallyTrustedCallers]
 #if !CLR2
 [assembly: SecurityRules(SecurityRuleSet.Level1)]

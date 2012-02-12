@@ -88,7 +88,7 @@ namespace System.Linq.Expressions.Compiler {
         private LambdaCompiler(AnalyzedTree tree, LambdaExpression lambda) {
             Type[] parameterTypes = GetParameterTypes(lambda).AddFirst(typeof(Closure));
 
-#if SILVERLIGHT && CLR2
+#if (SILVERLIGHT && CLR2) || WP75
             var method = new DynamicMethod(lambda.Name ?? "lambda_method", lambda.ReturnType, parameterTypes);
 #else
             var method = new DynamicMethod(lambda.Name ?? "lambda_method", lambda.ReturnType, parameterTypes, true);

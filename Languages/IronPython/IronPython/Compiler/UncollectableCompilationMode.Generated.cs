@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_REFEMIT
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -3435,3 +3437,4 @@ namespace IronPython.Compiler.Ast {
 
     #endregion
 }
+#endif
