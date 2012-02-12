@@ -24,6 +24,7 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using sqlite3_stmt = Community.CsharpSqlite.Sqlite3.Vdbe;
 using sqlite3_value = Community.CsharpSqlite.Sqlite3.Mem;
@@ -65,7 +66,7 @@ namespace IronPython.SQLite
             private List<WeakReference> statements = new List<WeakReference>();
             private int created_statements = 0;
 
-            private Hashtable function_pinboard = new Hashtable();
+            private Dictionary<object, object> function_pinboard = new Dictionary<object, object>();
 
             internal Sqlite3.sqlite3 db;
 
@@ -376,7 +377,8 @@ namespace IronPython.SQLite
                     Sqlite3.sqlite3_result_text(ctx, (string)result, -1, Sqlite3.SQLITE_TRANSIENT);
                 else if(result is byte[])
                 {
-                    string s = Latin1.GetString((byte[])result);
+                    byte[] b = (byte[])result;
+                    string s = Latin1.GetString(b, 0, b.Length);
                     Sqlite3.sqlite3_result_blob(ctx, s, s.Length, Sqlite3.SQLITE_TRANSIENT);
                 }
                 else if(result is PythonBuffer)

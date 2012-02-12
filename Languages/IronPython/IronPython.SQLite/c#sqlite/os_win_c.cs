@@ -432,7 +432,11 @@ static int getLastErrorMsg(int nBuf, ref string zBuf){
 //#define winLogError(a,b,c)     winLogErrorAtLine(a,b,c,__LINE__)
 static int winLogError( int a, string b, string c )
 {
+#if !SILVERLIGHT5
   StackTrace st = new StackTrace( new StackFrame( true ) );
+#else
+  StackTrace st = new StackTrace(new StackFrame());
+#endif
   StackFrame sf = st.GetFrame( 0 );
   
   return winLogErrorAtLine( a, b, c, sf.GetFileLineNumber() );

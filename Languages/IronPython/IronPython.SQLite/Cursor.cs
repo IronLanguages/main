@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Community.CsharpSqlite;
@@ -21,6 +22,7 @@ using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using sqlite3_stmt = Community.CsharpSqlite.Sqlite3.Vdbe;
 
@@ -38,7 +40,7 @@ namespace IronPython.SQLite
             bool resultsDone;
             int last_step_rc;
 
-            ArrayList row_cast_map = new ArrayList();
+            List<object> row_cast_map = new List<object>();
 
             public PythonTuple description { get; private set; }
 
@@ -325,7 +327,7 @@ namespace IronPython.SQLite
                         }
                         else
                         {
-                            string item = Latin1.GetString(val);
+                            string item = Latin1.GetString(val, 0, val.Length);
                             converted = PythonCalls.Call(context, converter, item);
                         }
                     }
@@ -526,7 +528,7 @@ namespace IronPython.SQLite
                 if(this.connection.detect_types == 0)
                     return true;
 
-                row_cast_map = new ArrayList();
+                row_cast_map = new List<object>();
 
                 object converter = null;
                 for(int i = 0; i < Sqlite3.sqlite3_column_count(this.statement.st); ++i)
