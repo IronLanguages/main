@@ -17,7 +17,7 @@
     <WixTargetsPath>$(WixToolPath)Wix.targets</WixTargetsPath>
     <WixTasksPath>$(WixToolPath)wixtasks.dll</WixTasksPath>
     
-    <BaseInputPaths Condition=" '$(BaseInputPaths)' == '' ">$(MSBuildProjectDirectory)\..\..\Stage\IronPython-$(DisplayVersion)</BaseInputPaths>
+    <BaseInputPaths Condition=" '$(BaseInputPaths)' == '' ">$(MSBuildProjectDirectory)\..\..\Stage\$(Configuration)\IronPython-$(DisplayVersion)</BaseInputPaths>
     
     <MsiVersion Condition=" '$(MsiVersion)' == '' ">$(MajorVersion).$(MinorVersion).$(MicroVersion)$(AssemblyFileRevision).0</MsiVersion>
   </PropertyGroup>
@@ -54,6 +54,9 @@
     </WixConstant>
     <WixConstant Include="PlatformsSl5Dir">
       <Value>Platforms\Sl5</Value>
+    </WixConstant>
+    <WixConstant Include="PlatformsWP7Dir">
+      <Value>Platforms\WP7</Value>
     </WixConstant>
     <WixConstant Include="SilverlightToolsDir">
       <Value>Silverlight</Value>
@@ -141,6 +144,12 @@
       <DirectoryRefId>IronPythonPlatformsDir</DirectoryRefId>
       <ComponentGroupName>IronPythonPlatformsSl5</ComponentGroupName>
       <PreprocessorVariable>var.PlatformsSl5Dir</PreprocessorVariable>
+    </HarvestDirectory>
+    
+    <HarvestDirectory Include="$(BaseInputPaths)\Platforms\WP7">
+      <DirectoryRefId>IronPythonPlatformsDir</DirectoryRefId>
+      <ComponentGroupName>IronPythonPlatformsWP7</ComponentGroupName>
+      <PreprocessorVariable>var.PlatformsWP7Dir</PreprocessorVariable>
     </HarvestDirectory>
 
     <HarvestDirectory Include="$(BaseInputPaths)\Silverlight">
