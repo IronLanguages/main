@@ -58,27 +58,12 @@ def GenerateExe(name, targetKind, platform, machine, main_module):
         mainMethod.SetCustomAttribute(clr.GetClrType(System.STAThreadAttribute).GetConstructor(()), System.Array[System.Byte](()))
     gen = mainMethod.GetILGenerator()
 
-    showWhatHappens = False
-
     # variables for saving original working directory und return code of script
     wdSave = gen.DeclareLocal(str)
-    rcSave = gen.DeclareLocal(clr.GetClrType(System.Int32))
 
     # save current working directory
     gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Environment).GetMethod("get_CurrentDirectory"), ())
     gen.Emit(OpCodes.Stloc, wdSave)
-
-    if  showWhatHappens:
-        gen.Emit(OpCodes.Ldstr, "saved working dir                  ")
-        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Console).GetMethod("Write", (str,)), ())
-        gen.Emit(OpCodes.Ldloc, wdSave)
-        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Console).GetMethod("WriteLine", (str,)), ())
-
-        # show commandline
-        gen.Emit(OpCodes.Ldstr, "command line                       ")
-        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Console).GetMethod("Write", (str,)), ())
-        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Environment).GetMethod("get_CommandLine"), ())
-        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Console).GetMethod("WriteLine", (str,)), ())
 
     # get the ScriptCode assembly...
     gen.EmitCall(OpCodes.Call, clr.GetClrType(Assembly).GetMethod("GetEntryAssembly"), ())
@@ -93,28 +78,11 @@ def GenerateExe(name, targetKind, platform, machine, main_module):
     # result of GetFullPath stays on the stack during the restore of the
     # original working directory
 
-    if  showWhatHappens:    # if True the generated .exe will print some messages to the console
-        gen.Emit(OpCodes.Ldstr, "current working dir now            ")
-        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Console).GetMethod("Write", (str,)), ())
-        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Environment).GetMethod("get_CurrentDirectory"), ())
-        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Console).GetMethod("WriteLine", (str,)), ())
-
-        gen.Emit(OpCodes.Ldstr, "restoring                          ")
-        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Console).GetMethod("Write", (str,)), ())
-        gen.Emit(OpCodes.Ldloc, wdSave)
-        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Console).GetMethod("WriteLine", (str,)), ())
-
     # restore original working directory
     gen.Emit(OpCodes.Ldloc, wdSave)
     gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Environment).GetMethod("set_CurrentDirectory"), ())
 
-    if  showWhatHappens:
-        gen.Emit(OpCodes.Ldstr, "current working dir after restore  ")
-        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Console).GetMethod("Write", (str,)), ())
-        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Environment).GetMethod("get_CurrentDirectory"), ())
-        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Console).GetMethod("WriteLine", (str,)), ())
-
-    # for LoadFile() the call, the full path of the assembly is still is on the stack
+    # for the LoadFile() call, the full path of the assembly is still is on the stack
     # as the result from the call to GetFullPath()
     gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Reflection.Assembly).GetMethod("LoadFile", (clr.GetClrType(str), )), ())
 
@@ -122,28 +90,9 @@ def GenerateExe(name, targetKind, platform, machine, main_module):
     gen.Emit(OpCodes.Ldstr, "__main__")
     gen.Emit(OpCodes.Ldnull)
 
-    if  showWhatHappens:
-        gen.Emit(OpCodes.Ldstr, "about to call ironPython main --->")
-        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Console).GetMethod("WriteLine", (str,)), ())
-
     # call InitializeModule
     # (this will also run the script)
     gen.EmitCall(OpCodes.Call, clr.GetClrType(PythonOps).GetMethod("InitializeModule"), ())
-
-    if  showWhatHappens:
-        # return code from initialize... (=run main) is on the stack now
-        # save return code
-        gen.Emit(OpCodes.Stloc, rcSave)
-
-        gen.Emit(OpCodes.Ldstr, "return code=")
-        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Console).GetMethod("Write", (str,)), ())
-        gen.Emit(OpCodes.Ldloc, rcSave)
-        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Console).GetMethod("WriteLine", (System.Int32,)), ())
-
-        # push return code from python on stack and return
-        gen.Emit(OpCodes.Ldloc, rcSave)
-        gen.Emit(OpCodes.Ldstr, "---> return from ironPython main")
-        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Console).GetMethod("WriteLine", (str,)), ())
 
     gen.Emit(OpCodes.Ret)
 
