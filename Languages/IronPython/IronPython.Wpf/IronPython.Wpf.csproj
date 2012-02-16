@@ -11,6 +11,7 @@
     <AssemblyName>IronPython.Wpf</AssemblyName>
     <DocumentationFile>$(SolutionDir)..\bin\$(Configuration)\IronPython.Wpf.xml</DocumentationFile>
     <BaseAddress>885063680</BaseAddress>
+    <OutputPath>$(OutputPath)\DLLs</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' "></PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "></PropertyGroup>
@@ -27,7 +28,6 @@
     <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting.Core\Microsoft.Scripting.Core.csproj" Condition="'$(FeatureCoreDlr)' != 'true'">
       <Project>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</Project>
       <Name>Microsoft.Scripting.Core</Name>
-      <Private>false</Private>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj">
       <Project>{02FF0909-F5AD-48CF-A86A-345E721B7E40}</Project>

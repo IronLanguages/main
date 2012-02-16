@@ -1242,7 +1242,7 @@ namespace IronPython.Modules {
                 return bytes.ToString();
             }
 
-#if !CLR2 && !SILVERLIGHT && !WIN8 && !ANDROID
+#if FEATURE_MMAP
             MmapModule.mmap mmapFile = str as MmapModule.mmap;
             if (mmapFile != null) {
                 return mmapFile.GetSearchString();

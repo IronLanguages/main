@@ -862,8 +862,10 @@ namespace IronPython.Runtime.Binding {
                 rl.Add(asm);
             }
 
+#if FEATURE_REFEMIT
             // load any compiled code that has been cached...
             LoadScriptCode(_context, asm);
+#endif
 
             // load any Python modules
             _context.LoadBuiltins(_context.BuiltinModules, asm, true);

@@ -38,6 +38,10 @@
           <File Id="IronPython.Wpf.dll" KeyPath="yes" />
           <File Id="IronPython.Wpf.xml" />
         </Component>
+        <Component Guid="{218765CA-4881-450E-B406-23CF3C45CFE4}">
+          <File Id="IronPython.SQLite.dll" KeyPath="yes" />
+          <File Id="IronPython.SQLite.xml" />
+        </Component>
       </Directory>
 
       <Component>
@@ -80,6 +84,7 @@
       <ComponentRef Id="IronPython.dll"/>
       <ComponentRef Id="IronPython.Modules.dll"/>
       <ComponentRef Id="IronPython.Wpf.dll"/>
+      <ComponentRef Id="IronPython.SQLite.dll"/>
       <ComponentRef Id="ipy.exe"/>
       <ComponentRef Id="ipyw.exe"/>
       <ComponentRef Id="Readme.html"/>

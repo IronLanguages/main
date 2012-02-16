@@ -17,7 +17,7 @@ using System;
 
 using IronPython.Runtime;
 
-#if !SILVERLIGHT
+#if FEATURE_NATIVE
 [assembly: PythonModule("_ctypes_test", typeof(IronPython.Modules.CTypesTest))]
 namespace IronPython.Modules {
     public static class CTypesTest {
