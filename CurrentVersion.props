@@ -4,8 +4,8 @@
     <MajorVersion>2</MajorVersion>
     <MinorVersion>7</MinorVersion>
     <MicroVersion>2</MicroVersion>
-    <ReleaseLevel>alpha</ReleaseLevel>
-    <ReleaseSerial>2</ReleaseSerial>
+    <ReleaseLevel>beta</ReleaseLevel>
+    <ReleaseSerial>1</ReleaseSerial>
 
     <AssemblyRevision>40</AssemblyRevision>
   </PropertyGroup>
