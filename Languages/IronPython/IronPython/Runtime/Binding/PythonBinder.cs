@@ -862,8 +862,10 @@ namespace IronPython.Runtime.Binding {
                 rl.Add(asm);
             }
 
+#if FEATURE_REFEMIT
             // load any compiled code that has been cached...
             LoadScriptCode(_context, asm);
+#endif
 
             // load any Python modules
             _context.LoadBuiltins(_context.BuiltinModules, asm, true);
@@ -872,6 +874,7 @@ namespace IronPython.Runtime.Binding {
             NewTypeMaker.LoadNewTypes(asm);
         }
 
+#if FEATURE_REFEMIT
         private static void LoadScriptCode(PythonContext/*!*/ pc, Assembly/*!*/ asm) {
             ScriptCode[] codes = SavableScriptCode.LoadFromAssembly(pc.DomainManager, asm);
 
@@ -879,6 +882,7 @@ namespace IronPython.Runtime.Binding {
                 pc.GetCompiledLoader().AddScriptCode(sc);
             }
         }
+#endif
 
         internal PythonContext/*!*/ Context {
             get {
