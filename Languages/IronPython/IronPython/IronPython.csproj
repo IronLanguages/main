@@ -26,13 +26,19 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight3Debug|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'WP7Debug|AnyCPU' ">
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight3Release|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'WP7Release|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight4Debug|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight4Release|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight5Debug|AnyCPU' ">
+    <NoWarn>1591;0429</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight5Release|AnyCPU' ">
+    <NoWarn>1591;0429</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'AndroidDebug|AnyCPU' ">
   </PropertyGroup>
@@ -94,7 +100,6 @@
     <Compile Include="Runtime\Exceptions\SystemException.cs" />
     <Compile Include="Runtime\Exceptions\TypeErrorException.cs" />
     <Compile Include="Runtime\Exceptions\ValueErrorException.cs" />
-    <Compile Include="Runtime\Exceptions\WarningException.cs" />
     <Compile Include="Runtime\Exceptions\Win32Exception.cs" />
     <Compile Include="Runtime\ExtensionMethodSet.cs" />
     <Compile Include="Runtime\FutureBuiltins.cs" />
@@ -103,6 +108,7 @@
     <Compile Include="Runtime\InstancedModuleDictionaryStorage.cs" />
     <Compile Include="Runtime\MemoryView.cs" />
     <Compile Include="Runtime\Method.Generated.cs" />
+    <Compile Include="Runtime\Operations\MarshalOps.cs" />
     <Compile Include="Runtime\PythonDocumentationProvider.cs" />
     <Compile Include="Runtime\PythonHiddenBaseClassAttribute.cs" />
     <Compile Include="Runtime\SequenceTypeInfoAttribute.cs" />
@@ -419,6 +425,7 @@
     <Compile Include="Runtime\Types\PythonAssemblyOps.cs" />
     <Compile Include="Runtime\PythonModule.cs" />
     <Compile Include="Runtime\Types\ReflectedSlotProperty.cs" />
+    <Compile Include="Runtime\Types\StaticUnderlyingSystemType.cs" />
     <Compile Include="Runtime\Types\TypeCache.Generated.cs" />
     <Compile Include="Runtime\Types\TypeInfo.cs" />
     <Compile Include="Runtime\Types\TypeInfo.Generated.cs" />

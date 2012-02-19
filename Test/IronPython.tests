@@ -2635,7 +2635,7 @@
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
           <Arguments>-X:FullFrames Test\test_decimal.py</Arguments>
           <MaxDuration>6000000</MaxDuration>
-          <LongRunning>true</LongRunning>
+          <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>

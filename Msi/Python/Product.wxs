@@ -87,7 +87,7 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
         <ComponentRef Id='IronPythonCommonShortcuts'/>
         <ComponentRef Id='IronPython64bitShortcuts'/>
 
-        <Feature Id='IronPython_Core_Gac' AllowAdvertise='no' Level='1' Title='GAC' Description='Install the IronPython assemblies into the GAC.'>
+        <Feature Id='IronPython_Core_Gac' AllowAdvertise='no' Level='1' Title='GAC Assemblies' Description='Install the IronPython assemblies into the GAC.'>
           <ComponentGroupRef Id='DlrGac' />
           <ComponentGroupRef Id='IronPythonGac' />
         </Feature>
@@ -98,6 +98,10 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
       </Feature>
 
       <Feature Id='IronPython_Platforms' AllowAdvertise='no' Level='1' Title='Platforms' Description='Development libraries for additional platforms.'>
+        <Feature Id='IronPython_Platforms_Android' AllowAdvertise='no' Level='1' Title='Android' Description='Development assemblies for Mono for Android.'>
+          <ComponentGroupRef Id='IronPythonPlatformsAndroid'/>
+        </Feature>
+        
         <Feature Id='IronPython_Platforms_Net35' AllowAdvertise='no' Level='1' Title='.NET 3.5' Description='Development assemblies for .NET 3.5.'>
           <ComponentGroupRef Id='IronPythonPlatformsNet35'/>
         </Feature>
@@ -108,6 +112,14 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
 
         <Feature Id='IronPython_Platforms_Sl4' AllowAdvertise='no' Level='1' Title='Silverlight 4' Description='Development assemblies for Silverlight 4.'>
           <ComponentGroupRef Id='IronPythonPlatformsSl4'/>
+        </Feature>
+        
+        <Feature Id='IronPython_Platforms_Sl5' AllowAdvertise='no' Level='1' Title='Silverlight 5' Description='Development assemblies for Silverlight 5.'>
+          <ComponentGroupRef Id='IronPythonPlatformsSl5'/>
+        </Feature>
+        
+        <Feature Id='IronPython_Platforms_WP7' AllowAdvertise='no' Level='1' Title='Windows Phone 7' Description='Development assemblies for Windows Phone 7.'>
+          <ComponentGroupRef Id='IronPythonPlatformsWP7'/>
         </Feature>
       </Feature>
 

@@ -209,6 +209,19 @@ namespace IronPython.Hosting {
         }
 
         /// <summary>
+        /// Imports the Python module by the given name and inserts it into the ScriptScope as that name. If the
+        /// module does not exist an exception is raised.
+        /// </summary>
+        /// <param name="scope"></param>
+        /// <param name="moduleName"></param>
+        public static void ImportModule (this ScriptScope/*!*/ scope, string/*!*/ moduleName) {
+            ContractUtils.RequiresNotNull (scope, "scope");
+            ContractUtils.RequiresNotNull (moduleName, "moduleName");
+
+            scope.SetVariable (moduleName, scope.Engine.ImportModule (moduleName));
+        }
+
+        /// <summary>
         /// Sets sys.exec_prefix, sys.executable and sys.version and adds the prefix to sys.path
         /// </summary>
         public static void SetHostVariables(this ScriptRuntime/*!*/ runtime, string/*!*/ prefix, string/*!*/ executable, string/*!*/ version) {

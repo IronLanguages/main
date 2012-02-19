@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if CLR2
+#if !FEATURE_VALUE_EQUALITY
 
 // IValueEquality is unnecessary in .NET 4.0 and can be replaced by IStructuralEquatable
 // given some default IEqualityComparer

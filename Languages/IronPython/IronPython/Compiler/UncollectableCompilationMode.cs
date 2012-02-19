@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_REFEMIT
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -288,72 +290,6 @@ namespace IronPython.Compiler.Ast {
 
         #endregion
 
-        #region ConstantInfo
-
-        public class ConstantInfo {
-            public readonly MSAst.Expression/*!*/ Expression;
-            public readonly FieldInfo Field;
-            public readonly int Offset;
-
-            public ConstantInfo(MSAst.Expression/*!*/ expr, FieldInfo field, int offset) {
-                Assert.NotNull(expr);
-
-                Expression = expr;
-                Field = field;
-                Offset = offset;
-            }
-        }
-
-        public abstract class SiteInfo : ConstantInfo {
-            public readonly DynamicMetaObjectBinder/*!*/ Binder;
-            public readonly Type/*!*/ DelegateType;
-
-            protected Type/*!*/ _siteType;
-            public Type/*!*/ SiteType {
-                get {
-                    if (_siteType != null) {
-                        _siteType = typeof(CallSite<>).MakeGenericType(DelegateType);
-                    }
-                    return _siteType;
-                }
-            }
-
-            public SiteInfo(DynamicMetaObjectBinder/*!*/ binder, MSAst.Expression/*!*/ expr, FieldInfo/*!*/ field, int index, Type/*!*/ delegateType)
-                : base(expr, field, index) {
-                Assert.NotNull(binder);
-
-                Binder = binder;
-                DelegateType = delegateType;
-            }
-
-            public SiteInfo(DynamicMetaObjectBinder/*!*/ binder, MSAst.Expression/*!*/ expr, FieldInfo/*!*/ field, int index, Type/*!*/ delegateType, Type/*!*/ siteType)
-                : this(binder, expr, field, index, delegateType) {
-                _siteType = siteType;
-            }
-
-            public abstract CallSite/*!*/ MakeSite();
-        }
-
-        public class SiteInfoLarge : SiteInfo {
-            public SiteInfoLarge(DynamicMetaObjectBinder/*!*/ binder, MSAst.Expression/*!*/ expr, FieldInfo/*!*/ field, int index, Type/*!*/ delegateType)
-                : base (binder, expr, field, index, delegateType) { }
-
-            public override CallSite MakeSite() {
-                return CallSite.Create(DelegateType, Binder);
-            }
-        }
-
-        public class SiteInfo<T> : SiteInfo where T : class {
-            public SiteInfo(DynamicMetaObjectBinder/*!*/ binder, MSAst.Expression/*!*/ expr, FieldInfo/*!*/ field, int index)
-                : base(binder, expr, field, index, typeof(T), typeof(CallSite<T>)) { }
-
-            public override CallSite MakeSite() {
-                return CallSite<T>.Create(Binder);
-            }
-        }
-        
-        #endregion
-
         #region Dynamic CallSite Type Information
 
         private sealed class DelegateCache {
@@ -554,3 +490,4 @@ namespace IronPython.Compiler.Ast {
         #endregion
     }
 }
+#endif

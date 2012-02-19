@@ -32,11 +32,11 @@ using IronPython.Runtime.Binding;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 
-#if CLR2
+#if FEATURE_NUMERICS
+using System.Numerics;
+#else
 using Microsoft.Scripting.Math;
 using Complex = Microsoft.Scripting.Math.Complex64;
-#else
-using System.Numerics;
 #endif
 
 namespace IronPython.Runtime.Types {
@@ -623,7 +623,7 @@ namespace IronPython.Runtime.Types {
                 new OneOffResolver("__repr__", ReprResolver),
                 new OneOffResolver("__hash__", HashResolver),       
                 new OneOffResolver("__iter__", IterResolver),         
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
                 new OneOffResolver("__reduce_ex__", SerializationResolver),
 #endif
                 // The standard resolver looks for types using .NET reflection by name
@@ -786,7 +786,7 @@ namespace IronPython.Runtime.Types {
         /// </summary>
         private static MemberGroup/*!*/ StringResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
             if (type != typeof(double) && type != typeof(float)
-#if !CLR2
+#if FEATURE_NUMERICS
                 && type != typeof(Complex)
 #endif
             ) {
@@ -825,7 +825,8 @@ namespace IronPython.Runtime.Types {
 
             return MemberGroup.EmptyGroup;
         }
-#if !SILVERLIGHT
+
+#if FEATURE_SERIALIZATION
         private static MemberGroup/*!*/ SerializationResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
             if (type.IsSerializable && !PythonBinder.IsPythonType(type)) {
 
@@ -838,7 +839,9 @@ namespace IronPython.Runtime.Types {
 
             return MemberGroup.EmptyGroup;
         }
+#endif
 
+#if !SILVERLIGHT
         /// <summary>
         /// Helper to see if the type explicitly overrides the method.  This ignores members
         /// defined on object.
@@ -865,11 +868,11 @@ namespace IronPython.Runtime.Types {
         /// then IValueEquality.GetValueHashCode.
         /// </summary>
         private static MemberGroup/*!*/ HashResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-#if CLR2
+#if FEATURE_VALUE_EQUALITY
+            if (typeof(IStructuralEquatable).IsAssignableFrom(type) && !type.IsInterface) {
+#else
             if ((typeof(IStructuralEquatable).IsAssignableFrom(type) ||
                  typeof(IValueEquality).IsAssignableFrom(type)) && !type.IsInterface) {
-#else
-            if (typeof(IStructuralEquatable).IsAssignableFrom(type) && !type.IsInterface) {
 #endif
                 // check and see if __hash__ has been overridden by the base type.
                 foreach (Type t in binder.GetContributingTypes(type)) {
@@ -883,7 +886,10 @@ namespace IronPython.Runtime.Types {
                         return MemberGroup.EmptyGroup;
                     }
                 }
-#if CLR2
+
+#if FEATURE_VALUE_EQUALITY
+                return GetInstanceOpsMethod(type, "StructuralHashMethod");
+#else
                 if (typeof(IStructuralEquatable).IsAssignableFrom(type)) {
                     return GetInstanceOpsMethod(type, "StructuralHashMethod");
                 }
@@ -891,8 +897,6 @@ namespace IronPython.Runtime.Types {
                 if (typeof(IValueEquality).IsAssignableFrom(type)) {
                     return new MemberGroup(typeof(IValueEquality).GetMethod("GetValueHashCode"));
                 }
-#else
-                return GetInstanceOpsMethod(type, "StructuralHashMethod");
 #endif
             }
 

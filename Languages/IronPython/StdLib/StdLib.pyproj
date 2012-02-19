@@ -464,6 +464,9 @@
     <Content Include="$(StdLibPath)\logging\__init__.py" />
     <Content Include="$(StdLibPath)\pydoc_data\topics.py" />
     <Content Include="$(StdLibPath)\pydoc_data\__init__.py" />
+    <Content Include="$(StdLibPath)\sqlite3\dbapi2.py" />
+    <Content Include="$(StdLibPath)\sqlite3\dump.py" />
+    <Content Include="$(StdLibPath)\sqlite3\__init__.py" />
     <Content Include="$(StdLibPath)\unittest\case.py" />
     <Content Include="$(StdLibPath)\unittest\loader.py" />
     <Content Include="$(StdLibPath)\unittest\main.py" />

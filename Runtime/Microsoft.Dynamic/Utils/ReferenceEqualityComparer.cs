@@ -35,7 +35,7 @@ namespace Microsoft.Scripting.Utils {
 #endif
 
         public int GetHashCode(T obj) {
-#if WP7 // CF RH.GetHashCode throws NullReferenceException if the argument is null
+#if WP75 // CF RH.GetHashCode throws NullReferenceException if the argument is null
             return obj != null ? RuntimeHelpers.GetHashCode(obj) : 0;
 #elif WIN8
             // TODO: HACK!

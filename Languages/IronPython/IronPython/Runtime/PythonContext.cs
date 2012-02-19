@@ -293,6 +293,13 @@ namespace IronPython.Runtime {
 
                     // add DLLs directory for user-defined extention modules
                     path.append(Path.Combine(entry, "DLLs"));
+
+#if DEBUG
+                    // For developer use, add External.LCA_RESTRICTED/Languages/IronPython/27/Lib
+                    string devStdLib = Path.Combine(entry, @"../../External.LCA_RESTRICTED/Languages/IronPython/27/Lib");
+                    if (Directory.Exists(devStdLib))
+                        path.append(devStdLib);
+#endif
                 }
             } catch (SecurityException) {
             }
@@ -1999,7 +2006,7 @@ namespace IronPython.Runtime {
         }
 
         private static string GetInitialPrefix() {
-#if !SILVERLIGHT
+#if FEATURE_ASSEMBLY_CODEBASE
             try {
                 return typeof(PythonContext).Assembly.CodeBase;
             } catch (SecurityException) {

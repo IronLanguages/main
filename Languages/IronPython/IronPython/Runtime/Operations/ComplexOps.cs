@@ -21,7 +21,7 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
 
-#if CLR2
+#if !FEATURE_NUMERICS
 using Microsoft.Scripting.Math;
 using Complex = Microsoft.Scripting.Math.Complex64;
 #else
@@ -150,7 +150,7 @@ namespace IronPython.Runtime.Operations {
                 return y.IsZero() ? Complex.One : Complex.Zero;
             }
 
-#if !CLR2
+#if FEATURE_NUMERICS
             // Special case for higher precision with real integer powers
             // TODO: A similar check may get added to CLR 4 upon resolution of Dev10 bug 863171,
             // in which case this code should go away.
@@ -302,12 +302,7 @@ namespace IronPython.Runtime.Operations {
         // Unary Operations
         [SpecialName]
         public static double Abs(Complex x) {
-#if CLR2
             double res = x.Abs();
-#else
-            // TODO: remove after CodePlex 26224 and MS internal 861649 are resolved
-            double res = MathUtils.Hypot(x.Real, x.Imaginary);
-#endif
 
             if (double.IsInfinity(res) && !double.IsInfinity(x.Real) && !double.IsInfinity(x.Imaginary())) {
                 throw PythonOps.OverflowError("absolute value too large");

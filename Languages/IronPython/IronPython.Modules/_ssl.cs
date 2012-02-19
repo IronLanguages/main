@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT // System.NET
+#if FEATURE_FULL_NET
 
 using System;
 using System.IO;

@@ -1188,6 +1188,9 @@ def parse(source, parser=None):
 # @return A (event, elem) iterator.
 
 def iterparse(source, events=None, parser=None):
+    if sys.platform == 'cli':
+        raise NotImplementedError('iterparse is not supported on IronPython. (CP #31923)')
+
     if not hasattr(source, "read"):
         source = open(source, "rb")
     if not parser:

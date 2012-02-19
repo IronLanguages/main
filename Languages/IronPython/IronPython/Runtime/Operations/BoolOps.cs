@@ -14,14 +14,14 @@
  * ***************************************************************************/
 
 using System;
-using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 
-#if CLR2
-using Complex = Microsoft.Scripting.Math.Complex64;
-#else
+#if FEATURE_NUMERICS
 using System.Numerics;
+#else
+using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
 #endif
 
 namespace IronPython.Runtime.Operations {
@@ -85,6 +85,11 @@ namespace IronPython.Runtime.Operations {
 
         public static string/*!*/ __repr__(bool self) {
             return self ? "True" : "False";
+        }
+
+        public static string/*!*/ __format__(CodeContext/*!*/ context, bool self, [NotNull]string/*!*/ formatSpec)
+        {
+            return __repr__(self);
         }
 
         // Binary Operations - Comparisons

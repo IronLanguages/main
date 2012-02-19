@@ -35,11 +35,11 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-#if CLR2
+#if FEATURE_NUMERICS
+using System.Numerics;
+#else
 using Microsoft.Scripting.Math;
 using Complex = Microsoft.Scripting.Math.Complex64;
-#else
-using System.Numerics;
 #endif
 
 [assembly: PythonModule("__builtin__", typeof(IronPython.Modules.Builtin))]
@@ -2168,12 +2168,13 @@ namespace IronPython.Modules {
                 SumObject(ref state, state.BigIntVal, current);
             }
         }
-#if CLR2
-        private static BigInteger MaxDouble = BigInteger.Create(Double.MaxValue);
-        private static BigInteger MinDouble = BigInteger.Create(Double.MinValue);
-#else
+
+#if FEATURE_NUMERICS
         private static BigInteger MaxDouble = new BigInteger(Double.MaxValue);
         private static BigInteger MinDouble = new BigInteger(Double.MinValue);
+#else
+        private static BigInteger MaxDouble = BigInteger.Create(Double.MaxValue);
+        private static BigInteger MinDouble = BigInteger.Create(Double.MinValue);
 #endif
 
         private static void SumBigIntAndDouble(ref SumState state, BigInteger bigInt, double dbl) {
