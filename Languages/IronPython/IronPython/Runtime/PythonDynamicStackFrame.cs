@@ -28,10 +28,7 @@ namespace IronPython.Runtime {
     /// function code object which is needed to build frame objects from.
     /// </summary>
     [Serializable]
-    sealed class PythonDynamicStackFrame : DynamicStackFrame
-#if !SILVERLIGHT
-        , ISerializable 
-#endif
+    internal sealed class PythonDynamicStackFrame : DynamicStackFrame, ISerializable 
     {
         private readonly CodeContext/*!*/ _context;
         private readonly FunctionCode/*!*/ _code;
@@ -55,14 +52,6 @@ namespace IronPython.Runtime {
             return method;
         }
 
-
-#if FEATURE_SERIALIZATION
-        private PythonDynamicStackFrame(SerializationInfo info, StreamingContext context)
-            : base((MethodBase)info.GetValue("method", typeof(MethodBase)), (string)info.GetValue("funcName", typeof(string)), (string)info.GetValue("filename", typeof(string)), (int)info.GetValue("line", typeof(int))) {
-        }
-#endif
-
-
         /// <summary>
         /// Gets the code context of the function.
         /// 
@@ -84,8 +73,11 @@ namespace IronPython.Runtime {
                 return _code;
             }
         }
+
 #if FEATURE_SERIALIZATION
-        #region ISerializable Members
+        private PythonDynamicStackFrame(SerializationInfo info, StreamingContext context)
+            : base((MethodBase)info.GetValue("method", typeof(MethodBase)), (string)info.GetValue("funcName", typeof(string)), (string)info.GetValue("filename", typeof(string)), (int)info.GetValue("line", typeof(int))) {
+        }
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) {
             info.AddValue("method", GetMethod());
@@ -93,8 +85,6 @@ namespace IronPython.Runtime {
             info.AddValue("filename", GetFileName());
             info.AddValue("line", GetFileLineNumber());
         }
-
-        #endregion
 #endif
     }
 }

@@ -216,21 +216,22 @@ namespace Microsoft.Scripting.Generation {
                     }
                 }
             }
-            return method;
 #else
             // maybe we can get it from an interface on the type this
             // method came from...
             foreach (Type iface in targetType.GetImplementedInterfaces()) {
-                InterfaceMapping mapping = targetType.GetInterfaceMap(iface);
-                for (int i = 0; i < mapping.TargetMethods.Length; i++) {
-                    MethodInfo targetMethod = mapping.TargetMethods[i];
-                    if (targetMethod != null && targetMethod.MethodHandle == method.MethodHandle) {
-                        return mapping.InterfaceMethods[i];
+                if (iface.IsPublic()) {
+                    InterfaceMapping mapping = targetType.GetInterfaceMap(iface);
+                    for (int i = 0; i < mapping.TargetMethods.Length; i++) {
+                        MethodInfo targetMethod = mapping.TargetMethods[i];
+                        if (targetMethod != null && targetMethod.MethodHandle == method.MethodHandle) {
+                            return mapping.InterfaceMethods[i];
+                        }
                     }
                 }
             }
-            return method;
 #endif
+            return method;
         }
 
         /// <summary>

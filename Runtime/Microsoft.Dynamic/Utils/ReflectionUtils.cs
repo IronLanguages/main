@@ -1263,12 +1263,6 @@ namespace Microsoft.Scripting.Utils {
 
         #region Methods and Parameters
 
-        public static MethodInfo[] GetMethodInfos(Delegate[] delegates) {
-            MethodInfo[] result = new MethodInfo[delegates.Length];
-            for (int i = 0; i < delegates.Length; i++) result[i] = delegates[i].GetMethod();
-            return result;
-        }
-
         public static MethodBase[] GetMethodInfos(MemberInfo[] members) {
             return ArrayUtils.ConvertAll<MemberInfo, MethodBase>(
                 members,
