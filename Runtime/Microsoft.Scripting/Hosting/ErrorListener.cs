@@ -15,7 +15,12 @@
 
 using System;
 using System.Dynamic;
-using System.Security.Permissions;
+
+#if FEATURE_REMOTING
+using System.Runtime.Remoting;
+#else
+using MarshalByRefObject = System.Object;
+#endif
 
 namespace Microsoft.Scripting.Hosting {
 
@@ -23,11 +28,7 @@ namespace Microsoft.Scripting.Hosting {
     /// The host can use this class to track for errors reported during script parsing and compilation.
     /// Hosting API counterpart for <see cref="ErrorSink"/>.
     /// </summary>
-    public abstract class ErrorListener
-#if !SILVERLIGHT
-         : MarshalByRefObject
-#endif
-    {
+    public abstract class ErrorListener : MarshalByRefObject {
         protected ErrorListener() {
         }
 
@@ -37,7 +38,7 @@ namespace Microsoft.Scripting.Hosting {
 
         public abstract void ErrorReported(ScriptSource source, string message, SourceSpan span, int errorCode, Severity severity);
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
         // TODO: Figure out what is the right lifetime
         public override object InitializeLifetimeService() {
             return null;

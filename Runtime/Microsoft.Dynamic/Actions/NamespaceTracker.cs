@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -26,7 +26,6 @@ using System.Diagnostics;
 using System.Reflection;
 using Microsoft.Scripting.Utils;
 using System.Threading;
-using Microsoft.Contracts;
 using Microsoft.Scripting.Runtime;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -56,7 +55,6 @@ namespace Microsoft.Scripting.Actions {
             _fullName = name;
         }
 
-        [Confined]
         public override string ToString() {
             return base.ToString() + ":" + _fullName;
         }
@@ -68,7 +66,7 @@ namespace Microsoft.Scripting.Actions {
         internal NamespaceTracker GetOrMakeChildPackage(string childName, Assembly assem) {
             // lock is held when this is called
             Assert.NotNull(childName, assem);
-            Debug.Assert(childName.IndexOf(Type.Delimiter) == -1); // This is the simple name, not the full name
+            Debug.Assert(childName.IndexOf('.') == -1); // This is the simple name, not the full name
             Debug.Assert(_packageAssemblies.Contains(assem)); // Parent namespace must contain all the assemblies of the child
 
             MemberTracker ret;
@@ -102,12 +100,12 @@ namespace Microsoft.Scripting.Actions {
 
         private string GetFullChildName(string childName) {
             Assert.NotNull(childName);
-            Debug.Assert(childName.IndexOf(Type.Delimiter) == -1); // This is the simple name, not the full name
+            Debug.Assert(childName.IndexOf('.') == -1); // This is the simple name, not the full name
             if (_fullName == null) {
                 return childName;
             }
 
-            return _fullName + Type.Delimiter + childName;
+            return _fullName + "." + childName;
         }
 
         private static Type LoadType(Assembly assem, string fullTypeName) {
@@ -121,7 +119,7 @@ namespace Microsoft.Scripting.Actions {
         internal void AddTypeName(string typeName, Assembly assem) {
             // lock is held when this is called
             Assert.NotNull(typeName, assem);
-            Debug.Assert(typeName.IndexOf(Type.Delimiter) == -1); // This is the simple name, not the full name
+            Debug.Assert(typeName.IndexOf('.') == -1); // This is the simple name, not the full name
 
             if (!_typeNames.ContainsKey(assem)) {
                 _typeNames[assem] = new TypeNames(assem, _fullName);
@@ -139,7 +137,7 @@ namespace Microsoft.Scripting.Actions {
                     if (existingTypeEntity == null) {
                         // Replace the existing namespace or module with the new type
                         Debug.Assert(existingValue is NamespaceTracker);
-                        _dict[normalizedTypeName] = MemberTracker.FromMemberInfo(newType);
+                        _dict[normalizedTypeName] = MemberTracker.FromMemberInfo(newType.GetTypeInfo());
                     } else {
                         // Unify the new type with the existing type
                         _dict[normalizedTypeName] = TypeGroup.UpdateTypeEntity(existingTypeEntity, ReflectionCache.GetTypeTracker(newType));
@@ -211,7 +209,7 @@ namespace Microsoft.Scripting.Actions {
             }
 
             NamespaceTracker ret = this;
-            string[] pieces = fullNamespace.Split(Type.Delimiter);
+            string[] pieces = fullNamespace.Split('.');
             for (int i = 0; i < pieces.Length; i++) {
                 ret = ret.GetOrMakeChildPackage(pieces[i], assem);
             }
@@ -231,12 +229,12 @@ namespace Microsoft.Scripting.Actions {
 
             string fullTypeName = GetFullChildName(nameString);
             foreach (Assembly assem in _packageAssemblies) {
-                Type type = assem.GetType(fullTypeName, false);
+                Type type = assem.GetType(fullTypeName);
                 if (type == null || type.IsNested()) {
                     continue;
                 }
 
-                bool publishType = type.IsPublic || _topPackage.DomainManager.Configuration.PrivateBinding;
+                bool publishType = type.IsPublic() || _topPackage.DomainManager.Configuration.PrivateBinding;
                 if (!publishType) {
                     continue;
                 }
@@ -267,7 +265,7 @@ namespace Microsoft.Scripting.Actions {
 
                 MemberTracker existingTypeEntity = null;
 
-                if (name.IndexOf(Type.Delimiter) != -1) {
+                if (name.IndexOf('.') != -1) {
                     value = null;
                     return false;
                 }
@@ -347,7 +345,6 @@ namespace Microsoft.Scripting.Actions {
 
         #region IEnumerable<KeyValuePair<string, object>> Members
 
-        [Pure]
         public IEnumerator<KeyValuePair<string, object>> GetEnumerator() {
             foreach (var key in Keys) {
                 yield return new KeyValuePair<string, object>(key, this[key]);
@@ -356,7 +353,6 @@ namespace Microsoft.Scripting.Actions {
 
         #endregion
 
-        [Pure]
         IEnumerator IEnumerable.GetEnumerator() {
             foreach (var key in Keys) {
                 yield return new KeyValuePair<string, object>(key, this[key]);
@@ -401,14 +397,14 @@ namespace Microsoft.Scripting.Actions {
             }
 
             internal bool Contains(string normalizedTypeName) {
-                Debug.Assert(normalizedTypeName.IndexOf(Type.Delimiter) == -1); // This is the simple name, not the full name
+                Debug.Assert(normalizedTypeName.IndexOf('.') == -1); // This is the simple name, not the full name
                 Debug.Assert(ReflectionUtils.GetNormalizedTypeName(normalizedTypeName) == normalizedTypeName);
 
                 return _simpleTypeNames.Contains(normalizedTypeName) || _genericTypeNames.ContainsKey(normalizedTypeName);
             }
 
             internal MemberTracker UpdateTypeEntity(TypeTracker existingTypeEntity, string normalizedTypeName) {
-                Debug.Assert(normalizedTypeName.IndexOf(Type.Delimiter) == -1); // This is the simple name, not the full name
+                Debug.Assert(normalizedTypeName.IndexOf('.') == -1); // This is the simple name, not the full name
                 Debug.Assert(ReflectionUtils.GetNormalizedTypeName(normalizedTypeName) == normalizedTypeName);
 
                 // Look for a non-generic type
@@ -434,7 +430,7 @@ namespace Microsoft.Scripting.Actions {
             }
 
             internal void AddTypeName(string typeName) {
-                Debug.Assert(typeName.IndexOf(Type.Delimiter) == -1); // This is the simple name, not the full name
+                Debug.Assert(typeName.IndexOf('.') == -1); // This is the simple name, not the full name
 
                 string normalizedName = ReflectionUtils.GetNormalizedTypeName(typeName);
                 if (normalizedName == typeName) {
@@ -452,12 +448,12 @@ namespace Microsoft.Scripting.Actions {
             }
 
             string GetFullChildName(string childName) {
-                Debug.Assert(childName.IndexOf(Type.Delimiter) == -1); // This is the simple name, not the full name
+                Debug.Assert(childName.IndexOf('.') == -1); // This is the simple name, not the full name
                 if (_fullNamespace == null) {
                     return childName;
                 }
 
-                return _fullNamespace + Type.Delimiter + childName;
+                return _fullNamespace + "." + childName;
             }
 
             internal ICollection<string> GetNormalizedTypeNames() {

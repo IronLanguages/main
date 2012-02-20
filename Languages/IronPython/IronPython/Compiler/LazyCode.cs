@@ -21,7 +21,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;

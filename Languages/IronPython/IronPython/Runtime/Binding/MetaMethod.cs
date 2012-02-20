@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -118,7 +118,7 @@ namespace IronPython.Runtime.Binding {
                     call = new DynamicMetaObject(
                         Ast.Block(
                             MakeCheckSelf(callAction, signature, args),
-                            Ast.Dynamic(
+                            DynamicExpression.Dynamic(
                                 PythonContext.GetPythonContext(callAction).Invoke(
                                     BindingHelpers.GetCallSignature(callAction)
                                 ).GetLightExceptionBinder(callAction.SupportsLightThrow()),
@@ -158,7 +158,7 @@ namespace IronPython.Runtime.Binding {
 
 
                 call = new DynamicMetaObject(
-                    Ast.Dynamic(
+                    DynamicExpression.Dynamic(
                         PythonContext.GetPythonContext(callAction).Invoke(
                             newSig
                         ).GetLightExceptionBinder(callAction.SupportsLightThrow()),

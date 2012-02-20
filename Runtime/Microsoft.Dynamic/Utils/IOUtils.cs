@@ -117,7 +117,7 @@ namespace Microsoft.Scripting.Utils {
                     sb.Replace(c, '_');
                 }
             } else {
-#if SILVERLIGHT
+#if SILVERLIGHT || WP75
                 foreach (char c in Path.GetInvalidPathChars()) {
                     sb.Replace(c, '_');
                 }

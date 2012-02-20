@@ -106,7 +106,7 @@ namespace Microsoft.Scripting.Runtime {
         }
 
         internal static object GetPrimitiveDefaultValue(Type type) {
-            switch (Type.GetTypeCode(type)) {
+            switch (type.GetTypeCode()) {
                 case TypeCode.Boolean: return ScriptingRuntimeHelpers.False;
                 case TypeCode.SByte: return default(SByte);
                 case TypeCode.Byte: return default(Byte);
@@ -119,7 +119,9 @@ namespace Microsoft.Scripting.Runtime {
                 case TypeCode.UInt64: return default(UInt64);
                 case TypeCode.Single: return default(Single);
                 case TypeCode.Double: return default(Double);
+#if FEATURE_DBNULL
                 case TypeCode.DBNull: return default(DBNull);
+#endif
                 case TypeCode.DateTime: return default(DateTime);
                 case TypeCode.Decimal: return default(Decimal);
                 default: return null;

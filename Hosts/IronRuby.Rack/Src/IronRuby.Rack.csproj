@@ -2,71 +2,24 @@
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(ProjectDir)..\..\..\Solutions\Common.proj" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{25A6FCEF-1DB4-4ECF-98B4-7975E5AF9CC6}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>IronRuby.Rack</RootNamespace>
     <AssemblyName>IronRuby.Rack</AssemblyName>
-    <FileAlignment>512</FileAlignment>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>$(SolutionDir)..\bin\v2Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;CLR2;$(SignedSym)</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>$(SolutionDir)..\bin\v2Release\</OutputPath>
-    <DefineConstants>TRACE;CLR2;$(SignedSym)</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>..\..\..\bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;CLR4;$(SignedSym)</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>..\..\..\bin\Release\</OutputPath>
-    <DefineConstants>TRACE;CLR4;$(SignedSym)</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>$(SolutionDir)..\bin\FxCop</OutputPath>
-    <DefineConstants>TRACE;$(SignedSym);CLR4</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <RunCodeAnalysis>true</RunCodeAnalysis>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.configuration" />
-    <Reference Include="System.Core" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Web" />
-    <Reference Include="Microsoft.CSharp" Condition=" '$(TargetFrameworkVersion)' == 'v4.0' " />
     <Reference Include="System.Web.Routing" />
   </ItemGroup>
   <ItemGroup>
@@ -77,13 +30,11 @@
     <Compile Include="IronRubyEngine.cs" />
     <Compile Include="RackDispatcher.cs" />
     <Compile Include="Utils.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="IronRubyApplication.cs" />
     <Compile Include="AspNetResponse.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting.Core\Microsoft.Scripting.Core.csproj" Condition=" '$(TargetFrameworkVersion)' != 'v4.0' ">
+    <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting.Core\Microsoft.Scripting.Core.csproj" Condition=" '$(FeatureCoreDlr)' != 'true' ">
       <Project>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</Project>
       <Name>Microsoft.Scripting.Core</Name>
     </ProjectReference>
@@ -109,15 +60,4 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
-  </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>

@@ -48,15 +48,15 @@ namespace IronPython.Runtime {
             MethodBase method;
             Debug.Assert(funcCode._normalDelegate != null || funcCode._tracingDelegate != null);
             if (!context.LanguageContext.EnableTracing || funcCode._tracingDelegate == null) {
-                method = funcCode._normalDelegate.Method;
+                method = funcCode._normalDelegate.GetMethod();
             } else {
-                method = funcCode._tracingDelegate.Method;
+                method = funcCode._tracingDelegate.GetMethod();
             }
             return method;
         }
 
-        
-#if !SILVERLIGHT
+
+#if FEATURE_SERIALIZATION
         private PythonDynamicStackFrame(SerializationInfo info, StreamingContext context)
             : base((MethodBase)info.GetValue("method", typeof(MethodBase)), (string)info.GetValue("funcName", typeof(string)), (string)info.GetValue("filename", typeof(string)), (int)info.GetValue("line", typeof(int))) {
         }
@@ -84,7 +84,7 @@ namespace IronPython.Runtime {
                 return _code;
             }
         }
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         #region ISerializable Members
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) {

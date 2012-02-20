@@ -36,9 +36,10 @@ namespace IronPython.Runtime {
         }
 
         internal static Encoding MakeNonThrowing() {
+            Encoding enc = new PythonAsciiEncoding();
+#if FEATURE_ENCODING
             // we need to Clone the new instance here so that the base class marks us as non-readonly
-            Encoding enc = (Encoding)new PythonAsciiEncoding().Clone();
-#if !SILVERLIGHT
+            enc = (Encoding)enc.Clone();
             enc.DecoderFallback = new NonStrictDecoderFallback();
             enc.EncoderFallback = new NonStrictEncoderFallback();
 #endif
@@ -46,18 +47,17 @@ namespace IronPython.Runtime {
         }
 
         private static Encoding MakeSourceEncoding() {
+            Encoding enc = new PythonAsciiEncoding();
+#if FEATURE_ENCODING
             // we need to Clone the new instance here so that the base class marks us as non-readonly
-            Encoding enc = (Encoding)new PythonAsciiEncoding().Clone();
-#if !SILVERLIGHT
+            enc = (Encoding)enc.Clone();
             enc.DecoderFallback = new SourceNonStrictDecoderFallback();
 #endif
             return enc;
         }
 
         public override int GetByteCount(char[] chars, int index, int count) {
-#if SILVERLIGHT
-            return count;
-#else
+#if FEATURE_ENCODING
             int byteCount = 0;
             int charEnd = index + count;
             while (index < charEnd) {
@@ -73,6 +73,8 @@ namespace IronPython.Runtime {
                 index++;
             }
             return byteCount;
+#else
+            return count;
 #endif
         }
 
@@ -81,7 +83,7 @@ namespace IronPython.Runtime {
             int outputBytes = 0;
             while (charIndex < charEnd) {
                 char c = chars[charIndex];
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
                 if (c > 0x7f) {
                     EncoderFallbackBuffer efb = EncoderFallback.CreateFallbackBuffer();
                     if (efb.Fallback(c, charIndex)) {
@@ -108,7 +110,7 @@ namespace IronPython.Runtime {
             int outputChars = 0;
             while (index < byteEnd) {
                 byte b = bytes[index];
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
                 if (b > 0x7f) {
                     DecoderFallbackBuffer dfb = DecoderFallback.CreateFallbackBuffer();
                     if (dfb.Fallback(new[] { b }, 0)) {
@@ -130,7 +132,7 @@ namespace IronPython.Runtime {
             int outputChars = 0;
             while (byteIndex < byteEnd) {
                 byte b = bytes[byteIndex];
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
                 if (b > 0x7f) {
                     DecoderFallbackBuffer dfb = DecoderFallback.CreateFallbackBuffer();
                     if (dfb.Fallback(new[] { b }, 0)) {
@@ -166,7 +168,7 @@ namespace IronPython.Runtime {
             }
         }
 
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
         public override string EncodingName {
             get {
                 return "ascii";
@@ -175,7 +177,7 @@ namespace IronPython.Runtime {
 #endif
     }
 
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
     class NonStrictEncoderFallback : EncoderFallback {
         public override EncoderFallbackBuffer CreateFallbackBuffer() {
             return new NonStrictEncoderFallbackBuffer();
@@ -289,9 +291,8 @@ namespace IronPython.Runtime {
         }
     }
 #endif
-#if !SILVERLIGHT
+
     [Serializable]
-#endif
     internal class BadSourceException : Exception {
         internal byte _badByte;
         public BadSourceException(byte b) {
@@ -305,9 +306,9 @@ namespace IronPython.Runtime {
         public BadSourceException(string message, Exception innerException)
             : base(message, innerException) {
         }
-#if !SILVERLIGHT // SerializationInfo
+
+#if FEATURE_SERIALIZATION
         protected BadSourceException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 #endif
-
     }
 }

@@ -72,10 +72,14 @@ namespace Microsoft.Scripting.Generation {
         }
 
         private static Type MakeNewCustomDelegate(Type[] types) {
+#if FEATURE_REFEMIT
             Type returnType = types[types.Length - 1];
             Type[] parameters = types.RemoveLast();
 
             return Snippets.Shared.DefineDelegate("Delegate" + types.Length, returnType, parameters);
+#else
+            throw new NotSupportedException("Signature not supported on this platform");
+#endif
         }
     }
 }

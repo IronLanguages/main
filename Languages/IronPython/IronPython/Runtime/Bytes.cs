@@ -13,11 +13,15 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
-using System.Numerics;
 #else
 using Microsoft.Scripting.Ast;
+#endif
+
+#if FEATURE_NUMERICS
+using System.Numerics;
+#else
 using Microsoft.Scripting.Math;
 #endif
 

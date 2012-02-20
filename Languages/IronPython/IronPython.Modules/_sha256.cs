@@ -75,7 +75,7 @@ namespace IronPython.Modules {
 
         [PythonHidden]
         public sealed class Sha256Object : HashBase
-#if !SILVERLIGHT
+#if FEATURE_ICLONEABLE
             , ICloneable 
 #endif
         {
@@ -102,7 +102,7 @@ namespace IronPython.Modules {
             public Sha256Object copy() {
                 return new Sha256Object(_bytes);
             }
-#if !SILVERLIGHT
+#if FEATURE_ICLONEABLE
             object ICloneable.Clone() {
                 return copy();
             }

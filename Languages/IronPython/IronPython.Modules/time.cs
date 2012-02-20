@@ -55,7 +55,7 @@ namespace IronPython.Modules {
         public static readonly PythonTuple tzname;
         public const bool accept2dyear = true;
 
-#if !SILVERLIGHT    // System.Diagnostics.Stopwatch
+#if FEATURE_STOPWATCH    // System.Diagnostics.Stopwatch
         [MultiRuntimeAware]
         private static Stopwatch sw;
 #endif
@@ -72,7 +72,7 @@ namespace IronPython.Modules {
 
             // altzone, timezone are offsets from UTC in seconds, so they always fit in the
             // -13*3600 to 13*3600 range and are safe to cast to ints
-#if !SILVERLIGHT
+#if FEATURE_TIMEZONE
             DaylightTime dayTime = TimeZone.CurrentTimeZone.GetDaylightChanges(DateTime.Now.Year);
             daylight = (dayTime.Start == dayTime.End && dayTime.Start == DateTime.MinValue && dayTime.Delta.Ticks == 0) ? 0 : 1;
 
@@ -123,7 +123,7 @@ namespace IronPython.Modules {
         }
 
         public static double clock() {
-#if !SILVERLIGHT    // System.Diagnostics.Stopwatch
+#if FEATURE_STOPWATCH    // System.Diagnostics.Stopwatch
             InitStopWatch();
             return ((double)sw.ElapsedTicks) / Stopwatch.Frequency;
 #else
@@ -307,7 +307,7 @@ namespace IronPython.Modules {
         }
 
         private static DateTime RemoveDst(DateTime dt, bool always) {
-#if !SILVERLIGHT
+#if FEATURE_TIMEZONE
             DaylightTime dayTime = TimeZone.CurrentTimeZone.GetDaylightChanges(dt.Year);
             if (always || (dt > dayTime.Start && dt < dayTime.End)) {
                 dt -= dayTime.Delta;
@@ -321,7 +321,7 @@ namespace IronPython.Modules {
         }
 
         private static DateTime AddDst(DateTime dt) {
-#if !SILVERLIGHT
+#if FEATURE_TIMEZONE
             DaylightTime dayTime = TimeZone.CurrentTimeZone.GetDaylightChanges(dt.Year);
             if (dt > dayTime.Start && dt < dayTime.End) {
                 dt += dayTime.Delta;
@@ -605,7 +605,7 @@ namespace IronPython.Modules {
             return -1;
         }
 
-#if !SILVERLIGHT    // Stopwatch
+#if FEATURE_STOPWATCH    // Stopwatch
         private static void InitStopWatch() {
             if (sw == null) {
                 sw = new Stopwatch();

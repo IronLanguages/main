@@ -16,8 +16,9 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
-using IronRuby.Runtime;
 using IronRuby.Builtins;
+using IronRuby.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.StandardLibrary.Threading {
     // Synchronized queue.

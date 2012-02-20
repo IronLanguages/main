@@ -15,36 +15,35 @@
 
 
 #if !CLR2
-using System.Linq.Expressions;
-#else
 using Microsoft.Scripting.Ast;
 #endif
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Reflection;
-
-using Microsoft.Scripting.Utils;
-using System.Threading;
-using Microsoft.Scripting.Runtime;
-using System.Runtime.CompilerServices;
 using System.Collections.ObjectModel;
-using Microsoft.Scripting.Interpreter;
+using System.Diagnostics;
+using System.Linq.Expressions;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Threading;
+
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Interpreter;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Ast {
     /// <summary>
     /// Internal re-writer class which creates code which is light exception aware.
     /// </summary>
-    class LightExceptionRewriter : ExpressionVisitor {
+    class LightExceptionRewriter : DynamicExpressionVisitor {
         private LabelTarget _currentHandler;    // current label we should branch to when an exception is found
         private ParameterExpression _rethrow;   // current exception variable that we will rethrow
 
         private static readonly ParameterExpression _lastValue = Expression.Parameter(typeof(object), "$lastValue");
         private static readonly ReadOnlyCollection<ParameterExpression> _lastValueParamArray = new ReadOnlyCollectionBuilder<ParameterExpression>(1) { _lastValue }.ToReadOnlyCollection();
-        private static readonly Expression _isLightExExpr = Expression.Call(new Func<Exception, bool>(LightExceptions.IsLightException).Method, _lastValue);
-        private static readonly Expression _lastException = Expression.Call(new Func<object, Exception>(LightExceptions.GetLightException).Method, _lastValue);
+        private static readonly Expression _isLightExExpr = Expression.Call(new Func<Exception, bool>(LightExceptions.IsLightException).GetMethod(), _lastValue);
+        private static readonly Expression _lastException = Expression.Call(new Func<object, Exception>(LightExceptions.GetLightException).GetMethod(), _lastValue);
         private readonly LabelTarget _returnLabel = Expression.Label(typeof(object), GetEhLabelName("ehUnwind"));
 #if DEBUG
         private static int _curLabel;
@@ -144,7 +143,7 @@ namespace Microsoft.Scripting.Ast {
                 var newBinder = lightBinder.GetLightExceptionBinder();
                 if (newBinder != node.Binder) {
                     return CheckExpression(
-                        Expression.Dynamic(
+                        DynamicExpression.Dynamic(
                             newBinder,
                             node.Type,
                             base.Visit(node.Arguments)

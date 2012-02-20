@@ -15,6 +15,7 @@
 
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
 
 namespace IronRuby.Builtins {
@@ -27,7 +28,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("to_class")]
         public static RubyClass/*!*/ ToClass(RubyContext/*!*/ context, TypeTracker/*!*/ self) {
-            if (self.Type.IsInterface) {
+            if (self.Type.IsInterface()) {
                 RubyExceptions.CreateTypeError("Cannot convert a CLR interface to a Ruby class");
             }
             return context.GetClass(self.Type);

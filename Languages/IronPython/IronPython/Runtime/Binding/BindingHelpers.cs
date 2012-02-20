@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 using System.Numerics;
 #else
@@ -125,7 +125,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public static Expression/*!*/ Invoke(Expression codeContext, PythonContext/*!*/ binder, Type/*!*/ resultType, CallSignature signature, params Expression/*!*/[]/*!*/ args) {
-            return Ast.Dynamic(
+            return DynamicExpression.Dynamic(
                 binder.Invoke(
                     signature
                 ),
@@ -303,7 +303,11 @@ namespace IronPython.Runtime.Binding {
         }
 
         internal static MethodCallExpression/*!*/ CheckTypeVersion(Expression/*!*/ tested, int version) {
+#if FEATURE_REFEMIT
             FieldInfo fi = tested.Type.GetField(NewTypeMaker.ClassFieldName);
+#else
+            FieldInfo fi = null;
+#endif
             if (fi == null) {
                 return Ast.Call(
                     typeof(PythonOps).GetMethod("CheckTypeVersion"),
@@ -402,7 +406,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         internal static DynamicMetaObject AddPythonBoxing(DynamicMetaObject res) {
-            if (res.Expression.Type.IsValueType) {
+            if (res.Expression.Type.IsValueType()) {
                 // Use Python boxing rules if we're return a value type
                 res = new DynamicMetaObject(
                     AddPythonBoxing(res.Expression),

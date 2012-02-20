@@ -18,10 +18,10 @@ using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using Microsoft.Scripting.Utils;
 
-#if CLR2
-using Microsoft.Scripting.Math;
-#else
+#if FEATURE_NUMERICS
 using System.Numerics;
+#else
+using Microsoft.Scripting.Math;
 #endif
 
 [assembly: PythonModule("_random", typeof(IronPython.Modules.PythonRandom))]

@@ -23,7 +23,7 @@ namespace Microsoft.Scripting.Utils {
 
         public static Encoding DefaultEncoding {
             get {
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
                 return Encoding.Default;
 #else
                 return Encoding.UTF8;
@@ -57,7 +57,7 @@ namespace Microsoft.Scripting.Utils {
 
         public static string[] Split(string str, string separator, int maxComponents, StringSplitOptions options) {
             ContractUtils.RequiresNotNull(str, "str");
-#if SILVERLIGHT
+#if SILVERLIGHT || WP75
             if (string.IsNullOrEmpty(separator)) throw new ArgumentNullException("separator");
 
             bool keep_empty = (options & StringSplitOptions.RemoveEmptyEntries) != StringSplitOptions.RemoveEmptyEntries;
@@ -88,7 +88,7 @@ namespace Microsoft.Scripting.Utils {
 
         public static string[] Split(string str, char[] separators, int maxComponents, StringSplitOptions options) {
             ContractUtils.RequiresNotNull(str, "str");
-#if SILVERLIGHT
+#if SILVERLIGHT || WP75
             if (separators == null) return SplitOnWhiteSpace(str, maxComponents, options);
 
             bool keep_empty = (options & StringSplitOptions.RemoveEmptyEntries) != StringSplitOptions.RemoveEmptyEntries;
@@ -117,7 +117,7 @@ namespace Microsoft.Scripting.Utils {
 #endif
         }
 
-#if SILVERLIGHT
+#if SILVERLIGHT|| WP75
         public static string[] SplitOnWhiteSpace(string str, int maxComponents, StringSplitOptions options) {
             ContractUtils.RequiresNotNull(str, "str");
 
@@ -215,68 +215,29 @@ namespace Microsoft.Scripting.Utils {
         }
 
         public static bool TryParseDouble(string s, NumberStyles style, IFormatProvider provider, out double result) {
-#if SILVERLIGHT // Double.TryParse
-            try {
-                result = Double.Parse(s, style, provider);
-                return true;
-            } catch {
-                result = 0.0;
-                return false;
-            }
-#else
             return Double.TryParse(s, style, provider, out result);
-#endif
         }
 
         public static bool TryParseInt32(string s, out int result) {
-#if SILVERLIGHT // Int32.TryParse
-            try {
-                result = Int32.Parse(s);
-                return true;
-            } catch {
-                result = 0;
-                return false;
-            }
-#else
             return Int32.TryParse(s, out result);
-#endif
         }
 
         public static bool TryParseDateTimeExact(string s, string format, IFormatProvider provider, DateTimeStyles style, out DateTime result) {
-#if SILVERLIGHT // DateTime.ParseExact
-            try {
-                result = DateTime.ParseExact(s, format, provider, style);
-                return true;
-            } catch {
-                result = DateTime.MinValue;
-                return false;
-            }
-#else
             return DateTime.TryParseExact(s, format, provider, style, out result);
-#endif
         }
 
         public static bool TryParseDate(string s, IFormatProvider provider, DateTimeStyles style, out DateTime result) {
-#if SILVERLIGHT // DateTime.Parse
-            try {
-                result = DateTime.Parse(s, provider, style);
-                return true;
-            } catch {
-                result = DateTime.MinValue;
-                return false;
-            }
-#else
             return DateTime.TryParse(s, provider, style, out result);
-#endif
         }
 
-#if SILVERLIGHT
+#if !WIN8
+#if SILVERLIGHT || WP75
         private static Dictionary<string, CultureInfo> _cultureInfoCache = new Dictionary<string, CultureInfo>();
 #endif
 
         // Aims to be equivalent to Culture.GetCultureInfo for Silverlight
         public static CultureInfo GetCultureInfo(string name) {
-#if SILVERLIGHT
+#if SILVERLIGHT || WP75
             lock (_cultureInfoCache) {
                 CultureInfo result;
                 if (_cultureInfoCache.TryGetValue(name, out result)) {
@@ -289,7 +250,7 @@ namespace Microsoft.Scripting.Utils {
             return CultureInfo.GetCultureInfo(name);
 #endif
         }
-
+#endif
         // Like string.Split, but enumerates
         public static IEnumerable<string> Split(string str, string sep) {
             int start = 0, end;

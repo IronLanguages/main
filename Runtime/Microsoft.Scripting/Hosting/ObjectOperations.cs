@@ -13,21 +13,25 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using dynamic = System.Object;
 using Microsoft.Scripting.Ast;
 #endif
 
+#if FEATURE_REMOTING
+using System.Runtime.Remoting;
+#else
+using MarshalByRefObject = System.Object;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.Remoting;
-using System.Security.Permissions;
+using System.Dynamic;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using System.Dynamic;
 
 namespace Microsoft.Scripting.Hosting {
 
@@ -40,12 +44,7 @@ namespace Microsoft.Scripting.Hosting {
     /// of the operations.  There is a default instance of ObjectOperations you can share across all uses of the 
     /// engine.  However, very advanced hosts can create new instances.
     /// </summary>
-    public sealed class ObjectOperations
-#if !SILVERLIGHT
-        : MarshalByRefObject
-#endif
-        {
-
+    public sealed class ObjectOperations : MarshalByRefObject {
         private readonly DynamicOperations _ops;
         private readonly ScriptEngine _engine;
 
@@ -514,7 +513,7 @@ namespace Microsoft.Scripting.Hosting {
 
         #region Remote APIs
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
         // ObjectHandle overloads
         //
 
@@ -955,15 +954,13 @@ namespace Microsoft.Scripting.Hosting {
 
             return res;
         }
-#endif
 
-        #endregion
-
-#if !SILVERLIGHT
         // TODO: Figure out what is the right lifetime
         public override object InitializeLifetimeService() {
             return null;
         }
 #endif
+
+        #endregion
     }
 }

@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -217,7 +217,7 @@ namespace Microsoft.Scripting.Actions {
                     Ast.Equal(
                         Ast.Property(
                             Ast.Convert(splattee.Expression, typeof(IList<object>)),
-                            typeof(ICollection<object>).GetProperty("Count")
+                            typeof(ICollection<object>).GetDeclaredProperty("Count")
                         ),
                         AstUtils.Constant(list.Count)
                     )

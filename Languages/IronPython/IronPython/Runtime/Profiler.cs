@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using MSAst = System.Linq.Expressions;
 #else
 using MSAst = Microsoft.Scripting.Ast;
@@ -197,7 +197,7 @@ namespace IronPython.Runtime {
         }
 
         private static long DateTimeTicksFromTimeData(long elapsedStopwatchTicks) {
-#if !SILVERLIGHT
+#if FEATURE_STOPWATCH
             if (Stopwatch.IsHighResolution) {
                 return (long)(((double)elapsedStopwatchTicks) * 10000000.0 / (double)Stopwatch.Frequency);
             }
@@ -209,7 +209,7 @@ namespace IronPython.Runtime {
 
         public long StartCall(int index) {
             Interlocked.Increment(ref _profileData[index, NumberOfCalls]);
-#if !SILVERLIGHT
+#if FEATURE_STOPWATCH
             return Stopwatch.GetTimestamp();
 #else
             return DateTime.Now.Ticks;
@@ -217,7 +217,7 @@ namespace IronPython.Runtime {
         }
 
         public long StartNestedCall(int index, long timestamp) {
-#if !SILVERLIGHT
+#if FEATURE_STOPWATCH
             long now = Stopwatch.GetTimestamp();
 #else
             long now = DateTime.Now.Ticks;
@@ -227,7 +227,7 @@ namespace IronPython.Runtime {
         }
 
         public long FinishNestedCall(int index, long timestamp) {
-#if !SILVERLIGHT
+#if FEATURE_STOPWATCH
             long now = Stopwatch.GetTimestamp();
 #else
             long now = DateTime.Now.Ticks;
@@ -237,7 +237,7 @@ namespace IronPython.Runtime {
         }
 
         public void FinishCall(int index, long timestamp) {
-#if !SILVERLIGHT
+#if FEATURE_STOPWATCH
             long now = Stopwatch.GetTimestamp();
 #else
             long now = DateTime.Now.Ticks;
@@ -299,7 +299,7 @@ namespace IronPython.Runtime {
             );
         }
 
-        private sealed class InnerMethodProfiler : MSAst.ExpressionVisitor {
+        private sealed class InnerMethodProfiler : MSAst.DynamicExpressionVisitor {
             private readonly Profiler/*!*/ _profiler;
             private readonly MSAst.ParameterExpression/*!*/ _tick;
             private readonly int _profileIndex;

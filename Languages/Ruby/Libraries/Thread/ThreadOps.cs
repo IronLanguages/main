@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_THREAD
 
 using System;
 using System.Threading;
@@ -22,7 +23,7 @@ namespace IronRuby.StandardLibrary.Threading {
     /// <summary>
     /// These methods are loaded only after doing "require 'thread'"
     /// </summary>
-    [RubyClass(Extends = typeof(Thread), Inherits = typeof(object))]
+    [RubyClass(Extends = typeof(Thread), Inherits = typeof(object), BuildConfig = "FEATURE_THREAD")]
     public static class ThreadOps {
         [RubyMethod("exclusive", RubyMethodAttributes.PublicSingleton)]
         public static object Exclusive(RubyContext/*!*/ context, [NotNull]BlockParam /*!*/block, object self) {
@@ -40,3 +41,4 @@ namespace IronRuby.StandardLibrary.Threading {
         }
     }
 }
+#endif

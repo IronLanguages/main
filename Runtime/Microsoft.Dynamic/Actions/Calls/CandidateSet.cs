@@ -19,7 +19,6 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Dynamic;
-using Microsoft.Contracts;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -62,7 +61,6 @@ namespace Microsoft.Scripting.Actions.Calls {
             _candidates.Add(target);
         }
 
-        [Confined]
         public override string ToString() {
             return string.Format("{0}: ({1} on {2})", _arity, _candidates[0].Overload.Name, _candidates[0].Overload.DeclaringType.FullName);
         }

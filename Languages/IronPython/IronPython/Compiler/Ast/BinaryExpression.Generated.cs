@@ -21,11 +21,11 @@ using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Operations;
 
-#if CLR2
+#if FEATURE_NUMERICS
+using System.Numerics;
+#else
 using Microsoft.Scripting.Math;
 using Complex = Microsoft.Scripting.Math.Complex64;
-#else
-using System.Numerics;
 #endif
 
 namespace IronPython.Compiler.Ast {

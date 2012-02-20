@@ -477,7 +477,7 @@ namespace Microsoft.Scripting.Runtime {
 
         [Conditional("DUMP_TOKENS")]
         private void DumpToken() {
-            Console.WriteLine("--> `{0}` {1}", GetTokenString().Replace("\r", "\\r").Replace("\n", "\\n").Replace("\t", "\\t"), TokenSpan);
+            Debug.WriteLine(String.Format("--> `{0}` {1}", GetTokenString().Replace("\r", "\\r").Replace("\n", "\\n").Replace("\t", "\\t"), TokenSpan));
         }
     }    
 }

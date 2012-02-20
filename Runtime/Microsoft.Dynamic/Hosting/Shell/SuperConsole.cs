@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_FULL_CONSOLE
 
 using System;
 using System.Collections;
@@ -21,7 +22,6 @@ using Microsoft.Scripting.Utils;
 using System.Text;
 
 namespace Microsoft.Scripting.Hosting.Shell {
-#if !SILVERLIGHT // SuperConsole (ConsoleColor)
     public sealed class SuperConsole : BasicConsole {
 
         #region Nested types: History, SuperConsoleOptions, Cursor
@@ -607,11 +607,5 @@ namespace Microsoft.Scripting.Hosting.Shell {
             }
         }
     }
-#else
-    public sealed class SuperConsole : BasicConsole {
-        public SuperConsole(CommandLine  commandLine, bool isColorful)
-            : base(isColorful) {
-        }
-    }
-#endif
 }
+#endif

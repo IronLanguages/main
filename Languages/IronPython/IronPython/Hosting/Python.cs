@@ -54,7 +54,7 @@ namespace IronPython.Hosting {
             return new ScriptRuntime(CreateRuntimeSetup(options));
         }
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
         /// <summary>
         /// Creates a new ScriptRuntime with the IronPython scripting engine pre-configured
         /// in the specified AppDomain.  The remote ScriptRuntime may  be manipulated from 
@@ -97,7 +97,7 @@ namespace IronPython.Hosting {
             return GetEngine(CreateRuntime(options));
         }
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
 
         /// <summary>
         /// Creates a new ScriptRuntime and returns the ScriptEngine for IronPython. If
@@ -206,6 +206,19 @@ namespace IronPython.Hosting {
             ContractUtils.RequiresNotNull(moduleName, "moduleName");
 
             return GetPythonService(engine).ImportModule(engine, moduleName);
+        }
+
+        /// <summary>
+        /// Imports the Python module by the given name and inserts it into the ScriptScope as that name. If the
+        /// module does not exist an exception is raised.
+        /// </summary>
+        /// <param name="scope"></param>
+        /// <param name="moduleName"></param>
+        public static void ImportModule (this ScriptScope/*!*/ scope, string/*!*/ moduleName) {
+            ContractUtils.RequiresNotNull (scope, "scope");
+            ContractUtils.RequiresNotNull (moduleName, "moduleName");
+
+            scope.SetVariable (moduleName, scope.Engine.ImportModule (moduleName));
         }
 
         /// <summary>

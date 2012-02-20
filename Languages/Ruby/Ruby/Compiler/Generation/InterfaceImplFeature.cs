@@ -12,19 +12,14 @@
  *
  *
  * ***************************************************************************/
-
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Reflection.Emit;
-using System.Runtime.Serialization;
 using Microsoft.Scripting.Utils;
-using IronRuby.Runtime;
-using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Compiler.Generation {
     internal sealed class InterfaceImplFeature : ITypeFeature {
-        internal static readonly InterfaceImplFeature/*!*/ Empty = new InterfaceImplFeature(Type.EmptyTypes);
+        internal static readonly InterfaceImplFeature/*!*/ Empty = new InterfaceImplFeature(ReflectionUtils.EmptyTypes);
 
         private readonly Type/*!*/[]/*!*/ _interfaces;
         private readonly int _hash;
@@ -54,7 +49,7 @@ namespace IronRuby.Compiler.Generation {
 
         private static void AddInterface(List<Type/*!*/>/*!*/ types, Type/*!*/ type) {
             Assert.NotNull(type);
-            Assert.Equals(true, type.IsInterface && !type.ContainsGenericParameters);
+            Assert.Equals(true, type.IsInterface() && !type.ContainsGenericParameters());
 
             for (int i = 0; i < types.Count; i++) {
                 Type t = types[i];
@@ -79,10 +74,6 @@ namespace IronRuby.Compiler.Generation {
             return (_interfaces.Length == 0);
         }
 
-        public IFeatureBuilder/*!*/ MakeBuilder(TypeBuilder/*!*/ tb) {
-            return new InterfacesBuilder(tb, _interfaces);
-        }
-
         public override int GetHashCode() {
             return typeof(InterfaceImplFeature).GetHashCode();
         }
@@ -100,5 +91,11 @@ namespace IronRuby.Compiler.Generation {
 
             return true;
         }
+
+#if FEATURE_REFEMIT
+        public IFeatureBuilder/*!*/ MakeBuilder(TypeBuilder/*!*/ tb) {
+            return new InterfacesBuilder(tb, _interfaces);
+        }
+#endif
     }
 }

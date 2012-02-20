@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -21,10 +21,11 @@ using Microsoft.Scripting.Ast;
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Reflection.Emit;
 using System.Text;
 using Microsoft.Scripting.Utils;
-using System.Reflection.Emit;
-using System.Diagnostics;
 
 namespace Microsoft.Scripting.Interpreter {
 

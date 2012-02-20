@@ -167,7 +167,7 @@ namespace IronRuby.Compiler {
             if (_tables == null) {
                 lock (_tablesLock) {
                     if (_tables == null) {
-                        Debug.Assert(typeof(TLocation).IsValueType);
+                        Debug.Assert(typeof(TLocation).IsValueType());
 
                         ParserTables tables = new ParserTables();
                         InitializeGeneratedTables(tables);
@@ -175,7 +175,6 @@ namespace IronRuby.Compiler {
                         InitializeMetadata(tables);
                         InitializeRulesMetadata(tables);
 #endif
-                        Thread.MemoryBarrier();
                         _tables = tables;
                     }
                 }

@@ -26,6 +26,7 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("_warnings", typeof(IronPython.Modules.PythonWarnings))]
 namespace IronPython.Modules {

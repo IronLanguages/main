@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT
+#if FEATURE_SYNC_SOCKETS
 
 using System.Net;
 using System.Net.Sockets;
@@ -24,7 +24,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Scripting.Math;
 
 namespace IronRuby.StandardLibrary.Sockets {
-    [RubyClass("IPSocket", BuildConfig = "!SILVERLIGHT")]
+    [RubyClass("IPSocket", BuildConfig = "FEATURE_SYNC_SOCKETS")]
     public abstract class IPSocket : RubyBasicSocket {
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace IronRuby.StandardLibrary.Sockets {
             return MutableString.CreateAscii(GetHostAddress(ConvertToHostString(stringCast, hostNameOrAddress)).ToString());
         }
 
-        #region Public Instance Methods
+#region Public Instance Methods
 
         [RubyMethod("addr")]
         public static RubyArray/*!*/ GetLocalAddress(RubyContext/*!*/ context, IPSocket/*!*/ self) {
@@ -69,7 +69,7 @@ namespace IronRuby.StandardLibrary.Sockets {
             str.IsTainted = true;
             return RubyOps.MakeArray2(str, self.GetAddressArray(fromEP));
         }
-        #endregion
+#endregion
     }
 }
 #endif

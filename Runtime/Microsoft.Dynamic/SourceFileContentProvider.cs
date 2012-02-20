@@ -12,10 +12,14 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_REMOTING
+using System.Runtime.Remoting;
+#else
+using MarshalByRefObject = System.Object;
+#endif
 
 using System;
 using System.IO;
-using System.Security.Permissions;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting {
@@ -48,10 +52,7 @@ namespace Microsoft.Scripting {
         }
 
         [Serializable]
-        private class PALHolder
-#if !SILVERLIGHT
-        : MarshalByRefObject
-#endif
+        private class PALHolder : MarshalByRefObject
         {
             [NonSerialized]
             private readonly PlatformAdaptationLayer _pal;
@@ -64,7 +65,7 @@ namespace Microsoft.Scripting {
                 return _pal.OpenInputFileStream(path);
             }
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
             // TODO: Figure out what is the right lifetime
             public override object InitializeLifetimeService() {
                 return null;

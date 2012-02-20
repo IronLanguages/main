@@ -24,6 +24,7 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("binascii", typeof(IronPython.Modules.PythonBinaryAscii))]
 namespace IronPython.Modules {

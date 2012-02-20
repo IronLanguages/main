@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using MSAst = System.Linq.Expressions;
 #else
 using MSAst = Microsoft.Scripting.Ast;
@@ -32,6 +32,7 @@ using Microsoft.Scripting.Utils;
 using IronPython.Compiler.Ast;
 using IronPython.Runtime;
 using System.Collections;
+using System.Reflection;
 
 namespace IronPython.Compiler {
     public delegate object LookupCompilationDelegate(CodeContext context, FunctionCode code);
@@ -41,20 +42,25 @@ namespace IronPython.Compiler {
     /// </summary>
     [Serializable]
     internal abstract class CompilationMode {
+#if FEATURE_REFEMIT
         /// <summary>
         /// Compilation will proceed in a manner in which the resulting AST can be serialized to disk.
         /// </summary>
         public static readonly CompilationMode ToDisk = new ToDiskCompilationMode();
+        
         /// <summary>
         /// Compilation will use a type and declare static fields for globals.  The resulting type
         /// is uncollectible and therefore extended use of this will cause memory leaks.
         /// </summary>
         public static readonly CompilationMode Uncollectable = new UncollectableCompilationMode();
+#endif
+        
         /// <summary>
         /// Compilation will use an array for globals.  The resulting code will be fully collectible
         /// and once all references are released will be collected.
         /// </summary>
         public static readonly CompilationMode Collectable = new CollectableCompilationMode();
+        
         /// <summary>
         /// Compilation will force all global accesses to do a full lookup.  This will also happen for
         /// any unbound local references.  This is the slowest form of code generation and is only
@@ -87,11 +93,11 @@ namespace IronPython.Compiler {
             }
         }
 
-        public virtual UncollectableCompilationMode.ConstantInfo GetContext() {
+        public virtual ConstantInfo GetContext() {
             return null;
         }
 
-        public virtual void PublishContext(CodeContext codeContext, UncollectableCompilationMode.ConstantInfo _contextInfo) {
+        public virtual void PublishContext(CodeContext codeContext, ConstantInfo _contextInfo) {
         }
 
         public MSAst.Expression/*!*/ Dynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, MSAst.Expression/*!*/ arg0) {
@@ -147,30 +153,96 @@ namespace IronPython.Compiler {
         }
 
         public virtual MSAst.Expression/*!*/ ReduceDynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, MSAst.Expression/*!*/ arg0) {
-            return MSAst.Expression.Dynamic(binder, retType, arg0);
+            return MSAst.DynamicExpression.Dynamic(binder, retType, arg0);
         }
 
         public virtual MSAst.Expression/*!*/ ReduceDynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, MSAst.Expression/*!*/ arg0, MSAst.Expression/*!*/ arg1) {
-            return MSAst.Expression.Dynamic(binder, retType, arg0, arg1);
+            return MSAst.DynamicExpression.Dynamic(binder, retType, arg0, arg1);
         }
 
         public virtual MSAst.Expression/*!*/ ReduceDynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, MSAst.Expression/*!*/ arg0, MSAst.Expression/*!*/ arg1, MSAst.Expression/*!*/ arg2) {
-            return MSAst.Expression.Dynamic(binder, retType, arg0, arg1, arg2);
+            return MSAst.DynamicExpression.Dynamic(binder, retType, arg0, arg1, arg2);
         }
 
         public virtual MSAst.Expression/*!*/ ReduceDynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, MSAst.Expression/*!*/ arg0, MSAst.Expression/*!*/ arg1, MSAst.Expression/*!*/ arg2, MSAst.Expression/*!*/ arg3) {
-            return MSAst.Expression.Dynamic(binder, retType, arg0, arg1, arg2, arg3);
+            return MSAst.DynamicExpression.Dynamic(binder, retType, arg0, arg1, arg2, arg3);
         }
 
         public virtual MSAst.Expression/*!*/ ReduceDynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, MSAst.Expression/*!*/[]/*!*/ args) {
             Assert.NotNull(binder, retType, args);
             Assert.NotNullItems(args);
 
-            return MSAst.Expression.Dynamic(binder, retType, args);
+            return MSAst.DynamicExpression.Dynamic(binder, retType, args);
         }
 
         public abstract MSAst.Expression GetGlobal(MSAst.Expression globalContext, int arrayIndex, PythonVariable variable, PythonGlobal global);
 
         public abstract LightLambdaExpression ReduceAst(PythonAst instance, string name);
+
+        #region ConstantInfo
+
+        public class ConstantInfo {
+            public readonly MSAst.Expression/*!*/ Expression;
+            public readonly FieldInfo Field;
+            public readonly int Offset;
+
+            public ConstantInfo(MSAst.Expression/*!*/ expr, FieldInfo field, int offset) {
+                Assert.NotNull(expr);
+
+                Expression = expr;
+                Field = field;
+                Offset = offset;
+            }
+        }
+
+        public abstract class SiteInfo : ConstantInfo {
+            public readonly DynamicMetaObjectBinder/*!*/ Binder;
+            public readonly Type/*!*/ DelegateType;
+
+            protected Type/*!*/ _siteType;
+            public Type/*!*/ SiteType {
+                get {
+                    if (_siteType != null) {
+                        _siteType = typeof(CallSite<>).MakeGenericType(DelegateType);
+                    }
+                    return _siteType;
+                }
+            }
+
+            public SiteInfo(DynamicMetaObjectBinder/*!*/ binder, MSAst.Expression/*!*/ expr, FieldInfo/*!*/ field, int index, Type/*!*/ delegateType)
+                : base(expr, field, index) {
+                Assert.NotNull(binder);
+
+                Binder = binder;
+                DelegateType = delegateType;
+            }
+
+            public SiteInfo(DynamicMetaObjectBinder/*!*/ binder, MSAst.Expression/*!*/ expr, FieldInfo/*!*/ field, int index, Type/*!*/ delegateType, Type/*!*/ siteType)
+                : this(binder, expr, field, index, delegateType) {
+                _siteType = siteType;
+            }
+
+            public abstract CallSite/*!*/ MakeSite();
+        }
+
+        public class SiteInfoLarge : SiteInfo {
+            public SiteInfoLarge(DynamicMetaObjectBinder/*!*/ binder, MSAst.Expression/*!*/ expr, FieldInfo/*!*/ field, int index, Type/*!*/ delegateType)
+                : base(binder, expr, field, index, delegateType) { }
+
+            public override CallSite MakeSite() {
+                return CallSite.Create(DelegateType, Binder);
+            }
+        }
+
+        public class SiteInfo<T> : SiteInfo where T : class {
+            public SiteInfo(DynamicMetaObjectBinder/*!*/ binder, MSAst.Expression/*!*/ expr, FieldInfo/*!*/ field, int index)
+                : base(binder, expr, field, index, typeof(T), typeof(CallSite<T>)) { }
+
+            public override CallSite MakeSite() {
+                return CallSite<T>.Create(Binder);
+            }
+        }
+
+        #endregion
     }
 }

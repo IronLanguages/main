@@ -18,7 +18,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Security.Permissions;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
@@ -51,8 +50,8 @@ using System.Security.Permissions;
 //
 // You can specify all the values or you can default the Revision and Build Numbers 
 // by using the '*' as shown below:
-#if !CLR2 && !SILVERLIGHT
-[assembly: SecurityRules(SecurityRuleSet.Level1)]
+#if !CLR2 && !SILVERLIGHT && !WIN8 && !ANDROID && !WP75
+[assembly: System.Security.SecurityRules(SecurityRuleSet.Level1)]
 #endif
 [assembly: SecurityTransparent]
 
@@ -63,6 +62,9 @@ using System.Security.Permissions;
 [assembly: AssemblyVersion("1.1.0.20")]
 [assembly: AssemblyFileVersion("1.1.0.20")]
 [assembly: AssemblyInformationalVersion("1.1")]
+#endif
+
+#if !SILVERLIGHT && !WP75
 [assembly: AllowPartiallyTrustedCallers]
 [assembly: TypeForwardedTo(typeof(Microsoft.Scripting.Runtime.DynamicStackFrame))]
 #endif

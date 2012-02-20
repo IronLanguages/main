@@ -12,8 +12,9 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_REFEMIT
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -23,10 +24,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 
-using Microsoft.Contracts;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -68,11 +69,15 @@ namespace Microsoft.Scripting {
             ContractUtils.RequiresNotNull(assemblyName, "assemblyName");
             ContractUtils.RequiresNotNullItems(codes, "codes");
 
+#if FEATURE_FILESYSTEM
             // break the assemblyName into it's dir/name/extension
             string dir = Path.GetDirectoryName(assemblyName);
             if (String.IsNullOrEmpty(dir)) {
                 dir = Environment.CurrentDirectory;
             }
+#else
+            string dir = null;
+#endif
 
             string name = Path.GetFileNameWithoutExtension(assemblyName);
             string ext = Path.GetExtension(assemblyName);
@@ -99,7 +104,7 @@ namespace Microsoft.Scripting {
                 "GetScriptCodeInfo",
                 MethodAttributes.SpecialName | MethodAttributes.Public | MethodAttributes.Static,
                 typeof(MutableTuple<Type[], Delegate[][], string[][], string[][]>),
-                Type.EmptyTypes);
+                ReflectionUtils.EmptyTypes);
 
             ILGen ilgen = new ILGen(mb.GetILGenerator());
 
@@ -155,7 +160,7 @@ namespace Microsoft.Scripting {
             ilgen.Emit(OpCodes.Ret);
 
             mb.SetCustomAttribute(new CustomAttributeBuilder(
-                typeof(DlrCachedCodeAttribute).GetConstructor(Type.EmptyTypes),
+                typeof(DlrCachedCodeAttribute).GetConstructor(ReflectionUtils.EmptyTypes),
                 ArrayUtils.EmptyObjects
             ));
 
@@ -217,9 +222,9 @@ namespace Microsoft.Scripting {
             throw new NotSupportedException();
         }
 
-        [Confined]
         public override string ToString() {
             return String.Format("ScriptCode '{0}' from {1}", SourceUnit.Path, LanguageContext.GetType().Name);
         }
     }
 }
+#endif

@@ -106,7 +106,9 @@ namespace IronRuby.Runtime {
     public static partial class RubyOps {
         [Emitted]
         public static void UpdateProfileTicks(int index, long entryStamp) {
+#if !WP75
             Interlocked.Add(ref Profiler._ProfileTicks[index], Stopwatch.GetTimestamp() - entryStamp);
+#endif
         }
     }
 }

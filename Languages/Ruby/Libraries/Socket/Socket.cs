@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT
+#if FEATURE_SYNC_SOCKETS
 
 using System;
 using System.Net;
@@ -29,7 +29,7 @@ using System.IO;
 using Microsoft.Scripting.Math;
 
 namespace IronRuby.StandardLibrary.Sockets {
-    [RubyClass("Socket", BuildConfig = "!SILVERLIGHT")]
+    [RubyClass("Socket", BuildConfig = "FEATURE_SYNC_SOCKETS")]
     [Includes(typeof(SocketConstants), Copy = true)]
     public class RubySocket : RubyBasicSocket {
 
@@ -47,9 +47,9 @@ namespace IronRuby.StandardLibrary.Sockets {
             return new RubySocket(self.Context, new Socket(addressFamily, (SocketType)type, (ProtocolType)protocol));
         }
 
-        #endregion
+#endregion
 
-        #region Public Singleton Methods
+#region Public Singleton Methods
 
         [RubyMethod("getaddrinfo", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray GetAddressInfo(
@@ -255,9 +255,9 @@ namespace IronRuby.StandardLibrary.Sockets {
             return (IPEndPoint)ep.Create(addr);
         }
 
-        #endregion
+#endregion
 
-        #region Public Instance Methods
+#region Public Instance Methods
 
         [RubyMethod("accept")]
         public static RubyArray/*!*/ Accept(RubyContext/*!*/ context, RubySocket/*!*/ self) {
@@ -344,13 +344,13 @@ namespace IronRuby.StandardLibrary.Sockets {
             return result;
         }
 
-        #endregion
+#endregion
 
-        #region Constants
+#region Constants
 
         [RubyModule("Constants", BuildConfig ="!SILVERLIGHT")]
         public class SocketConstants {
-            #region Address Family
+#region Address Family
 
             [RubyConstant]
             public const int AF_APPLETALK = (int)AddressFamily.AppleTalk;
@@ -397,9 +397,9 @@ namespace IronRuby.StandardLibrary.Sockets {
             [RubyConstant]
             public const int AF_UNSPEC = (int)AddressFamily.Unspecified;
 
-            #endregion
+#endregion
 
-            #region Flag Options for GetAddressInfo
+#region Flag Options for GetAddressInfo
 
             [RubyConstant]
             public const int AI_PASSIVE = 1;
@@ -408,9 +408,9 @@ namespace IronRuby.StandardLibrary.Sockets {
             [RubyConstant]
             public const int AI_NUMERICHOST = 4;
 
-            #endregion
+#endregion
 
-            #region Error Return Codes from GetAddressInfo
+#region Error Return Codes from GetAddressInfo
 
             [RubyConstant]
             public const int EAI_AGAIN = 2;
@@ -431,9 +431,9 @@ namespace IronRuby.StandardLibrary.Sockets {
             [RubyConstant]
             public const int EAI_SOCKTYPE = 10;
 
-            #endregion
+#endregion
 
-            #region Addresses
+#region Addresses
 
             [RubyConstant]
             public const int IPPORT_RESERVED = 1024;
@@ -460,9 +460,9 @@ namespace IronRuby.StandardLibrary.Sockets {
             [RubyConstant]
             public const uint INADDR_UNSPEC_GROUP = 0xe0000000;
 
-            #endregion
+#endregion
 
-            #region IP Protocol Constants
+#region IP Protocol Constants
 
             [RubyConstant]
             public const int IP_DEFAULT_MULTICAST_TTL = 1;
@@ -558,9 +558,9 @@ namespace IronRuby.StandardLibrary.Sockets {
 
 
 
-            #endregion
+#endregion
 
-            #region Message Options
+#region Message Options
             [RubyConstant]
             public const int MSG_DONTROUTE = 4;
             [RubyConstant]
@@ -568,9 +568,9 @@ namespace IronRuby.StandardLibrary.Sockets {
             [RubyConstant]
             public const int MSG_PEEK = 2;
             [RubyConstant]
-            #endregion
+#endregion
 
-            #region Name Info
+#region Name Info
             public const int NI_DGRAM = 16;
             [RubyConstant]
             public const int NI_MAXHOST = 1025;
@@ -584,9 +584,9 @@ namespace IronRuby.StandardLibrary.Sockets {
             public const int NI_NUMERICHOST = 2;
             [RubyConstant]
             public const int NI_NUMERICSERV = 8;
-            #endregion
+#endregion
 
-            #region Protocol Family
+#region Protocol Family
 
             [RubyConstant]
             public const int PF_APPLETALK = (int)ProtocolFamily.AppleTalk;
@@ -631,9 +631,9 @@ namespace IronRuby.StandardLibrary.Sockets {
             [RubyConstant]
             public const int PF_UNSPEC = (int)ProtocolFamily.Unspecified;
 
-            #endregion
+#endregion
 
-            #region Socket Shutdown
+#region Socket Shutdown
 
             [RubyConstant]
             public const int SHUT_RD = (int)SocketShutdown.Receive;
@@ -642,9 +642,9 @@ namespace IronRuby.StandardLibrary.Sockets {
             [RubyConstant]
             public const int SHUT_WR = (int)SocketShutdown.Send;
 
-            #endregion
+#endregion
 
-            #region Socket Type
+#region Socket Type
 
             [RubyConstant]
             public const int SOCK_DGRAM = (int)SocketType.Dgram;
@@ -657,9 +657,9 @@ namespace IronRuby.StandardLibrary.Sockets {
             [RubyConstant]
             public const int SOCK_STREAM = (int)SocketType.Stream;
 
-            #endregion
+#endregion
 
-            #region Socket Option
+#region Socket Option
 
             [RubyConstant]
             public const int SO_ACCEPTCONN = (int)SocketOptionName.AcceptConnection;
@@ -696,7 +696,7 @@ namespace IronRuby.StandardLibrary.Sockets {
             [RubyConstant]
             public const int SO_USELOOPBACK = (int)SocketOptionName.UseLoopback;
 
-            #endregion
+#endregion
 
             [RubyConstant]
             public const int SOL_SOCKET = 65535;
@@ -708,9 +708,9 @@ namespace IronRuby.StandardLibrary.Sockets {
             public const int TCP_NODELAY = 1;
         }
 
-        #endregion
+#endregion
 
-        #region Private Helpers
+#region Private Helpers
 
         private static int ParseInteger(RubyContext/*!*/ context, string/*!*/ str) {
             bool isNegative = false;
@@ -733,7 +733,7 @@ namespace IronRuby.StandardLibrary.Sockets {
             }
         }
 
-        #endregion
+#endregion
     }
 }
 #endif

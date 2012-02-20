@@ -18,8 +18,48 @@ using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
 using System.Runtime.InteropServices;
 
-namespace IronRuby.Builtins {
+#if WIN8
+namespace System {
+    [Serializable]
+    public class SystemException : Exception {
+        public SystemException() : this(null, null) { }
+        public SystemException(string message) : this(message, null) { }
+        public SystemException(string message, Exception inner) : base(message, inner) { }
+#if FEATURE_SERIALIZATION
+        protected SystemException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+            : base(info, context) { }
+#endif
+    }
 
+    [Serializable]
+    public class MissingMethodException : MissingMemberException {
+        public MissingMethodException() : this(null, null) { }
+        public MissingMethodException(string message) : this(message, null) { }
+        public MissingMethodException(string message, Exception inner) : base(message, inner) { }
+#if FEATURE_SERIALIZATION
+        protected MissingMethodException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+            : base(info, context) { }
+#endif
+    }
+}
+
+namespace System.Runtime.InteropServices {
+    [Serializable]
+    public class ExternalException : Exception {
+        public virtual int ErrorCode { get { return 0; } }
+
+        public ExternalException() : this(null, null) { }
+        public ExternalException(string message) : this(message, null) { }
+        public ExternalException(string message, Exception inner) : base(message, inner) { }
+#if FEATURE_SERIALIZATION
+        protected ExternalException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+            : base(info, context) { }
+#endif
+    }
+}
+#endif
+
+namespace IronRuby.Builtins {
     [Serializable]
     public class LocalJumpError : SystemException {
         [NonSerialized]
@@ -42,7 +82,7 @@ namespace IronRuby.Builtins {
         public LocalJumpError(string message) : this(message, (Exception)null) { }
         public LocalJumpError(string message, Exception inner) : base(message, inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         protected LocalJumpError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
 #endif
@@ -70,7 +110,7 @@ namespace IronRuby.Builtins {
         public SystemExit(string message) : this(message, null) { }
         public SystemExit(string message, Exception inner) : base(message, inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         protected SystemExit(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
 #endif
@@ -82,7 +122,7 @@ namespace IronRuby.Builtins {
         public ScriptError(string message) : this(message, null) { }
         public ScriptError(string message, Exception inner) : base(message, inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         protected ScriptError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
 #endif
@@ -94,7 +134,7 @@ namespace IronRuby.Builtins {
         public NotImplementedError(string message) : this(message, null) { }
         public NotImplementedError(string message, Exception inner) : base(message, inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         protected NotImplementedError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
 #endif
@@ -106,7 +146,7 @@ namespace IronRuby.Builtins {
         public LoadError(string message) : this(message, null) { }
         public LoadError(string message, Exception inner) : base(message, inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         protected LoadError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
 #endif
@@ -118,7 +158,7 @@ namespace IronRuby.Builtins {
         public SystemStackError(string message) : this(message, null) { }
         public SystemStackError(string message, Exception inner) : base(message, inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         protected SystemStackError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
 #endif
@@ -130,7 +170,7 @@ namespace IronRuby.Builtins {
         public RegexpError(string message) : this(message, null) { }
         public RegexpError(string message, Exception inner) : base(message, inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         protected RegexpError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
 #endif
@@ -142,7 +182,7 @@ namespace IronRuby.Builtins {
         public EncodingError(string message) : this(message, null) { }
         public EncodingError(string message, Exception inner) : base(message, inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         protected EncodingError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
 #endif
@@ -154,7 +194,7 @@ namespace IronRuby.Builtins {
         public EncodingCompatibilityError(string message) : this(message, null) { }
         public EncodingCompatibilityError(string message, Exception inner) : base(message, inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         protected EncodingCompatibilityError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
 #endif
@@ -166,7 +206,7 @@ namespace IronRuby.Builtins {
         public UndefinedConversionError(string message) : this(message, null) { }
         public UndefinedConversionError(string message, Exception inner) : base(message, inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         protected UndefinedConversionError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
 #endif
@@ -178,7 +218,7 @@ namespace IronRuby.Builtins {
         public InvalidByteSequenceError(string message) : this(message, null) { }
         public InvalidByteSequenceError(string message, Exception inner) : base(message, inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         protected InvalidByteSequenceError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
 #endif
@@ -190,7 +230,7 @@ namespace IronRuby.Builtins {
         public ConverterNotFoundError(string message) : this(message, null) { }
         public ConverterNotFoundError(string message, Exception inner) : base(message, inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         protected ConverterNotFoundError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
 #endif
@@ -202,7 +242,7 @@ namespace IronRuby.Builtins {
         public RuntimeError(string message) : this(message, null) { }
         public RuntimeError(string message, Exception inner) : base(message, inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         protected RuntimeError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
 #endif
@@ -249,7 +289,7 @@ namespace IronRuby.Builtins {
             _hasLineInfo = true;
         }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         protected SyntaxError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
 #endif
@@ -264,7 +304,7 @@ namespace IronRuby.Builtins {
         public ExistError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
         public ExistError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         protected ExistError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
 #endif
@@ -279,7 +319,7 @@ namespace IronRuby.Builtins {
         public BadFileDescriptorError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
         public BadFileDescriptorError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         protected BadFileDescriptorError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
 #endif
@@ -294,7 +334,7 @@ namespace IronRuby.Builtins {
         public ExecFormatError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
         public ExecFormatError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         protected ExecFormatError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
 #endif
@@ -309,7 +349,7 @@ namespace IronRuby.Builtins {
         public InvalidError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
         public InvalidError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         protected InvalidError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
 #endif

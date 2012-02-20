@@ -16,7 +16,6 @@
 using System;
 using System.Runtime.Serialization;
 using System.Dynamic;
-using System.Security.Permissions;
 using Microsoft.Scripting.Utils;
 using System.Security;
 
@@ -72,7 +71,7 @@ namespace Microsoft.Scripting {
             _sourceLine = line;
         }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         protected SyntaxErrorException(SerializationInfo info, StreamingContext context)
             : base(info, context) {
 

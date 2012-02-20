@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -32,7 +32,7 @@ namespace IronPython.Runtime.Binding {
         /// Backwards compatible Convert for the old sites that need to flow CodeContext
         /// </summary>
         public static Expression/*!*/ Convert(Expression/*!*/ codeContext, PythonContext/*!*/ binder, Type/*!*/ type, ConversionResultKind resultKind, Expression/*!*/ target) {
-            return Ast.Dynamic(
+            return DynamicExpression.Dynamic(
                 binder.Convert(type, resultKind),
                 type,
                 target
@@ -41,7 +41,7 @@ namespace IronPython.Runtime.Binding {
 
 
         public static Expression/*!*/ Get(Expression/*!*/ codeContext, PythonContext/*!*/ binder, Type/*!*/ resultType, string/*!*/ name, Expression/*!*/ target) {
-            return Ast.Dynamic(
+            return DynamicExpression.Dynamic(
                 binder.GetMember(name),
                 resultType,
                 target,
@@ -50,7 +50,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public static Expression/*!*/ TryGet(Expression/*!*/ codeContext, PythonContext/*!*/ binder, Type/*!*/ resultType, string/*!*/ name, Expression/*!*/ target) {
-            return Ast.Dynamic(
+            return DynamicExpression.Dynamic(
                 binder.GetMember(
                     name,
                     true

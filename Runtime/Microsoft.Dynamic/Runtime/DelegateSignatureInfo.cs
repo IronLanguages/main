@@ -16,7 +16,6 @@
 using System;
 using System.Reflection;
 using System.Text;
-using Microsoft.Contracts;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Runtime {
@@ -35,7 +34,6 @@ namespace Microsoft.Scripting.Runtime {
             _returnType = returnType;
         }
 
-        [Confined]
         public override bool Equals(object obj) {
             DelegateSignatureInfo dsi = obj as DelegateSignatureInfo;
 
@@ -54,7 +52,6 @@ namespace Microsoft.Scripting.Runtime {
             return true;
         }
 
-        [Confined]
         public override int GetHashCode() {
             int hashCode = 5331;
 
@@ -65,7 +62,6 @@ namespace Microsoft.Scripting.Runtime {
             return hashCode;
         }
 
-        [Confined]
         public override string ToString() {
             StringBuilder text = new StringBuilder();
             text.Append(_returnType.ToString());

@@ -63,20 +63,20 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        public override DynamicMetaObject GetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type) {
-            return _tracker.GetBoundValue(resolverFactory, binder, type, _instance);
+        public override DynamicMetaObject GetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type instanceType) {
+            return _tracker.GetBoundValue(resolverFactory, binder, instanceType, _instance);
         }
 
-        public override ErrorInfo GetError(ActionBinder binder) {
-            return _tracker.GetBoundError(binder, _instance);
+        public override ErrorInfo GetError(ActionBinder binder, Type instanceType) {
+            return _tracker.GetBoundError(binder, _instance, instanceType);
         }
 
-        public override DynamicMetaObject SetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type, DynamicMetaObject value) {
-            return _tracker.SetBoundValue(resolverFactory, binder, type, value, _instance);
+        public override DynamicMetaObject SetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type instanceType, DynamicMetaObject value) {
+            return _tracker.SetBoundValue(resolverFactory, binder, instanceType, value, _instance);
         }
 
-        public override DynamicMetaObject SetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type, DynamicMetaObject value, DynamicMetaObject errorSuggestion) {
-            return _tracker.SetBoundValue(resolverFactory, binder, type, value, _instance, errorSuggestion);
+        public override DynamicMetaObject SetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type instanceType, DynamicMetaObject value, DynamicMetaObject errorSuggestion) {
+            return _tracker.SetBoundValue(resolverFactory, binder, instanceType, value, _instance, errorSuggestion);
         }
     }
 }

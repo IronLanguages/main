@@ -137,9 +137,11 @@ namespace IronRuby.Builtins {
                 : base(pipe) {
             }
 
-            public override void Close() {
-                base.Close();
-                CloseWriter();
+            protected override void Dispose(bool disposing) {
+                if (disposing) {
+                    base.Dispose(disposing);
+                    CloseWriter();
+                }
             }
         }
     }

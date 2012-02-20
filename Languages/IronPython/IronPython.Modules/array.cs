@@ -29,10 +29,10 @@ using Microsoft.Scripting.Utils;
 using SpecialName = System.Runtime.CompilerServices.SpecialNameAttribute;
 using System.Reflection;
 
-#if CLR2
-using Microsoft.Scripting.Math;
-#else
+#if FEATURE_NUMERICS
 using System.Numerics;
+#else
+using Microsoft.Scripting.Math;
 #endif
 
 [assembly: PythonModule("array", typeof(IronPython.Modules.ArrayModule))]

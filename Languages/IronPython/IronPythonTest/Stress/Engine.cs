@@ -46,7 +46,7 @@ namespace IronPythonTest.Stress {
             return GC.GetTotalMemory(true);
         }
 
-#if !SILVERLIGHT
+#if FEATURE_REFEMIT
         public void ScenarioXGC() {
             long initialMemory = GetTotalMemory();
 

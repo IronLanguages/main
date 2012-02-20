@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -24,9 +24,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Dynamic;
-using System.IO.IsolatedStorage;
 using System.Reflection;
-using Microsoft.Contracts;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
@@ -457,7 +455,6 @@ namespace Microsoft.Scripting.Actions.Calls {
 
         #endregion
 
-        [Confined]
         public override string ToString() {
             return string.Format("MethodCandidate({0} on {1})", Overload.ReflectionInfo, Overload.DeclaringType.FullName);
         }

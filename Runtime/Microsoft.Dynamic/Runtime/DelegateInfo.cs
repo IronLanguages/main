@@ -113,7 +113,7 @@ namespace Microsoft.Scripting.Runtime {
                 }
             }
 
-            return ReflectionUtils.CreateDelegate(_method, delegateType, clone);
+            return _method.CreateDelegate(delegateType, clone);
         }
 
         /// <summary>
@@ -151,7 +151,7 @@ namespace Microsoft.Scripting.Runtime {
                 cg.Emit(OpCodes.Dup);
                 cg.Emit(OpCodes.Stloc, convertSiteLocal);
 
-                convertTarget = convertSiteType.GetField("Target");
+                convertTarget = convertSiteType.GetDeclaredField("Target");
                 cg.EmitFieldGet(convertTarget);
                 cg.Emit(OpCodes.Ldloc, convertSiteLocal);
             }
@@ -162,7 +162,7 @@ namespace Microsoft.Scripting.Runtime {
             cg.Emit(OpCodes.Dup);
             cg.Emit(OpCodes.Stloc, site);
 
-            FieldInfo target = siteType.GetField("Target");
+            FieldInfo target = siteType.GetDeclaredField("Target");
             cg.EmitFieldGet(target);
             cg.Emit(OpCodes.Ldloc, site);
 

@@ -45,6 +45,7 @@ namespace IronRuby.StandardLibrary.Threading {
                     int waits = self._waits;
                     for (int i = 0; i < waits; i++) {
                         self._signal.Set();
+#if FEATURE_THREAD
                         //
                         // WARNING
                         //
@@ -54,6 +55,7 @@ namespace IronRuby.StandardLibrary.Threading {
                         // We add a sleep to increase the chance that all waiting threads will be released.
                         //
                         Thread.CurrentThread.Join(1);
+#endif
                     }
                 }
             }

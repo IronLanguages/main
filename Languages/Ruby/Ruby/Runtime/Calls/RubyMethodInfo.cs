@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using MSA = System.Linq.Expressions;
 #else
 using MSA = Microsoft.Scripting.Ast;
@@ -67,7 +67,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {
-            return new MemberInfo[] { GetDelegate().Method };
+            return new MemberInfo[] { GetDelegate().GetMethod() };
         }
 
         public override int GetArity() {

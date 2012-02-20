@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_NUMERICS
 using BigInt = System.Numerics.BigInteger;
 #endif
 
@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 
 using Microsoft.Scripting.Math;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Interpreter {
     public abstract class InstructionFactory {
@@ -44,7 +45,7 @@ namespace Microsoft.Scripting.Interpreter {
                     { typeof(double), InstructionFactory<double>.Factory },
                     { typeof(char), InstructionFactory<char>.Factory },
                     { typeof(string), InstructionFactory<string>.Factory },
-#if !CLR2
+#if FEATURE_NUMERICS
                     { typeof(BigInt), InstructionFactory<BigInt>.Factory },
 #endif
                     { typeof(BigInteger), InstructionFactory<BigInteger>.Factory }  
@@ -54,7 +55,7 @@ namespace Microsoft.Scripting.Interpreter {
             lock (_factories) {
                 InstructionFactory factory;
                 if (!_factories.TryGetValue(type, out factory)) {
-                    factory = (InstructionFactory)typeof(InstructionFactory<>).MakeGenericType(type).GetField("Factory").GetValue(null);
+                    factory = (InstructionFactory)typeof(InstructionFactory<>).MakeGenericType(type).GetDeclaredField("Factory").GetValue(null);
                     _factories[type] = factory;
                 }
                 return factory;

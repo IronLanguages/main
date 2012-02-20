@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 using CsBinder = Microsoft.CSharp.RuntimeBinder.Binder;
 using CSharpBinderFlags = Microsoft.CSharp.RuntimeBinder.CSharpBinderFlags;

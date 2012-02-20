@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -23,6 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Reflection;
+using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
@@ -76,7 +77,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         }
 
         private Expression GetDefaultValue() {
-            if (_parameterType.IsValueType) {
+            if (_parameterType.IsValueType()) {
                 // default(T)                
                 return AstUtils.Constant(Activator.CreateInstance(_parameterType));
             }

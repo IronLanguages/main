@@ -15,7 +15,6 @@
 
 using System;
 using System.Runtime.Serialization;
-using System.Security.Permissions;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting {
@@ -51,7 +50,7 @@ namespace Microsoft.Scripting {
         }
 
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         protected AmbiguousFileNameException(SerializationInfo info, StreamingContext context)
             : base(info, context) {
         }

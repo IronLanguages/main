@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if !CLR45
 
 using System;
 using System.Collections.Generic;
@@ -194,3 +195,4 @@ namespace Microsoft.Scripting.Utils {
         #endregion
     }
 }
+#endif

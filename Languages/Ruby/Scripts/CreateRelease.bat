@@ -41,8 +41,8 @@ pushd Silverlight\bin
 copy %SRC_SL_BIN%\Microsoft.Dynamic.dll .
 copy %SRC_SL_BIN%\Microsoft.Scripting.dll .
 copy %SRC_SL_BIN%\Microsoft.Scripting.Silverlight.dll .
-copy %SRC_SL_BIN%\Chiron.exe .
-copy %SRC_SL_BIN%\Chiron.exe.config .
+copy %SRC_BIN%\Chiron.exe .
+copy %SRC_BIN%\Chiron.exe.config .
 
 copy %SRC_SL_BIN%\IronRuby.dll .
 copy %SRC_SL_BIN%\IronRuby.Libraries.dll .

@@ -13,13 +13,10 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
-using System.Numerics;
 #else
 using Microsoft.Scripting.Ast;
-using Microsoft.Scripting.Math;
-using Complex = Microsoft.Scripting.Math.Complex64;
 #endif
 
 using System;
@@ -41,6 +38,13 @@ using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
+
+#if FEATURE_NUMERICS
+using System.Numerics;
+#else
+using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
+#endif
 
 namespace IronPython.Runtime.Types {
 
@@ -512,10 +516,12 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 ldt.Add(adt);
             }
 
+#if FEATURE_REFEMIT
             // Ensure that we are not switching the CLI type
             Type newType = NewTypeMaker.GetNewType(type.Name, t);
             if (type.UnderlyingSystemType != newType)
                 throw PythonOps.TypeErrorForIncompatibleObjectLayout("__bases__ assignment", type, newType);
+#endif
 
             // set bases & the new resolution order
             List<PythonType> mro = CalculateMro(type, ldt);
@@ -1138,7 +1144,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
 
             //Python doesn't have value types inheriting from ValueType, but we fake this for interop
-            if (other.UnderlyingSystemType == typeof(ValueType) && UnderlyingSystemType.IsValueType) {
+            if (other.UnderlyingSystemType == typeof(ValueType) && UnderlyingSystemType.IsValueType()) {
                 return true;
             }
 
@@ -1317,7 +1323,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
                 // don't look at interfaces - users can inherit from them, but we resolve members
                 // via methods implemented on types and defined by Python.
-                if (dt.IsSystemType && !dt.UnderlyingSystemType.IsInterface) {
+                if (dt.IsSystemType && !dt.UnderlyingSystemType.IsInterface()) {
                     return PythonBinder.GetBinder(context).TryResolveSlot(context, dt, this, name, out slot);
                 }
 
@@ -1326,7 +1332,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 }
             }
 
-            if (UnderlyingSystemType.IsInterface) {
+            if (UnderlyingSystemType.IsInterface()) {
                 return TypeCache.Object.TryResolveSlot(context, name, out slot);
             }
             
@@ -2036,6 +2042,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             PopulateDictionary(context, name, bases, vars);
 
+#if FEATURE_REFEMIT
             // calculate the .NET type once so it can be used for things like super calls
             _underlyingSystemType = NewTypeMaker.GetNewType(name, bases);
 
@@ -2045,7 +2052,10 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             if (_underlyingSystemType == null) {
                 throw PythonOps.ValueError("__clrtype__ must return a type, not None");
             }
-            
+#else
+            _underlyingSystemType = typeof(IronPython.NewTypes.System.Object_1_1);
+#endif
+
             // finally assign the ctors from the real type the user provided
 
             lock (_userTypeCtors) {
@@ -2337,6 +2347,15 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private static PythonTuple ValidateBases(PythonTuple bases) {
             PythonTuple newBases = PythonTypeOps.EnsureBaseType(bases);
             for (int i = 0; i < newBases.__len__(); i++) {
+
+#if !FEATURE_REFEMIT
+                PythonType pt = newBases[i] as PythonType;
+                if (pt != null && pt.IsSystemType && pt != TypeCache.Object) {
+                    // The only supported CLR base class w/o refemit is object
+                    throw new NotSupportedException(string.Format("{0} is not a valid CLR base class. Only object is supported w/o refemit.", pt.UnderlyingSystemType.FullName));
+                }
+#endif
+
                 for (int j = 0; j < newBases.__len__(); j++) {
                     if (i != j && newBases[i] == newBases[j]) {
                         OldClass oc = newBases[i] as OldClass;
@@ -2380,20 +2399,20 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             List<PythonType> mro = new List<PythonType>();
             mro.Add(this);
 
-            if (_underlyingSystemType.BaseType != null) {
+            if (_underlyingSystemType.GetBaseType() != null) {
                 Type baseType;
                 if (_underlyingSystemType == typeof(bool)) {
                     // bool inherits from int in python
                     baseType = typeof(int);
-                } else if (_underlyingSystemType.BaseType == typeof(ValueType)) {
+                } else if (_underlyingSystemType.GetBaseType() == typeof(ValueType)) {
                     // hide ValueType, it doesn't exist in Python
                     baseType = typeof(object);
                 } else {
-                    baseType = _underlyingSystemType.BaseType;
+                    baseType = _underlyingSystemType.GetBaseType();
                 }
                 
                 while (baseType.IsDefined(typeof(PythonHiddenBaseClassAttribute), false)) {
-                    baseType = baseType.BaseType;
+                    baseType = baseType.GetBaseType();
                 }
 
                 _bases = new PythonType[] { GetPythonType(baseType) };
@@ -2406,13 +2425,13 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                     } else if(!curType.IsDefined(typeof(PythonHiddenBaseClassAttribute), false)) {
                         mro.Add(DynamicHelpers.GetPythonTypeFromType(curType));
                     }
-                    curType = curType.BaseType;
+                    curType = curType.GetBaseType();
                 }
 
                 if (!IsPythonType) {
                     AddSystemInterfaces(mro);
                 }
-            } else if (_underlyingSystemType.IsInterface) {
+            } else if (_underlyingSystemType.IsInterface()) {
                 // add interfaces to MRO & create bases list
                 Type[] interfaces = _underlyingSystemType.GetInterfaces();
                 PythonType[] bases = new PythonType[interfaces.Length];
@@ -2517,7 +2536,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                         _underlyingSystemType
                     )
                 );
-            } else if (!_underlyingSystemType.IsAbstract) {
+            } else if (!_underlyingSystemType.IsAbstract()) {
                 BuiltinFunction reflectedCtors = GetConstructors();
                 if (reflectedCtors == null) {
                     return; // no ctors, no __new__

@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -73,12 +73,12 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        internal class InterceptorWalker : ExpressionVisitor {
+        internal class InterceptorWalker : DynamicExpressionVisitor {
             protected override Expression VisitDynamic(DynamicExpression node) {
                 CallSiteBinder binder = node.Binder;
                 if (!(binder is InterceptorSiteBinder)) {
                     binder = new InterceptorSiteBinder(binder);
-                    return Expression.MakeDynamic(node.DelegateType, binder, node.Arguments);
+                    return DynamicExpression.MakeDynamic(node.DelegateType, binder, node.Arguments);
                 } else {
                     return node;
                 }

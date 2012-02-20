@@ -23,7 +23,7 @@ namespace Microsoft.Scripting.Utils {
 
         public static Encoding DefaultEncoding {
             get {
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
                 return Encoding.Default;
 #else
                 return Encoding.UTF8;
@@ -34,7 +34,7 @@ namespace Microsoft.Scripting.Utils {
 
         public static string[] Split(string str, char[] separators, int maxComponents, StringSplitOptions options) {
             ContractUtils.RequiresNotNull(str, "str");
-#if SILVERLIGHT
+#if SILVERLIGHT || WP75
             if (separators == null) return SplitOnWhiteSpace(str, maxComponents, options);
 
             bool keep_empty = (options & StringSplitOptions.RemoveEmptyEntries) != StringSplitOptions.RemoveEmptyEntries;
@@ -63,7 +63,7 @@ namespace Microsoft.Scripting.Utils {
 #endif
         }
 
-#if SILVERLIGHT
+#if SILVERLIGHT || WP75
         public static string[] SplitOnWhiteSpace(string str, int maxComponents, StringSplitOptions options) {
             ContractUtils.RequiresNotNull(str, "str");
 

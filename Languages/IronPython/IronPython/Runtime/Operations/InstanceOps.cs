@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -805,13 +805,13 @@ namespace IronPython.Runtime.Operations {
                 }
 
                 BuiltinMethodDescriptor method = pts as BuiltinMethodDescriptor;
-                if (method != null && (!method.DeclaringType.IsSealed || !method.DeclaringType.IsAbstract)) {
+                if (method != null && (!method.DeclaringType.IsSealed() || !method.DeclaringType.IsAbstract())) {
                     // inherited object member on a static class (GetHashCode, Equals, etc...)
                     return false;
                 }
 
                 BuiltinFunction bf = pts as BuiltinFunction;
-                if (bf != null && (!bf.DeclaringType.IsSealed || !bf.DeclaringType.IsAbstract)) {
+                if (bf != null && (!bf.DeclaringType.IsSealed() || !bf.DeclaringType.IsAbstract())) {
                     // __new__/ReferenceEquals inherited from object
                     return false;
                 }
@@ -882,7 +882,7 @@ namespace IronPython.Runtime.Operations {
 
         #endregion
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         /// <summary>
         /// Implements __reduce_ex__ for .NET types which are serializable.  This uses the .NET
         /// serializer to get a string of raw data which can be serialized.

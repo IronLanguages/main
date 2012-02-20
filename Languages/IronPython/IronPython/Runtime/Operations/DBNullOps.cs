@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-
+#if FEATURE_DBNULL
 using System;
 
 namespace IronPython.Runtime.Operations {
@@ -22,3 +22,4 @@ namespace IronPython.Runtime.Operations {
         }
     }
 }
+#endif

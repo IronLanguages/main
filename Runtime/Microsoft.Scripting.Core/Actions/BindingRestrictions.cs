@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if CLR2
+#if !FEATURE_CORE_DLR
 using Microsoft.Scripting.Ast;
 #else
 using System.Linq.Expressions;
@@ -30,9 +30,7 @@ namespace System.Dynamic {
     /// <summary>
     /// Represents a set of binding restrictions on the <see cref="DynamicMetaObject"/>under which the dynamic binding is valid.
     /// </summary>
-#if !SILVERLIGHT
     [DebuggerTypeProxy(typeof(BindingRestrictionsProxy)), DebuggerDisplay("{DebugView}")]
-#endif
     public abstract class BindingRestrictions {
         /// <summary>
         /// Represents an empty set of binding restrictions. This field is read only.
@@ -282,11 +280,7 @@ namespace System.Dynamic {
             }
 
             public override int GetHashCode() {
-#if SILVERLIGHT && CLR2 // CF RH.GetHashCode throws NullReferenceException if the argument is null
-                return InstanceRestrictionHash ^ (_instance != null ? RuntimeHelpers.GetHashCode(_instance) : 0) ^ _expression.GetHashCode();
-#else
-                return InstanceRestrictionHash ^ RuntimeHelpers.GetHashCode(_instance) ^ _expression.GetHashCode();
-#endif
+                return InstanceRestrictionHash ^ ReferenceEqualityComparer<object>.Instance.GetHashCode(_instance) ^ _expression.GetHashCode();
             }
 
             internal override Expression GetExpression() {

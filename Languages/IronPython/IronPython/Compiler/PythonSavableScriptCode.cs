@@ -12,8 +12,9 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_REFEMIT
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -53,7 +54,7 @@ namespace IronPython.Compiler {
             var lambda = RewriteForSave(typeGen, _code);
 
             MethodBuilder mb = typeGen.TypeBuilder.DefineMethod(lambda.Name ?? "lambda_method", CompilerHelpers.PublicStatic | MethodAttributes.SpecialName);
-            lambda.CompileToMethod(mb, false);
+            lambda.CompileToMethod(mb);
 
             mb.SetCustomAttribute(new CustomAttributeBuilder(
                 typeof(CachedOptimizedCodeAttribute).GetConstructor(new Type[] { typeof(string[]) }),
@@ -84,3 +85,5 @@ namespace IronPython.Compiler {
         #endregion
     }
 }
+
+#endif

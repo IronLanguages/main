@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT // ComObject
+#if FEATURE_COM
 #pragma warning disable 414 // msc: unused private field
 
 using System;

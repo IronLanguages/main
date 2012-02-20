@@ -12,6 +12,11 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_REMOTING
+using System.Runtime.Remoting;
+#else
+using MarshalByRefObject = System.Object;
+#endif
 
 using System;
 using System.Collections.Generic;
@@ -19,7 +24,6 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
 using System.Reflection;
-using System.Security.Permissions;
 using System.Text;
 using System.Threading;
 using Microsoft.Scripting.Runtime;
@@ -30,11 +34,7 @@ namespace Microsoft.Scripting.Hosting {
     /// Represents a Dynamic Language Runtime in Hosting API. 
     /// Hosting API counterpart for <see cref="ScriptDomainManager"/>.
     /// </summary>
-    public sealed class ScriptRuntime
-#if !SILVERLIGHT
-        : MarshalByRefObject
-#endif
-    {
+    public sealed class ScriptRuntime : MarshalByRefObject {
         private readonly Dictionary<LanguageContext, ScriptEngine> _engines;
         private readonly ScriptDomainManager _manager;
         private readonly InvariantContext _invariantContext;
@@ -83,8 +83,8 @@ namespace Microsoft.Scripting.Hosting {
 
             object noDefaultRefs;
             if (!setup.Options.TryGetValue("NoDefaultReferences", out noDefaultRefs) || Convert.ToBoolean(noDefaultRefs) == false) {
-                LoadAssembly(typeof(string).Assembly);
-                LoadAssembly(typeof(System.Diagnostics.Debug).Assembly);
+                LoadAssembly(typeof(string).GetTypeInfo().Assembly);
+                LoadAssembly(typeof(System.Diagnostics.Debug).GetTypeInfo().Assembly);
             }
         }
 
@@ -110,7 +110,7 @@ namespace Microsoft.Scripting.Hosting {
 
         #region Remoting
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
 
         /// <summary>
         /// Creates ScriptRuntime in the current app-domain and initialized according to the the specified settings.
@@ -241,7 +241,6 @@ namespace Microsoft.Scripting.Hosting {
             ScriptEngine engine;
             if (freshEngineCreated = !_engines.TryGetValue(language, out engine)) {
                 engine = new ScriptEngine(this, language);
-                Thread.MemoryBarrier();
                 _engines.Add(language, engine);
             }
             return engine;

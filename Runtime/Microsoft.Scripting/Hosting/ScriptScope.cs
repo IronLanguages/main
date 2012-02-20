@@ -13,19 +13,23 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using dynamic = System.Object;
 using Microsoft.Scripting.Ast;
 #endif
 
+#if FEATURE_REMOTING
+using System.Runtime.Remoting;
+#else
+using MarshalByRefObject = System.Object;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.Remoting;
 using System.Runtime.Serialization;
-using System.Security.Permissions;
 using System.Dynamic;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -41,12 +45,10 @@ namespace Microsoft.Scripting.Hosting {
     ///
     /// Hosting API counterpart for <see cref="Scope"/>.
     /// </summary>
-#if SILVERLIGHT
-    public sealed class ScriptScope : IDynamicMetaObjectProvider {
-#else
+#if !SILVERLIGHT && !WIN8 && !WP75
     [DebuggerTypeProxy(typeof(ScriptScope.DebugView))]
-    public sealed class ScriptScope : MarshalByRefObject, IDynamicMetaObjectProvider {
 #endif
+    public sealed class ScriptScope : MarshalByRefObject, IDynamicMetaObjectProvider {
         private readonly Scope _scope;
         private readonly ScriptEngine _engine;
 
@@ -122,7 +124,7 @@ namespace Microsoft.Scripting.Hosting {
             _engine.LanguageContext.ScopeSetVariable(Scope, name, value);
         }
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
         /// <summary>
         /// Gets a handle for a value stored in the scope under the given name.
         /// </summary>
@@ -210,7 +212,7 @@ namespace Microsoft.Scripting.Hosting {
         }
 
         #region DebugView
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !WIN8 && !WP75
         internal sealed class DebugView {
             private readonly ScriptScope _scope;
 
@@ -336,7 +338,7 @@ namespace Microsoft.Scripting.Hosting {
 
         #endregion
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
         // TODO: Figure out what is the right lifetime
         public override object InitializeLifetimeService() {
             return null;

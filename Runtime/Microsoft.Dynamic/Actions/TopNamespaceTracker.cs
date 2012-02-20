@@ -107,10 +107,10 @@ namespace Microsoft.Scripting.Actions {
         /// user binder to trigger scanning of COM types.
         /// </summary>
         public static void PublishComTypes(Assembly interopAssembly) {
-#if !SILVERLIGHT
+#if FEATURE_COM
             lock (_comTypeCache) { // We lock over the entire operation so that we can publish a consistent view
 
-                foreach (Type type in AssemblyTypeNames.LoadTypesFromAssembly(interopAssembly, false)) {
+                foreach (Type type in ReflectionUtils.GetAllTypesFromAssembly(interopAssembly, false)) {
                     if (type.IsImport && type.IsInterface) {
                         Type existing;
                         if (_comTypeCache.TryGetValue(type.GUID, out existing)) {

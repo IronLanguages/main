@@ -284,7 +284,7 @@ namespace IronRuby.Runtime {
         }
 
         public IncludesAttribute() {
-            _types = Type.EmptyTypes;
+            _types = ReflectionUtils.EmptyTypes;
         }
 
         public IncludesAttribute(params Type[]/*!*/ types) {

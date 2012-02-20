@@ -13,10 +13,14 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_REMOTING
+using System.Runtime.Remoting;
+#else
+using MarshalByRefObject = System.Object;
+#endif
+
 using System;
 using System.Collections.Generic;
-using System.Runtime.Remoting;
-using System.Security.Permissions;
 using System.Threading;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
@@ -31,11 +35,7 @@ namespace IronPython.Hosting {
     /// This is exposed as a service through PythonEngine and the helper class
     /// uses this service to get the correct remoting semantics.
     /// </summary>
-    public sealed class PythonService 
-#if !SILVERLIGHT
-        : MarshalByRefObject 
-#endif
-    {
+    public sealed class PythonService : MarshalByRefObject {
         private readonly ScriptEngine/*!*/ _engine;
         private readonly PythonContext/*!*/ _context;
         private ScriptScope _sys, _builtins, _clr;
@@ -123,7 +123,7 @@ namespace IronPython.Hosting {
             _context.DispatchCommand(command);
         }
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
         public ObjectHandle GetSetCommandDispatcher(ObjectHandle dispatcher) {
             var res = _context.GetSetCommandDispatcher((Action<Action>)dispatcher.Unwrap());
             if (res != null) {
@@ -141,9 +141,7 @@ namespace IronPython.Hosting {
             return new ObjectHandle((Action<Action>)(action => _context.DispatchCommand(action)));
         }
 
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.Infrastructure)]
         public override object InitializeLifetimeService() {
-            // track the engines lifetime
             return _engine.InitializeLifetimeService();
         }
 #endif

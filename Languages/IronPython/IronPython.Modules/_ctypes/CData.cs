@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_NATIVE
+
 #if CLR2
 using Microsoft.Scripting.Math;
 #else
@@ -28,7 +30,6 @@ using IronPython.Runtime;
 using IronPython.Runtime.Types;
 using System.Collections.Generic;
 
-#if !SILVERLIGHT
 namespace IronPython.Modules {
     /// <summary>
     /// Provides support for interop with native code from Python code.

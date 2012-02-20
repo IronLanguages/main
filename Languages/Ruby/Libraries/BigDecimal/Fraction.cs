@@ -385,7 +385,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
             return 0;
         }
 
-#if SILVERLIGHT
+#if SILVERLIGHT || WIN8 || WP75
         public static int DivRem(int a, int b, out int result) {
             result = a % b;
             return (a / b);
@@ -441,7 +441,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
             int lastWordIndex;
             uint lastDigit;
 
-#if SILVERLIGHT
+#if SILVERLIGHT || WIN8 || WP75
             secondLastWordIndex = DivRem(digits - 1, BASE_FIG, out secondLastDigitIndex);
 #else
             secondLastWordIndex = Math.DivRem(digits - 1, BASE_FIG, out secondLastDigitIndex);

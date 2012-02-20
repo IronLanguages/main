@@ -53,7 +53,7 @@ namespace Microsoft.Scripting.Generation {
             return _dm;
         }
     }
-
+#if FEATURE_REFEMIT
     class DynamicILGenType : DynamicILGen {
         private readonly TypeBuilder _tb;
         private readonly MethodBuilder _mb;
@@ -67,7 +67,7 @@ namespace Microsoft.Scripting.Generation {
         public override T CreateDelegate<T>(out MethodInfo mi) {
             ContractUtils.Requires(typeof(T).IsSubclassOf(typeof(Delegate)), "T");
             mi = CreateMethod();
-            return (T)(object)Delegate.CreateDelegate(typeof(T), mi);
+            return (T)(object)mi.CreateDelegate(typeof(T));
         }
 
         private MethodInfo CreateMethod() {
@@ -79,4 +79,5 @@ namespace Microsoft.Scripting.Generation {
             return CreateMethod();
         }
     }
+#endif
 }

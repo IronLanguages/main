@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Linq;
 using System.Diagnostics;
 using Microsoft.Scripting.Utils;
 

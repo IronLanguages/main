@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_FULL_CONSOLE
 
 using System;
 using IronRuby.Builtins;
@@ -117,3 +118,4 @@ namespace IronRuby.Hosting {
         }
     }
 }
+#endif

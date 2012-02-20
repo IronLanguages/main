@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_SYNC_SOCKETS
 
 using System;
 using System.Collections;
@@ -24,10 +25,11 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-#if !SILVERLIGHT // Sockets
-using System.Net.Sockets;
 using Microsoft.Scripting.Runtime;
 using System.Runtime.CompilerServices;
+using Microsoft.Scripting.Utils;
+
+using System.Net.Sockets;
 
 [assembly: PythonModule("select", typeof(IronPython.Modules.PythonSelect))]
 namespace IronPython.Modules {
@@ -38,9 +40,6 @@ namespace IronPython.Modules {
             context.EnsureModuleException("selecterror", dict, "error", "select");
         }
 
-#if SILVERLIGHT // RunClassConstructor workaround
-        public static void __cctor() { }
-#endif
         #region Public API
 
         [Documentation("select(iwtd, owtd, ewtd[, timeout]) -> readlist, writelist, errlist\n\n"
@@ -158,7 +157,6 @@ namespace IronPython.Modules {
         }
 
         #endregion
-
     }
 }
 

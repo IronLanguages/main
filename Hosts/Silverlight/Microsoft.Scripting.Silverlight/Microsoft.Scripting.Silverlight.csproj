@@ -2,8 +2,6 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <Import Project="$(ProjectDir)..\..\..\Solutions\Common.proj" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{C86A7A7B-3086-4136-9B56-17E8DCB38C8D}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -11,102 +9,10 @@
     <RootNamespace>Microsoft.Scripting.Silverlight</RootNamespace>
     <AssemblyName>Microsoft.Scripting.Silverlight</AssemblyName>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight3Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>$(SolutionDir)..\bin\Silverlight3Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;SILVERLIGHT;SILVERLIGHT_3;CLR2;$(SignedSym)</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight3Release|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>$(SolutionDir)..\bin\Silverlight3Release\</OutputPath>
-    <DefineConstants>TRACE;SILVERLIGHT;SILVERLIGHT_3;CLR2;$(SignedSym)</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight4Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>$(SolutionDir)..\bin\Silverlight4Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;SILVERLIGHT;CLR4;$(SignedSym)</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight4Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <OutputPath>$(SolutionDir)..\bin\Silverlight4Release\</OutputPath>
-    <DefineConstants>TRACE;SILVERLIGHT;CLR4;$(SignedSym)</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
   </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting.Core\Microsoft.Scripting.Core.csproj" Condition=" '$(TargetFrameworkVersion)' != 'v4.0' ">
-      <Project>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</Project>
-      <Name>Microsoft.Scripting.Core</Name>
-      <Private>False</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj">
-      <Project>{02FF0909-F5AD-48CF-A86A-345E721B7E40}</Project>
-      <Name>Microsoft.Scripting</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\Runtime\Microsoft.Dynamic\Microsoft.Dynamic.csproj">
-      <Project>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</Project>
-      <Name>Microsoft.Dynamic</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e, processorArchitecture=x86">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightPath)\mscorlib.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e, processorArchitecture=x86">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightPath)\System.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Windows.Browser, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightPath)\System.Windows.Browser.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Windows, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightPath)\System.Windows.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Xml, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightPath)\System.Xml.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Net, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightPath)\System.Net.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Core, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightPath)\System.Core.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="..\SilverlightVersion.cs">
       <Link>Properties\SilverlightVersion.cs</Link>
@@ -130,24 +36,34 @@
   <ItemGroup>
     <EmbeddedResource Include="agdlr.css" />
     <EmbeddedResource Include="agdlr.js" />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="init.rb" />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="repl_formatter.py" />
     <EmbeddedResource Include="repl_formatter.rb" />
   </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" '$(SilverlightTreeBuild)' != 'true' " />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
-  <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
-  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System.Windows, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(FrameworkReferences)\System.Windows.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Windows.Browser, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(FrameworkReferences)\System.Windows.Browser.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting.Core\Microsoft.Scripting.Core.csproj" Condition=" '$(FeatureCoreDlr)' != 'true'">
+      <Project>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</Project>
+      <Name>Microsoft.Scripting.Core</Name>
+      <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj">
+      <Project>{02FF0909-F5AD-48CF-A86A-345E721B7E40}</Project>
+      <Name>Microsoft.Scripting</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Runtime\Microsoft.Dynamic\Microsoft.Dynamic.csproj">
+      <Project>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</Project>
+      <Name>Microsoft.Dynamic</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

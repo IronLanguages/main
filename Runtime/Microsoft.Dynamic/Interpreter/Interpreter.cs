@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -153,13 +153,14 @@ namespace Microsoft.Scripting.Interpreter {
                 return ExceptionHandlingResult.Return;
             }
 
+#if FEATURE_THREAD
             // stay in the current catch so that ThreadAbortException is not rethrown by CLR:
             var abort = exception as ThreadAbortException;
             if (abort != null) {
                 _anyAbortException = abort;
                 frame.CurrentAbortHandler = handler;
             }
-
+#endif
             while (true) {
                 try {
                     var instructions = _instructions.Instructions;
@@ -199,6 +200,7 @@ namespace Microsoft.Scripting.Interpreter {
             Return
         }
 
+#if FEATURE_THREAD
         // To get to the current AbortReason object on Thread.CurrentThread 
         // we need to use ExceptionState property of any ThreadAbortException instance.
         [ThreadStatic]
@@ -213,15 +215,20 @@ namespace Microsoft.Scripting.Interpreter {
                 if ((currentThread.ThreadState & System.Threading.ThreadState.AbortRequested) != 0) {
                     Debug.Assert(_anyAbortException != null);
 
+#if FEATURE_EXCEPTION_STATE
                     // The current abort reason needs to be preserved.
-#if SILVERLIGHT
-                    currentThread.Abort();
-#else
                     currentThread.Abort(_anyAbortException.ExceptionState);
+#else
+                    currentThread.Abort();
 #endif
                 }
             }
         }
+#else
+        internal static void AbortThreadIfRequested(InterpretedFrame frame, int targetLabelIndex) {
+            // nop
+        }
+#endif
 
         internal ExceptionHandler GetBestHandler(int instructionIndex, Type exceptionType) {
             ExceptionHandler best = null;

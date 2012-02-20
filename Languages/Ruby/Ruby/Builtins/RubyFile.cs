@@ -74,10 +74,12 @@ namespace IronRuby.Builtins {
                     stream = context.DomainManager.Platform.OpenInputFileStream(path, fileMode, access, FileShare.ReadWrite);
                 } catch (FileNotFoundException) {
                     throw RubyExceptions.CreateENOENT(String.Format("No such file or directory - {0}", path));
+#if FEATURE_FILESYSTEM
                 } catch (DirectoryNotFoundException e) {
                     throw RubyExceptions.CreateENOENT(e.Message, e);
                 } catch (PathTooLongException e) {
                     throw RubyExceptions.CreateENOENT(e.Message, e);
+#endif
                 } catch (IOException) {
                     if ((mode & IOMode.ErrorIfExists) != 0) {
                         throw RubyExceptions.CreateEEXIST(path);

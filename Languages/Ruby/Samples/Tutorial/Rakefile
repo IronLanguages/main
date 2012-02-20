@@ -25,8 +25,8 @@ if ENV["DLR_ROOT"]
   IRONRUBY_LIBS = "#{root}/Languages/Ruby/Libs"
   GEMS = "#{root}/External.LCA_RESTRICTED/Languages/Ruby/ruby-1.8.6p368/lib/ruby/gems/1.8/gems"
 
-  chiron = "#{root}/Bin/Silverlight3Debug/Chiron.exe"
-  chiron = "#{root}/Bin/Silverlight3Release/Chiron.exe" unless File.exist?(chiron)
+  chiron = "#{root}/Bin/Debug/Chiron.exe"
+  chiron = "#{root}/Bin/Release/Chiron.exe" unless File.exist?(chiron)
   raise "Could not find Chiron.exe. Do you have a build of Silverlight? If not, type 'bsd'" unless File.exist?(chiron)
   CHIRON = chiron
 else

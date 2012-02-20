@@ -14,11 +14,15 @@
  * ***************************************************************************/
 
 using System;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Collections.Generic;
+using System.Threading;
 
 namespace Microsoft.Scripting.Utils {
     public static class ExceptionUtils {
         public static ArgumentOutOfRangeException MakeArgumentOutOfRangeException(string paramName, object actualValue, string message) {
-#if SILVERLIGHT // ArgumentOutOfRangeException ctor overload
+#if SILVERLIGHT || WP75 // ArgumentOutOfRangeException ctor overload
             throw new ArgumentOutOfRangeException(paramName, string.Format("{0} (actual value is '{1}')", message, actualValue));
 #else
             throw new ArgumentOutOfRangeException(paramName, actualValue, message);
@@ -28,5 +32,73 @@ namespace Microsoft.Scripting.Utils {
         public static ArgumentNullException MakeArgumentItemNullException(int index, string arrayName) {
             return new ArgumentNullException(String.Format("{0}[{1}]", arrayName, index));
         }
+
+#if FEATURE_REMOTING
+         public static object GetData(this Exception e, object key) {
+            return e.Data[key];
+        }
+
+        public static void SetData(this Exception e, object key, object data) {
+            e.Data[key] = data;
+        }
+#else
+
+#if WP75 // TODO:
+        private static WeakDictionary<Exception, List<KeyValuePair<object, object>>> _exceptionData;
+        
+        public static void SetData(this Exception e, object key, object value) {
+            if (_exceptionData == null) {
+                Interlocked.CompareExchange(ref _exceptionData, new WeakDictionary<Exception, List<KeyValuePair<object, object>>>(), null);
+            }
+
+            List<KeyValuePair<object, object>> data;
+            lock (_exceptionData) {
+                if (_exceptionData.TryGetValue(e, out data)) {
+                    data = new List<KeyValuePair<object,object>>();
+                }
+            
+                int index = data.FindIndex(entry => entry.Key == key);
+                if (index >= 0) {
+                    data[index] = new KeyValuePair<object, object>(key, value);
+                } else {
+                    data.Add(new KeyValuePair<object, object>(key, value));
+                }
+            }
+        }
+#else
+        private static ConditionalWeakTable<Exception, List<KeyValuePair<object, object>>> _exceptionData;
+
+        public static void SetData(this Exception e, object key, object value) {
+            if (_exceptionData == null) {
+                Interlocked.CompareExchange(ref _exceptionData, new ConditionalWeakTable<Exception, List<KeyValuePair<object, object>>>(), null);
+            }
+
+            lock (_exceptionData) {
+                var data = _exceptionData.GetOrCreateValue(e);
+            
+                int index = data.FindIndex(entry => entry.Key == key);
+                if (index >= 0) {
+                    data[index] = new KeyValuePair<object, object>(key, value);
+                } else {
+                    data.Add(new KeyValuePair<object, object>(key, value));
+                }
+            }
+        }
+#endif
+        public static object GetData(this Exception e, object key) {
+            if (_exceptionData == null) {
+                return null;
+            }
+
+            lock (_exceptionData) {
+                List<KeyValuePair<object, object>> data;
+                if (!_exceptionData.TryGetValue(e, out data)) {
+                    return null;
+                }
+
+                return data.First(entry => entry.Key == key).Value;
+            }
+        }
+#endif
     }
 }

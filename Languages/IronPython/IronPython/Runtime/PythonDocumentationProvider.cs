@@ -21,6 +21,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Types;
 
@@ -128,7 +129,7 @@ namespace IronPython.Runtime {
                 kind = MemberKind.Method;
             } else if (value is PythonType) {
                 var pt = value as PythonType;
-                if (pt.IsSystemType && pt.UnderlyingSystemType.IsEnum) {
+                if (pt.IsSystemType && pt.UnderlyingSystemType.IsEnum()) {
                     kind = MemberKind.Enum;
                 } else {
                     kind = MemberKind.Class;
@@ -141,7 +142,7 @@ namespace IronPython.Runtime {
                 kind = MemberKind.Event;
             } else if (value is ReflectedField) {
                 kind = MemberKind.Field;
-            } else if (value != null && value.GetType().IsEnum) {
+            } else if (value != null && value.GetType().IsEnum()) {
                 kind = MemberKind.EnumMember;
             } else if (value is PythonType || value is OldClass) {
                 kind = MemberKind.Class;

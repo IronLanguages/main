@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if !WIN8
 
 using System;
 using System.Collections.Generic;
@@ -101,7 +102,7 @@ namespace Microsoft.Scripting.Utils {
 
         #region Storage implementation
 
-#if SILVERLIGHT
+#if WP75
         private static int _cfThreadIdDispenser = 1;
 
         [ThreadStatic]
@@ -172,7 +173,7 @@ namespace Microsoft.Scripting.Utils {
         /// </summary>
         private StorageInfo CreateStorageInfo() {
             // we do our own locking, tell hosts this is a bad time to interrupt us.
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !WP75
             Thread.BeginCriticalRegion();
 #endif
             StorageInfo[] curStorage = Updating;
@@ -211,7 +212,7 @@ namespace Microsoft.Scripting.Utils {
                     // let others access the storage again
                     Interlocked.Exchange(ref _stores, curStorage);
                 }
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !WP75
                 Thread.EndCriticalRegion();
 #endif
             }
@@ -236,3 +237,4 @@ namespace Microsoft.Scripting.Utils {
         #endregion
     }
 }
+#endif

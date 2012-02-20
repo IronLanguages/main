@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-#if CLR2 && SILVERLIGHT
+#if WP75
 using System.Collections;
 using System.Collections.Generic;
 
@@ -46,8 +46,18 @@ namespace Microsoft.Scripting.Utils {
             }
         }
 
-        public void Add(T item) {
-            _data[item] = null;
+        void ICollection<T>.Add(T item) {
+            this.Add(item);
+        }
+
+        public bool Add(T item) {
+            object value;
+            if (_data.TryGetValue(item, out value)) {
+                return false;
+            }
+
+            _data.Add(item, null);
+            return true;
         }
 
         public void Clear() {

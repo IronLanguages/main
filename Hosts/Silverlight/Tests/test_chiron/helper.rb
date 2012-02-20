@@ -4,7 +4,7 @@ def load_rspec
 end
   
 def load_constants
-  $BUILD ||= "Silverlight3#{ARGV.first || "Debug"}"
+  $BUILD ||= "#{ARGV.first || "Debug"}"
   $BUILD_PATH ||= File.join(File.expand_path(ENV['DLR_ROOT']), "bin", $BUILD)
   $CHIRON ||= File.join($BUILD_PATH, "Chiron.exe")
   $DIR ||= File.join(File.expand_path(File.dirname(__FILE__)), "fixtures")

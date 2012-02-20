@@ -16,7 +16,7 @@ namespace IronPython.Runtime.Exceptions {
         public PythonException(string message, Exception innerException)
             : base(message, innerException) {
         }
-#if !SILVERLIGHT // SerializationInfo
+#if FEATURE_SERIALIZATION
         protected PythonException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 #endif
 

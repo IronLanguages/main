@@ -145,12 +145,12 @@ namespace IronRuby.StandardLibrary.Iconv {
             int bytesEncoded = _toEncoding.GetBytes(buffer, 0, 0, result, 0, true);
             Debug.Assert(bytesEncoded == result.Length);
             if (resetEncoder) {
-#if SILVERLIGHT
-                // TODO - Create a new encoder
-                throw new NotImplementedException();
-#else
+#if FEATURE_ENCODING
                 _toEncoding.Reset();
                 ResetByteOrderMark();
+#else
+                // TODO - Create a new encoder
+                throw new NotImplementedException();
 #endif
             } else {
                 _isClosed = true;
@@ -250,7 +250,7 @@ namespace IronRuby.StandardLibrary.Iconv {
             public BrokenLibrary(string message) : this(message, null) { }
             public BrokenLibrary(string message, Exception inner) : base(message ?? "BrokenLibrary", inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
             protected BrokenLibrary(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
                 : base(info, context) { }
 #endif
@@ -269,7 +269,7 @@ namespace IronRuby.StandardLibrary.Iconv {
             public InvalidEncoding(string message) : this(message, null) { }
             public InvalidEncoding(string message, Exception inner) : base(message ?? "InvalidEncoding", inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
             protected InvalidEncoding(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
                 : base(info, context) { }
 #endif
@@ -288,7 +288,7 @@ namespace IronRuby.StandardLibrary.Iconv {
             public InvalidCharacter(string message) : this(message, null) { }
             public InvalidCharacter(string message, Exception inner) : base(message ?? "InvalidCharacter", inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
             protected InvalidCharacter(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
                 : base(info, context) { }
 #endif
@@ -307,7 +307,7 @@ namespace IronRuby.StandardLibrary.Iconv {
             public IllegalSequence(string message) : this(message, null) { }
             public IllegalSequence(string message, Exception inner) : base(message ?? "IllegalSequence", inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
             protected IllegalSequence(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
                 : base(info, context) { }
 #endif
@@ -326,7 +326,7 @@ namespace IronRuby.StandardLibrary.Iconv {
             public OutOfRange(string message) : this(message, null) { }
             public OutOfRange(string message, Exception inner) : base(message ?? "OutOfRange", inner) { }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
             protected OutOfRange(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
                 : base(info, context) { }
 #endif

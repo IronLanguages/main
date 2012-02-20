@@ -74,7 +74,7 @@ namespace IronRuby.Builtins {
         /// Here it is used to add our default induced_from implementation to the host class.
         /// </summary>
         /// <param name="context"></param>
-        /// <param name="module">The module being mixed in.</param>
+        /// <param name="self">The module being mixed in.</param>
         /// <param name="includedIn">The host class including the module</param>
         [RubyMethod("included", RubyMethodAttributes.PublicSingleton)]
         public static object Included(RubyContext/*!*/ context, RubyModule/*!*/ self, RubyModule/*!*/ includedIn) {

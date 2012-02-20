@@ -250,7 +250,7 @@ namespace Microsoft.IronRubyTools.Project {
 #if DEBUG
                 result = Environment.GetEnvironmentVariable("DLR_ROOT");
                 if (result != null) {
-                    result = Path.Combine(result, @"Bin\Silveright4Debug\Chiron.exe");
+                    result = Path.Combine(result, @"Bin\Debug\Chiron.exe");
                     if (File.Exists(result)) {
                         return result;
                     }

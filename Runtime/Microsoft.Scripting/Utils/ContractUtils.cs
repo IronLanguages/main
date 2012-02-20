@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -134,6 +134,10 @@ namespace Microsoft.Scripting.Utils {
 
             if (count < 0) throw new ArgumentOutOfRangeException(countName);
             if (offset < 0 || array.Count - offset < count) throw new ArgumentOutOfRangeException(offsetName);
+        }
+
+        public static Exception Unreachable {
+            get { return new InvalidOperationException("Unreachable"); }
         }
     }
 }

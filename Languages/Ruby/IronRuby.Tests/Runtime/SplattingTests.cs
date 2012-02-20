@@ -31,7 +31,7 @@ namespace IronRuby.Tests {
             var tb = Snippets.Shared.DefineType("<T>", typeof(object), false, false).TypeBuilder;
             var mb = tb.DefineMethod(name, CompilerHelpers.PublicStatic, typeof(KeyValuePair<int, Array>), paramTypes);
             var pb = mb.DefineParameter(1 + paramsArrayIndex, ParameterAttributes.None, "ps");
-            pb.SetCustomAttribute(new CustomAttributeBuilder(typeof(ParamArrayAttribute).GetConstructor(Type.EmptyTypes), ArrayUtils.EmptyObjects));
+            pb.SetCustomAttribute(new CustomAttributeBuilder(typeof(ParamArrayAttribute).GetConstructor(ReflectionUtils.EmptyTypes), ArrayUtils.EmptyObjects));
 
             var il = mb.GetILGenerator();
             il.Emit(OpCodes.Ldc_I4, returnValue);

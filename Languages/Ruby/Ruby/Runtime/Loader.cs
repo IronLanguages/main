@@ -75,6 +75,7 @@ namespace IronRuby.Runtime {
         // lazy init
         private SynchronizedDictionary<string, Scope> _loadedScripts;
 
+#if FEATURE_FILESYSTEM
         // TODO: static
         // maps full normalized path to compiled code:
         private Dictionary<string, CompiledFile> _compiledFiles;
@@ -95,6 +96,7 @@ namespace IronRuby.Runtime {
         private int _cacheHitCount;
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
         private int _compiledFileCount;
+#endif
 
         /// <summary>
         /// TODO: Thread safety: the user of this object is responsible for locking it.
@@ -142,7 +144,7 @@ namespace IronRuby.Runtime {
             _loadedFiles = new RubyArray();
             _unfinishedFiles = new Stack<string>();
 
-#if !SILVERLIGHT
+#if FEATURE_ASSEMBLY_RESOLVE
             if (!context.RubyOptions.NoAssemblyResolveHook) {
                 new AssemblyResolveHolder(this).HookAssemblyResolve();
             }
@@ -165,7 +167,7 @@ namespace IronRuby.Runtime {
         }
 
         private void AddStandardLibraryPath(RubyArray/*!*/ loadPaths, string path, string applicationBaseDir) {
-#if !SILVERLIGHT // no library paths on Silverlight
+#if FEATURE_FILESYSTEM
             bool isFullPath;
             if (path != null) {
                 try {
@@ -223,6 +225,7 @@ namespace IronRuby.Runtime {
             }
         }
 
+#if FEATURE_FILESYSTEM
         private Dictionary<string, CompiledFile>/*!*/ LoadCompiledCode() {
             Debug.Assert(_context.RubyOptions.LoadFromDisk);
 
@@ -292,7 +295,7 @@ namespace IronRuby.Runtime {
                 }
             }
         }
-
+#endif
         public bool LoadFile(Scope globalScope, object self, MutableString/*!*/ path, LoadFlags flags) {
             object loaded;
             return LoadFile(globalScope, self, path, flags, out loaded);
@@ -304,6 +307,10 @@ namespace IronRuby.Runtime {
         /// <param name="globalScope">
         /// A scope against which the file should be executed or null to create a new scope.
         /// </param>
+        /// <param name="self"></param>
+        /// <param name="path"></param>
+        /// <param name="flags"></param>
+        /// <param name="loaded"></param>
         /// <returns>True if the file was loaded/executed by this call.</returns>
         public bool LoadFile(Scope globalScope, object self, MutableString/*!*/ path, LoadFlags flags, out object loaded) {
             Assert.NotNull(path);
@@ -338,7 +345,7 @@ namespace IronRuby.Runtime {
         
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods")]
         private Assembly GetAssembly(string/*!*/ assemblyName, bool throwOnError, bool tryPartialName) {
-#if SILVERLIGHT
+#if SILVERLIGHT || WIN8 || WP75
             tryPartialName = false;
 #endif
             try {
@@ -353,7 +360,7 @@ namespace IronRuby.Runtime {
                 }
             }
 
-#if SILVERLIGHT
+#if SILVERLIGHT || WIN8 || WP75
             throw Assert.Unreachable;
 #else
 #pragma warning disable 618,612 // csc, gmcs
@@ -380,11 +387,13 @@ namespace IronRuby.Runtime {
             Type initializerType;
             if (typeName != null) {
                 // load Ruby library:
-                try {
-                    initializerType = assembly.GetType(typeName, true);
-                } catch (Exception e) {
+                initializerType = assembly.GetType(typeName);
+                if (initializerType == null) {
                     if (throwOnError) {
-                        throw new LoadError(e.Message, e);
+                        throw new TypeLoadException(
+                            String.Format("Unhandled Exception: System.TypeLoadException: Could not load type '{0}' from assembly '{1}'.", 
+                                typeName, assembly.FullName)
+                        );
                     }
                     return false;
                 }
@@ -437,7 +446,7 @@ namespace IronRuby.Runtime {
             return false;
         }
 
-#if !SILVERLIGHT
+#if FEATURE_ASSEMBLY_RESOLVE
         private sealed class AssemblyResolveHolder {
             private readonly WeakReference _loader;
 
@@ -504,8 +513,13 @@ namespace IronRuby.Runtime {
             Utils.Log(String.Format("Assembly '{0}' resolved: found in '{1}'", fullName, file.Path), "RESOLVE_ASSEMBLY");
             try {
                 Assembly assembly = Platform.LoadAssemblyFromPath(file.Path);
-                if (AssemblyName.ReferenceMatchesDefinition(assemblyName, assembly.GetName())) {
-                    Utils.Log(String.Format("Assembly '{0}' loaded for '{1}'", assembly.GetName(), fullName), "RESOLVE_ASSEMBLY");
+
+#if !SILVERLIGHT
+                // TODO: this API is broken
+                if (AssemblyName.ReferenceMatchesDefinition(assemblyName, assembly.GetName())) 
+#endif
+                {
+                    Utils.Log(String.Format("Assembly '{0}' loaded for '{1}'", assembly.FullName, fullName), "RESOLVE_ASSEMBLY");
                     DomainManager.LoadAssembly(assembly);
                     return assembly;
                 }
@@ -513,7 +527,9 @@ namespace IronRuby.Runtime {
                 throw RubyExceptions.CreateLoadError(e);
             }
 
+#if !SILVERLIGHT
             return null;
+#endif
         }
 
 #endif
@@ -621,22 +637,28 @@ namespace IronRuby.Runtime {
             
             // TODO: check file timestamp
             string fullPath = Platform.GetFullPath(sourceUnit.Path);
+
+#if FEATURE_FILESYSTEM
             CompiledFile compiledFile;
             if (TryGetCompiledFile(fullPath, out compiledFile)) {
                 Utils.Log(String.Format("{0}: {1}", ++_cacheHitCount, sourceUnit.Path), "LOAD_CACHED");
 
                 return compiledFile.CompiledCode;
-            } else {
-                Utils.Log(String.Format("{0}: {1}", ++_compiledFileCount, sourceUnit.Path), "LOAD_COMPILED");
+            } 
 
-                RubyCompilerOptions options = new RubyCompilerOptions(_context.RubyOptions) {
-                    FactoryKind = (flags & LoadFlags.LoadIsolated) != 0 ? TopScopeFactoryKind.WrappedFile : TopScopeFactoryKind.File
-                };
+            Utils.Log(String.Format("{0}: {1}", ++_compiledFileCount, sourceUnit.Path), "LOAD_COMPILED");
+#endif
 
-                ScriptCode compiledCode = sourceUnit.Compile(options, _context.RuntimeErrorSink);
-                AddCompiledFile(fullPath, compiledCode);
-                return compiledCode;
-            }
+            RubyCompilerOptions options = new RubyCompilerOptions(_context.RubyOptions) {
+                FactoryKind = (flags & LoadFlags.LoadIsolated) != 0 ? TopScopeFactoryKind.WrappedFile : TopScopeFactoryKind.File
+            };
+
+            ScriptCode compiledCode = sourceUnit.Compile(options, _context.RuntimeErrorSink);
+
+#if FEATURE_FILESYSTEM
+            AddCompiledFile(fullPath, compiledCode);
+#endif
+            return compiledCode;
         }
 
         internal Scope Execute(Scope globalScope, ScriptCode/*!*/ code) {
@@ -984,7 +1006,7 @@ namespace IronRuby.Runtime {
 
         public static string/*!*/ GetIronRubyAssemblyLongName(string/*!*/ baseName) {
             ContractUtils.RequiresNotNull(baseName, "baseName");
-            string fullName = typeof(RubyContext).Assembly.FullName;
+            string fullName = typeof(RubyContext).GetTypeInfo().Assembly.FullName;
             int firstComma = fullName.IndexOf(',');
             return firstComma > 0 ? baseName + fullName.Substring(firstComma) : baseName;
         }

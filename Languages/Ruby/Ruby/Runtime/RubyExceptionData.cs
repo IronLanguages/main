@@ -20,7 +20,6 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security;
-using System.Security.Permissions;
 using System.Threading;
 using IronRuby.Builtins;
 using IronRuby.Runtime.Calls;
@@ -51,7 +50,7 @@ namespace IronRuby.Runtime {
         // is wrapped in a TheadAbortException (accessible via _exception)
         private Exception/*!*/ _visibleException;
 
-#if DEBUG
+#if DEBUG && FEATURE_THREAD
 #pragma warning disable 414 // msc: unused field
         // For asynchronous exceptions, this is useful to figure out which thread raised the exception
         [NonSerialized]
@@ -71,13 +70,17 @@ namespace IronRuby.Runtime {
         private RubyExceptionData(Exception/*!*/ exception) {
             _exception = exception;
             _visibleException = exception;
-#if DEBUG
+#if DEBUG && FEATURE_THREAD
             _throwingThread = Thread.CurrentThread;
 #endif
         }
 
         public static RubyArray/*!*/ CreateBacktrace(RubyContext/*!*/ context, int skipFrames) {
+#if FEATURE_STACK_TRACE
             return new RubyStackTraceBuilder(context, skipFrames).RubyTrace;
+#else
+            return new RubyArray();
+#endif
         }
 
         /// <summary>
@@ -87,8 +90,12 @@ namespace IronRuby.Runtime {
         /// </summary>
         internal void CaptureExceptionTrace(RubyScope/*!*/ scope) {
             if (_backtrace == null) {
+#if FEATURE_STACK_TRACE
                 StackTrace catchSiteTrace = RubyStackTraceBuilder.GetClrStackTrace(null);
                 _backtrace = new RubyStackTraceBuilder(scope.RubyContext, _exception, catchSiteTrace, scope.InterpretedFrame != null).RubyTrace;
+#else
+                _backtrace = new RubyArray();
+#endif
                 DynamicSetBacktrace(scope.RubyContext, _backtrace);
             }
         }
@@ -119,6 +126,7 @@ namespace IronRuby.Runtime {
         internal static RubyExceptionData/*!*/ AssociateInstance(Exception/*!*/ e) {
             RubyExceptionData result;
 
+#if FEATURE_THREAD
             Exception visibleException = RubyUtils.GetVisibleException(e);
             if (e == visibleException || visibleException == null) {
                 result = new RubyExceptionData(e);
@@ -135,13 +143,16 @@ namespace IronRuby.Runtime {
                     result._exception = e;
                 }
             }
+#else
+            result = new RubyExceptionData(e);
+#endif
 
-            e.Data[_DataKey] = result;
+            e.SetData(_DataKey, result);
             return result;
         }
 
         internal static RubyExceptionData TryGetInstance(Exception/*!*/ e) {
-            return e.Data[_DataKey] as RubyExceptionData;
+            return e.GetData(_DataKey) as RubyExceptionData;
         }
         
         public object Message {
@@ -225,9 +236,7 @@ namespace IronRuby.Runtime {
             return newException;
         }
 
-#if SILVERLIGHT // Thread.ExceptionState
-        public static void ActiveExceptionHandled(Exception visibleException) {}
-#else
+#if FEATURE_THREAD && FEATURE_EXCEPTION_STATE
         public static void ActiveExceptionHandled(Exception visibleException) {
             Debug.Assert(RubyUtils.GetVisibleException(visibleException) == visibleException);
 
@@ -245,6 +254,8 @@ namespace IronRuby.Runtime {
                 }
             }
         }
+#else
+        public static void ActiveExceptionHandled(Exception visibleException) {}
 #endif
     }
 }

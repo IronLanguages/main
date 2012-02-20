@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -24,7 +24,9 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Dynamic;
+using System.Linq;
 using System.Text;
+
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -97,7 +99,7 @@ namespace Microsoft.Scripting.Actions {
         public virtual ErrorInfo MakeReadOnlyMemberError(Type type, string name) {
             return ErrorInfo.FromException(
                 Expression.New(
-                    typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
+                    typeof(MissingMemberException).GetConstructor(new[] { typeof(string) }),
                     AstUtils.Constant(name)
                 )
             );
@@ -193,7 +195,7 @@ namespace Microsoft.Scripting.Actions {
                     return mi;
                 }
 
-                curType = curType.BaseType;
+                curType = curType.GetBaseType();
             } while (curType != null);
 
             return null;
@@ -201,13 +203,8 @@ namespace Microsoft.Scripting.Actions {
         
         private static MethodInfo GetSpecialNameMethod(Type type, string name) {
             MethodInfo res = null;
-            MemberInfo[] candidates = type.GetMember(
-                name,
-                MemberTypes.Method,
-                BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static
-            );
             
-            foreach (MethodInfo candidate in candidates) {
+            foreach (MethodInfo candidate in type.GetInheritedMethods(name).WithBindingFlags(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)) {
                 if (candidate.IsSpecialName) {
                     if (object.ReferenceEquals(res, null)) {
                         res = candidate;

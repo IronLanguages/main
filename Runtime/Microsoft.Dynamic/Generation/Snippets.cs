@@ -12,8 +12,7 @@
  *
  *
  * ***************************************************************************/
-
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -28,7 +27,6 @@ using Microsoft.Scripting.Utils;
 using System.Collections.Generic;
 
 namespace Microsoft.Scripting.Generation {
-
     // TODO: This should be a static class
     // TODO: simplify initialization logic & state
     public sealed class Snippets {
@@ -36,8 +34,9 @@ namespace Microsoft.Scripting.Generation {
         public static readonly Snippets Shared = new Snippets();
 
         private Snippets() { }
-        
         private int _methodNameIndex;
+
+#if FEATURE_REFEMIT
 
         private AssemblyGen _assembly;
         private AssemblyGen _debugAssembly;
@@ -76,19 +75,20 @@ namespace Microsoft.Scripting.Generation {
         }
 
         private AssemblyGen CreateNewAssembly(string nameSuffix, bool emitSymbols) {
-            string dir;
+            string dir = null;
 
+#if FEATURE_FILESYSTEM
             if (_saveSnippets) {
                 dir = _snippetsDirectory ?? Directory.GetCurrentDirectory();
-            } else {
-                dir = null;
             }
+#endif
 
             string name = "Snippets" + nameSuffix;
 
             return new AssemblyGen(new AssemblyName(name), dir, ".dll", emitSymbols);
         }
 
+#if OBSOLETE
         internal string GetMethodILDumpFile(MethodBase method) {
             string fullName = ((method.DeclaringType != null) ? method.DeclaringType.Name + "." : "") + method.Name;
 
@@ -102,19 +102,9 @@ namespace Microsoft.Scripting.Generation {
             Directory.CreateDirectory(dir);
             return Path.Combine(dir, filename);
         }
+#endif
 
         public static void SetSaveAssemblies(bool enable, string directory) {
-            //Set SaveAssemblies on for inner ring by calling SetSaveAssemblies via Reflection.
-            Assembly core = typeof(Expression).Assembly;
-            Type assemblyGen = core.GetType(typeof(Expression).Namespace + ".Compiler.AssemblyGen");
-            //The type may not exist.
-            if (assemblyGen != null) {
-                MethodInfo configSaveAssemblies = assemblyGen.GetMethod("SetSaveAssemblies", BindingFlags.NonPublic | BindingFlags.Static);
-                //The method may not exist.
-                if (configSaveAssemblies != null) {
-                    configSaveAssemblies.Invoke(null, new object[] { enable, directory });
-                }
-            }
             Shared.ConfigureSaveAssemblies(enable, directory);
         }
 
@@ -137,7 +127,7 @@ namespace Microsoft.Scripting.Generation {
             //    inner ring assemblies have dependency on outer ring assemlies via generated IL.
             // 3) Verify inner ring assemblies.
             // 4) Verify outer ring assemblies.
-            Assembly core = typeof(Expression).Assembly;
+            Assembly core = typeof(Expression).GetTypeInfo().Assembly;
             Type assemblyGen = core.GetType(typeof(Expression).Namespace + ".Compiler.AssemblyGen");
             //The type may not exist.
             string[] coreAssemblyLocations = null;
@@ -190,23 +180,6 @@ namespace Microsoft.Scripting.Generation {
             return assemlyLocations.ToArray();
         }
 
-        public DynamicILGen CreateDynamicMethod(string methodName, Type returnType, Type[] parameterTypes, bool isDebuggable) {
-
-            ContractUtils.RequiresNotEmpty(methodName, "methodName");
-            ContractUtils.RequiresNotNull(returnType, "returnType");
-            ContractUtils.RequiresNotNullItems(parameterTypes, "parameterTypes");
-
-            if (Snippets.Shared.SaveSnippets) {
-                AssemblyGen assembly = GetAssembly(isDebuggable);
-                TypeBuilder tb = assembly.DefinePublicType(methodName, typeof(object), false);
-                MethodBuilder mb = tb.DefineMethod(methodName, CompilerHelpers.PublicStatic, returnType, parameterTypes);
-                return new DynamicILGenType(tb, mb, mb.GetILGenerator());
-            } else {
-                DynamicMethod dm = RawCreateDynamicMethod(methodName, returnType, parameterTypes);
-                return new DynamicILGenMethod(dm, dm.GetILGenerator());
-            }
-        }
-
         public TypeBuilder DefinePublicType(string name, Type parent) {
             return GetAssembly(false).DefinePublicType(name, parent, false);
         }
@@ -215,11 +188,6 @@ namespace Microsoft.Scripting.Generation {
             AssemblyGen ag = GetAssembly(emitDebugSymbols);
             TypeBuilder tb = ag.DefinePublicType(name, parent, preserveName);
             return new TypeGen(ag, tb);
-        }
-
-        internal DynamicMethod CreateDynamicMethod(string name, Type returnType, Type[] parameterTypes) {
-            string uniqueName = name + "##" + Interlocked.Increment(ref _methodNameIndex);
-            return RawCreateDynamicMethod(uniqueName, returnType, parameterTypes);
         }
 
         public TypeBuilder DefineDelegateType(string name) {
@@ -249,18 +217,28 @@ namespace Microsoft.Scripting.Generation {
                    (_debugAssembly != null && asm == _debugAssembly.AssemblyBuilder);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Portability", "CA1903:UseOnlyApiFromTargetedFramework")]
-        private static DynamicMethod RawCreateDynamicMethod(string name, Type returnType, Type[] parameterTypes) {
-#if SILVERLIGHT // Module-hosted DynamicMethod is not available in SILVERLIGHT
-            return new DynamicMethod(name, returnType, parameterTypes);
-#else
-            //
-            // WARNING: we set restrictedSkipVisibility == true  (last parameter)
-            //          setting this bit will allow accessing nonpublic members
-            //          for more information see http://msdn.microsoft.com/en-us/library/bb348332.aspx
-            //
-            return new DynamicMethod(name, returnType, parameterTypes, true);
 #endif
+
+        public DynamicILGen CreateDynamicMethod(string methodName, Type returnType, Type[] parameterTypes, bool isDebuggable) {
+            ContractUtils.RequiresNotEmpty(methodName, "methodName");
+            ContractUtils.RequiresNotNull(returnType, "returnType");
+            ContractUtils.RequiresNotNullItems(parameterTypes, "parameterTypes");
+
+#if FEATURE_REFEMIT
+            if (Snippets.Shared.SaveSnippets) {
+                AssemblyGen assembly = GetAssembly(isDebuggable);
+                TypeBuilder tb = assembly.DefinePublicType(methodName, typeof(object), false);
+                MethodBuilder mb = tb.DefineMethod(methodName, CompilerHelpers.PublicStatic, returnType, parameterTypes);
+                return new DynamicILGenType(tb, mb, mb.GetILGenerator());
+            } 
+#endif
+            DynamicMethod dm = ReflectionUtils.RawCreateDynamicMethod(methodName, returnType, parameterTypes);
+            return new DynamicILGenMethod(dm, dm.GetILGenerator());
+        }
+
+        internal DynamicMethod CreateDynamicMethod(string name, Type returnType, Type[] parameterTypes) {
+            string uniqueName = name + "##" + Interlocked.Increment(ref _methodNameIndex);
+            return ReflectionUtils.RawCreateDynamicMethod(uniqueName, returnType, parameterTypes);
         }
     }
 }

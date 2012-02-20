@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_PROCESS
 
 using System.Diagnostics;
 using IronRuby.Builtins;
@@ -20,10 +21,9 @@ using Microsoft.Scripting.Runtime;
 
 namespace IronRuby.StandardLibrary.Open3 {
 
-    [RubyModule("Open3")]
+    [RubyModule("Open3", BuildConfig = "FEATURE_PROCESS")]
     public static class Open3 {
-#if !SILVERLIGHT
-        [RubyMethod("popen3", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        [RubyMethod("popen3", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray/*!*/ OpenPipe(
             RubyContext/*!*/ context, 
             object self, 
@@ -41,6 +41,6 @@ namespace IronRuby.StandardLibrary.Open3 {
 
             return result;
         }
-#endif
     }
 }
+#endif

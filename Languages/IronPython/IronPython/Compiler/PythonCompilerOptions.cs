@@ -188,13 +188,5 @@ namespace IronPython.Compiler {
                 _compilationMode = value;
             }
         }
-
-        #region ICloneable Members
-
-        public override object Clone() {
-            return MemberwiseClone();
-        }
-
-        #endregion
     }
 }

@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -23,7 +23,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Microsoft.Contracts;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Runtime {
@@ -100,7 +99,6 @@ namespace Microsoft.Scripting.Runtime {
             _data[key] = value;
         }
 
-        [Confined]
         bool IDictionary<object, object>.ContainsKey(object key) {
             lock (this) {
                 if (_data == null) {
@@ -245,7 +243,6 @@ namespace Microsoft.Scripting.Runtime {
             }
         }
 
-        [Confined]
         public bool Contains(KeyValuePair<object, object> item) {
             throw new NotImplementedException();
         }
@@ -305,7 +302,6 @@ namespace Microsoft.Scripting.Runtime {
 
         #region IEnumerable<KeyValuePair<object,object>> Members
 
-        [Pure]
         IEnumerator<KeyValuePair<object, object>> IEnumerable<KeyValuePair<object, object>>.GetEnumerator() {
             if (_data != null) {
                 foreach (KeyValuePair<object, object> o in _data) {
@@ -325,7 +321,6 @@ namespace Microsoft.Scripting.Runtime {
 
         #region IEnumerable Members
 
-        [Pure]
         public System.Collections.IEnumerator GetEnumerator() {
             List<object> l = new List<object>(this.Keys);
             for (int i = 0; i < l.Count; i++) {
@@ -343,18 +338,15 @@ namespace Microsoft.Scripting.Runtime {
 
         #region IDictionary Members
 
-        [Pure]
         void IDictionary.Add(object key, object value) {
             ((IDictionary<object, object>)this).Add(key, value);
         }
 
-        [Pure]
         public bool Contains(object key) {
             object dummy;
             return ((IDictionary<object, object>)this).TryGetValue(key, out dummy);
         }
 
-        [Pure]
         IDictionaryEnumerator IDictionary.GetEnumerator() {
             List<IDictionaryEnumerator> enums = new List<IDictionaryEnumerator>();
 

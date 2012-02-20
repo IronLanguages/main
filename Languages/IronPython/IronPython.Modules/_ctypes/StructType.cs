@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_NATIVE
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -32,9 +34,8 @@ using System.Text;
 using Microsoft.Scripting.Math;
 #else
 using System.Numerics;
+using Microsoft.Scripting.Utils;
 #endif
-
-#if !SILVERLIGHT
 
 namespace IronPython.Modules {
     /// <summary>
@@ -161,7 +162,7 @@ namespace IronPython.Modules {
                 base.__setattr__(context, name, value);
             }
 
-            #region INativeType Members
+#region INativeType Members
 
             int INativeType.Size {
                 get {
@@ -270,7 +271,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            #endregion
+#endregion
 
             internal static PythonType MakeSystemType(Type underlyingSystemType) {
                 return PythonType.SetPythonType(underlyingSystemType, new StructType(underlyingSystemType));

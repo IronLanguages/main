@@ -23,11 +23,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-#if SILVERLIGHT
-using System.Core;
-#endif
-
-#if CLR2
+#if !FEATURE_CORE_DLR
 namespace Microsoft.Scripting.Ast {
     using Microsoft.Scripting.Utils;
 #else
@@ -43,49 +39,6 @@ namespace System.Linq.Expressions {
         private static readonly CacheDict<Type, MethodInfo> _LambdaDelegateCache = new CacheDict<Type, MethodInfo>(40);
         private static CacheDict<Type, LambdaFactory> _LambdaFactories;
 
-        // LINQ protected ctor from 3.5
-
-#if !CLR2 // needs ConditionWeakTable in 4.0
-
-        // For 4.0, many frequently used Expression nodes have had their memory
-        // footprint reduced by removing the Type and NodeType fields. This has
-        // large performance benefits to all users of Expression Trees.
-        //
-        // To support the 3.5 protected constructor, we store the fields that
-        // used to be here in a ConditionalWeakTable.
-
-        private class ExtensionInfo {
-            public ExtensionInfo(ExpressionType nodeType, Type type) {
-                NodeType = nodeType;
-                Type = type;
-            }
-
-            internal readonly ExpressionType NodeType;
-            internal readonly Type Type;
-        }
-
-        private static ConditionalWeakTable<Expression, ExtensionInfo> _legacyCtorSupportTable;
-
-        /// <summary>
-        /// Constructs a new instance of <see cref="Expression"/>.
-        /// </summary>
-        /// <param name="nodeType">The <see ctype="ExpressionType"/> of the <see cref="Expression"/>.</param>
-        /// <param name="type">The <see cref="Type"/> of the <see cref="Expression"/>.</param>
-        [Obsolete("use a different constructor that does not take ExpressionType. Then override NodeType and Type properties to provide the values that would be specified to this constructor.")]
-        protected Expression(ExpressionType nodeType, Type type) {
-            // Can't enforce anything that V1 didn't
-            if (_legacyCtorSupportTable == null) {
-                Interlocked.CompareExchange(
-                    ref _legacyCtorSupportTable,
-                    new ConditionalWeakTable<Expression, ExtensionInfo>(),
-                    null
-                );
-            }
-
-            _legacyCtorSupportTable.Add(this, new ExtensionInfo(nodeType, type));
-        }
-#endif
-
         /// <summary>
         /// Constructs a new instance of <see cref="Expression"/>.
         /// </summary>
@@ -97,12 +50,6 @@ namespace System.Linq.Expressions {
         /// </summary>
         public virtual ExpressionType NodeType {
             get {
-#if !CLR2
-                ExtensionInfo extInfo;
-                if (_legacyCtorSupportTable != null && _legacyCtorSupportTable.TryGetValue(this, out extInfo)) {
-                    return extInfo.NodeType;
-                }
-#endif
                 // the extension expression failed to override NodeType
                 throw Error.ExtensionNodeMustOverrideProperty("Expression.NodeType");
             }
@@ -115,12 +62,6 @@ namespace System.Linq.Expressions {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
         public virtual Type Type {
             get {
-#if !CLR2
-                ExtensionInfo extInfo;
-                if (_legacyCtorSupportTable != null && _legacyCtorSupportTable.TryGetValue(this, out extInfo)) {
-                    return extInfo.Type;
-                }
-#endif
                 // the extension expression failed to override Type
                 throw Error.ExtensionNodeMustOverrideProperty("Expression.Type");
             }
@@ -224,7 +165,7 @@ namespace System.Linq.Expressions {
             return ExpressionStringBuilder.ExpressionToString(this);
         }
 
-#if CLR2
+#if !FEATURE_CORE_DLR
         /// <summary>
         /// Writes a <see cref="String"/> representation of the <see cref="Expression"/> to a <see cref="TextWriter"/>.
         /// </summary>
@@ -325,16 +266,6 @@ namespace System.Linq.Expressions {
 
             return ((ReadOnlyCollection<T>)collectionOrT)[0];
         }
-
-#if SILVERLIGHT
-#if !CLR2
-        // Quirks mode for Expression Trees as they existed in Silverlight 2 and 3
-        internal readonly static bool SilverlightQuirks =
-            AppDomain.CurrentDomain.IsCompatibilitySwitchSet("APP_EARLIER_THAN_SL4.0").GetValueOrDefault();
-#else
-        internal readonly static bool SilverlightQuirks = true;
-#endif
-#endif
 
         private static void RequiresCanRead(Expression expression, string paramName) {
             if (expression == null) {

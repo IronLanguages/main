@@ -259,8 +259,8 @@ namespace Microsoft.Scripting.Actions.Calls {
             return new ReflectionOverloadInfo(((MethodInfo)_method).MakeGenericMethod(genericArguments));
         }
 
-        public static OverloadInfo[] CreateArray(MemberInfo[] methods) {
-            return ArrayUtils.ConvertAll(methods, (m) => new ReflectionOverloadInfo((MethodBase)m));
+        public static OverloadInfo[] CreateArray(MethodBase[] methods) {
+            return ArrayUtils.ConvertAll(methods, m => new ReflectionOverloadInfo(m));
         }
     }
 }

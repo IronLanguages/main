@@ -1,0 +1,1 @@
+csc /noconfig /nostdlib /reference:"%ProgramFiles%\Reference Assemblies\Microsoft\Framework\.NETCore\v4.5\System.Runtime.dll" /reference:"%ProgramFiles%\Reference Assemblies\Microsoft\Framework\.NETCore\v4.5\System.Linq.Expressions.dll" /keyfile:..\..\..\Solutions\Key.snk /target:library Win8Fixup.cs

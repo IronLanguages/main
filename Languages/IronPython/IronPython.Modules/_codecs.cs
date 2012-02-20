@@ -21,6 +21,7 @@ using System.Text;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
+using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("_codecs", typeof(IronPython.Modules.PythonCodecs))]
 namespace IronPython.Modules {
@@ -328,7 +329,7 @@ namespace IronPython.Modules {
             return PythonOps.LookupEncodingError(context, name);
         }
 
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
         #region MBCS Functions
 
         public static PythonTuple mbcs_decode(CodeContext/*!*/ context, string input, [DefaultParameterValue("strict")]string errors, [DefaultParameterValue(false)]bool ignored) {
@@ -503,7 +504,7 @@ namespace IronPython.Modules {
 
         #region Utf-7 Functions
 
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
         public static PythonTuple utf_7_decode(object input) {
             return utf_7_decode(input, "strict", false);
         }
@@ -543,7 +544,7 @@ namespace IronPython.Modules {
 
         #endregion
 
-#if !SILVERLIGHT
+#if FEATURE_ENCODING
         #region Utf-32 Functions
 
         public static PythonTuple utf_32_decode(object input) {
@@ -610,7 +611,7 @@ namespace IronPython.Modules {
         #endregion
 #endif
 
-        
+
         #region Private implementation
 
         private static PythonTuple DoDecode(Encoding encoding, object input, string errors) {
@@ -637,7 +638,7 @@ namespace IronPython.Modules {
                 bytes[i] = (byte)res[i + preOffset];
             }
 
-#if !SILVERLIGHT    // DecoderFallback
+#if FEATURE_ENCODING    // DecoderFallback
             encoding = (Encoding)encoding.Clone();
 
             ExceptionFallBack fallback = null;
@@ -651,7 +652,7 @@ namespace IronPython.Modules {
             string decoded = encoding.GetString(bytes, 0, bytes.Length);
             int badByteCount = 0;
 
-#if !SILVERLIGHT    // DecoderFallback
+#if FEATURE_ENCODING    // DecoderFallback
             if (!fAlwaysThrow) {
                 byte[] badBytes = fallback.buffer.badBytes;
                 if (badBytes != null) {
@@ -694,7 +695,7 @@ namespace IronPython.Modules {
 
                 encoding = (Encoding)encoding.Clone();
 
-#if !SILVERLIGHT // EncoderFallback
+#if FEATURE_ENCODING // EncoderFallback
                 encoding.EncoderFallback = EncoderFallback.ExceptionFallback;
 #endif
 
@@ -717,7 +718,7 @@ namespace IronPython.Modules {
         #endregion
     }
 
-#if !SILVERLIGHT    // Encoding
+#if FEATURE_ENCODING    // Encoding
     class ExceptionFallBack : DecoderFallback {
         internal ExceptionFallbackBuffer buffer;
 

@@ -14,7 +14,6 @@
  * ***************************************************************************/
 
 using System.Reflection;
-using Microsoft.Contracts; 
 
 namespace Microsoft.Scripting.Generation {
     /// <summary>
@@ -36,7 +35,6 @@ namespace Microsoft.Scripting.Generation {
             _genericArity = genericArity;
         }
 
-        [Confined]
         public override bool Equals(object obj) {
             MethodSignatureInfo args = obj as MethodSignatureInfo;
             if (args == null) return false;
@@ -56,7 +54,6 @@ namespace Microsoft.Scripting.Generation {
             return true;
         }
 
-        [Confined]
         public override int GetHashCode() {
             int hash = 6551 ^ (_isStatic ? 79234 : 3123) ^ _genericArity;
             foreach (ParameterInfo pi in _pis) {

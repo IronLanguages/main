@@ -19,14 +19,16 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-#if CLR2
-using Complex = Microsoft.Scripting.Math.Complex64;
-#else
+#if FEATURE_NUMERICS
 using System.Numerics;
+#else
+using Microsoft.Scripting.Math;
+using Complex = Microsoft.Scripting.Math.Complex64;
 #endif
 
 [assembly: PythonModule("copy_reg", typeof(IronPython.Modules.PythonCopyReg))]

@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -64,7 +64,7 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-#if !SILVERLIGHT
+#if FEATURE_APARTMENTSTATE
             // no apartment states on Silverlight
             if (method.DeclaringType == typeof(Thread)) {
                 if (method.Name == "Sleep") {

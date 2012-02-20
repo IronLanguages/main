@@ -2,83 +2,21 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <Import Project="$(ProjectDir)..\..\..\Solutions\Common.proj" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{B6B42537-07F8-4F6C-A99A-B155CAEB124E}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>IronPythonTest</RootNamespace>
     <AssemblyName>IronPythonTest</AssemblyName>
-    <WarningLevel>4</WarningLevel>
-    <WarningsNotAsErrors>618,1685</WarningsNotAsErrors>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>$(SolutionDir)..\bin\v2Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;$(SignedSym);CLR2</DefineConstants>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
-    <DebugSymbols>false</DebugSymbols>
-    <Optimize>true</Optimize>
-    <OutputPath>$(SolutionDir)..\bin\v2Release\</OutputPath>
-    <DefineConstants>TRACE;$(SignedSym);CLR2</DefineConstants>
-    <WarningsNotAsErrors>618,1685</WarningsNotAsErrors>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'Silverlight3Debug' ">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>$(SolutionDir)..\bin\Silverlight3Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;SILVERLIGHT;$(SignedSym);CLR2</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <NoWarn>618</NoWarn>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'Silverlight3Release' ">
-    <OutputPath>$(SolutionDir)..\bin\Silverlight3Release\</OutputPath>
-    <DefineConstants>TRACE;SILVERLIGHT;$(SignedSym);CLR2</DefineConstants>
-    <NoWarn>618</NoWarn>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>$(SolutionDir)..\bin\Debug</OutputPath>
-    <DefineConstants>TRACE;DEBUG;CLR4;$(SignedSym)</DefineConstants>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugSymbols>false</DebugSymbols>
-    <Optimize>true</Optimize>
-    <OutputPath>$(SolutionDir)..\bin\Release</OutputPath>
-    <DefineConstants>TRACE;CLR4;$(SignedSym)</DefineConstants>
-    <WarningsNotAsErrors>618,1685</WarningsNotAsErrors>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'Silverlight4Debug' ">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>$(SolutionDir)..\bin\Silverlight4Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;SILVERLIGHT;$(SignedSym);CLR4</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <NoWarn>618</NoWarn>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Debug|AnyCPU' ">
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'Silverlight4Release' ">
-    <OutputPath>$(SolutionDir)..\bin\Silverlight4Release\</OutputPath>
-    <DefineConstants>TRACE;SILVERLIGHT;$(SignedSym);CLR4</DefineConstants>
-    <NoWarn>618</NoWarn>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -119,40 +57,12 @@
     <Compile Include="TypeDescriptor.cs" />
     <AppDesigner Include="Properties\" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(SilverlightBuild)' != 'true' ">
-    <Reference Include="System" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Numerics" Condition=" '$(TargetFrameworkVersion)' == 'v4.0' " />
+  <ItemGroup Condition=" '$(IsFullFramework)' == 'true' and '$(TargetFrameworkVersion)' != 'v3.5'" >
     <Reference Include="System.Xaml" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(SilverlightBuild)' == 'true' ">
-    <Reference Include="mscorlib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightPath)\mscorlib.dll</HintPath>
-    </Reference>
-    <Reference Include="System, Version=1.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightPath)\System.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Core, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightPath)\System.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Numerics, Version=2.0.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" Condition="'$(TargetFrameworkVersion)' == 'v4.0' ">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightSdkPath)\System.Numerics.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.CSharp, Version=2.0.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" Condition="'$(TargetFrameworkVersion)' == 'v4.0' ">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightSdkPath)\Microsoft.CSharp.dll</HintPath>
-    </Reference>
-  </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting.Core\Microsoft.Scripting.Core.csproj" Condition="'$(TargetFrameworkVersion)' != 'v4.0'">
+    <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting.Core\Microsoft.Scripting.Core.csproj" Condition="'$(FeatureCoreDlr)' != 'true'">
       <Project>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</Project>
       <Name>Microsoft.Scripting.Core</Name>
     </ProjectReference>
@@ -169,5 +79,5 @@
       <Name>IronPython</Name>
     </ProjectReference>
   </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" '$(SilverlightTreeBuild)' != 'true' " />
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

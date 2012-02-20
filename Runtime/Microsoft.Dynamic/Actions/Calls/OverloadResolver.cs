@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -27,7 +27,6 @@ using System.Dynamic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
-using Microsoft.Contracts;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -619,7 +618,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                             return true;
                         }
                         parameterType = lastParameter.Type.GetElementType();
-                    } else if (parameter.Type.ContainsGenericParameters) {
+                    } else if (parameter.Type.ContainsGenericParameters()) {
                         return true;
                     } else {
                         parameterType = parameter.Type;
@@ -896,11 +895,11 @@ namespace Microsoft.Scripting.Actions.Calls {
                     return false;
                 }
 
-                if (toType.IsGenericType && toType.GetGenericTypeDefinition() == typeof(Nullable<>)) {
+                if (toType.IsGenericType() && toType.GetGenericTypeDefinition() == typeof(Nullable<>)) {
                     return true;
                 }
 
-                if (!toType.IsValueType) {
+                if (!toType.IsValueType()) {
                     return true;
                 }
             }
@@ -964,14 +963,14 @@ namespace Microsoft.Scripting.Actions.Calls {
                     foreach (var candidate in targetSet.Candidates) {
                         if (!candidate.HasParamsArray) {
                             int visibleCount = candidate.GetVisibleParameterCount();
-                            if (visibleCount < arities.Count) {
+                            if (visibleCount < arities.Length) {
                                 arities[visibleCount] = true;
                             }
                         }
                     }
                 }
 
-                for (int i = 0; i < arities.Count; i++) {
+                for (int i = 0; i < arities.Length; i++) {
                     if (arities[i] || i == minParamsArray) {
                         result.Add(i);
                     }
@@ -1191,7 +1190,6 @@ namespace Microsoft.Scripting.Actions.Calls {
             return dynamicObject.LimitType;
         }
 
-        [Confined]
         public override string ToString() {
             string res = "";
             foreach (CandidateSet set in _candidateSets.Values) {

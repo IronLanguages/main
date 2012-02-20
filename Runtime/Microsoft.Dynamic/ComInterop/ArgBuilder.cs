@@ -13,9 +13,9 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT
+#if FEATURE_COM
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;

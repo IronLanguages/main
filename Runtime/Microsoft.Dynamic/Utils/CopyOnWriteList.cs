@@ -15,7 +15,6 @@
 
 using System.Collections.Generic;
 using System.Threading;
-using Microsoft.Contracts;
 
 namespace Microsoft.Scripting.Utils {
     /// <summary>
@@ -106,7 +105,6 @@ namespace Microsoft.Scripting.Utils {
             _list = new List<T>();
         }
 
-        [Confined]
         public bool Contains(T item) {
             return _list.Contains(item);
         }
@@ -140,7 +138,6 @@ namespace Microsoft.Scripting.Utils {
 
         #region IEnumerable<T> Members
 
-        [Pure]
         public IEnumerator<T> GetEnumerator() {
             return _list.GetEnumerator();
         }
@@ -149,7 +146,6 @@ namespace Microsoft.Scripting.Utils {
 
         #region IEnumerable Members
 
-        [Pure]
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
             return ((System.Collections.IEnumerable)_list).GetEnumerator();
         }

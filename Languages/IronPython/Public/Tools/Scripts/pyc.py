@@ -2,10 +2,10 @@
 #
 #  Copyright (c) Microsoft Corporation. All rights reserved.
 #
-# This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
-# copy of the license can be found in the License.html file at the root of this distribution. If 
-# you cannot locate the  Apache License, Version 2.0, please send an email to 
-# ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+# This source code is subject to terms and conditions of the Apache License, Version 2.0. A
+# copy of the license can be found in the License.html file at the root of this distribution. If
+# you cannot locate the  Apache License, Version 2.0, please send an email to
+# ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound
 # by the terms of the Apache License, Version 2.0.
 #
 # You must not remove this notice, or any other, from this software.
@@ -24,7 +24,7 @@ Options:
     /target:exe                               Generate console executable stub for startup in addition to dll.
     /target:winexe                            Generate windows executable stub for startup in addition to dll.
     /? /h                                     This message
-    
+
 EXE/WinEXE specific options:
     /main:main_file.py                        Main file of the project (module to be executed first)
     /platform:x86                             Compile for x86 only
@@ -48,16 +48,23 @@ from System.Reflection.Emit import OpCodes, AssemblyBuilderAccess
 from System.Reflection import AssemblyName, TypeAttributes, MethodAttributes
 
 def GenerateExe(name, targetKind, platform, machine, main_module):
-    """generates the stub .EXE file for starting the app"""    
+    """generates the stub .EXE file for starting the app"""
     aName = AssemblyName(System.IO.FileInfo(name).Name)
     ab = PythonOps.DefineDynamicAssembly(aName, AssemblyBuilderAccess.RunAndSave)
     mb = ab.DefineDynamicModule(name,  aName.Name + '.exe')
     tb = mb.DefineType('PythonMain', TypeAttributes.Public)
     mainMethod = tb.DefineMethod('Main', MethodAttributes.Public | MethodAttributes.Static, int, ())
     if targetKind == System.Reflection.Emit.PEFileKinds.WindowApplication:
-        mainMethod.SetCustomAttribute(clr.GetClrType(System.STAThreadAttribute).GetConstructor(()), System.Array[System.Byte](())) 
+        mainMethod.SetCustomAttribute(clr.GetClrType(System.STAThreadAttribute).GetConstructor(()), System.Array[System.Byte](()))
     gen = mainMethod.GetILGenerator()
-    
+
+    # variables for saving original working directory und return code of script
+    wdSave = gen.DeclareLocal(str)
+
+    # save current working directory
+    gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Environment).GetMethod("get_CurrentDirectory"), ())
+    gen.Emit(OpCodes.Stloc, wdSave)
+
     # get the ScriptCode assembly...
     gen.EmitCall(OpCodes.Call, clr.GetClrType(Assembly).GetMethod("GetEntryAssembly"), ())
     gen.EmitCall(OpCodes.Callvirt, clr.GetClrType(Assembly).GetMethod("get_Location"), ())
@@ -67,21 +74,32 @@ def GenerateExe(name, targetKind, platform, machine, main_module):
     gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Environment).GetMethod("set_CurrentDirectory"), ())
     gen.Emit(OpCodes.Ldstr, name + ".dll")
     gen.EmitCall(OpCodes.Call, clr.GetClrType(System.IO.Path).GetMethod("GetFullPath", (clr.GetClrType(str), )), ())
+
+    # result of GetFullPath stays on the stack during the restore of the
+    # original working directory
+
+    # restore original working directory
+    gen.Emit(OpCodes.Ldloc, wdSave)
+    gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Environment).GetMethod("set_CurrentDirectory"), ())
+
+    # for the LoadFile() call, the full path of the assembly is still is on the stack
+    # as the result from the call to GetFullPath()
     gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Reflection.Assembly).GetMethod("LoadFile", (clr.GetClrType(str), )), ())
-    
+
     # emit module name
     gen.Emit(OpCodes.Ldstr, "__main__")
-    
     gen.Emit(OpCodes.Ldnull)
-    
+
     # call InitializeModule
-    gen.EmitCall(OpCodes.Call, clr.GetClrType(PythonOps).GetMethod("InitializeModule"), ())    
+    # (this will also run the script)
+    gen.EmitCall(OpCodes.Call, clr.GetClrType(PythonOps).GetMethod("InitializeModule"), ())
+
     gen.Emit(OpCodes.Ret)
-    
+
     tb.CreateType()
     ab.SetEntryPoint(mainMethod, targetKind)
     ab.Save(aName.Name + '.exe', platform, machine)
-    
+
 def Main(args):
     files = []
     main = None          # The main file to start the execution (passed to the PythonCompiler)
@@ -95,10 +113,10 @@ def Main(args):
         if arg.startswith("/main:"):
             main_name = main = arg[6:]
             target = System.Reflection.Emit.PEFileKinds.ConsoleApplication
-        
+
         elif arg.startswith("/out:"):
             output = arg[5:]
-            
+
         elif arg.startswith("/target:"):
             tgt = arg[8:]
             if tgt == "exe": target = System.Reflection.Emit.PEFileKinds.ConsoleApplication
@@ -132,12 +150,12 @@ def Main(args):
         print __doc__
         sys.exit(0)
         print "EXEs require /main:<filename> to be specified"
-    
+
     if not output and main_name:
         output = System.IO.Path.GetFileNameWithoutExtension(main_name)
     elif not output and files:
         output = System.IO.Path.GetFileNameWithoutExtension(files[0])
-		
+
     print "Input Files:"
     for file in files:
         print "\t%s" % file
@@ -147,12 +165,12 @@ def Main(args):
     print 'Platform:\n\t%s' % platform
     print 'Machine:\n\t%s' % machine
 
-    print 'Compiling...'    
+    print 'Compiling...'
     clr.CompileModules(output + '.dll', mainModule = main_name, *files)
-    
+
     if target != System.Reflection.Emit.PEFileKinds.Dll:
         GenerateExe(output, target, platform, machine, main_name)
-    
+
     print 'Saved to %s' % (output, )
 
 if __name__ == "__main__":

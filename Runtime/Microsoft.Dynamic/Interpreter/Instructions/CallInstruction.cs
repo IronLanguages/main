@@ -53,7 +53,7 @@ namespace Microsoft.Scripting.Interpreter {
                 return GetArrayAccessor(info, argumentCount);
             }
 
-            if (ReflectionUtils.IsDynamicMethod(info) || !info.IsStatic && info.DeclaringType.IsValueType) {
+            if (ReflectionUtils.IsDynamicMethod(info) || !info.IsStatic && info.DeclaringType.IsValueType()) {
                 return new MethodInfoCallInstruction(info, argumentCount);
             }
 
@@ -117,19 +117,19 @@ namespace Microsoft.Scripting.Interpreter {
                 case 1:
                     return Create(isGetter ?
                         arrayType.GetMethod("GetValue", new[] { typeof(int)}) :
-                        new Action<Array, int, object>(ArrayItemSetter1).Method
+                        new Action<Array, int, object>(ArrayItemSetter1).GetMethod()
                     );
                
                 case 2: 
                     return Create(isGetter ? 
                         arrayType.GetMethod("GetValue", new[] { typeof(int), typeof(int) }) :
-                        new Action<Array, int, int, object>(ArrayItemSetter2).Method
+                        new Action<Array, int, int, object>(ArrayItemSetter2).GetMethod()
                     );
 
                 case 3: 
                     return Create(isGetter ?
                         arrayType.GetMethod("GetValue", new[] { typeof(int), typeof(int), typeof(int) }) :
-                        new Action<Array, int, int, int, object>(ArrayItemSetter3).Method
+                        new Action<Array, int, int, int, object>(ArrayItemSetter3).GetMethod()
                     );
 
                 default: 

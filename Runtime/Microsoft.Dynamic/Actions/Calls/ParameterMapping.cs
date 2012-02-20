@@ -17,6 +17,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Generation;
@@ -324,7 +325,8 @@ namespace Microsoft.Scripting.Actions.Calls {
                     List<int> nameIndices = new List<int>();
 
                     foreach (MemberInfo mi in bindableMembers) {
-                        var type = (mi.MemberType == MemberTypes.Property) ? ((PropertyInfo)mi).PropertyType : ((FieldInfo)mi).FieldType;
+                        PropertyInfo pi = mi as PropertyInfo;
+                        var type = (pi != null) ? pi.PropertyType : ((FieldInfo)mi).FieldType;
                         
                         _parameters.Add(new ParameterWrapper(null, type, mi.Name, ParameterBindingFlags.None));
                         nameIndices.Add(_argNames.IndexOf(mi.Name));
@@ -348,24 +350,21 @@ namespace Microsoft.Scripting.Actions.Calls {
 
             foreach (string name in unusedNames) {
                 Type curType = returnType;
-                MemberInfo[] mis = curType.GetMember(name);
+                MemberInfo[] mis = curType.GetInheritedMembers(name).ToArray();
                 while (mis.Length != 1 && curType != null) {
                     // see if we have a single member defined as the closest level
-                    mis = curType.GetMember(name, BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.SetField | BindingFlags.SetProperty | BindingFlags.Instance);
+                    mis = curType.GetDeclaredMembers(name).WithBindingFlags(BindingFlags.Public | BindingFlags.Instance).ToArray();
 
                     if (mis.Length > 1) {
                         break;
                     }
 
-                    curType = curType.BaseType;
+                    curType = curType.GetBaseType();
                 }
 
                 if (mis.Length == 1) {
-                    switch (mis[0].MemberType) {
-                        case MemberTypes.Property:
-                        case MemberTypes.Field:
-                            bindableMembers.Add(mis[0]);
-                            break;
+                    if (mis[0] is PropertyInfo || mis[0] is FieldInfo) {
+                        bindableMembers.Add(mis[0]);
                     }
                 }
             }

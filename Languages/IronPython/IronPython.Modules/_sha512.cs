@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_FULL_CRYPTO // SHA384, SHA512
+
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
@@ -26,7 +28,6 @@ using IronPython.Runtime;
 //!!! Also, we could probably make a generic version of this that could then be specialized
 //!!! for both md5 and sha.
 
-#if !SILVERLIGHT    // System.Cryptography.SHA1CryptoServiceProvider
 [assembly: PythonModule("_sha512", typeof(IronPython.Modules.PythonSha512))]
 namespace IronPython.Modules {
     [Documentation("SHA512 hash algorithm")]

@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 using Microsoft.Scripting.Ast;
 #else
@@ -21,13 +21,15 @@ using Microsoft.Scripting.Ast;
 #endif
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using Microsoft.Scripting.Utils;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-using Microsoft.Scripting.Runtime;
 using System.Runtime.CompilerServices;
+
+using AstUtils = Microsoft.Scripting.Ast.Utils;
+using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Runtime;
 
 namespace Microsoft.Scripting.Interpreter {
     public sealed class ExceptionHandler {
@@ -203,7 +205,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         internal static Expression Unbox(Expression strongBoxExpression) {
-            return Expression.Field(strongBoxExpression, typeof(StrongBox<object>).GetField("Value"));
+            return Expression.Field(strongBoxExpression, typeof(StrongBox<object>).GetDeclaredField("Value"));
         }
 
         internal LightDelegateCreator CompileTop(LambdaExpression node) {
@@ -265,7 +267,7 @@ namespace Microsoft.Scripting.Interpreter {
 
         private void CompileDefaultExpression(Type type) {
             if (type != typeof(void)) {
-                if (type.IsValueType) {
+                if (type.IsValueType()) {
                     object value = ScriptingRuntimeHelpers.GetPrimitiveDefaultValue(type);
                     if (value != null) {
                         _instructions.EmitLoad(value);
@@ -580,14 +582,14 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         private void CompileEqual(Expression left, Expression right) {
-            Debug.Assert(left.Type == right.Type || !left.Type.IsValueType && !right.Type.IsValueType);
+            Debug.Assert(left.Type == right.Type || !left.Type.IsValueType() && !right.Type.IsValueType());
             Compile(left);
             Compile(right);
             _instructions.EmitEqual(left.Type);
         }
 
         private void CompileNotEqual(Expression left, Expression right) {
-            Debug.Assert(left.Type == right.Type || !left.Type.IsValueType && !right.Type.IsValueType);
+            Debug.Assert(left.Type == right.Type || !left.Type.IsValueType() && !right.Type.IsValueType());
             Compile(left);
             Compile(right);
             _instructions.EmitNotEqual(left.Type);
@@ -651,8 +653,8 @@ namespace Microsoft.Scripting.Interpreter {
                 return;
             }
 
-            TypeCode from = Type.GetTypeCode(typeFrom);
-            TypeCode to = Type.GetTypeCode(typeTo);
+            TypeCode from = typeFrom.GetTypeCode();
+            TypeCode to = typeTo.GetTypeCode();
             if (TypeUtils.IsNumeric(from) && TypeUtils.IsNumeric(to)) {
                 if (isChecked) {
                     _instructions.EmitNumericConvertChecked(from, to);
@@ -1198,7 +1200,7 @@ namespace Microsoft.Scripting.Interpreter {
             // also could be a mutable value type, Delegate.CreateDelegate and MethodInfo.Invoke both can't handle this, we
             // need to generate code.
             if (!CollectionUtils.TrueForAll(parameters, (p) => !p.ParameterType.IsByRef) ||
-                (!node.Method.IsStatic && node.Method.DeclaringType.IsValueType && !node.Method.DeclaringType.IsPrimitive)) {
+                (!node.Method.IsStatic && node.Method.DeclaringType.IsValueType() && !node.Method.DeclaringType.IsPrimitive())) {
                 _forceCompile = true;
             }
 
@@ -1246,7 +1248,7 @@ namespace Microsoft.Scripting.Interpreter {
                 }
                 _instructions.EmitNew(node.Constructor);
             } else {
-                Debug.Assert(expr.Type.IsValueType);
+                Debug.Assert(expr.Type.IsValueType());
                 _instructions.EmitDefaultValue(node.Type);
             }
         }
@@ -1448,7 +1450,7 @@ namespace Microsoft.Scripting.Interpreter {
             Compile(node.Expression);
 
             // use TypeEqual for sealed types:
-            if (node.TypeOperand.IsSealed) {
+            if (node.TypeOperand.IsSealed()) {
                 _instructions.EmitLoad(node.TypeOperand);
                 _instructions.EmitTypeEquals();
             } else {

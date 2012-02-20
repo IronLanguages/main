@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -78,14 +78,23 @@ namespace Microsoft.Scripting {
             return result;
         }
 
+#if FEATURE_BASIC_CONSOLE
         public static void DumpHistogram<TKey>(IDictionary<TKey, int> histogram) {
             DumpHistogram(histogram, Console.Out);
         }
 
+        public static void DumpStats() {
+            DumpStats(Console.Out);
+        }
+#endif
+
         public static void DumpHistogram<TKey>(IDictionary<TKey, int> histogram, TextWriter output) {
             var keys = ArrayUtils.MakeArray(histogram.Keys);
             var values = ArrayUtils.MakeArray(histogram.Values);
+            
+#if !WIN8 // TODO: 
             Array.Sort(values, keys);
+#endif   
             for (int i = 0; i < keys.Length; i++) {
                 output.WriteLine("{0} {1}", keys[i], values[i]);
             }
@@ -102,10 +111,6 @@ namespace Microsoft.Scripting {
             int value;
             histogram.TryGetValue(key, out value);
             histogram[key] = value + 1;
-        }
-
-        public static void DumpStats() {
-            DumpStats(Console.Out);
         }
 
         public static void DumpStats(TextWriter output) {

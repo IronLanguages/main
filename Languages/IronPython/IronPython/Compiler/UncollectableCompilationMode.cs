@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_REFEMIT
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -29,7 +31,7 @@ using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using MSAst = System.Linq.Expressions;
 #else
 using MSAst = Microsoft.Scripting.Ast;
@@ -68,7 +70,7 @@ namespace IronPython.Compiler.Ast {
             // going to a call site which can be strongly typed.  We need to coordinate 
             // more with whoever consumes the values.
             if (CompilerHelpers.CanEmitConstant(value, CompilerHelpers.GetType(value)) &&
-                !CompilerHelpers.GetType(value).IsValueType) {
+                !CompilerHelpers.GetType(value).IsValueType()) {
                 return Utils.Constant(value);
             }
 
@@ -84,7 +86,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override Type GetConstantType(object value) {
-            if (value == null || value.GetType().IsValueType) {
+            if (value == null || value.GetType().IsValueType()) {
                 return typeof(object);
             }
 
@@ -288,72 +290,6 @@ namespace IronPython.Compiler.Ast {
 
         #endregion
 
-        #region ConstantInfo
-
-        public class ConstantInfo {
-            public readonly MSAst.Expression/*!*/ Expression;
-            public readonly FieldInfo Field;
-            public readonly int Offset;
-
-            public ConstantInfo(MSAst.Expression/*!*/ expr, FieldInfo field, int offset) {
-                Assert.NotNull(expr);
-
-                Expression = expr;
-                Field = field;
-                Offset = offset;
-            }
-        }
-
-        public abstract class SiteInfo : ConstantInfo {
-            public readonly DynamicMetaObjectBinder/*!*/ Binder;
-            public readonly Type/*!*/ DelegateType;
-
-            protected Type/*!*/ _siteType;
-            public Type/*!*/ SiteType {
-                get {
-                    if (_siteType != null) {
-                        _siteType = typeof(CallSite<>).MakeGenericType(DelegateType);
-                    }
-                    return _siteType;
-                }
-            }
-
-            public SiteInfo(DynamicMetaObjectBinder/*!*/ binder, MSAst.Expression/*!*/ expr, FieldInfo/*!*/ field, int index, Type/*!*/ delegateType)
-                : base(expr, field, index) {
-                Assert.NotNull(binder);
-
-                Binder = binder;
-                DelegateType = delegateType;
-            }
-
-            public SiteInfo(DynamicMetaObjectBinder/*!*/ binder, MSAst.Expression/*!*/ expr, FieldInfo/*!*/ field, int index, Type/*!*/ delegateType, Type/*!*/ siteType)
-                : this(binder, expr, field, index, delegateType) {
-                _siteType = siteType;
-            }
-
-            public abstract CallSite/*!*/ MakeSite();
-        }
-
-        public class SiteInfoLarge : SiteInfo {
-            public SiteInfoLarge(DynamicMetaObjectBinder/*!*/ binder, MSAst.Expression/*!*/ expr, FieldInfo/*!*/ field, int index, Type/*!*/ delegateType)
-                : base (binder, expr, field, index, delegateType) { }
-
-            public override CallSite MakeSite() {
-                return CallSite.Create(DelegateType, Binder);
-            }
-        }
-
-        public class SiteInfo<T> : SiteInfo where T : class {
-            public SiteInfo(DynamicMetaObjectBinder/*!*/ binder, MSAst.Expression/*!*/ expr, FieldInfo/*!*/ field, int index)
-                : base(binder, expr, field, index, typeof(T), typeof(CallSite<T>)) { }
-
-            public override CallSite MakeSite() {
-                return CallSite<T>.Create(Binder);
-            }
-        }
-        
-        #endregion
-
         #region Dynamic CallSite Type Information
 
         private sealed class DelegateCache {
@@ -369,9 +305,9 @@ namespace IronPython.Compiler.Ast {
             public void MakeDelegateType(Type/*!*/ retType, params MSAst.Expression/*!*/[]/*!*/ args) {
                 DelegateType = GetDelegateType(retType, args);
                 SiteType = typeof(CallSite<>).MakeGenericType(DelegateType);
-                NextSite = (Func<DynamicMetaObjectBinder, SiteInfo>)Delegate.CreateDelegate(
-                    typeof(Func<DynamicMetaObjectBinder, SiteInfo>),
-                    typeof(UncollectableCompilationMode).GetMethod("NextSite").MakeGenericMethod(DelegateType)
+                NextSite = (Func<DynamicMetaObjectBinder, SiteInfo>)
+                    typeof(UncollectableCompilationMode).GetMethod("NextSite").MakeGenericMethod(DelegateType).
+                        CreateDelegate(typeof(Func<DynamicMetaObjectBinder, SiteInfo>)
                 );
                 TargetField = SiteType.GetField("Target");
                 InvokeMethod = DelegateType.GetMethod("Invoke");
@@ -508,7 +444,7 @@ namespace IronPython.Compiler.Ast {
             public override Type/*!*/ Type {
                 get {
                     Type returnType = _value.GetType();
-                    if (!returnType.IsValueType) {
+                    if (!returnType.IsValueType()) {
                         return returnType;
                     } else {
                         return typeof(object);
@@ -523,7 +459,7 @@ namespace IronPython.Compiler.Ast {
             }
 
             public override MSAst.Expression Reduce() {
-                if (_value.GetType().IsValueType) {
+                if (_value.GetType().IsValueType()) {
                     return base.Reduce();
                 } else {
                     return MSAst.Expression.Convert(base.Reduce(), _value.GetType());
@@ -554,3 +490,4 @@ namespace IronPython.Compiler.Ast {
         #endregion
     }
 }
+#endif

@@ -14,15 +14,16 @@
  * ***************************************************************************/
 
 using System;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Generation;
-using System.Runtime.InteropServices;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using IronRuby.Runtime.Conversions;
+using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
 
@@ -33,7 +34,7 @@ namespace IronRuby.Builtins {
             : base(cls) { 
         }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         protected Numeric(SerializationInfo/*!*/ info, StreamingContext context) 
             : base(info, context) {
         }
@@ -68,8 +69,10 @@ namespace IronRuby.Builtins {
         #endregion
 
         #region <=>
+
         /// <summary>
         /// Returns zero if self equals other (and is same type), nil otherwise. 
+        /// </summary>
         [RubyMethod("<=>")]
         public static object Compare(object self, object other) {
             if (self == other) {
@@ -77,6 +80,7 @@ namespace IronRuby.Builtins {
             }
             return null;
         }
+
         #endregion
 
         #region abs
@@ -85,7 +89,7 @@ namespace IronRuby.Builtins {
         /// Returns the absolute value of self
         /// </summary>
         /// <remarks>
-        /// Dynamically invokes < operator on self and 0
+        /// Dynamically invokes &lt; operator on self and 0
         /// If this is true then invokes @- on self.
         /// Otherwise just returns self
         /// </remarks>
@@ -280,7 +284,7 @@ namespace IronRuby.Builtins {
         /// <example>
         /// This behavior is useful when chaining comparisons: 
         ///     a = %w( z Bb bB bb BB a aA Aa AA A )
-        ///     b = a.sort {|a,b| (a.downcase <=> b.downcase).nonzero? || a <=> b }
+        ///     b = a.sort {|a,b| (a.downcase &lt;=&gt; b.downcase).nonzero? || a &lt;=&gt; b }
         ///     b   #=> ["A", "a", "AA", "Aa", "aA", "BB", "Bb", "bB", "bb", "z"]
         /// </example>
         /// <remarks>

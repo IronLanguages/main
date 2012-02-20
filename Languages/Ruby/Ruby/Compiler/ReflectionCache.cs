@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using MSA = System.Linq.Expressions;
 #else
 using MSA = Microsoft.Scripting.Ast;
@@ -25,6 +25,7 @@ using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Linq;
 using IronRuby.Runtime.Calls;
 using Microsoft.Scripting.Utils;
 
@@ -40,7 +41,7 @@ namespace IronRuby.Compiler {
         public static FieldInfo StrongBox_Value { get { return _StrongBox_Value ?? (_StrongBox_Value = GetField(typeof(StrongBox<object>), "Value")); } }
         
         internal static FieldInfo/*!*/ GetField(Type/*!*/ type, string/*!*/ name) {
-            var field = type.GetField(name);
+            var field = type.GetDeclaredField(name);
             Debug.Assert(field != null, type.Name + "::" + name);
             return field;
         }
@@ -48,33 +49,35 @@ namespace IronRuby.Compiler {
     
     public static partial class Methods {
         private static ConstructorInfo _RubyCallSignatureCtor;
-        private static MethodInfo _Stopwatch_GetTimestamp, _WeakReference_get_Target, _IList_get_Item;
+        private static MethodInfo _WeakReference_get_Target, _IList_get_Item;
 
         public static ConstructorInfo RubyCallSignatureCtor { get { return _RubyCallSignatureCtor ?? (_RubyCallSignatureCtor = GetConstructor(typeof(RubyCallSignature), typeof(uint))); } }
         
+#if !WP75
+        private static MethodInfo _Stopwatch_GetTimestamp;
         public static MethodInfo Stopwatch_GetTimestamp { get { return _Stopwatch_GetTimestamp ?? (_Stopwatch_GetTimestamp = GetMethod(typeof(Stopwatch), "GetTimestamp")); } }
+#endif
         public static MethodInfo IList_get_Item { get { return _IList_get_Item ?? (_IList_get_Item = GetMethod(typeof(IList), "get_Item")); } }
-        public static MethodInfo WeakReference_get_Target { get { return _WeakReference_get_Target ?? (_WeakReference_get_Target = GetMethod(typeof(WeakReference), "get_Target", BindingFlags.Instance, Type.EmptyTypes)); } }
+        public static MethodInfo WeakReference_get_Target { get { return _WeakReference_get_Target ?? (_WeakReference_get_Target = GetMethod(typeof(WeakReference), "get_Target", BindingFlags.Instance, ReflectionUtils.EmptyTypes)); } }
 
         internal static ConstructorInfo/*!*/ GetConstructor(Type/*!*/ type, params Type/*!*/[]/*!*/ signature) {
             var ctor = type.GetConstructor(signature);
             Debug.Assert(ctor != null, type.Name + "::.ctor");
             return ctor;
         }
-
+        
         internal static MethodInfo/*!*/ GetMethod(Type/*!*/ type, string/*!*/ name) {
-            var method = type.GetMethod(name, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            var method = type.GetDeclaredMethods(name).WithBindingFlags(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance).Single();
             Debug.Assert(method != null, type.Name + "::" + name);
             return method;
         }
 
         internal static MethodInfo/*!*/ GetMethod(Type/*!*/ type, string/*!*/ name, params Type/*!*/[]/*!*/ signature) {
-            return GetMethod(type, name, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly, signature);
+            return GetMethod(type, name, BindingFlags.Static | BindingFlags.Instance, signature);
         }
 
         internal static MethodInfo/*!*/ GetMethod(Type/*!*/ type, string/*!*/ name, BindingFlags flags, params Type/*!*/[]/*!*/ signature) {
-            var method = type.GetMethod(name, flags | BindingFlags.Public | BindingFlags.DeclaredOnly, null, signature, null);
-
+            var method = type.GetDeclaredMethods(name).WithBindingFlags(flags | BindingFlags.Public).WithSignature(signature).Single();
             Debug.Assert(method != null, type.Name + "::" + name);
             return method;
         }

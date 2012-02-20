@@ -12,14 +12,13 @@
  *
  *
  * ***************************************************************************/
+#if !FEATURE_WIN32EXCEPTION
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace IronPython.Runtime.Exceptions {
     // exits for better compatibility w/ Silverlight where this exception isn't available.
-#if SILVERLIGHT
+
     [Serializable]
     public class Win32Exception : Exception {
         public Win32Exception() : base() { }
@@ -28,11 +27,18 @@ namespace IronPython.Runtime.Exceptions {
             : base(message, innerException) {
         }
 
+        public int ErrorCode {
+            get {
+                return 0;
+            }
+        }
+
         public int NativeErrorCode {
-            get{
+            get {
                 return 0;
             }
         }
     }
-#endif
 }
+
+#endif

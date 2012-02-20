@@ -25,7 +25,7 @@ namespace IronRuby.Runtime {
         [Emitted]
         public readonly object ReturnValue;
 
-        internal static FieldInfo ReturnValueField { get { return typeof(StackUnwinder).GetField("ReturnValue"); } }
+        internal static FieldInfo ReturnValueField { get { return typeof(StackUnwinder).GetDeclaredField("ReturnValue"); } }
 
         public StackUnwinder(object returnValue) {
             // we don't need exact number in multi-threaded scenarios:
@@ -44,7 +44,7 @@ namespace IronRuby.Runtime {
         [Emitted]
         public readonly RuntimeFlowControl/*!*/ TargetFrame;
 
-        internal static FieldInfo TargetFrameField { get { return typeof(MethodUnwinder).GetField("TargetFrame"); } }
+        internal static FieldInfo TargetFrameField { get { return typeof(MethodUnwinder).GetDeclaredField("TargetFrame"); } }
 
         internal MethodUnwinder(RuntimeFlowControl/*!*/ targetFrame, object returnValue)
             : base(returnValue) {
@@ -63,7 +63,7 @@ namespace IronRuby.Runtime {
         [Emitted]
         public readonly BlockReturnReason Reason;
         
-        internal static FieldInfo ReasonField { get { return typeof(EvalUnwinder).GetField("Reason"); } }
+        internal static FieldInfo ReasonField { get { return typeof(EvalUnwinder).GetDeclaredField("Reason"); } }
 
         internal RuntimeFlowControl TargetFrame { get { return _targetFrame; } }
         internal ProcKind SourceProcKind { get { return _sourceProcKind; } }
@@ -88,7 +88,7 @@ namespace IronRuby.Runtime {
         [Emitted]
         public readonly bool IsRedo;
 
-        internal static FieldInfo IsRedoField { get { return typeof(BlockUnwinder).GetField("IsRedo"); } }
+        internal static FieldInfo IsRedoField { get { return typeof(BlockUnwinder).GetDeclaredField("IsRedo"); } }
 
         internal BlockUnwinder(object returnValue, bool isRedo)
             : base(returnValue) {

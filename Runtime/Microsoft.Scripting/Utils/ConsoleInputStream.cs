@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-#if !SILVERLIGHT
+#if FEATURE_FULL_CONSOLE
 
 using System;
 using System.Collections.Generic;

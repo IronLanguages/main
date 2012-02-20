@@ -13,23 +13,26 @@
  *
  * ***************************************************************************/
 
-#if CLR2
+#if !FEATURE_CORE_DLR
 using dynamic = System.Object;
 #endif
 
-using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Hosting;
-using Microsoft.Scripting.Hosting.Providers;
-using Microsoft.Scripting.Runtime;
-using IronRuby.Runtime;
-using IronRuby.Builtins;
-using IronRuby.Hosting;
-using System.ComponentModel;
+#if FEATURE_REMOTING
+using System.Runtime.Remoting;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
+using IronRuby.Builtins;
+using IronRuby.Hosting;
+using IronRuby.Runtime;
 using Microsoft.Scripting;
-using System.Runtime.Remoting;
+using Microsoft.Scripting.Hosting;
+using Microsoft.Scripting.Hosting.Providers;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 #if SILVERLIGHT
 [assembly: DynamicLanguageProvider(typeof(RubyContext), RubyContext.IronRubyDisplayName, RubyContext.IronRubyNames, RubyContext.IronRubyFileExtensions)]
@@ -69,7 +72,7 @@ namespace IronRuby {
         /// Creates a new script runtime and returns its IronRuby engine. The configuration of the runtime is loaded from .NET configuration files if available.
         /// </summary>
         /// <returns>A new IronRuby engine.</returns>
-        /// <remarks>Creates a runtime using <see cref="CreateRuntime()"/> method.</remarks>
+        /// <remarks>Creates a runtime using <see cref="M:CreateRuntime()"/> method.</remarks>
         public static ScriptEngine/*!*/ CreateEngine() {
             return GetEngine(CreateRuntime());
         }

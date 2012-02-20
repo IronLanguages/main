@@ -13,8 +13,8 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT // ICustomTypeDescriptor
-#if !CLR2
+#if FEATURE_CUSTOM_TYPE_DESCRIPTOR
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;

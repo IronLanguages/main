@@ -17,7 +17,7 @@ using System;
 using System.Runtime.Serialization;
 
 namespace IronPython.Runtime.Exceptions {
-#if SILVERLIGHT
+#if !FEATURE_WARNING_EXCEPTION
     #region Generated WarningException
 
     // *** BEGIN GENERATED CODE ***
@@ -31,7 +31,7 @@ namespace IronPython.Runtime.Exceptions {
         public WarningException(string message, Exception innerException)
             : base(message, innerException) {
         }
-#if !SILVERLIGHT // SerializationInfo
+#if FEATURE_SERIALIZATION
         protected WarningException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 #endif
     }

@@ -26,11 +26,11 @@ using Microsoft.Scripting.Utils;
 using IronPython.Modules;
 using IronPython.Runtime.Types;
 
-#if CLR2
+#if FEATURE_NUMERICS
+using System.Numerics;
+#else
 using Microsoft.Scripting.Math;
 using Complex = Microsoft.Scripting.Math.Complex64;
-#else
-using System.Numerics;
 #endif
 
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;

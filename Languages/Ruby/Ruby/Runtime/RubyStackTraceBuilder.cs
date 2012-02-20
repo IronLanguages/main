@@ -19,7 +19,6 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security;
-using System.Security.Permissions;
 using System.Text;
 using System.Threading;
 using IronRuby.Builtins;
@@ -29,8 +28,7 @@ using Microsoft.Scripting.Interpreter;
 
 namespace IronRuby.Runtime {
     internal sealed class RubyStackTraceBuilder {
-        internal const string TopLevelMethodName = "#";
-
+#if FEATURE_STACK_TRACE
         private readonly RubyArray/*!*/ _trace;
         private readonly bool _hasFileAccessPermission;
         private readonly bool _exceptionDetail;
@@ -84,12 +82,22 @@ namespace IronRuby.Runtime {
 
         [MethodImpl(MethodImplOptions.NoInlining)] // CF
         private static string GetFileName(StackFrame/*!*/ frame) {
+#if SILVERLIGHT
+            return null;
+#else
             return frame.GetFileName();
+#endif
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // CF
         private static string/*!*/ GetAssemblyName(Assembly/*!*/ assembly) {
+#if SILVERLIGHT
+            // TODO: the simple name might contain escaped characters
+            var fullName = assembly.FullName;
+            return fullName.Substring(0, fullName.IndexOf(','));
+#else
             return assembly.GetName().Name;
+#endif
         }
 
         private void InitializeInterpretedFrames() {
@@ -241,6 +249,21 @@ namespace IronRuby.Runtime {
             return true;
         }
 
+        // TODO: partial trust
+        private static bool DetectFileAccessPermissions() {
+#if FEATURE_FILESYSTEM
+            try {
+                new System.Security.Permissions.FileIOPermission(System.Security.Permissions.PermissionState.Unrestricted).Demand();
+                return true;
+            } catch (SecurityException) {
+                return false;
+            }
+#else
+            return false;
+#endif
+        }
+#endif
+        internal const string TopLevelMethodName = "#"; 
         private const char NamePartsSeparator = ':';
         private const string RubyMethodPrefix = "\u2111\u211c:";
         private static int _Id = 0;
@@ -258,7 +281,7 @@ namespace IronRuby.Runtime {
                 Append(debugMode && sourcePath != null && sourcePath.Length > MaxDebugModePathSize ? sourcePath.Substring(0, MaxDebugModePathSize) : sourcePath).
                 ToString();
         }
-
+        
         // \u2111\u211c:{method-name}:{line-number}:{unique-id}:{file-name}
         internal static bool TryParseRubyMethodName(ref string methodName, ref string fileName, ref int line) {
             if (methodName != null && methodName.StartsWith(RubyMethodPrefix, StringComparison.Ordinal)) {
@@ -308,20 +331,6 @@ namespace IronRuby.Runtime {
             int nameEnd = lambdaName.IndexOf(NamePartsSeparator, RubyMethodPrefix.Length);
             string name = lambdaName.Substring(RubyMethodPrefix.Length, nameEnd - RubyMethodPrefix.Length);
             return (name != TopLevelMethodName) ? name : null;
-        }
-
-        // TODO: partial trust
-        private static bool DetectFileAccessPermissions() {
-#if SILVERLIGHT
-                return false;
-#else
-            try {
-                new FileIOPermission(PermissionState.Unrestricted).Demand();
-                return true;
-            } catch (SecurityException) {
-                return false;
-            }
-#endif
         }
     }
 }

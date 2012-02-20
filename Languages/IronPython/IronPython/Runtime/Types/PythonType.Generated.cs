@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -814,7 +814,7 @@ namespace IronPython.Runtime.Types {
 
                         Type genType = initSiteType.MakeGenericType(ArrayUtils.ShiftLeft(genArgs, 3));
                         object initSiteInst = Activator.CreateInstance(genType, instType.Version, binder, initFunc);
-                        return (T)(object)Delegate.CreateDelegate(typeof(T), initSiteInst, genType.GetMethod(callTarget));
+                        return (T)(object)genType.GetMethod(callTarget).CreateDelegate(typeof(T), initSiteInst);
                     }
                 }
             }

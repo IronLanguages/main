@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -124,7 +124,7 @@ namespace IronRuby.Builtins {
         [Emitted]
         public static RubyClass/*!*/ GetNonGenericClass(RubyContext/*!*/ context, TypeGroup/*!*/ typeGroup) {
             Type type = GetNonGenericType(typeGroup);
-            if (type.IsInterface) {
+            if (type.IsInterface()) {
                 throw RubyExceptions.CreateTypeError("cannot instantiate an interface");
             }
             return context.GetClass(type);
@@ -169,7 +169,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("superclass")]
         public static RubyClass GetSuperclass(RubyContext/*!*/ context, TypeGroup/*!*/ self) {
             Type type = GetNonGenericType(self);
-            return type.IsInterface ? null : context.GetClass(type).SuperClass;
+            return type.IsInterface() ? null : context.GetClass(type).SuperClass;
         }
 
         // ARGS: N

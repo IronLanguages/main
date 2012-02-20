@@ -16,7 +16,7 @@
 using System;
 using Microsoft.Scripting.Utils;
 
-#if !CLR2
+#if FEATURE_NUMERICS
 using BigInt = System.Numerics.BigInteger;
 #endif
 
@@ -137,7 +137,7 @@ namespace Microsoft.Scripting.Math {
             return MakeReal((double)i);
         }
 
-#if !CLR2
+#if FEATURE_NUMERICS
         public static implicit operator Complex64(BigInt i) {
             // throws an overflow exception if we can't handle the value.
             return MakeReal((double)i);

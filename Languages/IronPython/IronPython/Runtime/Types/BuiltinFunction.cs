@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -455,7 +455,7 @@ namespace IronPython.Runtime.Types {
 
             // The function can return something typed to boolean or int.
             // If that happens, we need to apply Python's boxing rules.
-            if (res.Expression.Type.IsValueType) {
+            if (res.Expression.Type.IsValueType()) {
                 res = BindingHelpers.AddPythonBoxing(res);
             } else if (res.Expression.Type == typeof(void)) {
                 res = new DynamicMetaObject(
@@ -507,7 +507,7 @@ namespace IronPython.Runtime.Types {
                     }
 
                     return new DynamicMetaObject(
-                        Ast.Dynamic(
+                        DynamicExpression.Dynamic(
                             call,
                             typeof(object),
                             DynamicUtils.GetExpressions(dynamicArgs)
@@ -545,7 +545,7 @@ namespace IronPython.Runtime.Types {
                     }
 
                     return new DynamicMetaObject(
-                        Ast.Dynamic(
+                        DynamicExpression.Dynamic(
                             call,
                             typeof(object),
                             DynamicUtils.GetExpressions(dynamicArgs)

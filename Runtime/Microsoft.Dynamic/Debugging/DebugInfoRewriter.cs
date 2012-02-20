@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using MSAst = System.Linq.Expressions;
 #else
 using MSAst = Microsoft.Scripting.Ast;
@@ -24,7 +24,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq.Expressions;
 using Microsoft.Scripting.Debugging.CompilerServices;
+using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Debugging {
@@ -33,7 +35,7 @@ namespace Microsoft.Scripting.Debugging {
     /// <summary>
     /// Used to rewrite expressions containing DebugInfoExpressions.
     /// </summary>
-    internal class DebugInfoRewriter : MSAst.ExpressionVisitor {
+    internal class DebugInfoRewriter : MSAst.DynamicExpressionVisitor {
         private readonly DebugContext _debugContext;
         private readonly bool _transformToGenerator;
         private readonly MSAst.Expression _thread;

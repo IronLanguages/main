@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-#if CLR2
+#if !FEATURE_NUMERICS
 
 using System;
 using System.Collections.Generic;
@@ -20,7 +20,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
-using Microsoft.Contracts;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Math {
@@ -1387,17 +1386,14 @@ namespace Microsoft.Scripting.Math {
             return this * this;
         }
 
-        [Confined]
         public override string ToString() {
             return ToString(10);
         }
 
-        [Confined]
         public string ToString(int radix) {
             return MathUtils.BigIntegerToString(copy(data), sign, radix, false);
         }
 
-        [Confined]
         public string ToString(string format) {
             switch (format) {
                 case "x":
@@ -1411,7 +1407,6 @@ namespace Microsoft.Scripting.Math {
             }
         }
 
-        [Confined]
         public override int GetHashCode() {
             // The Object.GetHashCode function needs to be consistent with the Object.Equals function.
             // Languages that build on top of this may have a more flexible equality function and 
@@ -1441,12 +1436,10 @@ namespace Microsoft.Scripting.Math {
             }
         }
 
-        [Confined]
         public override bool Equals(object obj) {
             return Equals(obj as BigInteger);
         }
 
-        [StateIndependent]
         public bool Equals(BigInteger other) {
             if (object.ReferenceEquals(other, null)) return false;
             return this == other;
@@ -1519,7 +1512,7 @@ namespace Microsoft.Scripting.Math {
             return Log(10);
         }
 
-#region IComparable Members
+        #region IComparable Members
 
         public int CompareTo(object obj) {
             if (obj == null) {
@@ -1534,19 +1527,16 @@ namespace Microsoft.Scripting.Math {
 
         #endregion
 
-#region IConvertible Members
+        #region IConvertible Members
 
-        [Confined]
         public TypeCode GetTypeCode() {
             return TypeCode.Object;
         }
 
-        [Confined]
         public bool ToBoolean(IFormatProvider provider) {
             return this != Zero;
         }
 
-        [Confined]
         public byte ToByte(IFormatProvider provider) {
             uint ret;
             if (AsUInt32(out ret) && (ret & ~0xFF) == 0) {
@@ -1605,7 +1595,6 @@ namespace Microsoft.Scripting.Math {
             return trimmedBytes;
         }
 
-        [Confined]
         public char ToChar(IFormatProvider provider) {
             int ret;
             if (AsInt32(out ret) && (ret <= Char.MaxValue) && (ret >= Char.MinValue)) {
@@ -1614,24 +1603,20 @@ namespace Microsoft.Scripting.Math {
             throw new OverflowException("big integer won't fit into char");
         }
 
-        [Confined]
         public DateTime ToDateTime(IFormatProvider provider) {
             throw new NotImplementedException();
         }
 
-        [Confined]
         public decimal ToDecimal(IFormatProvider provider) {
             decimal ret;
             if (AsDecimal(out ret)) return ret;
             throw new OverflowException("big integer won't fit into decimal");
         }
 
-        [Confined]
         public double ToDouble(IFormatProvider provider) {
             return this.ToFloat64();
         }
 
-        [Confined]
         public short ToInt16(IFormatProvider provider) {
             int ret;
             if (AsInt32(out ret) && (ret <= short.MaxValue) && (ret >= short.MinValue)) {
@@ -1640,7 +1625,6 @@ namespace Microsoft.Scripting.Math {
             throw new OverflowException("big integer won't fit into short");
         }
 
-        [Confined]
         public int ToInt32(IFormatProvider provider) {
             int ret;
             if (AsInt32(out ret)) {
@@ -1649,7 +1633,6 @@ namespace Microsoft.Scripting.Math {
             throw new OverflowException("big integer won't fit into int");
         }
 
-        [Confined]
         public long ToInt64(IFormatProvider provider) {
             long ret;
             if (AsInt64(out ret)) {
@@ -1658,7 +1641,7 @@ namespace Microsoft.Scripting.Math {
             throw new OverflowException("big integer won't fit into long");
         }
 
-        [CLSCompliant(false), Confined]
+        [CLSCompliant(false)]
         public sbyte ToSByte(IFormatProvider provider) {
             int ret;
             if (AsInt32(out ret) && (ret <= sbyte.MaxValue) && (ret >= sbyte.MinValue)) {
@@ -1667,17 +1650,14 @@ namespace Microsoft.Scripting.Math {
             throw new OverflowException("big integer won't fit into sbyte");
         }
 
-        [Confined]
         public float ToSingle(IFormatProvider provider) {
             return checked((float)ToDouble(provider));
         }
 
-        [Confined]
         public string ToString(IFormatProvider provider) {
             return ToString();
         }
 
-        [Confined]
         public object ToType(Type conversionType, IFormatProvider provider) {
             if (conversionType == typeof(BigInteger)) {
                 return this;
@@ -1685,7 +1665,7 @@ namespace Microsoft.Scripting.Math {
             throw new NotImplementedException();
         }
 
-        [CLSCompliant(false), Confined]
+        [CLSCompliant(false)]
         public ushort ToUInt16(IFormatProvider provider) {
             uint ret;
             if (AsUInt32(out ret) && ret <= ushort.MaxValue) {
@@ -1694,7 +1674,7 @@ namespace Microsoft.Scripting.Math {
             throw new OverflowException("big integer won't fit into ushort");
         }
 
-        [CLSCompliant(false), Confined]
+        [CLSCompliant(false)]
         public uint ToUInt32(IFormatProvider provider) {
             uint ret;
             if (AsUInt32(out ret)) {
@@ -1703,7 +1683,7 @@ namespace Microsoft.Scripting.Math {
             throw new OverflowException("big integer won't fit into uint");
         }
 
-        [CLSCompliant(false), Confined]
+        [CLSCompliant(false)]
         public ulong ToUInt64(IFormatProvider provider) {
             ulong ret;
             if (AsUInt64(out ret)) {
@@ -1714,7 +1694,7 @@ namespace Microsoft.Scripting.Math {
 
         #endregion
 
-#region IFormattable Members
+        #region IFormattable Members
 
         string IFormattable.ToString(string format, IFormatProvider formatProvider) {
             if (format == null) return this.ToString();

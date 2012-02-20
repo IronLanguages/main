@@ -47,14 +47,14 @@ namespace Microsoft.Scripting {
         }
 
         private static string ReadString(string name) {
-#if SILVERLIGHT
-            return null;
-#else
+#if FEATURE_PROCESS
             try {
                 return Environment.GetEnvironmentVariable("DLR_" + name);
             } catch (SecurityException) {
                 return null;
             }
+#else
+            return null;
 #endif
         }
 

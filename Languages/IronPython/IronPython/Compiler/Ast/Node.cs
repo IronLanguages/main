@@ -15,7 +15,7 @@
 
 using Microsoft.Scripting;
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using MSAst = System.Linq.Expressions;
 using System.Linq.Expressions;
 #else

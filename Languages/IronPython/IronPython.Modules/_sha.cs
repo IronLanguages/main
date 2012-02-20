@@ -86,8 +86,8 @@ namespace IronPython.Modules {
 
         [Documentation("new([data]) -> object (object used to calculate hash)")]
         [PythonType, PythonHidden]
-        public class sha 
-#if !SILVERLIGHT
+        public class sha
+#if FEATURE_ICLONEABLE
             : ICloneable 
 #endif
         {
@@ -152,7 +152,7 @@ namespace IronPython.Modules {
                 return new sha(_bytes);
             }
 
-#if !SILVERLIGHT
+#if FEATURE_ICLONEABLE
             object ICloneable.Clone() {
                 return copy();
             }

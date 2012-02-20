@@ -17,11 +17,7 @@ using System.Collections.ObjectModel;
 using System.Dynamic.Utils;
 using System.Runtime.CompilerServices;
 
-#if SILVERLIGHT
-using System.Core;
-#endif
-
-#if CLR2
+#if !FEATURE_CORE_DLR
 namespace Microsoft.Scripting.Ast.Compiler {
 #else
 namespace System.Linq.Expressions.Compiler {

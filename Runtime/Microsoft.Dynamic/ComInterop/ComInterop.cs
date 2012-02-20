@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT // ComObject
+#if FEATURE_COM
 
 using System;
 using System.Runtime.InteropServices;

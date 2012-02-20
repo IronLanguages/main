@@ -1,25 +1,23 @@
-/***** BEGIN LICENSE BLOCK *****
- * Version: CPL 1.0
- *
- * The contents of this file are subject to the Common Public
- * License Version 1.0 (the "License"); you may not use this file
- * except in compliance with the License. You may obtain a copy of
- * the License at http://www.eclipse.org/legal/cpl-v10.html
- *
- * Software distributed under the License is distributed on an "AS
- * IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
- * implied. See the License for the specific language governing
- * rights and limitations under the License.
- *
- * Copyright (C) 2007 Ola Bini <ola@ologix.com>
- * Copyright (c) Microsoft Corporation.
- *
- ***** END LICENSE BLOCK *****/
+//  Version: CPL 1.0
+// 
+//  The contents of this file are subject to the Common Public
+//  License Version 1.0 (the "License"); you may not use this file
+//  except in compliance with the License. You may obtain a copy of
+//  the License at http://www.eclipse.org/legal/cpl-v10.html
+// 
+//  Software distributed under the License is distributed on an "AS
+//  IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+//  implied. See the License for the specific language governing
+//  rights and limitations under the License.
+// 
+//  Copyright (C) 2007 Ola Bini <ola@ologix.com>
+//  Copyright (c) Microsoft Corporation.
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -625,7 +623,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         public static object ConstructSpecializedSequence(BaseConstructor ctor, string pref, Node node) {
             RubyArray result = null;
             try {
-                result = (RubyArray)Type.GetType(pref).GetConstructor(Type.EmptyTypes).Invoke(null);
+                result = (RubyArray)Type.GetType(pref).GetConstructor(ReflectionUtils.EmptyTypes).Invoke(null);
             } catch (Exception e) {
                 throw new ConstructorException("Can't construct a sequence from class: " + pref, e);
             }
@@ -638,7 +636,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         public static object ConstructSpecializedMap(BaseConstructor ctor, string pref, Node node) {
             Hash result = null;
             try {
-                result = (Hash)Type.GetType(pref).GetConstructor(Type.EmptyTypes).Invoke(null);
+                result = (Hash)Type.GetType(pref).GetConstructor(ReflectionUtils.EmptyTypes).Invoke(null);
             } catch (Exception e) {
                 throw new ConstructorException("Can't construct a mapping from class: " + pref, e);
             }
@@ -654,12 +652,12 @@ namespace IronRuby.StandardLibrary.Yaml {
             // TODO: use DLR APIs instead of reflection
             try {
                 Type type = Type.GetType(pref);
-                object result = type.GetConstructor(Type.EmptyTypes).Invoke(null);
+                object result = type.GetConstructor(ReflectionUtils.EmptyTypes).Invoke(null);
 
                 foreach (KeyValuePair<object, object> e in ctor.ConstructMapping(node)) {
                     string name = e.Key.ToString();
                     name = "" + name[0].ToString().ToUpperInvariant() + name.Substring(1);
-                    PropertyInfo prop = type.GetProperty(name);
+                    PropertyInfo prop = type.GetInheritedProperties(name).First();
 
                     prop.SetValue(result, Convert.ChangeType(e.Value, prop.PropertyType, CultureInfo.InvariantCulture), null);
                 }

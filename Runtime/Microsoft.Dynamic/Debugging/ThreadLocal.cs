@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if !WIN8
 
 using System;
 using System.Collections.Generic;
@@ -32,7 +33,7 @@ namespace Microsoft.Scripting.Debugging {
             }
         }
 
-        internal T[] AllValues {
+        internal T[] Values {
             get {
                 List<T> allValues = new List<T>(_stores.Length);
                 foreach (StorageInfo si in _stores) {
@@ -82,7 +83,7 @@ namespace Microsoft.Scripting.Debugging {
 
         private StorageInfo CreateStorageInfo() {
             // we do our own locking, tell hosts this is a bad time to interrupt us.
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !WP75
             Thread.BeginCriticalRegion();
 #endif
             StorageInfo[] curStorage = Updating;
@@ -121,7 +122,7 @@ namespace Microsoft.Scripting.Debugging {
                     // let others access the storage again
                     Interlocked.Exchange(ref _stores, curStorage);
                 }
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !WP75
                 Thread.EndCriticalRegion();
 #endif
             }
@@ -140,3 +141,4 @@ namespace Microsoft.Scripting.Debugging {
         #endregion
     }
 }
+#endif

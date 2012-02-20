@@ -24,7 +24,7 @@ namespace IronPython.Runtime {
         public UnboundNameException(string message, Exception innerException)
             : base(message, innerException) {
         }
-#if !SILVERLIGHT // SerializationInfo
+#if FEATURE_SERIALIZATION
         protected UnboundNameException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 #endif
     }
@@ -36,7 +36,7 @@ namespace IronPython.Runtime {
         public UnboundLocalException(string message, Exception innerException)
             : base(message, innerException) {
         }
-#if !SILVERLIGHT // SerializationInfo
+#if FEATURE_SERIALIZATION
         protected UnboundLocalException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 #endif
     }

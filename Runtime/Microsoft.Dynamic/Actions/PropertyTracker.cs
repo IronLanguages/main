@@ -19,6 +19,8 @@ using System.Reflection;
 
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Actions {
 
@@ -57,19 +59,19 @@ namespace Microsoft.Scripting.Actions {
 
         #region Public expression builders
 
-        public override DynamicMetaObject GetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type) {
+        public override DynamicMetaObject GetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type instanceType) {
             if (!IsStatic || GetIndexParameters().Length > 0) {
                 // need to bind to a value or parameters to get the value.
-                return binder.ReturnMemberTracker(type, this);
+                return binder.ReturnMemberTracker(instanceType, this);
             }
 
-            MethodInfo getter = ResolveGetter(binder.PrivateBinding);
+            MethodInfo getter = ResolveGetter(instanceType, binder.PrivateBinding);
             if (getter == null || getter.ContainsGenericParameters) {
                 // no usable getter
                 return null;
             }
 
-            if (getter.IsPublic && getter.DeclaringType.IsPublic) {
+            if (getter.IsPublic && getter.DeclaringType.IsPublic()) {
                 return binder.MakeCallExpression(resolverFactory, getter);
             }
 
@@ -77,8 +79,8 @@ namespace Microsoft.Scripting.Actions {
             return MemberTracker.FromMemberInfo(getter).Call(resolverFactory, binder);
         }
 
-        public override ErrorInfo GetError(ActionBinder binder) {
-            MethodInfo getter = ResolveGetter(binder.PrivateBinding);
+        public override ErrorInfo GetError(ActionBinder binder, Type instanceType) {
+            MethodInfo getter = ResolveGetter(instanceType, binder.PrivateBinding);
 
             if (getter == null) {
                 return binder.MakeMissingMemberErrorInfo(DeclaringType, Name);
@@ -111,7 +113,8 @@ namespace Microsoft.Scripting.Actions {
                 return null;
             }
 
-            getter = CompilerHelpers.TryGetCallableMethod(getter);
+            // TODO (tomat): this used to use getter.ReflectedType, is it still correct? 
+            getter = CompilerHelpers.TryGetCallableMethod(instance.GetLimitType(), getter);
 
             var defaultBinder = (DefaultBinder)binder;
             if (binder.PrivateBinding || CompilerHelpers.IsVisible(getter)) {
@@ -122,8 +125,8 @@ namespace Microsoft.Scripting.Actions {
             return DefaultBinder.MakeError(defaultBinder.MakeNonPublicMemberGetError(resolverFactory, this, type, instance), BindingRestrictions.Empty, typeof(object));
         }
 
-        public override ErrorInfo GetBoundError(ActionBinder binder, DynamicMetaObject instance) {
-            MethodInfo getter = ResolveGetter(binder.PrivateBinding);
+        public override ErrorInfo GetBoundError(ActionBinder binder, DynamicMetaObject instance, Type instanceType) {
+            MethodInfo getter = ResolveGetter(instanceType, binder.PrivateBinding);
 
             if (getter == null) {
                 return binder.MakeMissingMemberErrorInfo(DeclaringType, Name);
@@ -148,10 +151,10 @@ namespace Microsoft.Scripting.Actions {
 
         #region Private expression builder helpers
 
-        private MethodInfo ResolveGetter(bool privateBinding) {
+        private MethodInfo ResolveGetter(Type instanceType, bool privateBinding) {
             MethodInfo getter = GetGetMethod(true);
             if (getter != null) {
-                getter = CompilerHelpers.TryGetCallableMethod(getter);
+                getter = CompilerHelpers.TryGetCallableMethod(instanceType, getter);
                 if (privateBinding || CompilerHelpers.IsVisible(getter)) {
                     return getter;
                 }

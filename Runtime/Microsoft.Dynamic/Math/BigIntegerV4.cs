@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-#if !CLR2
+#if FEATURE_NUMERICS
 
 using System;
 using System.Collections.Generic;
@@ -20,7 +20,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
-using Microsoft.Contracts;
 using Microsoft.Scripting.Utils;
 using BigInt = System.Numerics.BigInteger;
 
@@ -599,7 +598,6 @@ namespace Microsoft.Scripting.Math {
             return Value.ToByteArray();
         }
 
-        [Confined]
         public string ToString(IFormatProvider provider) {
             return Value.ToString(provider);
         }

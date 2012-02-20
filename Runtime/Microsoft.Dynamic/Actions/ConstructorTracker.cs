@@ -15,7 +15,6 @@
 
 using System;
 using System.Reflection;
-using Microsoft.Contracts;
 
 namespace Microsoft.Scripting.Actions {
     public class ConstructorTracker : MemberTracker {
@@ -43,7 +42,6 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        [Confined]
         public override string ToString() {
             return _ctor.ToString();
         }

@@ -63,7 +63,7 @@ namespace IronPython.Runtime.Operations {
                 Type selfType = self.GetType();
                 Type underType = Enum.GetUnderlyingType(selfType);
 
-                switch(Type.GetTypeCode(underType)) {
+                switch (underType.GetTypeCode()) {
                     case TypeCode.Int16: return (short)self != 0;
                     case TypeCode.Int32: return (int)self != 0;
                     case TypeCode.Int64: return (long)self != 0;

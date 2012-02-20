@@ -13,16 +13,20 @@
  *
  * ***************************************************************************/
 
-#if CLR2
+#if !FEATURE_CORE_DLR
 using dynamic = System.Object;
+#endif
+
+#if FEATURE_REMOTING
+using System.Runtime.Remoting;
+#else
+using MarshalByRefObject = System.Object;
 #endif
 
 using System;
 using System.IO;
 using System.Diagnostics;
-using System.Runtime.Remoting;
 using System.Dynamic;
-using System.Security.Permissions;
 using System.Text;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
@@ -32,10 +36,7 @@ namespace Microsoft.Scripting.Hosting {
     /// Hosting counterpart for <see cref="SourceUnit"/>.
     /// </summary>
     [DebuggerDisplay("{Path ?? \"<anonymous>\"}")]
-    public sealed class ScriptSource
-#if !SILVERLIGHT
-        : MarshalByRefObject
-#endif
+    public sealed class ScriptSource : MarshalByRefObject
     {
         private readonly ScriptEngine _engine;
         private readonly SourceUnit _unit;
@@ -158,7 +159,7 @@ namespace Microsoft.Scripting.Hosting {
             return _engine.Operations.ConvertTo<T>((object)Execute());
         }
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
         /// <summary>
         /// Executes the code in an empty scope.
         /// Returns an ObjectHandle wrapping the resulting value of running the code.  
@@ -338,7 +339,7 @@ namespace Microsoft.Scripting.Hosting {
 
         #endregion
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
         // TODO: Figure out what is the right lifetime
         public override object InitializeLifetimeService() {
             return null;

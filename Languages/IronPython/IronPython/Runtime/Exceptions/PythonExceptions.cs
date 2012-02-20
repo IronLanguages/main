@@ -13,10 +13,14 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
+#endif
+
+#if !FEATURE_REMOTING
+using MarshalByRefObject = System.Object;
 #endif
 
 using System;
@@ -538,7 +542,7 @@ namespace IronPython.Runtime.Exceptions {
                 if (exception is FileNotFoundException ||
                     exception is DirectoryNotFoundException ||
                     exception is PathTooLongException 
-#if !SILVERLIGHT
+#if FEATURE_DRIVENOTFOUNDEXCEPTION
                     || exception is DriveNotFoundException
 #endif
                     ) {
@@ -552,6 +556,7 @@ namespace IronPython.Runtime.Exceptions {
                     return;
                 }
 
+#if !SILVERLIGHT5
                 var ioExcep = exception as System.IO.IOException;
                 if (ioExcep != null) {
                     try {
@@ -566,14 +571,17 @@ namespace IronPython.Runtime.Exceptions {
                         // not enough permissions to do this...
                     }
                 }
-                
+#endif
+
                 base.InitAndGetClrException(exception);
             }
 
+#if !SILVERLIGHT5
             [MethodImpl(MethodImplOptions.NoInlining)] // don't inline so the link demand is always evaluated here.
             private static int GetHRForException(System.Exception exception) {
                 return System.Runtime.InteropServices.Marshal.GetHRForException(exception);
             }
+#endif
         }
 
         public partial class _UnicodeTranslateError : BaseException {
@@ -997,9 +1005,9 @@ for k, v in toError.iteritems():
                 // explicit extra conversions that need a special transformation
                 if ((syntax = clrException as SyntaxErrorException) != null) {
                     return SyntaxErrorToPython(syntax);
-                } 
+                }
 
-#if !SILVERLIGHT // ThreadAbortException.ExceptionState
+#if FEATURE_EXCEPTION_STATE
                 ThreadAbortException ta;
                 if ((ta = clrException as ThreadAbortException) != null) {
                     // transform TA w/ our reason into a KeyboardInterrupt exception.
@@ -1034,7 +1042,6 @@ for k, v in toError.iteritems():
             if (clrException is InvalidCastException || clrException is ArgumentNullException) {
                 // explicit extra conversions outside the generated hierarchy
                 pyExcep = new BaseException(TypeError);
-#if !SILVERLIGHT
             } else if (clrException is Win32Exception) {
                 Win32Exception win32 = (Win32Exception)clrException;
                 pyExcep = new _WindowsError();
@@ -1044,7 +1051,6 @@ for k, v in toError.iteritems():
                     pyExcep.__init__(win32.ErrorCode, win32.Message);
                 }
                 return pyExcep;
-#endif
             } else {
                 // conversions from generated code (in the generated hierarchy)...
                 pyExcep = ToPythonHelper(clrException);
@@ -1056,11 +1062,7 @@ for k, v in toError.iteritems():
         }
 
         [Serializable]
-        private class ExceptionDataWrapper 
-#if !SILVERLIGHT
-            : MarshalByRefObject 
-#endif
-        {
+        private class ExceptionDataWrapper : MarshalByRefObject {
             private readonly object _value;
 
             public ExceptionDataWrapper(object value) {

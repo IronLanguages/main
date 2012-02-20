@@ -13,6 +13,18 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_CORE_DLR
+using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
+#if FEATURE_NUMERICS
+using System.Numerics;
+#else
+using Microsoft.Scripting.Math;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -29,14 +41,6 @@ using IronPython.Compiler.Ast;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-
-#if CLR2
-using Microsoft.Scripting.Math;
-using MSAst = Microsoft.Scripting.Ast;
-#else
-using System.Numerics;
-using MSAst = System.Linq.Expressions;
-#endif
 
 using Utils = Microsoft.Scripting.Ast.Utils;
 

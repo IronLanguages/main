@@ -64,16 +64,16 @@ namespace Microsoft.Scripting.Runtime {
                         String.Format(
                             "Failed to load language '{0}': assembly '{1}' does not contain type '{2}'",
                             _displayName, 
-#if SILVERLIGHT // Assembly.Location not available on CF
-                            assembly.FullName,
-#else
+#if FEATURE_FILESYSTEM
                             assembly.Location,
+#else
+                            assembly.FullName,
 #endif
-                            _providerName.TypeName
+                             _providerName.TypeName
                     ));
                 }
 
-                if (!type.IsSubclassOf(typeof(LanguageContext))) {
+                if (!type.GetTypeInfo().IsSubclassOf(typeof(LanguageContext))) {
                     throw new InvalidOperationException(
                         String.Format(
                             "Failed to load language '{0}': type '{1}' is not a valid language provider because it does not inherit from LanguageContext",

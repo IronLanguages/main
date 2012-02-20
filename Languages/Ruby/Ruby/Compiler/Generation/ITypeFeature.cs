@@ -12,7 +12,6 @@
  *
  *
  * ***************************************************************************/
-
 using System;
 using System.Reflection.Emit;
 
@@ -20,10 +19,14 @@ namespace IronRuby.Compiler.Generation {
     internal interface ITypeFeature {
         bool CanInherit { get; }
         bool IsImplementedBy(Type type);
+#if FEATURE_REFEMIT
         IFeatureBuilder MakeBuilder(TypeBuilder tb);
+#endif
     }
 
+#if FEATURE_REFEMIT
     internal interface IFeatureBuilder {
         void Implement(ClsTypeEmitter emitter);
     }
+#endif
 }

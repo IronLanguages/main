@@ -24,6 +24,7 @@ using System.Threading;
 
 namespace Microsoft.Scripting.Utils {
     internal static class DelegateUtils {
+#if FEATURE_REFEMIT
         private static AssemblyBuilder _assembly;
         private static ModuleBuilder _modBuilder;
         private static int _typeCount;
@@ -36,7 +37,13 @@ namespace Microsoft.Scripting.Utils {
 
         private static TypeBuilder DefineDelegateType(string name) {
             if (_assembly == null) {
-                Interlocked.CompareExchange(ref _assembly, AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("DynamicDelegates"), AssemblyBuilderAccess.Run), null);
+                AssemblyBuilder newAssembly;
+#if WIN8
+                newAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("DynamicDelegates"), AssemblyBuilderAccess.Run);
+#else
+                newAssembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("DynamicDelegates"), AssemblyBuilderAccess.Run);
+#endif
+                Interlocked.CompareExchange(ref _assembly, newAssembly, null);
 
                 lock (_assembly) {
                     if (_modBuilder == null) {
@@ -51,7 +58,7 @@ namespace Microsoft.Scripting.Utils {
                 typeof(MulticastDelegate)
             );
         }
-
+#endif
         /// <summary>
         /// Gets a Func of CallSite, object * paramCnt, object delegate type
         /// that's suitable for use in a non-strongly typed call site.
@@ -74,6 +81,7 @@ namespace Microsoft.Scripting.Utils {
                 case 13: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object, object, object, object>);
                 case 14: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object, object, object, object, object>);
                 default:
+#if FEATURE_REFEMIT
                     Type[] paramTypes = new Type[paramCnt + 2];
                     
                     paramTypes[0] = typeof(CallSite);
@@ -87,9 +95,10 @@ namespace Microsoft.Scripting.Utils {
                         CallingConventions.Standard, _DelegateCtorSignature).SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
                     tb.DefineMethod("Invoke", MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual, typeof(object), paramTypes).SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
                     return tb.CreateType();
+#else
+                    throw new NotSupportedException();
+#endif
             }
         }
-
-
     }
 }

@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT // ICustomTypeDescriptor
+#if FEATURE_CUSTOM_TYPE_DESCRIPTOR
 
 using System;
 using System.Collections.Generic;

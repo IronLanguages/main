@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -22,10 +22,10 @@ using Microsoft.Scripting.Ast;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Microsoft.Scripting.Utils;
+using System.Linq;
 using System.Text;
-using Microsoft.Contracts;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Actions {
     /// <summary>
@@ -70,7 +70,6 @@ namespace Microsoft.Scripting.Actions {
             _name = existingTypes.Name;
         }
 
-        [Confined]
         public override string ToString() {
             StringBuilder repr = new StringBuilder(base.ToString());
             repr.Append(":" + Name + "(");
@@ -89,13 +88,12 @@ namespace Microsoft.Scripting.Actions {
         }
 
         public override IList<string> GetMemberNames() {
-            Dictionary<string, string> members = new Dictionary<string, string>();
-            foreach (Type t in this.Types) {
-                CollectMembers(members, t);
+            HashSet<string> members = new HashSet<string>();
+            foreach (Type type in this.Types) {
+                GetMemberNames(type, members);
             }
 
-            return MembersToList(members);
-
+            return members.ToArray();
         }
 
         public TypeTracker GetTypeForArity(int arity) {
@@ -136,11 +134,11 @@ namespace Microsoft.Scripting.Actions {
 
         /// <summary> Gets the arity of generic parameters</summary>
         private static int GetGenericArity(Type type) {
-            if (!type.IsGenericType) {
+            if (!type.IsGenericType()) {
                 return 0;
             }
 
-            Debug.Assert(type.IsGenericTypeDefinition);
+            Debug.Assert(type.IsGenericTypeDefinition());
             return type.GetGenericArguments().Length;
         }
 
@@ -222,7 +220,7 @@ namespace Microsoft.Scripting.Actions {
         /// an exception if all types in the TypeGroup are generic
         /// </summary>
         public override bool IsPublic {
-            get { return GetNonGenericType().IsPublic; }
+            get { return GetNonGenericType().IsPublic(); }
         }
 
         #endregion

@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT // ComObject
+#if FEATURE_COM
 
 namespace Microsoft.Scripting.ComInterop {
     internal static class ComDispIds {

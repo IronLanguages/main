@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT
+#if FEATURE_COMPRESSION
 
 using System;
 using System.Collections;

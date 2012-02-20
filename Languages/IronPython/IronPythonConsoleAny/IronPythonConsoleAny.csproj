@@ -2,8 +2,6 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <Import Project="$(ProjectDir)..\..\..\Solutions\Common.proj" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{F1D861C5-D9D5-4CDA-968B-8275F5D9F6D2}</ProjectGuid>
     <OutputType>Exe</OutputType>
@@ -11,69 +9,20 @@
     <RootNamespace>IronPythonConsole</RootNamespace>
     <AssemblyName>ipy64</AssemblyName>
     <ApplicationIcon>..\IronPythonConsole\ipy.ico</ApplicationIcon>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>618,1685</WarningsNotAsErrors>
     <CodeAnalysisRuleSet>IronPythonConsoleAny.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <DefineConstants>TRACE;DEBUG;$(SignedSym);CLR2</DefineConstants>
-    <OutputPath>$(SolutionDir)..\bin\v2Debug\</OutputPath>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <UseVSHostingProcess>true</UseVSHostingProcess>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>$(SolutionDir)..\bin\v2Release\</OutputPath>
-    <DefineConstants>TRACE;$(SignedSym);CLR2</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DelaySigned>true</DelaySigned>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>$(SolutionDir)..\bin\FxCop</OutputPath>
-    <DefineConstants>TRACE;$(SignedSym);CODE_ANALYSIS;CLR4</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <RunCodeAnalysis>true</RunCodeAnalysis>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <DefineConstants>TRACE;DEBUG;CLR4;$(SignedSym)</DefineConstants>
-    <OutputPath>$(SolutionDir)..\bin\Debug</OutputPath>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <UseVSHostingProcess>false</UseVSHostingProcess>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>$(SolutionDir)..\bin\Release</OutputPath>
-    <DefineConstants>TRACE;CLR4;$(SignedSym)</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DelaySigned>true</DelaySigned>
-    <UseVSHostingProcess>false</UseVSHostingProcess>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting.Core\Microsoft.Scripting.Core.csproj" Condition="'$(TargetFrameworkVersion)' != 'v4.0'">
+    <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting.Core\Microsoft.Scripting.Core.csproj" Condition="'$(FeatureCoreDlr)' != 'true'">
       <Project>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</Project>
       <Name>Microsoft.Scripting.Core</Name>
     </ProjectReference>

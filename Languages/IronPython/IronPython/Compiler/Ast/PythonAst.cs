@@ -31,7 +31,7 @@ using IronPython.Runtime;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using MSAst = System.Linq.Expressions;
 #else
 using MSAst = Microsoft.Scripting.Ast;
@@ -61,7 +61,7 @@ namespace IronPython.Compiler.Ast {
         private ModuleContext _modContext;
         private readonly bool _onDiskProxy;
         internal MSAst.Expression _arrayExpression;
-        private UncollectableCompilationMode.ConstantInfo _contextInfo;
+        private CompilationMode.ConstantInfo _contextInfo;
         private Dictionary<PythonVariable, MSAst.Expression> _globalVariables = new Dictionary<PythonVariable, MSAst.Expression>();
         internal readonly Profiler _profiler;                            // captures timing data if profiling
 
@@ -116,7 +116,11 @@ namespace IronPython.Compiler.Ast {
             Debug.Assert(_name != null);
             PythonOptions po = ((PythonContext)context.SourceUnit.LanguageContext).PythonOptions;
 
-            if (po.EnableProfiler && _mode != CompilationMode.ToDisk) {
+            if (po.EnableProfiler 
+#if FEATURE_REFEMIT
+                && _mode != CompilationMode.ToDisk
+#endif
+                ) {
                 _profiler = Profiler.GetProfiler(PyContext);
             }
 
@@ -195,9 +199,12 @@ namespace IronPython.Compiler.Ast {
             GlobalDictionaryStorage storage = new GlobalDictionaryStorage(globals, globalArray);
             var modContext = _modContext = new ModuleContext(new PythonDictionary(storage), PyContext);
 
+#if FEATURE_REFEMIT
             if (_mode == CompilationMode.ToDisk) {
                 _arrayExpression = _globalArray;
-            } else {
+            } else 
+#endif
+            {
                 var newArray = new ConstantExpression(globalArray);
                 newArray.Parent = this;
                 _arrayExpression = newArray;
@@ -514,7 +521,7 @@ namespace IronPython.Compiler.Ast {
                 PythonCompilerOptions pco = _compilerContext.Options as PythonCompilerOptions;
                 string moduleName = pco.ModuleName;
                 if (moduleName == null) {
-#if !SILVERLIGHT
+#if FEATURE_GETINVALIDFILENAMECHARS
                     if (_compilerContext.SourceUnit.HasPath && _compilerContext.SourceUnit.Path.IndexOfAny(Path.GetInvalidFileNameChars()) == -1) {
                         moduleName = Path.GetFileNameWithoutExtension(_compilerContext.SourceUnit.Path);
 #else
@@ -572,10 +579,14 @@ namespace IronPython.Compiler.Ast {
                 return CompilationMode.Lookup;
             }
 
+#if FEATURE_REFEMIT
             PythonContext pc = ((PythonContext)context.SourceUnit.LanguageContext);
             return ((pc.PythonOptions.Optimize || options.Optimized) && !pc.PythonOptions.LightweightScopes) ?
                 CompilationMode.Uncollectable :
                 CompilationMode.Collectable;
+#else
+            return CompilationMode.Collectable;
+#endif
         }
 
         internal CompilationMode CompilationMode {

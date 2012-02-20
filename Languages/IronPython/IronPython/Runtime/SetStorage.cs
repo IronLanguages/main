@@ -42,11 +42,7 @@ namespace IronPython.Runtime {
     /// occurred either before or after the mutation.
     /// </summary>
     [Serializable]
-    internal sealed class SetStorage : IEnumerable, IEnumerable<object>
-#if !SILVERLIGHT
-        , ISerializable, IDeserializationCallback
-#endif
-    {
+    internal sealed class SetStorage : IEnumerable, IEnumerable<object>, ISerializable, IDeserializationCallback {
         internal Bucket[] _buckets;
         internal int _count;
         private int _version;
@@ -83,7 +79,7 @@ namespace IronPython.Runtime {
             Initialize(count);
         }
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         private SetStorage(SerializationInfo info, StreamingContext context) {
             // remember the serialization info; we'll deserialize when we get the callback. This
             // enables special types like DBNull.Value to successfully be deserialized inside the
@@ -1383,7 +1379,7 @@ namespace IronPython.Runtime {
 
         #endregion
 
-#if !SILVERLIGHT
+#if FEATURE_SERIALIZATION
         #region ISerializable Members
 
         public void GetObjectData(SerializationInfo info, StreamingContext context) {

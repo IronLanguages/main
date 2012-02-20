@@ -29,11 +29,11 @@ using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-#if CLR2
+#if FEATURE_NUMERICS
+using System.Numerics;
+#else
 using Microsoft.Scripting.Math;
 using Complex = Microsoft.Scripting.Math.Complex64;
-#else
-using System.Numerics;
 #endif
 
 namespace IronPython.Runtime {
@@ -297,8 +297,8 @@ namespace IronPython.Runtime {
             }
 
             object res = site.Target(site, value);
-            if (to.IsValueType && res == null && 
-                (!to.IsGenericType || to.GetGenericTypeDefinition() != typeof(Nullable<>))) {
+            if (to.IsValueType() && res == null && 
+                (!to.IsGenericType() || to.GetGenericTypeDefinition() != typeof(Nullable<>))) {
                 throw MakeTypeError(to, value);
             }
             return res;
@@ -521,8 +521,9 @@ namespace IronPython.Runtime {
 
             if (toType == fromType) return true;
             if (toType.IsAssignableFrom(fromType)) return true;
+#if FEATURE_COM
             if (fromType.IsCOMObject && toType.IsInterface) return true; // A COM object could be cast to any interface
-
+#endif
             if (HasImplicitNumericConversion(fromType, toType)) return true;
 
             // Handling the hole that Type is the only object that we 'box'
@@ -547,7 +548,7 @@ namespace IronPython.Runtime {
                 return true;
             }
 
-#if !SILVERLIGHT
+#if FEATURE_CUSTOM_TYPE_DESCRIPTOR
             // try available type conversions...
             object[] tcas = toType.GetCustomAttributes(typeof(TypeConverterAttribute), true);
             foreach (TypeConverterAttribute tca in tcas) {
@@ -568,10 +569,10 @@ namespace IronPython.Runtime {
             return HasNarrowingConversion(fromType, toType, allowNarrowing);
         }
 
-#if !SILVERLIGHT
+#if FEATURE_CUSTOM_TYPE_DESCRIPTOR
         private static TypeConverter GetTypeConverter(TypeConverterAttribute tca) {
             try {
-                ConstructorInfo ci = Type.GetType(tca.ConverterTypeName).GetConstructor(Type.EmptyTypes);
+                ConstructorInfo ci = Type.GetType(tca.ConverterTypeName).GetConstructor(ReflectionUtils.EmptyTypes);
                 if (ci != null) return ci.Invoke(ArrayUtils.EmptyObjects) as TypeConverter;
             } catch (TargetInvocationException) {
             }
@@ -580,7 +581,7 @@ namespace IronPython.Runtime {
 #endif
 
         private static bool HasImplicitNumericConversion(Type fromType, Type toType) {
-            if (fromType.IsEnum) return false;
+            if (fromType.IsEnum()) return false;
 
             if (fromType == typeof(BigInteger)) {
                 if (toType == typeof(double)) return true;
@@ -594,9 +595,9 @@ namespace IronPython.Runtime {
                 return HasImplicitNumericConversion(typeof(int), toType);
             }
 
-            switch (Type.GetTypeCode(fromType)) {
+            switch (fromType.GetTypeCode()) {
                 case TypeCode.SByte:
-                    switch (Type.GetTypeCode(toType)) {
+                    switch (toType.GetTypeCode()) {
                         case TypeCode.Int16:
                         case TypeCode.Int32:
                         case TypeCode.Int64:
@@ -610,7 +611,7 @@ namespace IronPython.Runtime {
                             return false;
                     }
                 case TypeCode.Byte:
-                    switch (Type.GetTypeCode(toType)) {
+                    switch (toType.GetTypeCode()) {
                         case TypeCode.Int16:
                         case TypeCode.UInt16:
                         case TypeCode.Int32:
@@ -627,7 +628,7 @@ namespace IronPython.Runtime {
                             return false;
                     }
                 case TypeCode.Int16:
-                    switch (Type.GetTypeCode(toType)) {
+                    switch (toType.GetTypeCode()) {
                         case TypeCode.Int32:
                         case TypeCode.Int64:
                         case TypeCode.Single:
@@ -640,7 +641,7 @@ namespace IronPython.Runtime {
                             return false;
                     }
                 case TypeCode.UInt16:
-                    switch (Type.GetTypeCode(toType)) {
+                    switch (toType.GetTypeCode()) {
                         case TypeCode.Int32:
                         case TypeCode.UInt32:
                         case TypeCode.Int64:
@@ -655,7 +656,7 @@ namespace IronPython.Runtime {
                             return false;
                     }
                 case TypeCode.Int32:
-                    switch (Type.GetTypeCode(toType)) {
+                    switch (toType.GetTypeCode()) {
                         case TypeCode.Int64:
                         case TypeCode.Single:
                         case TypeCode.Double:
@@ -667,7 +668,7 @@ namespace IronPython.Runtime {
                             return false;
                     }
                 case TypeCode.UInt32:
-                    switch (Type.GetTypeCode(toType)) {
+                    switch (toType.GetTypeCode()) {
                         case TypeCode.Int64:
                         case TypeCode.UInt64:
                         case TypeCode.Single:
@@ -680,7 +681,7 @@ namespace IronPython.Runtime {
                             return false;
                     }
                 case TypeCode.Int64:
-                    switch (Type.GetTypeCode(toType)) {
+                    switch (toType.GetTypeCode()) {
                         case TypeCode.Single:
                         case TypeCode.Double:
                         case TypeCode.Decimal:
@@ -691,7 +692,7 @@ namespace IronPython.Runtime {
                             return false;
                     }
                 case TypeCode.UInt64:
-                    switch (Type.GetTypeCode(toType)) {
+                    switch (toType.GetTypeCode()) {
                         case TypeCode.Single:
                         case TypeCode.Double:
                         case TypeCode.Decimal:
@@ -702,7 +703,7 @@ namespace IronPython.Runtime {
                             return false;
                     }
                 case TypeCode.Char:
-                    switch (Type.GetTypeCode(toType)) {
+                    switch (toType.GetTypeCode()) {
                         case TypeCode.UInt16:
                         case TypeCode.Int32:
                         case TypeCode.UInt32:
@@ -718,7 +719,7 @@ namespace IronPython.Runtime {
                             return false;
                     }
                 case TypeCode.Single:
-                    switch (Type.GetTypeCode(toType)) {
+                    switch (toType.GetTypeCode()) {
                         case TypeCode.Double:
                             return true;
                         default:
@@ -726,7 +727,7 @@ namespace IronPython.Runtime {
                             return false;
                     }
                 case TypeCode.Double:
-                    switch (Type.GetTypeCode(toType)) {
+                    switch (toType.GetTypeCode()) {
                         default:
                             if (toType == ComplexType) return true;
                             return false;
@@ -741,9 +742,9 @@ namespace IronPython.Runtime {
             if (t1 == typeof(Decimal) && t2 == typeof(BigInteger)) return Candidate.Two;
             //if (t1 == typeof(int) && t2 == typeof(BigInteger)) return Candidate.Two;
 
-            switch (Type.GetTypeCode(t1)) {
+            switch (t1.GetTypeCode()) {
                 case TypeCode.SByte:
-                    switch (Type.GetTypeCode(t2)) {
+                    switch (t2.GetTypeCode()) {
                         case TypeCode.Byte:
                         case TypeCode.UInt16:
                         case TypeCode.UInt32:
@@ -753,7 +754,7 @@ namespace IronPython.Runtime {
                             return Candidate.Equivalent;
                     }
                 case TypeCode.Int16:
-                    switch (Type.GetTypeCode(t2)) {
+                    switch (t2.GetTypeCode()) {
                         case TypeCode.UInt16:
                         case TypeCode.UInt32:
                         case TypeCode.UInt64:
@@ -762,7 +763,7 @@ namespace IronPython.Runtime {
                             return Candidate.Equivalent;
                     }
                 case TypeCode.Int32:
-                    switch (Type.GetTypeCode(t2)) {
+                    switch (t2.GetTypeCode()) {
                         case TypeCode.UInt32:
                         case TypeCode.UInt64:
                             return Candidate.Two;
@@ -770,7 +771,7 @@ namespace IronPython.Runtime {
                             return Candidate.Equivalent;
                     }
                 case TypeCode.Int64:
-                    switch (Type.GetTypeCode(t2)) {
+                    switch (t2.GetTypeCode()) {
                         case TypeCode.UInt64:
                             return Candidate.Two;
                         default:
@@ -819,7 +820,7 @@ namespace IronPython.Runtime {
 
                 if (toType == typeof(IEnumerator)) {
                     if (IsPythonType(fromType)) return true;
-                } else if (toType.IsGenericType) {
+                } else if (toType.IsGenericType()) {
                     Type genTo = toType.GetGenericTypeDefinition();
                     if (genTo == IEnumerableOfTType) {
                         return IEnumerableOfObjectType.IsAssignableFrom(fromType) ||
@@ -839,7 +840,7 @@ namespace IronPython.Runtime {
                 if (toType == BigIntegerType && HasPythonProtocol(fromType, "__long__")) return true;
             }
 
-            if (toType.IsGenericType) {
+            if (toType.IsGenericType()) {
                 Type genTo = toType.GetGenericTypeDefinition();
                 if (genTo == IListOfTType) {
                     return IListOfObjectType.IsAssignableFrom(fromType);
@@ -853,7 +854,7 @@ namespace IronPython.Runtime {
             }
 
             if (fromType == BigIntegerType && toType == Int64Type) return true;
-            if (toType.IsEnum && fromType == Enum.GetUnderlyingType(toType)) return true;
+            if (toType.IsEnum() && fromType == Enum.GetUnderlyingType(toType)) return true;
 
             return false;
         }
@@ -873,7 +874,7 @@ namespace IronPython.Runtime {
                         return true;
                     }
                 }
-                lookupType = lookupType.BaseType;
+                lookupType = lookupType.GetBaseType();
             }
             return false;
         }
@@ -911,9 +912,9 @@ namespace IronPython.Runtime {
         }
 
         internal static bool IsNumeric(Type t) {
-            if (t.IsEnum) return false;
+            if (t.IsEnum()) return false;
 
-            switch (Type.GetTypeCode(t)) {
+            switch (t.GetTypeCode()) {
                 case TypeCode.DateTime:
                 case TypeCode.DBNull:
                 case TypeCode.Char:

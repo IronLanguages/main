@@ -13,14 +13,13 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
 #endif
 
 using System;
-using Microsoft.Contracts;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -57,7 +56,6 @@ namespace Microsoft.Scripting.Actions {
             return obj is Argument && Equals((Argument)obj);
         }
 
-        [StateIndependent]
         public bool Equals(Argument other) {
             return _kind == other._kind && _name == other._name;
         }

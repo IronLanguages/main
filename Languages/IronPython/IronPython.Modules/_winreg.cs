@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_REGISTRY //Registry not available in silverlight and we require .NET 4.0 APIs for implementing this.
 
 using System;
 using System.Collections.Generic;
@@ -31,13 +32,11 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-#if CLR2
-using Microsoft.Scripting.Math;
-#else
+#if FEATURE_NUMERICS
 using System.Numerics;
+#else
+using Microsoft.Scripting.Math;
 #endif
-
-#if !SILVERLIGHT && !CLR2 //Registry not available in silverlight and we require .NET 4.0 APIs for implementing this.
 
 [assembly: PythonModule("_winreg", typeof(IronPython.Modules.PythonWinReg))]
 namespace IronPython.Modules {
@@ -46,7 +45,7 @@ namespace IronPython.Modules {
 
         public static PythonType error = PythonExceptions.WindowsError;
 
-        #region Constants
+#region Constants
 
         public static BigInteger HKEY_CLASSES_ROOT = 0x80000000L;
         public static BigInteger HKEY_CURRENT_USER = 0x80000001L;
@@ -102,9 +101,9 @@ namespace IronPython.Modules {
         public const int REG_LEGAL_OPTION = 0XF;
         public const int REG_WHOLE_HIVE_VOLATILE = 0X1;
 
-        #endregion
+#endregion
 
-        #region Module Methods
+#region Module Methods
 
         public static void CloseKey(HKEYType key) {
             key.Close();
@@ -441,9 +440,9 @@ namespace IronPython.Modules {
             }
             return new HKEYType(newKey);
         }
-        #endregion
+#endregion
 
-        #region Helpers
+#region Helpers
         private static HKEYType GetRootKey(object key) {
             HKEYType rootKey;
             rootKey = key as HKEYType;
@@ -480,7 +479,7 @@ namespace IronPython.Modules {
             return (int)registryValueKind;
         }
 
-        #endregion
+#endregion
 
 
         [PythonType]
@@ -534,13 +533,13 @@ namespace IronPython.Modules {
                 }
             }
 
-            #region IDisposable Members
+#region IDisposable Members
 
             void IDisposable.Dispose() {
                 Close();
             }
 
-            #endregion
+#endregion
         }
     }
 

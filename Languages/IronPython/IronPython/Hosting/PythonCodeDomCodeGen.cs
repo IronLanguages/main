@@ -17,7 +17,7 @@ using System.CodeDom;
 using System.Collections.Generic;
 using Microsoft.Scripting.Runtime;
 
-#if !SILVERLIGHT // CodeDom objects are not available
+#if FEATURE_CODEDOM
 
 namespace IronPython.Hosting {
     internal class PythonCodeDomCodeGen : CodeDomCodeGen {

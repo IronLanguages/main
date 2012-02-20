@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-#if CLR2
+#if !FEATURE_CORE_DLR
 using Microsoft.Scripting.Utils;
 #endif
 

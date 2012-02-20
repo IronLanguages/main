@@ -17,17 +17,18 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Microsoft.Scripting.Debugging.CompilerServices;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Debugging {
     public abstract class DebugThread {
         private readonly DebugContext _debugContext;
-        private readonly Thread _managedThread;
         private Exception _leafFrameException;
         private bool _isInTraceback;
+        private readonly int _threadId;
 
         internal DebugThread(DebugContext debugContext) {
             _debugContext = debugContext;
-            _managedThread = Thread.CurrentThread;
+            _threadId = ThreadingUtils.GetCurrentThreadId();
         }
 
         internal DebugContext DebugContext {
@@ -39,8 +40,11 @@ namespace Microsoft.Scripting.Debugging {
             set { _leafFrameException = value; }
         }
 
-        internal Thread ManagedThread {
-            get { return _managedThread; }
+        internal bool IsCurrentThread {
+            get 
+            {
+                return _threadId == ThreadingUtils.GetCurrentThreadId(); 
+            }
         }
 
         internal bool IsInTraceback {

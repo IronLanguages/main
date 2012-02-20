@@ -13,9 +13,14 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_REMOTING
+using System.Runtime.Remoting;
+#else
+using MarshalByRefObject = System.Object;
+#endif
+
 using System;
 using System.IO;
-using System.Security.Permissions;
 using System.Text;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -24,12 +29,7 @@ namespace Microsoft.Scripting.Hosting {
     /// <summary>
     /// Provides host-redirectable IO streams used by DLR languages for default IO.
     /// </summary>
-    public sealed class ScriptIO
-#if !SILVERLIGHT
-        : MarshalByRefObject
-#endif
-    {
-
+    public sealed class ScriptIO : MarshalByRefObject {
         private readonly SharedIO _io;
 
         public Stream InputStream { get { return _io.InputStream; } }
@@ -100,7 +100,7 @@ namespace Microsoft.Scripting.Hosting {
             _io.RedirectToConsole();
         }
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
         // TODO: Figure out what is the right lifetime
         public override object InitializeLifetimeService() {
             return null;

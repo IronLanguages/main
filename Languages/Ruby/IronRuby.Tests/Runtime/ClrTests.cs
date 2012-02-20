@@ -38,7 +38,6 @@ namespace IronRuby.Tests {
 
         #region Members: Fields, Methods, Properties, Indexers
 
-#pragma warning disable 169 // private field not used
         public class ClassWithFields {
             public int Field = 1;
             public readonly int RoField = 2;
@@ -46,7 +45,6 @@ namespace IronRuby.Tests {
             public static int StaticField = 3;
             public const int ConstField = 4;
         }
-#pragma warning restore 169
 
         public void ClrFields1() {
             Context.DefineGlobalVariable("obj", new ClassWithFields());
@@ -80,6 +78,28 @@ NoMethodError
 4
 30
 NoMethodError
+");
+        }
+
+        public class ClassWithField1 {
+            public int F = 1;
+        }
+
+        public class ClassWithField2 : ClassWithField1 {
+            public new static int F = 2;
+        }
+
+        public void ClrFields2() {
+            Context.DefineGlobalVariable("obj", new ClassWithField2());
+
+            AssertOutput(delegate() {
+                CompilerTest(@"
+puts $obj.class.F
+puts $obj.F
+");
+            }, @"
+2
+1
 ");
         }
 

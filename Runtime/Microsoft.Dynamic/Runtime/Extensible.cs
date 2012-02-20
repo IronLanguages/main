@@ -13,8 +13,6 @@
  *
  * ***************************************************************************/
 
-using Microsoft.Contracts;
-
 namespace Microsoft.Scripting.Runtime {
     public class Extensible<T> {
         private T _value;
@@ -26,17 +24,14 @@ namespace Microsoft.Scripting.Runtime {
             get { return _value; }
         }
 
-        [Confined]
         public override bool Equals(object obj) {
             return _value.Equals(obj);
         }
 
-        [Confined]
         public override int GetHashCode() {
             return _value.GetHashCode();
         }
 
-        [Confined]
         public override string ToString() {
             return _value.ToString();
         }

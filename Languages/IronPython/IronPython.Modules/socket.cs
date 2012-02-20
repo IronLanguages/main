@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT // System.NET
+#if FEATURE_FULL_NET
 
 using System;
 using System.Collections;
@@ -36,14 +36,15 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-#if CLR2
-using Microsoft.Scripting.Math;
-#else
+#if FEATURE_NUMERICS
 using System.Numerics;
+#else
+using Microsoft.Scripting.Math;
 #endif
 
 using PythonArray = IronPython.Modules.ArrayModule.array;
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
+using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("socket", typeof(IronPython.Modules.PythonSocket))]
 namespace IronPython.Modules {

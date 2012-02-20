@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-
+#if FEATURE_COM
 using System;
 
 namespace Microsoft.Scripting {
@@ -324,3 +324,4 @@ namespace Microsoft.Scripting {
     #endregion
 
 }
+#endif

@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -101,10 +101,10 @@ namespace Microsoft.Scripting.Interpreter {
                 return new ActionCallInstruction(target);
             }
 
-            if (t.IsEnum) return SlowCreate(target, pi);
-            switch (Type.GetTypeCode(t)) {
+            if (t.IsEnum()) return SlowCreate(target, pi);
+            switch (t.GetTypeCode()) {
                 case TypeCode.Object: {
-                    if (t != typeof(object) && (IndexIsNotReturnType(0, target, pi) || t.IsValueType)) {
+                    if (t != typeof(object) && (IndexIsNotReturnType(0, target, pi) || t.IsValueType())) {
                         // if we're on the return type relaxed delegates makes it ok to use object
                         goto default;
                     }
@@ -138,10 +138,10 @@ namespace Microsoft.Scripting.Interpreter {
                 return new FuncCallInstruction<T0>(target);
             }
 
-            if (t.IsEnum) return SlowCreate(target, pi);
-            switch (Type.GetTypeCode(t)) {
+            if (t.IsEnum()) return SlowCreate(target, pi);
+            switch (t.GetTypeCode()) {
                 case TypeCode.Object: {
-                    if (t != typeof(object) && (IndexIsNotReturnType(1, target, pi) || t.IsValueType)) {
+                    if (t != typeof(object) && (IndexIsNotReturnType(1, target, pi) || t.IsValueType())) {
                         // if we're on the return type relaxed delegates makes it ok to use object
                         goto default;
                     }
@@ -175,11 +175,11 @@ namespace Microsoft.Scripting.Interpreter {
                 return new FuncCallInstruction<T0, T1>(target);
             }
 
-            if (t.IsEnum) return SlowCreate(target, pi);
-            switch (Type.GetTypeCode(t)) {
+            if (t.IsEnum()) return SlowCreate(target, pi);
+            switch (t.GetTypeCode()) {
                 case TypeCode.Object: {
                     Debug.Assert(pi.Length == 2);
-                    if (t.IsValueType) goto default;
+                    if (t.IsValueType()) goto default;
 
                     return new FuncCallInstruction<T0, T1, Object>(target);
                 }
@@ -236,7 +236,7 @@ namespace Microsoft.Scripting.Interpreter {
             return t;
         }
         public static MethodInfo CacheFunc<TRet>(Func<TRet> method) {
-            var info = method.Method;
+            var info = method.GetMethod();
             lock (_cache) {
                 _cache[info] = new FuncCallInstruction<TRet>(method);
             }
@@ -244,7 +244,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheFunc<T0, TRet>(Func<T0, TRet> method) {
-            var info = method.Method;
+            var info = method.GetMethod();
             lock (_cache) {
                 _cache[info] = new FuncCallInstruction<T0, TRet>(method);
             }
@@ -252,7 +252,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheFunc<T0, T1, TRet>(Func<T0, T1, TRet> method) {
-            var info = method.Method;
+            var info = method.GetMethod();
             lock (_cache) {
                 _cache[info] = new FuncCallInstruction<T0, T1, TRet>(method);
             }
@@ -260,7 +260,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheFunc<T0, T1, T2, TRet>(Func<T0, T1, T2, TRet> method) {
-            var info = method.Method;
+            var info = method.GetMethod();
             lock (_cache) {
                 _cache[info] = new FuncCallInstruction<T0, T1, T2, TRet>(method);
             }
@@ -268,7 +268,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheFunc<T0, T1, T2, T3, TRet>(Func<T0, T1, T2, T3, TRet> method) {
-            var info = method.Method;
+            var info = method.GetMethod();
             lock (_cache) {
                 _cache[info] = new FuncCallInstruction<T0, T1, T2, T3, TRet>(method);
             }
@@ -276,7 +276,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheFunc<T0, T1, T2, T3, T4, TRet>(Func<T0, T1, T2, T3, T4, TRet> method) {
-            var info = method.Method;
+            var info = method.GetMethod();
             lock (_cache) {
                 _cache[info] = new FuncCallInstruction<T0, T1, T2, T3, T4, TRet>(method);
             }
@@ -284,7 +284,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheFunc<T0, T1, T2, T3, T4, T5, TRet>(Func<T0, T1, T2, T3, T4, T5, TRet> method) {
-            var info = method.Method;
+            var info = method.GetMethod();
             lock (_cache) {
                 _cache[info] = new FuncCallInstruction<T0, T1, T2, T3, T4, T5, TRet>(method);
             }
@@ -292,7 +292,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheFunc<T0, T1, T2, T3, T4, T5, T6, TRet>(Func<T0, T1, T2, T3, T4, T5, T6, TRet> method) {
-            var info = method.Method;
+            var info = method.GetMethod();
             lock (_cache) {
                 _cache[info] = new FuncCallInstruction<T0, T1, T2, T3, T4, T5, T6, TRet>(method);
             }
@@ -300,7 +300,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheFunc<T0, T1, T2, T3, T4, T5, T6, T7, TRet>(Func<T0, T1, T2, T3, T4, T5, T6, T7, TRet> method) {
-            var info = method.Method;
+            var info = method.GetMethod();
             lock (_cache) {
                 _cache[info] = new FuncCallInstruction<T0, T1, T2, T3, T4, T5, T6, T7, TRet>(method);
             }
@@ -308,7 +308,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheFunc<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>(Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet> method) {
-            var info = method.Method;
+            var info = method.GetMethod();
             lock (_cache) {
                 _cache[info] = new FuncCallInstruction<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>(method);
             }
@@ -316,7 +316,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheAction(Action method) {
-            var info = method.Method;
+            var info = method.GetMethod();
             lock (_cache) {
                 _cache[info] = new ActionCallInstruction(method);
             }
@@ -324,7 +324,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheAction<T0>(Action<T0> method) {
-            var info = method.Method;
+            var info = method.GetMethod();
             lock (_cache) {
                 _cache[info] = new ActionCallInstruction<T0>(method);
             }
@@ -332,7 +332,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheAction<T0, T1>(Action<T0, T1> method) {
-            var info = method.Method;
+            var info = method.GetMethod();
             lock (_cache) {
                 _cache[info] = new ActionCallInstruction<T0, T1>(method);
             }
@@ -340,7 +340,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheAction<T0, T1, T2>(Action<T0, T1, T2> method) {
-            var info = method.Method;
+            var info = method.GetMethod();
             lock (_cache) {
                 _cache[info] = new ActionCallInstruction<T0, T1, T2>(method);
             }
@@ -348,7 +348,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheAction<T0, T1, T2, T3>(Action<T0, T1, T2, T3> method) {
-            var info = method.Method;
+            var info = method.GetMethod();
             lock (_cache) {
                 _cache[info] = new ActionCallInstruction<T0, T1, T2, T3>(method);
             }
@@ -356,7 +356,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheAction<T0, T1, T2, T3, T4>(Action<T0, T1, T2, T3, T4> method) {
-            var info = method.Method;
+            var info = method.GetMethod();
             lock (_cache) {
                 _cache[info] = new ActionCallInstruction<T0, T1, T2, T3, T4>(method);
             }
@@ -364,7 +364,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheAction<T0, T1, T2, T3, T4, T5>(Action<T0, T1, T2, T3, T4, T5> method) {
-            var info = method.Method;
+            var info = method.GetMethod();
             lock (_cache) {
                 _cache[info] = new ActionCallInstruction<T0, T1, T2, T3, T4, T5>(method);
             }
@@ -372,7 +372,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheAction<T0, T1, T2, T3, T4, T5, T6>(Action<T0, T1, T2, T3, T4, T5, T6> method) {
-            var info = method.Method;
+            var info = method.GetMethod();
             lock (_cache) {
                 _cache[info] = new ActionCallInstruction<T0, T1, T2, T3, T4, T5, T6>(method);
             }
@@ -380,7 +380,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheAction<T0, T1, T2, T3, T4, T5, T6, T7>(Action<T0, T1, T2, T3, T4, T5, T6, T7> method) {
-            var info = method.Method;
+            var info = method.GetMethod();
             lock (_cache) {
                 _cache[info] = new ActionCallInstruction<T0, T1, T2, T3, T4, T5, T6, T7>(method);
             }
@@ -388,7 +388,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheAction<T0, T1, T2, T3, T4, T5, T6, T7, T8>(Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> method) {
-            var info = method.Method;
+            var info = method.GetMethod();
             lock (_cache) {
                 _cache[info] = new ActionCallInstruction<T0, T1, T2, T3, T4, T5, T6, T7, T8>(method);
             }
@@ -399,7 +399,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class ActionCallInstruction : CallInstruction {
         private readonly Action _target;
-        public override MethodInfo Info { get { return _target.Method; } }
+        public override MethodInfo Info { get { return _target.GetMethod(); } }
         public override int ArgumentCount { get { return 0; } }
 
         public ActionCallInstruction(Action target) {
@@ -407,7 +407,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public ActionCallInstruction(MethodInfo target) {
-            _target = (Action)Delegate.CreateDelegate(typeof(Action), target);
+            _target = (Action)target.CreateDelegate(typeof(Action));
         }
 
         public override object Invoke() {
@@ -424,7 +424,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class ActionCallInstruction<T0> : CallInstruction {
         private readonly Action<T0> _target;
-        public override MethodInfo Info { get { return _target.Method; } }
+        public override MethodInfo Info { get { return _target.GetMethod(); } }
         public override int ArgumentCount { get { return 1; } }
 
         public ActionCallInstruction(Action<T0> target) {
@@ -432,7 +432,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public ActionCallInstruction(MethodInfo target) {
-            _target = (Action<T0>)Delegate.CreateDelegate(typeof(Action<T0>), target);
+            _target = (Action<T0>)target.CreateDelegate(typeof(Action<T0>));
         }
 
         public override object Invoke(object arg0) {
@@ -449,7 +449,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class ActionCallInstruction<T0, T1> : CallInstruction {
         private readonly Action<T0, T1> _target;
-        public override MethodInfo Info { get { return _target.Method; } }
+        public override MethodInfo Info { get { return _target.GetMethod(); } }
         public override int ArgumentCount { get { return 2; } }
 
         public ActionCallInstruction(Action<T0, T1> target) {
@@ -457,7 +457,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public ActionCallInstruction(MethodInfo target) {
-            _target = (Action<T0, T1>)Delegate.CreateDelegate(typeof(Action<T0, T1>), target);
+            _target = (Action<T0, T1>)target.CreateDelegate(typeof(Action<T0, T1>));
         }
 
         public override object Invoke(object arg0, object arg1) {
@@ -474,7 +474,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class ActionCallInstruction<T0, T1, T2> : CallInstruction {
         private readonly Action<T0, T1, T2> _target;
-        public override MethodInfo Info { get { return _target.Method; } }
+        public override MethodInfo Info { get { return _target.GetMethod(); } }
         public override int ArgumentCount { get { return 3; } }
 
         public ActionCallInstruction(Action<T0, T1, T2> target) {
@@ -482,7 +482,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public ActionCallInstruction(MethodInfo target) {
-            _target = (Action<T0, T1, T2>)Delegate.CreateDelegate(typeof(Action<T0, T1, T2>), target);
+            _target = (Action<T0, T1, T2>)target.CreateDelegate(typeof(Action<T0, T1, T2>));
         }
 
         public override object Invoke(object arg0, object arg1, object arg2) {
@@ -499,7 +499,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class ActionCallInstruction<T0, T1, T2, T3> : CallInstruction {
         private readonly Action<T0, T1, T2, T3> _target;
-        public override MethodInfo Info { get { return _target.Method; } }
+        public override MethodInfo Info { get { return _target.GetMethod(); } }
         public override int ArgumentCount { get { return 4; } }
 
         public ActionCallInstruction(Action<T0, T1, T2, T3> target) {
@@ -507,7 +507,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public ActionCallInstruction(MethodInfo target) {
-            _target = (Action<T0, T1, T2, T3>)Delegate.CreateDelegate(typeof(Action<T0, T1, T2, T3>), target);
+            _target = (Action<T0, T1, T2, T3>)target.CreateDelegate(typeof(Action<T0, T1, T2, T3>));
         }
 
         public override object Invoke(object arg0, object arg1, object arg2, object arg3) {
@@ -524,7 +524,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class ActionCallInstruction<T0, T1, T2, T3, T4> : CallInstruction {
         private readonly Action<T0, T1, T2, T3, T4> _target;
-        public override MethodInfo Info { get { return _target.Method; } }
+        public override MethodInfo Info { get { return _target.GetMethod(); } }
         public override int ArgumentCount { get { return 5; } }
 
         public ActionCallInstruction(Action<T0, T1, T2, T3, T4> target) {
@@ -532,7 +532,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public ActionCallInstruction(MethodInfo target) {
-            _target = (Action<T0, T1, T2, T3, T4>)Delegate.CreateDelegate(typeof(Action<T0, T1, T2, T3, T4>), target);
+            _target = (Action<T0, T1, T2, T3, T4>)target.CreateDelegate(typeof(Action<T0, T1, T2, T3, T4>));
         }
 
         public override object Invoke(object arg0, object arg1, object arg2, object arg3, object arg4) {
@@ -549,7 +549,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class ActionCallInstruction<T0, T1, T2, T3, T4, T5> : CallInstruction {
         private readonly Action<T0, T1, T2, T3, T4, T5> _target;
-        public override MethodInfo Info { get { return _target.Method; } }
+        public override MethodInfo Info { get { return _target.GetMethod(); } }
         public override int ArgumentCount { get { return 6; } }
 
         public ActionCallInstruction(Action<T0, T1, T2, T3, T4, T5> target) {
@@ -557,7 +557,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public ActionCallInstruction(MethodInfo target) {
-            _target = (Action<T0, T1, T2, T3, T4, T5>)Delegate.CreateDelegate(typeof(Action<T0, T1, T2, T3, T4, T5>), target);
+            _target = (Action<T0, T1, T2, T3, T4, T5>)target.CreateDelegate(typeof(Action<T0, T1, T2, T3, T4, T5>));
         }
 
         public override object Invoke(object arg0, object arg1, object arg2, object arg3, object arg4, object arg5) {
@@ -574,7 +574,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class ActionCallInstruction<T0, T1, T2, T3, T4, T5, T6> : CallInstruction {
         private readonly Action<T0, T1, T2, T3, T4, T5, T6> _target;
-        public override MethodInfo Info { get { return _target.Method; } }
+        public override MethodInfo Info { get { return _target.GetMethod(); } }
         public override int ArgumentCount { get { return 7; } }
 
         public ActionCallInstruction(Action<T0, T1, T2, T3, T4, T5, T6> target) {
@@ -582,7 +582,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public ActionCallInstruction(MethodInfo target) {
-            _target = (Action<T0, T1, T2, T3, T4, T5, T6>)Delegate.CreateDelegate(typeof(Action<T0, T1, T2, T3, T4, T5, T6>), target);
+            _target = (Action<T0, T1, T2, T3, T4, T5, T6>)target.CreateDelegate(typeof(Action<T0, T1, T2, T3, T4, T5, T6>));
         }
 
         public override object Invoke(object arg0, object arg1, object arg2, object arg3, object arg4, object arg5, object arg6) {
@@ -599,7 +599,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class ActionCallInstruction<T0, T1, T2, T3, T4, T5, T6, T7> : CallInstruction {
         private readonly Action<T0, T1, T2, T3, T4, T5, T6, T7> _target;
-        public override MethodInfo Info { get { return _target.Method; } }
+        public override MethodInfo Info { get { return _target.GetMethod(); } }
         public override int ArgumentCount { get { return 8; } }
 
         public ActionCallInstruction(Action<T0, T1, T2, T3, T4, T5, T6, T7> target) {
@@ -607,7 +607,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public ActionCallInstruction(MethodInfo target) {
-            _target = (Action<T0, T1, T2, T3, T4, T5, T6, T7>)Delegate.CreateDelegate(typeof(Action<T0, T1, T2, T3, T4, T5, T6, T7>), target);
+            _target = (Action<T0, T1, T2, T3, T4, T5, T6, T7>)target.CreateDelegate(typeof(Action<T0, T1, T2, T3, T4, T5, T6, T7>));
         }
 
         public override object Invoke(object arg0, object arg1, object arg2, object arg3, object arg4, object arg5, object arg6, object arg7) {
@@ -624,7 +624,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class ActionCallInstruction<T0, T1, T2, T3, T4, T5, T6, T7, T8> : CallInstruction {
         private readonly Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> _target;
-        public override MethodInfo Info { get { return _target.Method; } }
+        public override MethodInfo Info { get { return _target.GetMethod(); } }
         public override int ArgumentCount { get { return 9; } }
 
         public ActionCallInstruction(Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> target) {
@@ -632,7 +632,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public ActionCallInstruction(MethodInfo target) {
-            _target = (Action<T0, T1, T2, T3, T4, T5, T6, T7, T8>)Delegate.CreateDelegate(typeof(Action<T0, T1, T2, T3, T4, T5, T6, T7, T8>), target);
+            _target = (Action<T0, T1, T2, T3, T4, T5, T6, T7, T8>)target.CreateDelegate(typeof(Action<T0, T1, T2, T3, T4, T5, T6, T7, T8>));
         }
 
         public override object Invoke(object arg0, object arg1, object arg2, object arg3, object arg4, object arg5, object arg6, object arg7, object arg8) {
@@ -649,7 +649,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class FuncCallInstruction<TRet> : CallInstruction {
         private readonly Func<TRet> _target;
-        public override MethodInfo Info { get { return _target.Method; } }
+        public override MethodInfo Info { get { return _target.GetMethod(); } }
         public override int ArgumentCount { get { return 0; } }
 
         public FuncCallInstruction(Func<TRet> target) {
@@ -657,7 +657,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public FuncCallInstruction(MethodInfo target) {
-            _target = (Func<TRet>)Delegate.CreateDelegate(typeof(Func<TRet>), target);
+            _target = (Func<TRet>)target.CreateDelegate(typeof(Func<TRet>));
         }
 
         public override object Invoke() {
@@ -673,7 +673,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class FuncCallInstruction<T0, TRet> : CallInstruction {
         private readonly Func<T0, TRet> _target;
-        public override MethodInfo Info { get { return _target.Method; } }
+        public override MethodInfo Info { get { return _target.GetMethod(); } }
         public override int ArgumentCount { get { return 1; } }
 
         public FuncCallInstruction(Func<T0, TRet> target) {
@@ -681,7 +681,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public FuncCallInstruction(MethodInfo target) {
-            _target = (Func<T0, TRet>)Delegate.CreateDelegate(typeof(Func<T0, TRet>), target);
+            _target = (Func<T0, TRet>)target.CreateDelegate(typeof(Func<T0, TRet>));
         }
 
         public override object Invoke(object arg0) {
@@ -697,7 +697,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class FuncCallInstruction<T0, T1, TRet> : CallInstruction {
         private readonly Func<T0, T1, TRet> _target;
-        public override MethodInfo Info { get { return _target.Method; } }
+        public override MethodInfo Info { get { return _target.GetMethod(); } }
         public override int ArgumentCount { get { return 2; } }
 
         public FuncCallInstruction(Func<T0, T1, TRet> target) {
@@ -705,7 +705,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public FuncCallInstruction(MethodInfo target) {
-            _target = (Func<T0, T1, TRet>)Delegate.CreateDelegate(typeof(Func<T0, T1, TRet>), target);
+            _target = (Func<T0, T1, TRet>)target.CreateDelegate(typeof(Func<T0, T1, TRet>));
         }
 
         public override object Invoke(object arg0, object arg1) {
@@ -721,7 +721,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class FuncCallInstruction<T0, T1, T2, TRet> : CallInstruction {
         private readonly Func<T0, T1, T2, TRet> _target;
-        public override MethodInfo Info { get { return _target.Method; } }
+        public override MethodInfo Info { get { return _target.GetMethod(); } }
         public override int ArgumentCount { get { return 3; } }
 
         public FuncCallInstruction(Func<T0, T1, T2, TRet> target) {
@@ -729,7 +729,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public FuncCallInstruction(MethodInfo target) {
-            _target = (Func<T0, T1, T2, TRet>)Delegate.CreateDelegate(typeof(Func<T0, T1, T2, TRet>), target);
+            _target = (Func<T0, T1, T2, TRet>)target.CreateDelegate(typeof(Func<T0, T1, T2, TRet>));
         }
 
         public override object Invoke(object arg0, object arg1, object arg2) {
@@ -745,7 +745,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class FuncCallInstruction<T0, T1, T2, T3, TRet> : CallInstruction {
         private readonly Func<T0, T1, T2, T3, TRet> _target;
-        public override MethodInfo Info { get { return _target.Method; } }
+        public override MethodInfo Info { get { return _target.GetMethod(); } }
         public override int ArgumentCount { get { return 4; } }
 
         public FuncCallInstruction(Func<T0, T1, T2, T3, TRet> target) {
@@ -753,7 +753,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public FuncCallInstruction(MethodInfo target) {
-            _target = (Func<T0, T1, T2, T3, TRet>)Delegate.CreateDelegate(typeof(Func<T0, T1, T2, T3, TRet>), target);
+            _target = (Func<T0, T1, T2, T3, TRet>)target.CreateDelegate(typeof(Func<T0, T1, T2, T3, TRet>));
         }
 
         public override object Invoke(object arg0, object arg1, object arg2, object arg3) {
@@ -769,7 +769,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class FuncCallInstruction<T0, T1, T2, T3, T4, TRet> : CallInstruction {
         private readonly Func<T0, T1, T2, T3, T4, TRet> _target;
-        public override MethodInfo Info { get { return _target.Method; } }
+        public override MethodInfo Info { get { return _target.GetMethod(); } }
         public override int ArgumentCount { get { return 5; } }
 
         public FuncCallInstruction(Func<T0, T1, T2, T3, T4, TRet> target) {
@@ -777,7 +777,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public FuncCallInstruction(MethodInfo target) {
-            _target = (Func<T0, T1, T2, T3, T4, TRet>)Delegate.CreateDelegate(typeof(Func<T0, T1, T2, T3, T4, TRet>), target);
+            _target = (Func<T0, T1, T2, T3, T4, TRet>)target.CreateDelegate(typeof(Func<T0, T1, T2, T3, T4, TRet>));
         }
 
         public override object Invoke(object arg0, object arg1, object arg2, object arg3, object arg4) {
@@ -793,7 +793,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class FuncCallInstruction<T0, T1, T2, T3, T4, T5, TRet> : CallInstruction {
         private readonly Func<T0, T1, T2, T3, T4, T5, TRet> _target;
-        public override MethodInfo Info { get { return _target.Method; } }
+        public override MethodInfo Info { get { return _target.GetMethod(); } }
         public override int ArgumentCount { get { return 6; } }
 
         public FuncCallInstruction(Func<T0, T1, T2, T3, T4, T5, TRet> target) {
@@ -801,7 +801,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public FuncCallInstruction(MethodInfo target) {
-            _target = (Func<T0, T1, T2, T3, T4, T5, TRet>)Delegate.CreateDelegate(typeof(Func<T0, T1, T2, T3, T4, T5, TRet>), target);
+            _target = (Func<T0, T1, T2, T3, T4, T5, TRet>)target.CreateDelegate(typeof(Func<T0, T1, T2, T3, T4, T5, TRet>));
         }
 
         public override object Invoke(object arg0, object arg1, object arg2, object arg3, object arg4, object arg5) {
@@ -817,7 +817,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class FuncCallInstruction<T0, T1, T2, T3, T4, T5, T6, TRet> : CallInstruction {
         private readonly Func<T0, T1, T2, T3, T4, T5, T6, TRet> _target;
-        public override MethodInfo Info { get { return _target.Method; } }
+        public override MethodInfo Info { get { return _target.GetMethod(); } }
         public override int ArgumentCount { get { return 7; } }
 
         public FuncCallInstruction(Func<T0, T1, T2, T3, T4, T5, T6, TRet> target) {
@@ -825,7 +825,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public FuncCallInstruction(MethodInfo target) {
-            _target = (Func<T0, T1, T2, T3, T4, T5, T6, TRet>)Delegate.CreateDelegate(typeof(Func<T0, T1, T2, T3, T4, T5, T6, TRet>), target);
+            _target = (Func<T0, T1, T2, T3, T4, T5, T6, TRet>)target.CreateDelegate(typeof(Func<T0, T1, T2, T3, T4, T5, T6, TRet>));
         }
 
         public override object Invoke(object arg0, object arg1, object arg2, object arg3, object arg4, object arg5, object arg6) {
@@ -841,7 +841,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class FuncCallInstruction<T0, T1, T2, T3, T4, T5, T6, T7, TRet> : CallInstruction {
         private readonly Func<T0, T1, T2, T3, T4, T5, T6, T7, TRet> _target;
-        public override MethodInfo Info { get { return _target.Method; } }
+        public override MethodInfo Info { get { return _target.GetMethod(); } }
         public override int ArgumentCount { get { return 8; } }
 
         public FuncCallInstruction(Func<T0, T1, T2, T3, T4, T5, T6, T7, TRet> target) {
@@ -849,7 +849,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public FuncCallInstruction(MethodInfo target) {
-            _target = (Func<T0, T1, T2, T3, T4, T5, T6, T7, TRet>)Delegate.CreateDelegate(typeof(Func<T0, T1, T2, T3, T4, T5, T6, T7, TRet>), target);
+            _target = (Func<T0, T1, T2, T3, T4, T5, T6, T7, TRet>)target.CreateDelegate(typeof(Func<T0, T1, T2, T3, T4, T5, T6, T7, TRet>));
         }
 
         public override object Invoke(object arg0, object arg1, object arg2, object arg3, object arg4, object arg5, object arg6, object arg7) {
@@ -865,7 +865,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class FuncCallInstruction<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet> : CallInstruction {
         private readonly Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet> _target;
-        public override MethodInfo Info { get { return _target.Method; } }
+        public override MethodInfo Info { get { return _target.GetMethod(); } }
         public override int ArgumentCount { get { return 9; } }
 
         public FuncCallInstruction(Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet> target) {
@@ -873,7 +873,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public FuncCallInstruction(MethodInfo target) {
-            _target = (Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>)Delegate.CreateDelegate(typeof(Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>), target);
+            _target = (Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>)target.CreateDelegate(typeof(Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>));
         }
 
         public override object Invoke(object arg0, object arg1, object arg2, object arg3, object arg4, object arg5, object arg6, object arg7, object arg8) {

@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using MSA = System.Linq.Expressions;
 #else
 using MSA = Microsoft.Scripting.Ast;
@@ -152,15 +152,17 @@ namespace IronRuby.Compiler.Ast {
             );
 
             // profiling:
-            MSA.Expression profileStart, profileEnd;
+            MSA.Expression profileStart = AstUtils.Empty();
+            MSA.Expression profileEnd = AstUtils.Empty();
+
+#if !WP75 // stopwatch
             if (gen.Profiler != null) {
                 int profileTickIndex = gen.Profiler.GetTickIndex(encodedName);
                 var stampVariable = scope.DefineHiddenVariable("#stamp", typeof(long));
                 profileStart = Ast.Assign(stampVariable, Methods.Stopwatch_GetTimestamp.OpCall());
                 profileEnd = Methods.UpdateProfileTicks.OpCall(AstUtils.Constant(profileTickIndex), stampVariable);
-            } else {
-                profileStart = profileEnd = AstUtils.Empty();
             }
+#endif
 
             // tracing:
             MSA.Expression traceCall, traceReturn;

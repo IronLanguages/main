@@ -27,11 +27,11 @@ using Microsoft.Scripting.Utils;
 using IronPython.Modules;
 using IronPython.Runtime.Types;
 
-#if CLR2
+#if FEATURE_NUMERICS
+using System.Numerics;
+#else
 using Microsoft.Scripting.Math;
 using Complex = Microsoft.Scripting.Math.Complex64;
-#else
-using System.Numerics;
 #endif
 
 namespace IronPython.Runtime.Operations {
@@ -261,7 +261,7 @@ namespace IronPython.Runtime.Operations {
             BigInteger rr;
             BigInteger qq;
 
-#if CLR2
+#if !FEATURE_NUMERICS
             if (Object.ReferenceEquals(x, null)) throw PythonOps.TypeError("unsupported operands for div/mod: NoneType and long");
             if (Object.ReferenceEquals(y, null)) throw PythonOps.TypeError("unsupported operands for div/mod: long and NoneType");
 #endif
@@ -297,7 +297,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-#if CLR2
+#if !FEATURE_NUMERICS
         [SpecialName]
         public static BigInteger Add([NotNull]BigInteger x, [NotNull]BigInteger y) {
             return x + y;
@@ -363,7 +363,7 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.OverflowError("long/long too large for a float");
         }
 
-#if CLR2
+#if !FEATURE_NUMERICS
         [SpecialName]
         public static BigInteger Divide([NotNull]BigInteger x, [NotNull]BigInteger y) {
             BigInteger r;
@@ -508,7 +508,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object __getnewargs__(CodeContext context, BigInteger self) {
-#if CLR2
+#if !FEATURE_NUMERICS
             if (!Object.ReferenceEquals(self, null)) {
                 return PythonTuple.MakeTuple(BigIntegerOps.__new__(context, TypeCache.BigInteger, self));
             }
@@ -521,7 +521,7 @@ namespace IronPython.Runtime.Operations {
         #endregion
 
         // These functions make the code generation of other types more regular
-#if CLR2
+#if !FEATURE_NUMERICS
         internal
 #else
         [PythonHidden] public
@@ -534,7 +534,7 @@ namespace IronPython.Runtime.Operations {
             return FloorDivide(x, y);
         }
 
-#if CLR2
+#if !FEATURE_NUMERICS
         [SpecialName]
         public static BigInteger BitwiseAnd([NotNull]BigInteger x, [NotNull]BigInteger y) {
             return x & y;
@@ -705,7 +705,7 @@ namespace IronPython.Runtime.Operations {
             return checked((float)self.ToFloat64());
         }
 
-#if !CLR2
+#if FEATURE_NUMERICS
         #region Binary Ops
         
         [PythonHidden]
@@ -1000,7 +1000,7 @@ namespace IronPython.Runtime.Operations {
 
                     digits = ToCultureString(val, PythonContext.GetContext(context).NumericCulture);
                     break;
-#if CLR2
+#if !FEATURE_NUMERICS
                 case null:
                 case 'd':
                     digits = val.ToString();

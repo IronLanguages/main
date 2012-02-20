@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_FULL_CRYPTO // MD5
+
 using System;
 using System.Collections.Generic;
 using Microsoft.Scripting.Runtime;
@@ -25,8 +27,6 @@ using IronPython.Runtime.Operations;
 //!!! hanging onto all of the bytes.
 //!!! Also, we could probably make a generic version of this that could then be specialized
 //!!! for both md5 and sha.
-
-#if !SILVERLIGHT // MD5
 
 [assembly: PythonModule("_md5", typeof(IronPython.Modules.PythonMD5))]
 namespace IronPython.Modules {

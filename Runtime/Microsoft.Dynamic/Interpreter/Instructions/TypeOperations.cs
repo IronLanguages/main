@@ -75,6 +75,7 @@ namespace Microsoft.Scripting.Interpreter {
                 ExceptionHelpers.UpdateForRethrow(e.InnerException);
                 throw e.InnerException;
             }
+
             frame.Push(ret);
             return +1;
         }

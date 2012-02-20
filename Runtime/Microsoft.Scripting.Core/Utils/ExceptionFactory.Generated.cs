@@ -15,7 +15,7 @@
 
 using System;
 
-#if CLR2
+#if !FEATURE_CORE_DLR
 namespace Microsoft.Scripting.Ast {
 #else
 namespace System.Linq.Expressions {

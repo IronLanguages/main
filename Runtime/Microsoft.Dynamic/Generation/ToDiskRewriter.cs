@@ -12,9 +12,11 @@
  *
  *
  * ***************************************************************************/
-
-#if !CLR2
+#if FEATURE_REFEMIT
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
 #endif
 
 using System;
@@ -27,7 +29,6 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Ast;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Generation {
@@ -35,7 +36,7 @@ namespace Microsoft.Scripting.Generation {
     /// <summary>
     /// Serializes constants and dynamic sites so the code can be saved to disk
     /// </summary>
-    internal sealed class ToDiskRewriter : ExpressionVisitor {
+    internal sealed class ToDiskRewriter : DynamicExpressionVisitor {
         private static int _uniqueNameId;
         private List<Expression> _constants;
         private Dictionary<object, Expression> _constantCache;
@@ -146,7 +147,7 @@ namespace Microsoft.Scripting.Generation {
             var strings = node.Value as string[];
             if (strings != null) {
                 if (strings.Length == 0) {
-                    return Expression.Field(null, typeof(ArrayUtils).GetField("EmptyStrings"));
+                    return Expression.Field(null, typeof(ArrayUtils).GetDeclaredField("EmptyStrings"));
                 }
 
                 _constants.Add(
@@ -173,7 +174,7 @@ namespace Microsoft.Scripting.Generation {
         protected override Expression VisitDynamic(DynamicExpression node) {
             Type delegateType;
             if (RewriteDelegate(node.DelegateType, out delegateType)) {
-                node = Expression.MakeDynamic(delegateType, node.Binder, node.Arguments);
+                node = DynamicExpression.MakeDynamic(delegateType, node.Binder, node.Arguments);
             }
 
             // Reduce dynamic expression so that the lambda can be emitted as a non-dynamic method.
@@ -219,7 +220,9 @@ namespace Microsoft.Scripting.Generation {
             // SaveAssemblies mode prevents us from detecting the module as
             // transient. If that option is turned on, always replace delegates
             // that live in another AssemblyBuilder
-
+#if WIN8 // TODO:
+            return true;
+#else
             var module = delegateType.Module as ModuleBuilder;
 
             if (module == null) {
@@ -241,6 +244,7 @@ namespace Microsoft.Scripting.Generation {
             }
 
             return false;
+#endif
         }
 
         private Expression RewriteCallSite(CallSite site) {
@@ -275,3 +279,4 @@ namespace Microsoft.Scripting.Generation {
         }
     }
 }
+#endif

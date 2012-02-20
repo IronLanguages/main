@@ -23,10 +23,10 @@ using IronPython.Runtime.Operations;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
-#if CLR2
-using Microsoft.Scripting.Math;
-#else
+#if FEATURE_NUMERICS
 using System.Numerics;
+#else
+using Microsoft.Scripting.Math;
 #endif
 
 namespace IronPython.Runtime {

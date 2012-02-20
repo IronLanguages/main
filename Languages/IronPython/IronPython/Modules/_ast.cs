@@ -31,11 +31,11 @@ using PyOperator = IronPython.Compiler.PythonOperator;
 using PythonList = IronPython.Runtime.List;
 using System.Runtime.InteropServices;
 
-#if CLR2
+#if FEATURE_NUMERICS
+using System.Numerics;
+#else
 using Microsoft.Scripting.Math;
 using Complex = Microsoft.Scripting.Math.Complex64;
-#else
-using System.Numerics;
 #endif
 
 [assembly: PythonModule("_ast", typeof(IronPython.Modules._ast))]

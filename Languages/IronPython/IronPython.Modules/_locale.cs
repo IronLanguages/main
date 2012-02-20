@@ -53,7 +53,7 @@ namespace IronPython.Modules {
 
         internal static string PreferredEncoding {
             get {
-#if !SILVERLIGHT    // No ANSICodePage in Silverlight
+#if FEATURE_ANSICP    // No ANSICodePage in Silverlight
                 return "cp" + CultureInfo.CurrentCulture.TextInfo.ANSICodePage.ToString();
 #else
                 return "";

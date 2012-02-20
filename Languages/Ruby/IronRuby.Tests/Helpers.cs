@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -334,6 +335,46 @@ namespace IronRuby.Tests {
             if (x == null && y == null) return;
 
             Assert(x != null && x.Equals(y), String.Format("values aren't equal: {0} and {1}", x, y));
+        }
+        
+        /// <summary>
+        /// Asserts two sets are equal.
+        /// </summary>
+        public void AreSetsEqual<T>(IEnumerable<T> x, IEnumerable<T> y) {
+            if (x == null && y == null) return;
+
+            var set = new HashSet<T>(x);
+            set.SymmetricExceptWith(y);
+            Assert(set.Count == 0);
+        }
+        
+        /// <summary>
+        /// Asserts two bags (lists with insignificant order) are equal.
+        /// </summary>
+        public void AreBagsEqual<T>(IEnumerable<T> x, IEnumerable<T> y) {
+            if (x == null && y == null) return;
+
+            var bag = new HashSet<Key<T, int>>(GroupWithCount(x));
+            bag.SymmetricExceptWith(GroupWithCount(y));
+            Assert(bag.Count == 0);
+        }
+
+        private IEnumerable<Key<T, int>> GroupWithCount<T>(IEnumerable<T> sequence) {
+            Dictionary<T, int> groups = new Dictionary<T, int>();
+            foreach (var item in sequence) {
+                int count;
+                if (groups.TryGetValue(item, out count)) {
+                    count++;
+                } else {
+                    count = 1;
+                }
+
+                groups[item] = count;
+            }
+
+            foreach (var entry in groups) {
+                yield return Key.Create(entry.Key, entry.Value);
+            }
         }
 
         /// <summary>

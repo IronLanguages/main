@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
+#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 using Microsoft.Scripting.Ast;
 #else
@@ -89,7 +89,7 @@ namespace IronPython.Runtime.Binding {
             } else if (target.Value is IDynamicMetaObjectProvider) {
                 return InvokeForeignObject(target, args);
             }
-#if !SILVERLIGHT
+#if FEATURE_COM
             else if (Microsoft.Scripting.ComInterop.ComBinder.CanComBind(target.Value)) {
                 return InvokeForeignObject(target, args);
             }
@@ -193,7 +193,7 @@ namespace IronPython.Runtime.Binding {
             return BindingHelpers.AddDynamicTestAndDefer(
                 this,
                 new DynamicMetaObject(
-                    Expression.Dynamic(
+                    DynamicExpression.Dynamic(
                         _context.CompatInvoke(callInfo),
                         typeof(object),
                         metaArgs.ToArray()
