@@ -19,18 +19,22 @@
         <File Id="ipy.exe" KeyPath="yes">
           <netfx:NativeImage Id="ngen_ipy.exe" Platform="all" AppBaseDirectory="INSTALLDIR"/>
         </File>
+        <File Id="ipy.exe.config" />
         <File Id="ipy64.exe">
           <netfx:NativeImage Id="ngen_ipy64.exe" Platform="all" AppBaseDirectory="INSTALLDIR"/>
         </File>
+        <File Id="ipy64.exe.config" />
       </Component>
 
       <Component Guid="{A9A13553-6EAD-4C92-9334-149F223F854C}">
         <File Id="ipyw.exe" KeyPath="yes">
           <netfx:NativeImage Id="ngen_ipyw.exe" Platform="all" AppBaseDirectory="INSTALLDIR"/>
         </File>
+        <File Id="ipyw.exe.config" />
         <File Id="ipyw64.exe">
           <netfx:NativeImage Id="ngen_ipyw64.exe" Platform="all" AppBaseDirectory="INSTALLDIR"/>
         </File>
+        <File Id="ipyw64.exe.config" />
       </Component>
 
       <Directory Id="IronPython_DLLs" Name="DLLs">

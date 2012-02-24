@@ -74,9 +74,13 @@
     <IronPythonModules Include="DLLs\IronPython.SQLite.xml" />
     
     <IronPythonBins Include="ipy.exe" />
+    <IronPythonBins Include="ipy.exe.config" />
     <IronPythonBins Include="ipy64.exe" />
+    <IronPythonBins Include="ipy64.exe.config" />
     <IronPythonBins Include="ipyw.exe" />
+    <IronPythonBins Include="ipyw.exe.config" />
     <IronPythonBins Include="ipyw64.exe" />
+    <IronPythonBins Include="ipyw64.exe.config" />
 
     <ChironBins Include="Chiron.exe" />
     <ChironBins Include="Chiron.exe.config" />
