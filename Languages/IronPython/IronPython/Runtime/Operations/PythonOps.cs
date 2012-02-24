@@ -3697,6 +3697,15 @@ namespace IronPython.Runtime.Operations {
         /// the exit code that the program reported via SystemExit or 0.
         /// </summary>
         public static int InitializeModule(Assembly/*!*/ precompiled, string/*!*/ main, string[] references) {
+            return InitializeModuleEx(precompiled, main, references, false);
+        }
+
+        /// <summary>
+        /// Provides the entry point for a compiled module.  The stub exe calls into InitializeModule which
+        /// does the actual work of adding references and importing the main module.  Upon completion it returns
+        /// the exit code that the program reported via SystemExit or 0.
+        /// </summary>
+        public static int InitializeModuleEx(Assembly/*!*/ precompiled, string/*!*/ main, string[] references, bool ignoreEnvVars) {
             ContractUtils.RequiresNotNull(precompiled, "precompiled");
             ContractUtils.RequiresNotNull(main, "main");
 
@@ -3707,6 +3716,17 @@ namespace IronPython.Runtime.Operations {
 
             var pythonContext = (PythonContext)HostingHelpers.GetLanguageContext(pythonEngine);
 
+            if (!ignoreEnvVars) {
+                int pathIndex = pythonContext.PythonOptions.SearchPaths.Count;
+                string path = Environment.GetEnvironmentVariable("IRONPYTHONPATH");
+                if (path != null && path.Length > 0) {
+                    string[] paths = path.Split(Path.PathSeparator);
+                    foreach (string p in paths) {
+                        pythonContext.InsertIntoPath(pathIndex++, p);
+                    }
+                }
+                // TODO: add more environment variable setup here...
+            }
 
             foreach (var scriptCode in SavableScriptCode.LoadFromAssembly(pythonContext.DomainManager, precompiled)) {
                 pythonContext.GetCompiledLoader().AddScriptCode(scriptCode);

@@ -56,6 +56,8 @@ namespace IronPython.Modules {
                 prefix = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             } catch (SecurityException) {
                 prefix = String.Empty;
+            } catch (ArgumentException) {
+                prefix = String.Empty;
             }
 #else
             prefix = String.Empty;
