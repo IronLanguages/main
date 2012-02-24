@@ -59,6 +59,7 @@
   <ItemGroup>
     <None Include="..\App.config">
       <Link>App.config</Link>
+      <SubType>Designer</SubType>
     </None>
     <None Include="IronPythonWindowAny.ruleset" />
   </ItemGroup>
