@@ -16,6 +16,7 @@
   </metadata>
   <files>
     <file src="ipy*.exe" target="tools" />
+    <file src="ipy*.exe.config" target="tools" />
     <file src="Platforms\**\*.*" target="lib" />
   </files>
 </package>
