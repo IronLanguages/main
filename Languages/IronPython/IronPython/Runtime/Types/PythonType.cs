@@ -2516,7 +2516,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             if (hasExplicitIface) {
                 // add any non-colliding interfaces into the MRO
                 foreach (Type t in nonCollidingInterfaces) {
-                    Debug.Assert(t.IsInterface);
+                    Debug.Assert(t.IsInterface());
 
                     mro.Add(DynamicHelpers.GetPythonTypeFromType(t));
                 }

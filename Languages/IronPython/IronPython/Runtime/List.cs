@@ -1631,8 +1631,8 @@ namespace IronPython.Runtime {
                 return;
             }
 
-            int hc1 = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(_one);
-            int hc2 = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(_two);
+            int hc1 = ReferenceEqualityComparer<object>.Instance.GetHashCode(_one);
+            int hc2 = ReferenceEqualityComparer<object>.Instance.GetHashCode(_two);
 
             if (hc1 < hc2) {
                 MonitorUtils.Enter(_one, ref _oneLocked);
