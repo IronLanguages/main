@@ -1347,15 +1347,13 @@ namespace IronPython.Runtime {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadFile")]
         internal bool TryLoadAssemblyFromFileWithPath(string path, out Assembly res) {
             if (File.Exists(path) && Path.IsPathRooted(path)) {
-                try {
-                    res = Assembly.LoadFile(path);
-                    if (res != null) {
+                res = Assembly.LoadFile(path);
+                if (res != null) {
 #if !CLR2
-                        _loadedAssemblies.Add(res);
+                    _loadedAssemblies.Add(res);
 #endif
-                        return true;
-                    }
-                } catch { }
+                    return true;
+                }
             }
 
             res = null;
@@ -1369,7 +1367,11 @@ namespace IronPython.Runtime {
             }
 #endif
             AssemblyName an = new AssemblyName(args.Name);
-            return LoadAssemblyFromFile(an.Name);
+            try {
+                return LoadAssemblyFromFile(an.Name);
+            } catch {
+                return null;
+            }
         }
 
         /// <summary>

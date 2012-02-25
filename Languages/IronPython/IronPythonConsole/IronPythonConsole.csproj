@@ -51,8 +51,8 @@
     <Content Include="ipy.ico" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(SolutionDir)..\Config\$(SignedDir)\App.config">
-      <SubType>Designer</SubType>
+    <None Include="..\App.config">
+      <Link>App.config</Link>
     </None>
     <None Include="IronPythonConsole.ruleset" />
   </ItemGroup>
