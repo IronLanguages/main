@@ -1048,6 +1048,24 @@ namespace IronPython.Modules {
 
             dict["meta_path"] = new List(0);
             dict["path_hooks"] = new List(0);
+
+            // add zipimport to the path hooks for importing from zip files.
+            try {
+                PythonModule zipimport = Importer.ImportModule(
+                    context.SharedClsContext, context.SharedClsContext.GlobalDict,
+                    "zipimport", false, -1) as PythonModule;
+                if (zipimport != null) {
+                    object zipimporter = PythonOps.GetBoundAttr(
+                        context.SharedClsContext, zipimport, "zipimporter");
+                    List path_hooks = dict["path_hooks"] as List;
+                    if (path_hooks != null && zipimporter != null) {
+                        path_hooks.Add(zipimporter);
+                    }
+                }
+            } catch {
+                // this is not a fatal error, so we don't do anything.
+            }
+
             dict["path_importer_cache"] = new PythonDictionary();
         }
 

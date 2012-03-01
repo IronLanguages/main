@@ -634,7 +634,6 @@ contain the module, but has no source for it.")]
 
             internal SourceStringContentProvider(string code) {
                 ContractUtils.RequiresNotNull(code, "code");
-
                 _code = NormalizeLineEndings(code);
             }
 
@@ -643,7 +642,7 @@ contain the module, but has no source for it.")]
             }
 
             private string NormalizeLineEndings(string input) {
-                return input.Replace("\r", "\n") + "\n";
+                return input.Replace("\r\n", "\n") + "\n";
             }
         }
     }
