@@ -681,16 +681,33 @@ namespace IronRuby.Builtins {
         #region zip
 
         [RubyMethod("zip")]
-        public static object Zip(CallSiteStorage<EachSite>/*!*/ each, BlockParam block, object self, [DefaultProtocol, NotNullItems]params IList/*!*/[]/*!*/ args) {
+        public static object Zip(CallSiteStorage<EachSite>/*!*/ each, ConversionStorage<IList>/*!*/ tryToAry, CallSiteStorage<EachSite>/*!*/ otherEach, BlockParam block, object self, [DefaultProtocol, NotNullItems] params object/*!*/[]/*!*/ args) {
             RubyArray results = (block == null) ? new RubyArray() : null;
             object result = results;
+
+            // coerce the args into arrays
+            var coercedArgs = new List<IList>(args.Length);
+            foreach (var otherArrayObject in args) {
+                IList otherArray = Protocols.TryCastToArray(tryToAry, otherArrayObject);
+                if (otherArray != null) {
+                    coercedArgs.Add(otherArray);
+                } else { // added in MRI 1.9.2 - if to_ary fails, try call .each to extract values
+                    otherArray = new List<object>();
+                    Each(otherEach, otherArrayObject, Proc.Create(otherEach.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+                        otherArray.Add(item);
+                        return null;
+                    }));
+                    coercedArgs.Add(otherArray);
+                }
+            }
+
 
             int index = 0;
             Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
                 // Collect items
                 RubyArray array = new RubyArray(args.Length + 1);
                 array.Add(item);
-                foreach (IList otherArray in args) {
+                foreach (var otherArray in coercedArgs) {
                     if (index < otherArray.Count) {
                         array.Add(otherArray[index]);
                     } else {

@@ -2139,8 +2139,11 @@ namespace IronRuby.Runtime {
 
         [Emitted] // ProtocolConversionAction
         public static IList/*!*/ ToArrayValidator(string/*!*/ className, object obj) {
+            if (obj == null) // to_ary is allowed to return nil
+                return null;
+
             var result = obj as IList;
-            if (result == null) {
+            if (result == null) { // but it's not allowed to return other types
                 throw RubyExceptions.CreateReturnTypeError(className, "to_ary", "Array");
             }
             return result;

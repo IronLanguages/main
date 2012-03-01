@@ -142,12 +142,12 @@ namespace IronRuby.Builtins {
         public void RequireNotFrozen() {
             if ((_flags & IsFrozenFlag) != 0) {
                 // throw in a separate method to allow inlining of the current one
-                ThrowObjectFrozenException();
+                ThrowArrayFrozenException();
             }
         }
 
-        private static void ThrowObjectFrozenException() {
-            throw RubyExceptions.CreateObjectFrozenError();
+        private static void ThrowArrayFrozenException() {
+            throw RubyExceptions.CreateArrayFrozenError();
         }
 
         private void Mutate() {

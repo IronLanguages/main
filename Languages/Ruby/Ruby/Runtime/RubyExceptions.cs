@@ -48,6 +48,10 @@ namespace IronRuby.Runtime {
             return CreateRuntimeError("can't modify frozen object");
         }
 
+        public static Exception/*!*/ CreateArrayFrozenError() {
+            return CreateRuntimeError("can't modify frozen array");
+        }
+
         public static Exception/*!*/ CreateTypeConversionError(string/*!*/ fromType, string/*!*/ toType) {
             Assert.NotNull(fromType, toType);
             return CreateTypeError("can't convert {0} into {1}", fromType, toType);
