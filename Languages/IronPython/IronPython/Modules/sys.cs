@@ -1062,8 +1062,7 @@ namespace IronPython.Modules {
                         path_hooks.Add(zipimporter);
                     }
                 }
-            }
-            catch {
+            } catch {
                 // this is not a fatal error, so we don't do anything.
             }
 
