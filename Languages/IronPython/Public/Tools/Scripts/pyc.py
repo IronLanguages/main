@@ -29,7 +29,8 @@ EXE/WinEXE specific options:
     /main:main_file.py                        Main file of the project (module to be executed first)
     /platform:x86                             Compile for x86 only
     /platform:x64                             Compile for x64 only
-
+    /embed                                    Embeds the generated DLL as a resource into the executable which is loaded at runtime
+    /standalone                               Embeds the IronPython assemblies into the stub executable.
 
 Example:
     ipy.exe pyc.py /main:Program.py Form.py /target:winexe
@@ -45,60 +46,127 @@ from IronPython.Runtime.Operations import PythonOps
 import System
 from System.Reflection import Emit, Assembly
 from System.Reflection.Emit import OpCodes, AssemblyBuilderAccess
-from System.Reflection import AssemblyName, TypeAttributes, MethodAttributes
+from System.Reflection import AssemblyName, TypeAttributes, MethodAttributes, ResourceAttributes, CallingConventions
 
-def GenerateExe(name, targetKind, platform, machine, main_module):
+def GenerateExe(name, targetKind, platform, machine, main_module, embed, standalone):
     """generates the stub .EXE file for starting the app"""
     aName = AssemblyName(System.IO.FileInfo(name).Name)
     ab = PythonOps.DefineDynamicAssembly(aName, AssemblyBuilderAccess.RunAndSave)
-    mb = ab.DefineDynamicModule(name,  aName.Name + '.exe')
-    tb = mb.DefineType('PythonMain', TypeAttributes.Public)
-    mainMethod = tb.DefineMethod('Main', MethodAttributes.Public | MethodAttributes.Static, int, ())
+    mb = ab.DefineDynamicModule(name,  aName.Name + ".exe")
+    tb = mb.DefineType("PythonMain", TypeAttributes.Public)
+    assemblyResolveMethod = None
+
+    if standalone:
+        print "Generating stand alone executable"
+        embed = True
+        
+        for a in System.AppDomain.CurrentDomain.GetAssemblies():
+            n = AssemblyName(a.FullName)
+            if not a.IsDynamic and not a.EntryPoint and (n.Name.StartsWith("IronPython") or n.Name in ['Microsoft.Dynamic', 'Microsoft.Scripting']):                
+                print "\tEmbedding %s %s" % (n.Name, str(n.Version))
+                f = System.IO.FileStream(a.Location, System.IO.FileMode.Open, System.IO.FileAccess.Read)
+                mb.DefineManifestResource("Dll." + n.Name, f, ResourceAttributes.Public)
+
+        # we currently do no error checking on what is passed in to the assemblyresolve event handler
+        assemblyResolveMethod = tb.DefineMethod("AssemblyResolve", MethodAttributes.Public | MethodAttributes.Static, clr.GetClrType(Assembly), (clr.GetClrType(System.Object), clr.GetClrType(System.ResolveEventArgs)))
+        gen = assemblyResolveMethod.GetILGenerator()
+        s = gen.DeclareLocal(clr.GetClrType(System.IO.Stream)) # resource stream
+        gen.Emit(OpCodes.Ldnull)
+        gen.Emit(OpCodes.Stloc, s)
+        d = gen.DeclareLocal(clr.GetClrType(System.Array[System.Byte])) # data buffer
+        gen.EmitCall(OpCodes.Call, clr.GetClrType(Assembly).GetMethod("GetEntryAssembly"), ())
+        gen.Emit(OpCodes.Ldstr, "Dll.")
+        gen.Emit(OpCodes.Ldarg_1)    # The event args
+        gen.EmitCall(OpCodes.Callvirt, clr.GetClrType(System.ResolveEventArgs).GetMethod("get_Name"), ())
+        gen.Emit(OpCodes.Newobj, clr.GetClrType(AssemblyName).GetConstructor((str, )))
+        gen.EmitCall(OpCodes.Call, clr.GetClrType(AssemblyName).GetMethod("get_Name"), ())
+        gen.EmitCall(OpCodes.Call, clr.GetClrType(str).GetMethod("Concat", (str, str)), ())
+        gen.EmitCall(OpCodes.Callvirt, clr.GetClrType(Assembly).GetMethod("GetManifestResourceStream", (str, )), ())
+        gen.Emit(OpCodes.Stloc, s)
+        gen.Emit(OpCodes.Ldloc, s)
+        gen.EmitCall(OpCodes.Callvirt, clr.GetClrType(System.IO.Stream).GetMethod("get_Length"), ())
+        gen.Emit(OpCodes.Newarr, clr.GetClrType(System.Byte))
+        gen.Emit(OpCodes.Stloc, d)
+        gen.Emit(OpCodes.Ldloc, s)
+        gen.Emit(OpCodes.Ldloc, d)
+        gen.Emit(OpCodes.Ldc_I4_0)
+        gen.Emit(OpCodes.Ldloc, s)
+        gen.EmitCall(OpCodes.Callvirt, clr.GetClrType(System.IO.Stream).GetMethod("get_Length"), ())
+        gen.Emit(OpCodes.Conv_I4)
+        gen.EmitCall(OpCodes.Callvirt, clr.GetClrType(System.IO.Stream).GetMethod("Read", (clr.GetClrType(System.Array[System.Byte]), int, int)), ())
+        gen.Emit(OpCodes.Pop)
+        gen.Emit(OpCodes.Ldloc, d)
+        gen.EmitCall(OpCodes.Call, clr.GetClrType(Assembly).GetMethod("Load", (clr.GetClrType(System.Array[System.Byte]), )), ())
+        gen.Emit(OpCodes.Ret)
+
+        # generate a static constructor to assign the AssemblyResolve handler (otherwise it tries to use IronPython before it adds the handler)
+        # the other way of handling this would be to move the call to InitializeModule into a separate method.
+        staticConstructor = tb.DefineConstructor(MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, System.Type.EmptyTypes)
+        gen = staticConstructor.GetILGenerator()
+        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.AppDomain).GetMethod("get_CurrentDomain"), ())
+        gen.Emit(OpCodes.Ldnull)
+        gen.Emit(OpCodes.Ldftn, assemblyResolveMethod)
+        gen.Emit(OpCodes.Newobj, clr.GetClrType(System.ResolveEventHandler).GetConstructor((clr.GetClrType(System.Object), clr.GetClrType(System.IntPtr))))
+        gen.EmitCall(OpCodes.Callvirt, clr.GetClrType(System.AppDomain).GetMethod("add_AssemblyResolve"), ())
+        gen.Emit(OpCodes.Ret)        
+
+    mainMethod = tb.DefineMethod("Main", MethodAttributes.Public | MethodAttributes.Static, int, ())
     if targetKind == System.Reflection.Emit.PEFileKinds.WindowApplication:
         mainMethod.SetCustomAttribute(clr.GetClrType(System.STAThreadAttribute).GetConstructor(()), System.Array[System.Byte](()))
     gen = mainMethod.GetILGenerator()
 
-    # variables for saving original working directory und return code of script
-    wdSave = gen.DeclareLocal(str)
-
-    # save current working directory
-    gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Environment).GetMethod("get_CurrentDirectory"), ())
-    gen.Emit(OpCodes.Stloc, wdSave)
-
     # get the ScriptCode assembly...
-    gen.EmitCall(OpCodes.Call, clr.GetClrType(Assembly).GetMethod("GetEntryAssembly"), ())
-    gen.EmitCall(OpCodes.Callvirt, clr.GetClrType(Assembly).GetMethod("get_Location"), ())
-    gen.Emit(OpCodes.Newobj, clr.GetClrType(System.IO.FileInfo).GetConstructor( (str, ) ))
-    gen.EmitCall(OpCodes.Call, clr.GetClrType(System.IO.FileInfo).GetMethod("get_Directory"), ())
-    gen.EmitCall(OpCodes.Call, clr.GetClrType(System.IO.DirectoryInfo).GetMethod("get_FullName"), ())
-    gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Environment).GetMethod("set_CurrentDirectory"), ())
-    gen.Emit(OpCodes.Ldstr, name + ".dll")
-    gen.EmitCall(OpCodes.Call, clr.GetClrType(System.IO.Path).GetMethod("GetFullPath", (clr.GetClrType(str), )), ())
+    if embed:
+        # put the generated DLL into the resources for the stub exe
+        w = mb.DefineResource("IPDll.resources", "Embedded IronPython Generated DLL")
+        w.AddResource("IPDll." + name, System.IO.File.ReadAllBytes(name + ".dll"))
+        System.IO.File.Delete(name + ".dll")
 
-    # result of GetFullPath stays on the stack during the restore of the
-    # original working directory
+        # generate code to load the resource
+        gen.Emit(OpCodes.Ldstr, "IPDll")
+        gen.EmitCall(OpCodes.Call, clr.GetClrType(Assembly).GetMethod("GetEntryAssembly"), ())
+        gen.Emit(OpCodes.Newobj, clr.GetClrType(System.Resources.ResourceManager).GetConstructor((str, clr.GetClrType(Assembly))))
+        gen.Emit(OpCodes.Ldstr, "IPDll." + name)
+        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Resources.ResourceManager).GetMethod("GetObject", (str, )), ())
+        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Reflection.Assembly).GetMethod("Load", (clr.GetClrType(System.Array[System.Byte]), )), ())
+    else:
+        # variables for saving original working directory und return code of script
+        wdSave = gen.DeclareLocal(str)
 
-    # restore original working directory
-    gen.Emit(OpCodes.Ldloc, wdSave)
-    gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Environment).GetMethod("set_CurrentDirectory"), ())
+        # save current working directory
+        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Environment).GetMethod("get_CurrentDirectory"), ())
+        gen.Emit(OpCodes.Stloc, wdSave)
+        gen.EmitCall(OpCodes.Call, clr.GetClrType(Assembly).GetMethod("GetEntryAssembly"), ())
+        gen.EmitCall(OpCodes.Callvirt, clr.GetClrType(Assembly).GetMethod("get_Location"), ())
+        gen.Emit(OpCodes.Newobj, clr.GetClrType(System.IO.FileInfo).GetConstructor( (str, ) ))
+        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.IO.FileInfo).GetMethod("get_Directory"), ())
+        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.IO.DirectoryInfo).GetMethod("get_FullName"), ())
+        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Environment).GetMethod("set_CurrentDirectory"), ())
+        gen.Emit(OpCodes.Ldstr, name + ".dll")
+        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.IO.Path).GetMethod("GetFullPath", (clr.GetClrType(str), )), ())
+        # result of GetFullPath stays on the stack during the restore of the
+        # original working directory
 
-    # for the LoadFile() call, the full path of the assembly is still is on the stack
-    # as the result from the call to GetFullPath()
-    gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Reflection.Assembly).GetMethod("LoadFile", (clr.GetClrType(str), )), ())
+        # restore original working directory
+        gen.Emit(OpCodes.Ldloc, wdSave)
+        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Environment).GetMethod("set_CurrentDirectory"), ())
+
+        # for the LoadFile() call, the full path of the assembly is still is on the stack
+        # as the result from the call to GetFullPath()
+        gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Reflection.Assembly).GetMethod("LoadFile", (clr.GetClrType(str), )), ())
 
     # emit module name
-    gen.Emit(OpCodes.Ldstr, "__main__")
-    gen.Emit(OpCodes.Ldnull)
+    gen.Emit(OpCodes.Ldstr, "__main__")  # main module name
+    gen.Emit(OpCodes.Ldnull)             # no references
+    gen.Emit(OpCodes.Ldc_I4_0)           # don't ignore environment variables for engine startup
 
     # call InitializeModule
     # (this will also run the script)
-    gen.EmitCall(OpCodes.Call, clr.GetClrType(PythonOps).GetMethod("InitializeModule"), ())
-
+    gen.EmitCall(OpCodes.Call, clr.GetClrType(PythonOps).GetMethod("InitializeModuleEx"), ())
     gen.Emit(OpCodes.Ret)
-
     tb.CreateType()
     ab.SetEntryPoint(mainMethod, targetKind)
-    ab.Save(aName.Name + '.exe', platform, machine)
+    ab.Save(aName.Name + ".exe", platform, machine)
 
 def Main(args):
     files = []
@@ -108,11 +176,15 @@ def Main(args):
     target = System.Reflection.Emit.PEFileKinds.Dll
     platform = System.Reflection.PortableExecutableKinds.ILOnly
     machine  = System.Reflection.ImageFileMachine.I386
+    embed = False        # True to embed the generated DLL into the executable
+    standalone = False   # True to embed all the IronPython and Microsoft.Scripting DLL's into the generated exe
 
     for arg in args:
         if arg.startswith("/main:"):
             main_name = main = arg[6:]
-            target = System.Reflection.Emit.PEFileKinds.ConsoleApplication
+            # only override the target kind if its current a DLL
+            if target == System.Reflection.Emit.PEFileKinds.Dll:
+                target = System.Reflection.Emit.PEFileKinds.ConsoleApplication
 
         elif arg.startswith("/out:"):
             output = arg[5:]
@@ -134,6 +206,12 @@ def Main(args):
             else:
                 platform = System.Reflection.PortableExecutableKinds.ILOnly
                 machine  = System.Reflection.ImageFileMachine.I386
+
+        elif arg.startswith("/embed"):
+            embed = True
+
+        elif arg.startswith("/standalone"):
+            standalone = True
 
         elif arg in ["/?", "-?", "/h", "-h"]:
             print __doc__
@@ -162,16 +240,16 @@ def Main(args):
 
     print "Output:\n\t%s" % output
     print "Target:\n\t%s" % target
-    print 'Platform:\n\t%s' % platform
-    print 'Machine:\n\t%s' % machine
+    print "Platform:\n\t%s" % platform
+    print "Machine:\n\t%s" % machine
 
-    print 'Compiling...'
-    clr.CompileModules(output + '.dll', mainModule = main_name, *files)
+    print "Compiling..."
+    clr.CompileModules(output + ".dll", mainModule = main_name, *files)
 
     if target != System.Reflection.Emit.PEFileKinds.Dll:
-        GenerateExe(output, target, platform, machine, main_name)
+        GenerateExe(output, target, platform, machine, main_name, embed, standalone)
 
-    print 'Saved to %s' % (output, )
+    print "Saved to %s" % (output, )
 
 if __name__ == "__main__":
     Main(sys.argv[1:])

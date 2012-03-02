@@ -182,10 +182,10 @@
     <Copy SourceFiles="@(IronPythonModules->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" />
 
     <!-- Windows Phone 7.5 -->
-    <Copy SourceFiles="@(DlrLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\WP7" />
-    <Copy SourceFiles="@(v2DlrLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\WP7" />
-    <Copy SourceFiles="@(IronPythonLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\WP7" />
-    <Copy SourceFiles="@(IronPythonModules->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\WP7" />
+    <Copy SourceFiles="@(DlrLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4-WP71" />
+    <Copy SourceFiles="@(v2DlrLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4-WP71" />
+    <Copy SourceFiles="@(IronPythonLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4-WP71" />
+    <Copy SourceFiles="@(IronPythonModules->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4-WP71" />
 
     <!-- Mono for Android -->
     <Copy SourceFiles="@(DlrLibs->'$(AndroidBuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Android" />
@@ -211,9 +211,13 @@
   </Target>
   
   <Target Name="NuGetPackage" DependsOnTargets="Stage" Condition="'$(OS)' == 'Windows_NT'">
+    <PropertyGroup>
+        <NuGetVersion Condition="'$(ReleaseLevel)' == 'final'">$(MajorVersion).$(MinorVersion).$(MicroVersion)</NuGetVersion>
+        <NuGetVersion Condition="'$(ReleaseLevel)' != 'final'">$(MajorVersion).$(MinorVersion).$(MicroVersion)-$(ReleaseLevel)$(ReleaseSerial)</NuGetVersion>
+    </PropertyGroup>
     <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
-    <Exec Command="$(UtilDir)\Misc\NuGet.exe pack &quot;$(BaseDir)\Languages\IronPython\IronPython.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
-    <Exec Command="$(UtilDir)\Misc\NuGet.exe pack &quot;$(BaseDir)\Languages\IronPython\IronPython.StdLib.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
+    <Exec Command="$(UtilDir)\Misc\NuGet.exe pack -Version $(NuGetVersion) &quot;$(BaseDir)\Languages\IronPython\IronPython.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
+    <Exec Command="$(UtilDir)\Misc\NuGet.exe pack -Version $(NuGetVersion) &quot;$(BaseDir)\Languages\IronPython\IronPython.StdLib.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
   </Target>
 
   <Target Name="ZipPackage" DependsOnTargets="Stage" Condition="'$(OS)' == 'Windows_NT'">
