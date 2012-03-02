@@ -1338,11 +1338,11 @@ _sys_version_parser = re.compile(
     '\[([^\]]+)\]?')
 
 _ironpython_sys_version_parser = re.compile(
-    r'([\d\.]+)\s*\('
-    'IronPython\s*[\d\.]+'
+    r'([\w\.]+)\s*\('
+    'IronPython\s*[\w\.]+'
     '(?: (?:Alpha|Beta|RC) ?[\d\.]+)?(?: DEBUG)?'
     '(?: \(([\d\.]+)\))?'
-    ' on (.NET [\d\.]+)\)')
+    ' on ((?:.NET|Mono) [\d\.]+ \((?:32|64)-bit\))\)')
 
 _pypy_sys_version_parser = re.compile(
     r'([\w.+]+)\s*'
