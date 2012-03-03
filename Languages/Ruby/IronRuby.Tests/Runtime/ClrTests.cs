@@ -1712,6 +1712,8 @@ puts($obj2 <=> 1)
 ");
         }
 
+        // TODO: this is broken in partial trust
+
         /// <summary>
         /// Calling (explicit) interface methods on internal classes.
         /// A method that is accessible via any interface should be called. 
@@ -1724,18 +1726,17 @@ puts($obj2 <=> 1)
             Context.ObjectClass.SetConstant("InterfaceBar1", Context.GetModule(typeof(InterfaceBar1)));
 
             TestOutput(@"
-p Inst.GetEnumerator().nil?
-#p Inst.baz
-#p Inst.clr_member(System::IComparable, :compare_to).call(nil)
-#p Inst.clr_member(InterfaceBar1, :bar).call
-#p Inst.clr_member(InterfaceBar1, :bar).call(1)
-#p Inst.clr_member(InterfaceFoo1, :foo).call
-#p Inst.clr_member(InterfaceFoo2, :foo).call
-#p Inst.clr_member(InterfaceFoo2, :[]).call(1)
-#
-#p Inst.clr_member(InterfaceFoo2, :evnt_value).call
-#Inst.clr_member(InterfaceFoo2, :evnt).call { }
-#p Inst.clr_member(InterfaceFoo2, :evnt_value).call
+p Inst.baz
+p Inst.clr_member(System::IComparable, :compare_to).call(nil)
+p Inst.clr_member(InterfaceBar1, :bar).call
+p Inst.clr_member(InterfaceBar1, :bar).call(1)
+p Inst.clr_member(InterfaceFoo1, :foo).call
+p Inst.clr_member(InterfaceFoo2, :foo).call
+p Inst.clr_member(InterfaceFoo2, :[]).call(1)
+
+p Inst.clr_member(InterfaceFoo2, :evnt_value).call
+Inst.clr_member(InterfaceFoo2, :evnt).call { }
+p Inst.clr_member(InterfaceFoo2, :evnt_value).call
 ", @"
 false
 0

@@ -18,6 +18,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Math;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Generation;
+using System.Diagnostics;
 
 namespace IronRuby.Builtins {
     /// <summary>
@@ -603,10 +604,20 @@ namespace IronRuby.Builtins {
         /// </remarks>
         [RubyMethod("<=>")]
         public static object Compare(double self, double other) {
-            if (Double.IsNaN(self) || Double.IsNaN(other)) {
-                return null;
+            if (self < other) {
+                return ClrInteger.MinusOne;
             }
-            return self.CompareTo(other);
+
+            if (self > other) {
+                return ClrInteger.One;
+            }
+
+            if (self == other) {
+                return ClrInteger.Zero;
+            }
+
+            Debug.Assert(Double.IsNaN(self) || Double.IsNaN(other));
+            return null;
         }
 
         /// <summary>
@@ -623,10 +634,7 @@ namespace IronRuby.Builtins {
         /// </remarks>
         [RubyMethod("<=>")]
         public static object Compare(double self, int other) {
-            if (Double.IsNaN(self)) {
-                return null;
-            }
-            return self.CompareTo((double)other);
+            return Compare(self, (double)other);
         }
 
         /// <summary>

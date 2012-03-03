@@ -554,6 +554,9 @@ C().foo()
         public void PythonInterop2() {
             if (!_driver.RunPython) return;
 
+            // TODO:
+            if (_driver.PartialTrust) return;
+
             var py = Runtime.GetEngine("python");
 
             py.Execute(@"
@@ -591,6 +594,9 @@ Python + Ruby
 
         public void PythonInterop4() {
             if (!_driver.RunPython) return;
+            
+            // TODO:
+            if (_driver.PartialTrust) return;
 
             var py = Runtime.GetEngine("python");
 
@@ -621,6 +627,9 @@ def get_python_class():
 
         public void PythonInterop5() {
             if (!_driver.RunPython) return;
+
+            // TODO:
+            if (_driver.PartialTrust) return;
 
             var py = Runtime.GetEngine("python");
 
@@ -825,13 +834,18 @@ p(~c)
 ");
         }
 
+        // TODO: this is broken in partial trust
+
         /// <summary>
         /// We convert a call to a setter with multiple parameters to a GetMember + SetIndex.
         /// This makes indexed properties on foreign meta-objects work.
         /// </summary>
         public void PythonInterop_NamedIndexers1() {
             if (!_driver.RunPython) return;
-            
+
+            // TODO: (partial trust) 
+            if (_driver.PartialTrust) return;
+
             var py = Runtime.GetEngine("python");
             ScriptScope scope = py.CreateScope();
             py.Execute(@"

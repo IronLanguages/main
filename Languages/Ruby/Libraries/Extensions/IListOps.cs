@@ -846,7 +846,7 @@ namespace IronRuby.Builtins {
 
         private static object DeleteIfImpl(BlockParam/*!*/ block, IList/*!*/ self) {
             bool changed, jumped;
-            DeleteIf(block, self, RubyOps.IsTrue, out changed, out jumped);
+            DeleteIf(block, self, true, out changed, out jumped);
             return self;
         }
 
@@ -857,7 +857,7 @@ namespace IronRuby.Builtins {
 
         private static object RejectInPlaceImpl(BlockParam/*!*/ block, IList/*!*/ self) {
             bool changed, jumped;
-            object result = DeleteIf(block, self, RubyOps.IsTrue, out changed, out jumped);
+            object result = DeleteIf(block, self, true, out changed, out jumped);
             return jumped ? result : changed ? self : null;
         }
 
@@ -894,7 +894,7 @@ namespace IronRuby.Builtins {
 
         private static object SelectInPlaceImpl(BlockParam/*!*/ block, IList/*!*/ self) {
             bool changed, jumped;
-            object result = DeleteIf(block, self, RubyOps.IsFalse, out changed, out jumped);
+            object result = DeleteIf(block, self, false, out changed, out jumped);
             return jumped ? result : changed ? self : null;
         }
 
@@ -906,11 +906,11 @@ namespace IronRuby.Builtins {
 
         private static object KeepIfImpl(BlockParam/*!*/ block, IList/*!*/ self) {
             bool changed, jumped;
-            object result = DeleteIf(block, self, RubyOps.IsFalse, out changed, out jumped);
+            object result = DeleteIf(block, self, false, out changed, out jumped);
             return jumped ? result : self;
         }
                 
-        private static object DeleteIf(BlockParam/*!*/ block, IList/*!*/ self, Func<object, bool> predicate, out bool changed, out bool jumped) {
+        private static object DeleteIf(BlockParam/*!*/ block, IList/*!*/ self, bool isPositive, out bool changed, out bool jumped) {
             Assert.NotNull(block, self);
 
             changed = false;
@@ -927,7 +927,7 @@ namespace IronRuby.Builtins {
                     return result;
                 }
 
-                if (predicate(result)) {
+                if (RubyOps.IsTrue(result) == isPositive) {
                     changed = true;
                     self.RemoveAt(i);
                 } else {
@@ -2023,13 +2023,17 @@ namespace IronRuby.Builtins {
         [RubyMethod("rotate")]
         public static IList/*!*/ Rotate(UnaryOpStorage/*!*/ allocateStorage, IList/*!*/ self, [DefaultProtocol]int n) {
             IList result = CreateResultArray(allocateStorage, self);
-            if (result is RubyArray) {
-                (result as RubyArray).AddCapacity(self.Count);
+            
+            RubyArray array = result as RubyArray;
+            if (array != null) {
+                array.AddCapacity(self.Count);
             }
+
             for (int i = 0; i< self.Count; i++ ) {
                 var idx = NormalizeIndex(self, (i + n) % self.Count ); // we can have negative n which rotates backwards
                 result.Add(self[idx]);
             }
+
             return result;
         }
 
@@ -2043,12 +2047,14 @@ namespace IronRuby.Builtins {
             RequireNotFrozen(self);
 
             var count = self.Count;
-            if (count == 0 || count == 1)
+            if (count == 0 || count == 1) {
                 return self;
+            }
 
             n = n % count;
-            if (n == 0)
+            if (n == 0) {
                 return self;
+            }
 
             var tmp = new object[Math.Abs(n)];
             if (n > 0) {
