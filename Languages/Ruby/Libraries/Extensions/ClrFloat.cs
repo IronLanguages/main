@@ -19,6 +19,7 @@ using Microsoft.Scripting.Math;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Generation;
 using System.Diagnostics;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
     /// <summary>
@@ -198,6 +199,7 @@ namespace IronRuby.Builtins {
         /// </summary>
         /// <returns>Float</returns>
         [RubyMethod("/")]
+        [RubyMethod("fdiv")]
         public static double Divide(double self, int other) {
             return self / (double)other;
         }
@@ -207,6 +209,7 @@ namespace IronRuby.Builtins {
         /// </summary>
         /// <returns>Float</returns>
         [RubyMethod("/")]
+        [RubyMethod("fdiv")]
         public static double Divide(RubyContext/*!*/ context, double self, [NotNull]BigInteger/*!*/ other) {
             return self / Protocols.ConvertToDouble(context, other);
         }
@@ -216,6 +219,7 @@ namespace IronRuby.Builtins {
         /// </summary>
         /// <returns>Float</returns>
         [RubyMethod("/")]
+        [RubyMethod("fdiv")]
         public static double Divide(double self, double other) {
             return self / other;
         }
@@ -225,6 +229,7 @@ namespace IronRuby.Builtins {
         /// </summary>
         /// <returns></returns>
         [RubyMethod("/")]
+        [RubyMethod("fdiv")]
         public static object Divide(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, double self, object other) {
             return Protocols.CoerceAndApply(coercionStorage, binaryOpSite, "/", self, other);
         }
@@ -239,6 +244,9 @@ namespace IronRuby.Builtins {
         /// <returns>Float</returns>
         [RubyMethod("%"), RubyMethod("modulo")]
         public static double Modulo(double self, int other) {
+            if (other == 0) {
+                throw CreateZeroDivisionError();
+            }
             return (double)InternalDivMod(self, (double)other)[1];
         }
 
@@ -248,6 +256,9 @@ namespace IronRuby.Builtins {
         /// <returns>Float</returns>
         [RubyMethod("%"), RubyMethod("modulo")]
         public static double Modulo(RubyContext/*!*/ context, double self, [NotNull]BigInteger/*!*/ other) {
+            if (other == BigInteger.Zero) {
+                throw CreateZeroDivisionError();
+            }
             return (double)InternalDivMod(self, Protocols.ConvertToDouble(context, other))[1];
         }
 
@@ -257,6 +268,9 @@ namespace IronRuby.Builtins {
         /// <returns>Float</returns>
         [RubyMethod("%"), RubyMethod("modulo")]
         public static double Modulo(double self, double other) {
+            if (other == 0.0) {
+                throw CreateZeroDivisionError();
+            }
             return (double)InternalDivMod(self, other)[1];
         }
 
@@ -366,6 +380,10 @@ namespace IronRuby.Builtins {
         /// </remarks>
         [RubyMethod("divmod")]
         public static RubyArray DivMod(double self, double other) {
+            if (other == 0.0) {
+                throw CreateZeroDivisionError();
+            }
+
             RubyArray result = InternalDivMod(self, other);
             // Unlike modulo, divmod blows up if the quotient or modulus are not finite, so we can't put this inside InternalDivMod
             // We only need to test if the quotient is double since it should have been converted to Integer (Fixnum or Bignum) if it was OK.
@@ -522,6 +540,39 @@ namespace IronRuby.Builtins {
             return 0;
         }
 
+        /// <summary>
+        /// Rounds <code>self</code> to the <code>decimalPlaces</code> places.
+        /// </summary>
+        /// <remarks>
+        /// This is equivalent to:
+        /// <code>
+        /// def round
+        ///     return (self+0.5).floor if self &gt; 0.0
+        ///     return (self-0.5).ceil  if self &lt; 0.0
+        ///     return 0
+        /// end
+        /// </code>
+        /// </remarks>
+        /// <example>
+        /// 312.12570.round(1) == 312.1
+        /// 312.12570.round(2) == 312.13
+        /// 312.12570.round(3) == 312.126
+        /// 312.12570.round(4) == 312.1257
+        /// 312.12570.round(5) == 312.12570
+        /// 312.12570.round(10) == 312.12570
+        /// </example>
+        [RubyMethod("round")]
+        public static object Round(double self, int decimalPlaces) {
+            if (decimalPlaces == 0) {
+                return Round(self);
+            }
+
+            double exponent = Math.Pow(10.0, decimalPlaces);
+            if (self > 0) { return Math.Floor(self * exponent + 0.5) / exponent; }
+            if (self < 0) { return Math.Ceiling(self * exponent - 0.5) / exponent; }
+            return 0;
+        }
+
         #endregion
 
         #region inspect, to_s
@@ -654,7 +705,19 @@ namespace IronRuby.Builtins {
             if (Double.IsNaN(self)) {
                 return null;
             }
-            return self.CompareTo(Protocols.ConvertToDouble(context, other));
+
+            double otherFloat;
+            if (!other.TryToFloat64(out otherFloat)) { // out of range, treat it as positive or negative infinity
+                otherFloat = other.Sign > 0 ? double.PositiveInfinity : double.NegativeInfinity;
+
+                if (self == double.NegativeInfinity) {
+                    return ClrInteger.MinusOne;
+                } else if (self == double.PositiveInfinity) {
+                    return ClrInteger.One;
+                }
+            }
+
+            return Compare(self, otherFloat);
         }
 
         /// <summary>
@@ -936,6 +999,14 @@ namespace IronRuby.Builtins {
 
         public static Exception CreateFloatDomainError(string message) {
             return new FloatDomainError("NaN");
+        }
+
+        public static Exception CreateZeroDivisionError(string message) {
+            return new DivideByZeroException(message);
+        }
+
+        public static Exception CreateZeroDivisionError() {
+            return new DivideByZeroException("divided by 0");
         }
 
         public static Exception CreateFloatDomainError(string message, Exception inner) {

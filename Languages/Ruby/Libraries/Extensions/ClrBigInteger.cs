@@ -20,6 +20,7 @@ using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using System.Globalization;
+using System.Diagnostics;
 
 namespace IronRuby.Builtins {
 
@@ -579,7 +580,13 @@ namespace IronRuby.Builtins {
         /// </remarks>
         [RubyMethod("<=>")]
         public static object Compare(RubyContext/*!*/ context, BigInteger/*!*/ self, double other) {
-            return ClrFloat.Compare(ToFloat(context, self), other);
+            var result = ClrFloat.Compare(context, other, self);
+            if (result == null) {
+                return null;
+            }
+
+            int i = (int)result;
+            return (i == 0) ? ClrInteger.Zero : (i < 0) ? ClrInteger.One : ClrInteger.MinusOne;
         }
 
         /// <summary>
@@ -743,10 +750,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod(">>")]
         public static object/*!*/ RightShift(BigInteger/*!*/ self, [NotNull]BigInteger/*!*/ other) {
-            if (self.IsNegative()) {
-                return -1;
-            }
-            return 0;
+            return self.IsNegative() ? ClrInteger.MinusOne : ClrInteger.Zero;
         }
 
         /// <summary>
