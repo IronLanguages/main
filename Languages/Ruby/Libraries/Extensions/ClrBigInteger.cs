@@ -579,7 +579,12 @@ namespace IronRuby.Builtins {
         /// </remarks>
         [RubyMethod("<=>")]
         public static object Compare(RubyContext/*!*/ context, BigInteger/*!*/ self, double other) {
-            return ClrFloat.Compare(ToFloat(context, self), other);
+            var result = ClrFloat.Compare(context, other, self);
+            if (result == null) {
+                return null;
+            } else {
+                return ((int)result) * -1;
+            }
         }
 
         /// <summary>

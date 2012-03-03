@@ -3567,6 +3567,14 @@ namespace IronRuby.Builtins {
                 new Func<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.BinaryOpStorage, System.Double, System.Object, System.Object>(IronRuby.Builtins.ClrFloat.DivMod)
             );
             
+            DefineLibraryMethod(module, "fdiv", 0x51, 
+                0x00000000U, 0x00000004U, 0x00000000U, 0x00000000U, 
+                new Func<System.Double, System.Int32, System.Double>(IronRuby.Builtins.ClrFloat.Divide), 
+                new Func<IronRuby.Runtime.RubyContext, System.Double, Microsoft.Scripting.Math.BigInteger, System.Double>(IronRuby.Builtins.ClrFloat.Divide), 
+                new Func<System.Double, System.Double, System.Double>(IronRuby.Builtins.ClrFloat.Divide), 
+                new Func<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.BinaryOpStorage, System.Double, System.Object, System.Object>(IronRuby.Builtins.ClrFloat.Divide)
+            );
+            
             DefineLibraryMethod(module, "finite?", 0x51, 
                 0x00000000U, 
                 new Func<System.Double, System.Boolean>(IronRuby.Builtins.ClrFloat.IsFinite)
@@ -3601,8 +3609,9 @@ namespace IronRuby.Builtins {
             );
             
             DefineLibraryMethod(module, "round", 0x51, 
-                0x00000000U, 
-                new Func<System.Double, System.Object>(IronRuby.Builtins.ClrFloat.Round)
+                0x00000000U, 0x00000000U, 
+                new Func<System.Double, System.Object>(IronRuby.Builtins.ClrFloat.Round), 
+                new Func<System.Double, System.Int32, System.Object>(IronRuby.Builtins.ClrFloat.Round)
             );
             
             DefineLibraryMethod(module, "to_f", 0x51, 
