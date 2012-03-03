@@ -207,6 +207,11 @@ namespace IronPython.Modules {
                 return this / y;
             }
 
+            public double total_seconds() {
+                var total_microseconds = (double) this.microseconds + (this.seconds + this.days * 24.0 * 3600.0) * 1000000.0;
+                return total_microseconds / 1000000.0;
+            }
+
             public bool __nonzero__() {
                 return this._days != 0 || this._seconds != 0 || this._microseconds != 0;
             }
