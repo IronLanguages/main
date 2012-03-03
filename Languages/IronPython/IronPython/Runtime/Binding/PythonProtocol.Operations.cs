@@ -750,12 +750,12 @@ namespace IronPython.Runtime.Binding {
             SlotOrFunction rbinder;
             PythonTypeSlot fSlot;
             PythonTypeSlot rSlot;
-            GetOpreatorMethods(types, operation, PythonContext.GetPythonContext(binder), out fbinder, out rbinder, out fSlot, out rSlot);
+            GetOperatorMethods(types, operation, PythonContext.GetPythonContext(binder), out fbinder, out rbinder, out fSlot, out rSlot);
 
             return MakeBinaryOperatorResult(types, binder, operation, fbinder, rbinder, fSlot, rSlot, errorSuggestion);
         }
 
-        private static void GetOpreatorMethods(DynamicMetaObject/*!*/[]/*!*/ types, PythonOperationKind oper, PythonContext state, out SlotOrFunction fbinder, out SlotOrFunction rbinder, out PythonTypeSlot fSlot, out PythonTypeSlot rSlot) {
+        private static void GetOperatorMethods(DynamicMetaObject/*!*/[]/*!*/ types, PythonOperationKind oper, PythonContext state, out SlotOrFunction fbinder, out SlotOrFunction rbinder, out PythonTypeSlot fSlot, out PythonTypeSlot rSlot) {
             oper = NormalizeOperator(oper);
             oper &= ~PythonOperationKind.InPlace;
 
@@ -830,7 +830,7 @@ namespace IronPython.Runtime.Binding {
                     // true div on a type which doesn't support it, go ahead and try normal divide
                     PythonOperationKind newOp = op == "__truediv__" ? PythonOperationKind.Divide : PythonOperationKind.ReverseDivide;
 
-                    GetOpreatorMethods(types, newOp, state, out fbinder, out rbinder, out fSlot, out rSlot);
+                    GetOperatorMethods(types, newOp, state, out fbinder, out rbinder, out fSlot, out rSlot);
                 }
             }
         }
