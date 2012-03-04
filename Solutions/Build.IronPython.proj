@@ -59,6 +59,8 @@
     <DlrLibs Include="Microsoft.Scripting.xml" />
     <ClrDlrLibs Include="Microsoft.Scripting.Metadata.dll" />
     <ClrDlrLibs Include="Microsoft.Scripting.Metadata.xml" />
+    <ClrDlrLibs Include="Microsoft.Scripting.AspNet.dll" />
+    <ClrDlrLibs Include="Microsoft.Scripting.AspNet.xml" />
     <v2DlrLibs Include="Microsoft.Scripting.Core.dll" />
     <v2DlrLibs Include="Microsoft.Scripting.Core.xml" />
     <SilverlightDlrLibs Include="Microsoft.Scripting.Silverlight.dll" />
