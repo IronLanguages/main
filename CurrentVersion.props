@@ -4,7 +4,7 @@
     <MajorVersion>2</MajorVersion>
     <MinorVersion>7</MinorVersion>
     <MicroVersion>2</MicroVersion>
-    <ReleaseLevel>beta</ReleaseLevel>
+    <ReleaseLevel>candidate</ReleaseLevel>
     <ReleaseSerial>1</ReleaseSerial>
 
     <AssemblyRevision>40</AssemblyRevision>
