@@ -393,7 +393,7 @@ namespace IronRuby.Builtins {
 
 #if !SILVERLIGHT && !WP75
         #region priority, priority=
-        [RubyMethod("priority", BuildConfig = "!SILVERLIGHT")]
+        [RubyMethod("priority", BuildConfig = "!SILVERLIGHT && !WP75")]
         public static object Priority(Thread/*!*/ self) {
             RubyThreadInfo.RegisterThread(Thread.CurrentThread);
             switch (self.Priority) {
@@ -412,7 +412,7 @@ namespace IronRuby.Builtins {
             }
         }
 
-        [RubyMethod("priority=", BuildConfig = "!SILVERLIGHT")]
+        [RubyMethod("priority=", BuildConfig = "!SILVERLIGHT && !WP75")]
         public static Thread Priority(Thread/*!*/ self, int priority) {
             RubyThreadInfo.RegisterThread(Thread.CurrentThread);
             if (priority <= -2)

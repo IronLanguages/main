@@ -52,7 +52,7 @@ namespace IronRuby.StandardLibrary.Win32API {
     using AstExpressions = ReadOnlyCollectionBuilder<Expression>;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    [RubyClass("Win32API", BuildConfig = "!SILVERLIGHT && !WIN8 && !ANDROID")]
+    [RubyClass("Win32API", BuildConfig = "!SILVERLIGHT && !WIN8 && !ANDROID && !WP75")]
     public class Win32API : RubyObject {
         private enum ArgType : byte {
             // ignored

@@ -49,19 +49,19 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="IronRuby">
-      <HintPath>..\..\..\bin\Silverlight3$(Configuration)\IronRuby.dll</HintPath>
+      <HintPath>..\..\..\bin\WP7$(Configuration)\IronRuby.dll</HintPath>
     </Reference>
     <Reference Include="IronRuby.Libraries">
-      <HintPath>..\..\..\bin\Silverlight3$(Configuration)\IronRuby.Libraries.dll</HintPath>
+      <HintPath>..\..\..\bin\WP7$(Configuration)\IronRuby.Libraries.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Dynamic">
-      <HintPath>..\..\..\bin\Silverlight3$(Configuration)\Microsoft.Dynamic.dll</HintPath>
+      <HintPath>..\..\..\bin\WP7$(Configuration)\Microsoft.Dynamic.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Scripting">
-      <HintPath>..\..\..\bin\Silverlight3$(Configuration)\Microsoft.Scripting.dll</HintPath>
+      <HintPath>..\..\..\bin\WP7$(Configuration)\Microsoft.Scripting.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Scripting.Core">
-      <HintPath>..\..\..\bin\Silverlight3$(Configuration)\Microsoft.Scripting.Core.dll</HintPath>
+      <HintPath>..\..\..\bin\WP7$(Configuration)\Microsoft.Scripting.Core.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Phone" />
     <Reference Include="Microsoft.Phone.Interop" />
