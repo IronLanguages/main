@@ -3706,7 +3706,7 @@ namespace IronPython.Runtime.Operations {
             ContractUtils.RequiresNotNull(main, "main");
 
             Dictionary<string, object> options = new Dictionary<string, object>();
-            options["Arguments"] = ArrayUtils.RemoveFirst(Environment.GetCommandLineArgs()); // remove the EXE
+            options["Arguments"] = Environment.GetCommandLineArgs();
 
             var pythonEngine = Python.CreateEngine(options);
 
