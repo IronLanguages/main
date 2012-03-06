@@ -31,6 +31,7 @@ EXE/WinEXE specific options:
     /platform:x64                             Compile for x64 only
     /embed                                    Embeds the generated DLL as a resource into the executable which is loaded at runtime
     /standalone                               Embeds the IronPython assemblies into the stub executable.
+    /mta                                      Set MTAThreadAttribute on Main instead of STAThreadAttribute, only valid for /target:winexe
 
 Example:
     ipy.exe pyc.py /main:Program.py Form.py /target:winexe
@@ -48,7 +49,7 @@ from System.Reflection import Emit, Assembly
 from System.Reflection.Emit import OpCodes, AssemblyBuilderAccess
 from System.Reflection import AssemblyName, TypeAttributes, MethodAttributes, ResourceAttributes, CallingConventions
 
-def GenerateExe(name, targetKind, platform, machine, main_module, embed, standalone):
+def GenerateExe(name, targetKind, platform, machine, main_module, embed, standalone, mta):
     """generates the stub .EXE file for starting the app"""
     aName = AssemblyName(System.IO.FileInfo(name).Name)
     ab = PythonOps.DefineDynamicAssembly(aName, AssemblyBuilderAccess.RunAndSave)
@@ -111,8 +112,11 @@ def GenerateExe(name, targetKind, platform, machine, main_module, embed, standal
         gen.Emit(OpCodes.Ret)        
 
     mainMethod = tb.DefineMethod("Main", MethodAttributes.Public | MethodAttributes.Static, int, ())
-    if targetKind == System.Reflection.Emit.PEFileKinds.WindowApplication:
+    if targetKind == System.Reflection.Emit.PEFileKinds.WindowApplication and not mta:
         mainMethod.SetCustomAttribute(clr.GetClrType(System.STAThreadAttribute).GetConstructor(()), System.Array[System.Byte](()))
+    elif targetKind == System.Reflection.Emit.PEFileKinds.WindowApplication:
+        mainMethod.SetCustomAttribute(clr.GetClrType(System.MTAThreadAttribute).GetConstructor(()), System.Array[System.Byte](()))
+
     gen = mainMethod.GetILGenerator()
 
     # get the ScriptCode assembly...
@@ -178,6 +182,7 @@ def Main(args):
     machine  = System.Reflection.ImageFileMachine.I386
     embed = False        # True to embed the generated DLL into the executable
     standalone = False   # True to embed all the IronPython and Microsoft.Scripting DLL's into the generated exe
+    mta = False
 
     for arg in args:
         if arg.startswith("/main:"):
@@ -213,6 +218,9 @@ def Main(args):
         elif arg.startswith("/standalone"):
             standalone = True
 
+        elif arg.startswith("/mta"):
+            mta = True
+
         elif arg in ["/?", "-?", "/h", "-h"]:
             print __doc__
             sys.exit(0)
@@ -247,7 +255,7 @@ def Main(args):
     clr.CompileModules(output + ".dll", mainModule = main_name, *files)
 
     if target != System.Reflection.Emit.PEFileKinds.Dll:
-        GenerateExe(output, target, platform, machine, main_name, embed, standalone)
+        GenerateExe(output, target, platform, machine, main_name, embed, standalone, mta)
 
     print "Saved to %s" % (output, )
 
