@@ -229,7 +229,7 @@ def Main(args):
         else:
             files.append(arg)
 
-    if not files and not main_name:
+    if not files and not options["main_name"]:
         print __doc__
         sys.exit(0)
 
