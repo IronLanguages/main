@@ -63,6 +63,10 @@ namespace IronPython.Runtime {
             _bytes = bytes;
         }
 
+        internal ByteArray (byte[] bytes) {
+            _bytes = new List<byte>(bytes);
+        }
+
         public void __init__() {
             _bytes = new List<byte>();
         }

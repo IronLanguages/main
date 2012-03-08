@@ -127,10 +127,30 @@ namespace IronPython.Modules {
             ValidateString(@string, "string");
 
             MatchCollection mc = pat.FindAllWorker(context, @string, 0, @string.Length);
-            return FixFindAllMatch(pat, mc);
+            return FixFindAllMatch(pat, mc, null);
         }
 
-        private static List FixFindAllMatch(RE_Pattern pat, MatchCollection mc) {
+        public static List findall(CodeContext/*!*/ context, object pattern, IList<byte> @string) {
+            return findall(context, pattern, @string, 0);
+        }
+
+        public static List findall(CodeContext/*!*/ context, object pattern, IList<byte> @string, int flags) {
+            RE_Pattern pat = GetPattern(context, ValidatePattern (pattern), flags);
+            ValidateString (@string, "string");
+
+            MatchCollection mc = pat.FindAllWorker(context, @string, 0, @string.Count);
+            return FixFindAllMatch (pat, mc, FindMaker(@string));
+        }
+
+        private static Func<string, object> FindMaker (object input) {
+            Func<string, object> maker = null;
+            if (input is ByteArray) {
+                maker = delegate (string x) { return new ByteArray (x.MakeByteArray ()); };
+            }
+            return maker;
+        }
+
+        private static List FixFindAllMatch(RE_Pattern pat, MatchCollection mc, Func<string, object> maker) {
             object[] matches = new object[mc.Count];
             int numgrps = pat._re.GetGroupNumbers().Length;
             for (int i = 0; i < mc.Count; i++) {
@@ -150,7 +170,7 @@ namespace IronPython.Modules {
                         //  the first match object...so we'll skip the first item when creating the 
                         //  tuple
                         if (k++ != 0) {
-                            tpl.Add(g.Value);
+                            tpl.Add(maker != null ? maker(g.Value) : g.Value);
                         }
                     }
                     matches[i] = PythonTuple.Make(tpl);
@@ -160,9 +180,9 @@ namespace IronPython.Modules {
                     //  skip the first match since that contains the entire match and not the group match
                     //  e.g. re.findall(r"(\w+)\s+fish\b", "green fish") will have "green fish" in the 0 
                     //  index and "green" as the (\w+) group match
-                    matches[i] = mc[i].Groups[1].Value;
+                    matches[i] = maker != null ? maker(mc[i].Groups[1].Value) : mc[i].Groups[1].Value;
                 } else {
-                    matches[i] = mc[i].Value;
+                    matches[i] = maker != null ? maker (mc[i].Value) : mc[i].Value;
                 }
             }
 
@@ -321,12 +341,20 @@ namespace IronPython.Modules {
 
             public object findall(CodeContext/*!*/ context, object @string, int pos, object endpos) {
                 MatchCollection mc = FindAllWorker(context, ValidateString(@string, "text"), pos, endpos);
-
-                return FixFindAllMatch(this, mc);
-            }
+                return FixFindAllMatch(this, mc, FindMaker(@string));
+            }           
 
             internal MatchCollection FindAllWorker(CodeContext/*!*/ context, string str, int pos, object endpos) {
                 string against = str;
+                if (endpos != null) {
+                    int end = PythonContext.GetContext(context).ConvertToInt32(endpos);
+                    against = against.Substring(0, Math.Max(end, 0));
+                }
+                return _re.Matches(against, pos);
+            }
+
+            internal MatchCollection FindAllWorker(CodeContext/*!*/ context, IList<byte> str, int pos, object endpos) {
+                string against = str.MakeString();
                 if (endpos != null) {
                     int end = PythonContext.GetContext(context).ConvertToInt32(endpos);
                     against = against.Substring(0, Math.Max(end, 0));
@@ -1240,6 +1268,11 @@ namespace IronPython.Modules {
             Bytes bytes = str as Bytes;
             if (bytes != null) {
                 return bytes.ToString();
+            }
+
+            ByteArray byteArray = str as ByteArray;
+            if (byteArray != null) {
+                return byteArray.MakeString();
             }
 
 #if FEATURE_MMAP
