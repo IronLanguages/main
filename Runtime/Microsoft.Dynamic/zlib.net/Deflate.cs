@@ -1981,7 +1981,7 @@ namespace ComponentAce.Compression.Libs.ZLib
             if (strm.avail_out == 0)
             {
                 strm.msg = ZLibUtil.z_errmsg[(int)ZLibResultCode.Z_NEED_DICT - ((int)ZLibResultCode.Z_BUF_ERROR)];
-                return (int)ZLibResultCode.Z_DATA_ERROR;
+                return (int)ZLibResultCode.Z_BUF_ERROR;
             }
 
             this.strm = strm; // just in case
@@ -2037,14 +2037,14 @@ namespace ComponentAce.Compression.Libs.ZLib
             else if (strm.avail_in == 0 && internalFlush <= old_flush && internalFlush != (int)FlushStrategy.Z_FINISH)
             {
                 strm.msg = ZLibUtil.z_errmsg[(int)ZLibResultCode.Z_NEED_DICT - ((int)ZLibResultCode.Z_BUF_ERROR)];
-                return (int)ZLibResultCode.Z_DATA_ERROR;
+                return (int)ZLibResultCode.Z_BUF_ERROR;
             }
 
             // User must not provide more input after the first FINISH:
             if (status == DeflateState.FINISH_STATE && strm.avail_in != 0)
             {
                 strm.msg = ZLibUtil.z_errmsg[(int)ZLibResultCode.Z_NEED_DICT - ((int)ZLibResultCode.Z_BUF_ERROR)];
-				return (int)ZLibResultCode.Z_DATA_ERROR;
+				return (int)ZLibResultCode.Z_BUF_ERROR;
 			}
 			
 			// Start a new block or continue the current one.
