@@ -23,7 +23,8 @@ Options:
     /target:dll                               Compile only into dll.  Default
     /target:exe                               Generate console executable stub for startup in addition to dll.
     /target:winexe                            Generate windows executable stub for startup in addition to dll.
-    /? /h                                     This message
+    @<file>                                   Specifies a response file to be parsed for input files and command line options (one per line)
+    /? /h                                     This message    
 
 EXE/WinEXE specific options:
     /main:main_file.py                        Main file of the project (module to be executed first)
@@ -49,17 +50,17 @@ from System.Reflection import Emit, Assembly
 from System.Reflection.Emit import OpCodes, AssemblyBuilderAccess
 from System.Reflection import AssemblyName, TypeAttributes, MethodAttributes, ResourceAttributes, CallingConventions
 
-def GenerateExe(options):
+def GenerateExe(config):
     """generates the stub .EXE file for starting the app"""
-    aName = AssemblyName(System.IO.FileInfo(options["output"]).Name)
+    aName = AssemblyName(System.IO.FileInfo(config.output).Name)
     ab = PythonOps.DefineDynamicAssembly(aName, AssemblyBuilderAccess.RunAndSave)
-    mb = ab.DefineDynamicModule(options["output"],  aName.Name + ".exe")
+    mb = ab.DefineDynamicModule(config.output,  aName.Name + ".exe")
     tb = mb.DefineType("PythonMain", TypeAttributes.Public)
     assemblyResolveMethod = None
 
-    if options["standalone"]:
+    if config.standalone:
         print "Generating stand alone executable"
-        options["embed"] = True
+        config.embed = True
         
         for a in System.AppDomain.CurrentDomain.GetAssemblies():
             n = AssemblyName(a.FullName)
@@ -112,25 +113,25 @@ def GenerateExe(options):
         gen.Emit(OpCodes.Ret)        
 
     mainMethod = tb.DefineMethod("Main", MethodAttributes.Public | MethodAttributes.Static, int, ())
-    if options["target"] == System.Reflection.Emit.PEFileKinds.WindowApplication and options["mta"]:
+    if config.target == System.Reflection.Emit.PEFileKinds.WindowApplication and config.mta:
         mainMethod.SetCustomAttribute(clr.GetClrType(System.MTAThreadAttribute).GetConstructor(()), System.Array[System.Byte](()))
-    elif options["target"] == System.Reflection.Emit.PEFileKinds.WindowApplication:
+    elif config.target == System.Reflection.Emit.PEFileKinds.WindowApplication:
         mainMethod.SetCustomAttribute(clr.GetClrType(System.STAThreadAttribute).GetConstructor(()), System.Array[System.Byte](()))
 
     gen = mainMethod.GetILGenerator()
 
     # get the ScriptCode assembly...
-    if options["embed"]:
+    if config.embed:
         # put the generated DLL into the resources for the stub exe
         w = mb.DefineResource("IPDll.resources", "Embedded IronPython Generated DLL")
-        w.AddResource("IPDll." + options["output"], System.IO.File.ReadAllBytes(options["output"] + ".dll"))
-        System.IO.File.Delete(options["output"] + ".dll")
+        w.AddResource("IPDll." + config.output, System.IO.File.ReadAllBytes(config.output + ".dll"))
+        System.IO.File.Delete(config.output + ".dll")
 
         # generate code to load the resource
         gen.Emit(OpCodes.Ldstr, "IPDll")
         gen.EmitCall(OpCodes.Call, clr.GetClrType(Assembly).GetMethod("GetEntryAssembly"), ())
         gen.Emit(OpCodes.Newobj, clr.GetClrType(System.Resources.ResourceManager).GetConstructor((str, clr.GetClrType(Assembly))))
-        gen.Emit(OpCodes.Ldstr, "IPDll." + options["output"])
+        gen.Emit(OpCodes.Ldstr, "IPDll." + config.output)
         gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Resources.ResourceManager).GetMethod("GetObject", (str, )), ())
         gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Reflection.Assembly).GetMethod("Load", (clr.GetClrType(System.Array[System.Byte]), )), ())
     else:
@@ -146,7 +147,7 @@ def GenerateExe(options):
         gen.EmitCall(OpCodes.Call, clr.GetClrType(System.IO.FileInfo).GetMethod("get_Directory"), ())
         gen.EmitCall(OpCodes.Call, clr.GetClrType(System.IO.DirectoryInfo).GetMethod("get_FullName"), ())
         gen.EmitCall(OpCodes.Call, clr.GetClrType(System.Environment).GetMethod("set_CurrentDirectory"), ())
-        gen.Emit(OpCodes.Ldstr, options["output"] + ".dll")
+        gen.Emit(OpCodes.Ldstr, config.output + ".dll")
         gen.EmitCall(OpCodes.Call, clr.GetClrType(System.IO.Path).GetMethod("GetFullPath", (clr.GetClrType(str), )), ())
         # result of GetFullPath stays on the stack during the restore of the
         # original working directory
@@ -169,103 +170,127 @@ def GenerateExe(options):
     gen.EmitCall(OpCodes.Call, clr.GetClrType(PythonOps).GetMethod("InitializeModuleEx"), ())
     gen.Emit(OpCodes.Ret)
     tb.CreateType()
-    ab.SetEntryPoint(mainMethod, options["target"])
-    ab.Save(aName.Name + ".exe", options["platform"], options["machine"])
+    ab.SetEntryPoint(mainMethod, config.target)
+    ab.Save(aName.Name + ".exe", config.platform, config.machine)
+
+class Config(object):
+    def __init__(self):
+        self.output = None
+        self.main = None
+        self.main_name = None
+        self.target = System.Reflection.Emit.PEFileKinds.Dll
+        self.embed = False
+        self.standalone = False
+        self.mta = False
+        self.platform = System.Reflection.PortableExecutableKinds.ILOnly
+        self.machine = System.Reflection.ImageFileMachine.I386
+        self.files = []
+
+    def ParseArgs(self, args):
+        for arg in args:
+            arg = arg.strip()
+            if arg.startswith("#"):
+                continue
+
+            if arg.startswith("/main:"):
+                self.main_name = self.main = arg[6:]
+                # only override the target kind if its current a DLL
+                if self.target == System.Reflection.Emit.PEFileKinds.Dll:
+                    self.target = System.Reflection.Emit.PEFileKinds.ConsoleApplication
+
+            elif arg.startswith("/out:"):
+                self.output = arg[5:]
+
+            elif arg.startswith("/target:"):
+                tgt = arg[8:]
+                if tgt == "exe": self.target = System.Reflection.Emit.PEFileKinds.ConsoleApplication
+                elif tgt == "winexe": self.target = System.Reflection.Emit.PEFileKinds.WindowApplication
+                else: self.target = System.Reflection.Emit.PEFileKinds.Dll
+
+            elif arg.startswith("/platform:"):
+                pform = arg[10:]
+                if pform == "x86":
+                    self.platform = System.Reflection.PortableExecutableKinds.ILOnly | System.Reflection.PortableExecutableKinds.Required32Bit
+                    self.machine  = System.Reflection.ImageFileMachine.I386
+                elif pform == "x64":
+                    self.platform = System.Reflection.PortableExecutableKinds.ILOnly | System.Reflection.PortableExecutableKinds.PE32Plus
+                    self.machine  = System.Reflection.ImageFileMachine.AMD64
+                else:
+                    self.platform = System.Reflection.PortableExecutableKinds.ILOnly
+                    self.machine  = System.Reflection.ImageFileMachine.I386
+
+            elif arg.startswith("/embed"):
+                self.embed = True
+
+            elif arg.startswith("/standalone"):
+                self.standalone = True
+
+            elif arg.startswith("/mta"):
+                self.mta = True
+
+            elif arg in ["/?", "-?", "/h", "-h"]:
+                print __doc__
+                sys.exit(0)
+
+            else:
+                if arg.startswith("@"):
+                    with open(arg[1:], 'r') as f:
+                        self.ParseArgs(f.readlines())
+                else:
+                    self.files.append(arg)
+
+    def Validate(self):
+        if not self.files and not self.main_name:
+            print "No files or main defined"
+            return False
+
+        if self.target != System.Reflection.Emit.PEFileKinds.Dll and self.main_name == None:
+            print "EXEs require /main:<filename> to be specified"
+            return False
+
+        if not self.output and self.main_name:
+            self.output = System.IO.Path.GetFileNameWithoutExtension(self.main_name)
+        elif not self.output and self.files:
+            self.output = System.IO.Path.GetFileNameWithoutExtension(self.files[0])
+
+        return True
+
+    def __repr__(self):
+        res = "Input Files:\n"
+        for file in self.files:
+            res += "\t%s\n" % file
+
+        res += "Output:\n\t%s\n" % self.output
+        res += "Target:\n\t%s\n" % self.target
+        res += "Platform:\n\t%s\n" % self.platform
+        res += "Machine:\n\t%s\n" % self.machine
+
+        if self.target == System.Reflection.Emit.PEFileKinds.WindowApplication:
+            res += "Threading:\n"
+            if self.mta:
+                res += "\tMTA\n"
+            else:
+                res += "\tSTA\n"        
+        return res
 
 def Main(args):
     files = []
-    options = { "output"     : None, # Output assembly name
-                "main"       : None, # The main file to start the execution (passed to the PythonCompiler)
-                "main_name"  : None, # File which will drive the name of the assembly if "output" not provided
-                "target"     : System.Reflection.Emit.PEFileKinds.Dll,
-                "embed"      : False,# True to embed the generated DLL into the executable
-                "standalone" : False,# True to embed all the IronPython and Microsoft.Scripting DLL's into the generated exe
-                "mta"        : False,# Use MTAThreadAttribute instead of STAThreadAttribute for winexe Main
-                "platform"   : System.Reflection.PortableExecutableKinds.ILOnly,
-                "machine"    : System.Reflection.ImageFileMachine.I386
-                }    
-
-    for arg in args:
-        if arg.startswith("/main:"):
-            options["main_name"] = options["main"] = arg[6:]
-            # only override the target kind if its current a DLL
-            if options["target"] == System.Reflection.Emit.PEFileKinds.Dll:
-                options["target"] = System.Reflection.Emit.PEFileKinds.ConsoleApplication
-
-        elif arg.startswith("/out:"):
-            options["output"] = arg[5:]
-
-        elif arg.startswith("/target:"):
-            tgt = arg[8:]
-            if tgt == "exe": options["target"] = System.Reflection.Emit.PEFileKinds.ConsoleApplication
-            elif tgt == "winexe": options["target"] = System.Reflection.Emit.PEFileKinds.WindowApplication
-            else: options["target"] = System.Reflection.Emit.PEFileKinds.Dll
-
-        elif arg.startswith("/platform:"):
-            pform = arg[10:]
-            if pform == "x86":
-                options["platform"] = System.Reflection.PortableExecutableKinds.ILOnly | System.Reflection.PortableExecutableKinds.Required32Bit
-                options["machine"]  = System.Reflection.ImageFileMachine.I386
-            elif pform == "x64":
-                options["platform"] = System.Reflection.PortableExecutableKinds.ILOnly | System.Reflection.PortableExecutableKinds.PE32Plus
-                options["machine"]  = System.Reflection.ImageFileMachine.AMD64
-            else:
-                options["platform"] = System.Reflection.PortableExecutableKinds.ILOnly
-                options["machine"]  = System.Reflection.ImageFileMachine.I386
-
-        elif arg.startswith("/embed"):
-            options["embed"] = True
-
-        elif arg.startswith("/standalone"):
-            options["standalone"] = True
-
-        elif arg.startswith("/mta"):
-            options["mta"] = True
-
-        elif arg in ["/?", "-?", "/h", "-h"]:
-            print __doc__
-            sys.exit(0)
-
-        else:
-            files.append(arg)
-
-    if not files and not options["main_name"]:
+    config = Config()
+    
+    config.ParseArgs(args)
+    if not config.Validate():
         print __doc__
         sys.exit(0)
 
-    if options["target"] != System.Reflection.Emit.PEFileKinds.Dll and options["main_name"] == None:
-        print __doc__
-        sys.exit(0)
-        print "EXEs require /main:<filename> to be specified"
-
-    if not options["output"] and options["main_name"]:
-        options["output"] = System.IO.Path.GetFileNameWithoutExtension(options["main_name"])
-    elif not options["output"] and files:
-        options["output"] = System.IO.Path.GetFileNameWithoutExtension(files[0])
-
-    print "Input Files:"
-    for file in files:
-        print "\t%s" % file
-
-    print "Output:\n\t%s" % options["output"]
-    print "Target:\n\t%s" % options["target"]
-    print "Platform:\n\t%s" % options["platform"]
-    print "Machine:\n\t%s" % options["machine"]
-
-    if options["target"] == System.Reflection.Emit.PEFileKinds.WindowApplication:
-        print "Threading:"
-        if options["mta"]:
-            print "\tMTA"
-        else:
-            print "\tSTA"        
-
+    print config
+    
     print "Compiling..."
-    clr.CompileModules(options["output"] + ".dll", mainModule = options["main_name"], *files)
+    clr.CompileModules(config.output + ".dll", mainModule = config.main_name, *config.files)
 
-    if options["target"] != System.Reflection.Emit.PEFileKinds.Dll:
-        GenerateExe(options)
+    if config.target != System.Reflection.Emit.PEFileKinds.Dll:
+        GenerateExe(config)
 
-    print "Saved to %s" % (options["output"], )
+    print "Saved to %s" % (config.output, )
 
 if __name__ == "__main__":
     Main(sys.argv[1:])
