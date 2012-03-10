@@ -87,8 +87,8 @@ namespace IronPython.Runtime.Binding {
         public bool MaybeNotImplemented {
             get {
                 if (_function != null) {
-                    ParameterInfo ret = _function.Overload.ReturnParameter;
-                    return ret != null && ret.IsDefined(typeof(MaybeNotImplementedAttribute), false);
+                    var method = _function.Overload.ReflectionInfo as MethodInfo;
+                    return method != null && method.IsDefined(typeof(MaybeNotImplementedAttribute), false);
                 }
 
                 return true;
