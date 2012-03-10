@@ -186,7 +186,7 @@ class Config(object):
         self.machine = System.Reflection.ImageFileMachine.I386
         self.files = []
 
-    def ParseArgs(self, args):
+    def ParseArgs(self, args, respFiles=[]):
         for arg in args:
             arg = arg.strip()
             if arg.startswith("#"):
@@ -234,8 +234,13 @@ class Config(object):
 
             else:
                 if arg.startswith("@"):
-                    with open(arg[1:], 'r') as f:
-                        self.ParseArgs(f.readlines())
+                    respFile = System.IO.Path.GetFullPath(arg[1:])
+                    if not respFile in respFiles:
+                        respFiles.append(respFile)
+                        with open(respFile, 'r') as f:
+                           self.ParseArgs(f.readlines(), respFiles)
+                    else:
+                        print "WARNING: Already parsed response file '%s'\n" % arg[1:]
                 else:
                     self.files.append(arg)
 
