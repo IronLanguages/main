@@ -140,6 +140,11 @@ to Zip archives.";
                 }
 
                 _prefix = input.Replace(path, string.Empty);
+                // add trailing SEP
+                if (!string.IsNullOrEmpty(_prefix) && !_prefix.EndsWith (Path.DirectorySeparatorChar.ToString())) {
+                    _prefix = _prefix.Substring (1);
+                    _prefix += Path.DirectorySeparatorChar;
+                }
                 _archive = path;
             }
 
@@ -230,7 +235,7 @@ module, or raises ZipImportError if it wasn't found.")]
                     string fullpath = string.Format("{0}{1}{2}{3}",
                         _archive,
                         Path.DirectorySeparatorChar,
-                        _prefix.Length > 0 ? _prefix[0].ToString() : "",
+                        _prefix.Length > 0 ? _prefix : string.Empty,
                         subname);
 
                     List pkgpath = PythonOps.MakeList(fullpath);
