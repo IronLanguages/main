@@ -1980,6 +1980,7 @@ namespace IronPython.Runtime {
             }
         }
 
+#pragma warning disable 429 // unreachable code detected
         private void SetVersionVariables(PythonDictionary dict) {
             dict["hexversion"] = (CurrentVersion.Major << 24) + (CurrentVersion.Minor << 16) + (CurrentVersion.Micro << 8);
             dict["version_info"] = new VersionInfo(CurrentVersion.Major, CurrentVersion.Minor, CurrentVersion.Micro, CurrentVersion.ReleaseLevel, CurrentVersion.ReleaseSerial);
@@ -1991,6 +1992,7 @@ namespace IronPython.Runtime {
                 CurrentVersion.ReleaseLevel != "final" ? CurrentVersion.ShortReleaseLevel : "",
                 CurrentVersion.ReleaseLevel != "final" ? CurrentVersion.ReleaseSerial.ToString() : "");
         }
+#pragma warning restore 429
 
         internal static string GetVersionString() {
             string configuration = BuildInfo.IsDebug ? " DEBUG" : "";
