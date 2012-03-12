@@ -660,7 +660,7 @@ namespace IronPython.Runtime.Types {
                         allArgs[3 + i] = args[i].Expression;
                     }
 
-                    res = Expression.Dynamic(
+                    res = DynamicExpression.Dynamic(
                         context.LanguageContext.Invoke(_signature.InsertArgument(Argument.Simple)),
                         typeof(object),
                         allArgs
@@ -1036,7 +1036,7 @@ namespace IronPython.Runtime.Types {
         }
 
         private DynamicExpression MakeDynamicInitInvoke(CodeContext context, DynamicMetaObject[] args, Expression initFunc, Expression codeContext) {
-            return Expression.Dynamic(
+            return DynamicExpression.Dynamic(
                 context.LanguageContext.Invoke(_signature),
                 typeof(object),
                 ArrayUtils.Insert(

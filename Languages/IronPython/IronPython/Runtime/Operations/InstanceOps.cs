@@ -96,7 +96,7 @@ namespace IronPython.Runtime.Operations {
             get {
                 if (_New == null) {
                     _New = (BuiltinFunction)PythonTypeOps.GetSlot(
-                        TypeInfo.GetExtensionMemberGroup(typeof(object), typeof(ObjectOps).GetMember("__new__")),
+                        PythonTypeInfo.GetExtensionMemberGroup(typeof(object), typeof(ObjectOps).GetMember("__new__")),
                         "__new__",
                         false // privateBinding
                     );
@@ -766,7 +766,7 @@ namespace IronPython.Runtime.Operations {
 
         [PropertyMethod, StaticExtensionMethod]
         public static List/*!*/ Get__all__<T>(CodeContext/*!*/ context) {
-            Debug.Assert(typeof(T).IsSealed && typeof(T).IsAbstract, "__all__ should only be produced for static members"); 
+            Debug.Assert(typeof(T).IsSealed() && typeof(T).IsAbstract(), "__all__ should only be produced for static members"); 
 
             PythonType pt = DynamicHelpers.GetPythonTypeFromType(typeof(T));
 

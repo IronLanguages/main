@@ -427,8 +427,8 @@
     <Compile Include="Runtime\Types\ReflectedSlotProperty.cs" />
     <Compile Include="Runtime\Types\StaticUnderlyingSystemType.cs" />
     <Compile Include="Runtime\Types\TypeCache.Generated.cs" />
-    <Compile Include="Runtime\Types\TypeInfo.cs" />
-    <Compile Include="Runtime\Types\TypeInfo.Generated.cs" />
+    <Compile Include="Runtime\Types\PythonTypeInfo.cs" />
+    <Compile Include="Runtime\Types\PythonTypeInfo.Generated.cs" />
     <Compile Include="Runtime\Types\BuiltinFunction.cs" />
     <Compile Include="Runtime\Types\BuiltinMethodDescriptor.cs" />
     <Compile Include="Runtime\Types\ConstructorFunction.cs" />

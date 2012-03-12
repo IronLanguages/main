@@ -138,7 +138,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         protected override bool AllowMemberInitialization(OverloadInfo method) {
-            return method.IsInstanceFactory && !method.DeclaringType.IsDefined(typeof(PythonTypeAttribute), true);
+            return method.IsInstanceFactory && !method.DeclaringType.GetTypeInfo().IsDefined(typeof(PythonTypeAttribute), true);
         }
 
         public override Expression Convert(DynamicMetaObject metaObject, Type restrictedType, ParameterInfo info, Type toType) {

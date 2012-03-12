@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -65,8 +66,8 @@ namespace IronPython.Runtime.Types {
             return null;
         }
 
-        private static string DocOneInfoForProperty(Type declaringType, string propertyName, MethodInfo getter, MethodInfo setter, object[] attrs) {
-            if (attrs == null || attrs.Length == 0) {
+        private static string DocOneInfoForProperty(Type declaringType, string propertyName, MethodInfo getter, MethodInfo setter, IEnumerable<DocumentationAttribute> attrs) {
+            if (!attrs.Any()) {
                 StringBuilder autoDoc = new StringBuilder();
 
                 string summary = null;
@@ -94,24 +95,24 @@ namespace IronPython.Runtime.Types {
             }
 
             StringBuilder docStr = new StringBuilder();
-            for (int i = 0; i < attrs.Length; i++) {
-                docStr.Append(((DocumentationAttribute)attrs[i]).Documentation);
+            foreach (var attr in attrs) {
+                docStr.Append(attr.Documentation);
                 docStr.Append(Environment.NewLine);
             }
             return docStr.ToString();
         }
 
         public static string DocOneInfo(ExtensionPropertyInfo info) {
-            return DocOneInfoForProperty(info.DeclaringType, info.Name, info.Getter, info.Setter, null);
+            return DocOneInfoForProperty(info.DeclaringType, info.Name, info.Getter, info.Setter, Enumerable.Empty<DocumentationAttribute>());
         }
 
         public static string DocOneInfo(PropertyInfo info) {
-            object[] attrs = info.GetCustomAttributes(typeof(DocumentationAttribute), false);
+            var attrs = info.GetCustomAttributes<DocumentationAttribute>();
             return DocOneInfoForProperty(info.DeclaringType, info.Name, info.GetGetMethod(), info.GetSetMethod(), attrs);
         }
 
         public static string DocOneInfo(FieldInfo info) {
-            object[] attrs = info.GetCustomAttributes(typeof(DocumentationAttribute), false);
+            var attrs = info.GetCustomAttributes<DocumentationAttribute>();
             return DocOneInfoForProperty(info.DeclaringType, info.Name, null, null, attrs);
         }
 
@@ -121,11 +122,9 @@ namespace IronPython.Runtime.Types {
 
         public static string DocOneInfo(MethodBase info, string name, bool includeSelf) {
             // Look for methods tagged with [Documentation("doc string for foo")]
-            object[] attrs = info.GetCustomAttributes(typeof(DocumentationAttribute), false);
-            if (attrs.Length > 0) {
-                Debug.Assert(attrs.Length == 1);
-                DocumentationAttribute doc = attrs[0] as DocumentationAttribute;
-                return doc.Documentation;
+            var attr = info.GetCustomAttributes<DocumentationAttribute>().SingleOrDefault();
+            if (attr != null) {
+                return attr.Documentation;
             }
 
             string defaultDoc = GetDefaultDocumentation(name);

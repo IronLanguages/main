@@ -207,7 +207,7 @@ namespace IronPython.Runtime.Binding {
             return new DynamicMetaObject(
                 Ast.Property(
                     Ast.Convert(self.Expression, typeof(IPythonObject)),
-                    TypeInfo._IPythonObject.PythonType
+                    PythonTypeInfo._IPythonObject.PythonType
                 ),
                 BindingRestrictions.Empty,
                 pt

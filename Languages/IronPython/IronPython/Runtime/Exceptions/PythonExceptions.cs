@@ -1084,8 +1084,9 @@ for k, v in toError.iteritems():
             if (pyAware != null) {
                 pyAware.PythonException = exception;
             } else {
-                e.Data[_pythonExceptionKey] = new ExceptionDataWrapper(exception);
+                e.SetData(_pythonExceptionKey, new ExceptionDataWrapper(exception));
             }
+
             BaseException be = exception as BaseException;
             if (be != null) {
                 be.clsException = e;
@@ -1099,8 +1100,11 @@ for k, v in toError.iteritems():
             IPythonAwareException pyAware = e as IPythonAwareException;
             if (pyAware != null) {
                 return pyAware.PythonException;
-            }  else if (e.Data.Contains(_pythonExceptionKey)) {
-                return ((ExceptionDataWrapper)e.Data[_pythonExceptionKey]).Value;
+            }
+
+            var wrapper = e.GetData(_pythonExceptionKey) as ExceptionDataWrapper;
+            if (wrapper != null) {
+                return wrapper.Value;
             }
 
             return null;
@@ -1111,7 +1115,7 @@ for k, v in toError.iteritems():
             if (pyAware != null) {
                 return pyAware.Frames;
             } else {
-                return e.Data[typeof(DynamicStackFrame)] as List<DynamicStackFrame>;
+                return e.GetData(typeof(DynamicStackFrame)) as List<DynamicStackFrame>;
             }
         }
 
@@ -1120,7 +1124,7 @@ for k, v in toError.iteritems():
             if (pyAware != null) {
                 pyAware.Frames = frames;
             } else {
-                e.Data[typeof(DynamicStackFrame)] = frames;
+                e.SetData(typeof(DynamicStackFrame), frames);
             }
         }
 
@@ -1129,7 +1133,7 @@ for k, v in toError.iteritems():
             if (pyAware != null) {
                 pyAware.Frames = null;
             } else {
-                e.Data.Remove(typeof(DynamicStackFrame));
+                e.RemoveData(typeof(DynamicStackFrame));
             }
         }
 
@@ -1138,7 +1142,7 @@ for k, v in toError.iteritems():
             if (pyAware != null) {
                 return pyAware.TraceBack;
             } else {
-                return e.Data[typeof(TraceBack)] as TraceBack;
+                return e.GetData(typeof(TraceBack)) as TraceBack;
             }
         }
 
@@ -1147,7 +1151,7 @@ for k, v in toError.iteritems():
             if (pyAware != null) {
                 pyAware.TraceBack = traceback;
             } else {
-                e.Data[typeof(TraceBack)] = traceback;
+                e.SetData(typeof(TraceBack), traceback);
             }
         }
 
@@ -1156,7 +1160,7 @@ for k, v in toError.iteritems():
             if (pyAware != null) {
                 pyAware.TraceBack = null;
             } else {
-                e.Data.Remove(typeof(TraceBack));
+                e.RemoveData(typeof(TraceBack));
             }
         }
 
@@ -1175,7 +1179,7 @@ for k, v in toError.iteritems():
 
             string sourceLine = PythonContext.GetSourceLine(e);
             string fileName = e.GetSymbolDocumentName();
-            object column = (e.Column == 0 || e.Data.Contains(PythonContext._syntaxErrorNoCaret)) ? null : (object)e.Column;
+            object column = (e.Column == 0 || e.GetData(PythonContext._syntaxErrorNoCaret) != null) ? null : (object)e.Column;
             
             se.args = PythonTuple.MakeTuple(e.Message, PythonTuple.MakeTuple(fileName, e.Line, column, sourceLine));
 
