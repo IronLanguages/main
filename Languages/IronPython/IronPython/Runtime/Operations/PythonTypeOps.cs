@@ -177,9 +177,9 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static bool IsRuntimeAssembly(Assembly assembly) {
-            if (assembly == typeof(PythonOps).Assembly || // IronPython.dll
-                assembly == typeof(Microsoft.Scripting.Interpreter.LightCompiler).Assembly || // Microsoft.Scripting.dll
-                assembly == typeof(DynamicMetaObject).Assembly) {  // Microsoft.Scripting.Core.dll
+            if (assembly == typeof(PythonOps).GetTypeInfo().Assembly || // IronPython.dll
+                assembly == typeof(Microsoft.Scripting.Interpreter.LightCompiler).GetTypeInfo().Assembly || // Microsoft.Scripting.dll
+                assembly == typeof(DynamicMetaObject).GetTypeInfo().Assembly) {  // Microsoft.Scripting.Core.dll
                 return true;
             }
 
@@ -373,7 +373,7 @@ namespace IronPython.Runtime.Operations {
                 }
             }
             
-            if (type.IsValueType && !hasDefaultConstructor && type != typeof(void)) {
+            if (type.IsValueType() && !hasDefaultConstructor && type != typeof(void)) {
                 try {
                     methods.Add(typeof(ScriptingRuntimeHelpers).GetMethod("CreateInstance", ReflectionUtils.EmptyTypes).MakeGenericMethod(type));
                 } catch (BadImageFormatException) {
@@ -526,8 +526,8 @@ namespace IronPython.Runtime.Operations {
                 return xType;
             }
 
-            Type xBase = xType.BaseType;
-            Type yBase = yType.BaseType;
+            Type xBase = xType.GetBaseType();
+            Type yBase = yType.GetBaseType();
             if (xBase != null) {
                 Type res = GetCommonBaseType(xBase, yType);
                 if (res != null) {
@@ -890,7 +890,7 @@ namespace IronPython.Runtime.Operations {
 
                 PythonType dt = baseClass as PythonType;
 
-                if (!dt.UnderlyingSystemType.IsInterface) {
+                if (!dt.UnderlyingSystemType.IsInterface()) {
                     return bases;
                 } else {
                     hasInterface = true;
@@ -906,8 +906,8 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static Type GetFinalSystemType(Type type) {
-            while (typeof(IPythonObject).IsAssignableFrom(type) && !type.IsDefined(typeof(DynamicBaseTypeAttribute), false)) {
-                type = type.BaseType;
+            while (typeof(IPythonObject).IsAssignableFrom(type) && !type.GetTypeInfo().IsDefined(typeof(DynamicBaseTypeAttribute), false)) {
+                type = type.GetBaseType();
             }
             return type;
         }

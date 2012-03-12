@@ -27,6 +27,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 
@@ -271,7 +272,7 @@ namespace IronPython.Runtime.Binding {
         public override MemberGroup/*!*/ GetMember(MemberRequestKind actionKind, Type type, string name) {
             MemberGroup mg;
             if (!_resolvedMembers.TryGetCachedMember(type, name, actionKind == MemberRequestKind.Get, out mg)) {
-                mg = TypeInfo.GetMemberAll(
+                mg = PythonTypeInfo.GetMemberAll(
                     this,
                     actionKind,
                     type,
@@ -391,7 +392,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override bool IncludeExtensionMember(MemberInfo member) {
-            return !member.DeclaringType.IsDefined(typeof(PythonHiddenBaseClassAttribute), false);
+            return !member.DeclaringType.GetTypeInfo().IsDefined(typeof(PythonHiddenBaseClassAttribute), false);
         }
 
         public override IList<Type> GetExtensionTypes(Type t) {
@@ -528,7 +529,7 @@ namespace IronPython.Runtime.Binding {
             Type curType = type.UnderlyingSystemType;
 
             if (!_typeMembers.TryGetCachedSlot(curType, true, name, out slot)) {
-                MemberGroup mg = TypeInfo.GetMember(
+                MemberGroup mg = PythonTypeInfo.GetMember(
                     this,
                     MemberRequestKind.Get,
                     curType,
@@ -555,7 +556,7 @@ namespace IronPython.Runtime.Binding {
             Type curType = type.UnderlyingSystemType;
 
             if (!_resolvedMembers.TryGetCachedSlot(curType, true, name, out slot)) {
-                MemberGroup mg = TypeInfo.GetMemberAll(
+                MemberGroup mg = PythonTypeInfo.GetMemberAll(
                     this,
                     MemberRequestKind.Get,
                     curType,
@@ -583,7 +584,7 @@ namespace IronPython.Runtime.Binding {
             if (!_typeMembers.IsFullyCached(type.UnderlyingSystemType, true)) {
                 Dictionary<string, KeyValuePair<PythonTypeSlot, MemberGroup>> members = new Dictionary<string, KeyValuePair<PythonTypeSlot, MemberGroup>>();
 
-                foreach (ResolvedMember rm in TypeInfo.GetMembers(
+                foreach (ResolvedMember rm in PythonTypeInfo.GetMembers(
                     this,
                     MemberRequestKind.Get,
                     type.UnderlyingSystemType)) {
@@ -619,7 +620,7 @@ namespace IronPython.Runtime.Binding {
             if (!_resolvedMembers.IsFullyCached(type.UnderlyingSystemType, true)) {
                 Dictionary<string, KeyValuePair<PythonTypeSlot, MemberGroup>> members = new Dictionary<string, KeyValuePair<PythonTypeSlot, MemberGroup>>();
 
-                foreach (ResolvedMember rm in TypeInfo.GetMembersAll(
+                foreach (ResolvedMember rm in PythonTypeInfo.GetMembersAll(
                     this,
                     MemberRequestKind.Get,
                     type.UnderlyingSystemType)) {
@@ -800,9 +801,9 @@ namespace IronPython.Runtime.Binding {
                 return extInfo.PythonName;
             }
 
-            PythonTypeAttribute[] attrs = (PythonTypeAttribute[])t.GetCustomAttributes(typeof(PythonTypeAttribute), false);
-            if (attrs.Length > 0 && attrs[0].Name != null) {
-                return attrs[0].Name;
+            var attr = t.GetTypeInfo().GetCustomAttributes<PythonTypeAttribute>(false).FirstOrDefault();
+            if (attr != null && attr.Name != null) {
+                return attr.Name;
             }
 
             return t.Name;
@@ -817,7 +818,7 @@ namespace IronPython.Runtime.Binding {
         public static bool IsPythonType(Type/*!*/ t) {
             Debug.Assert(t != null);
 
-            return _sysTypes.ContainsKey(t) || t.IsDefined(typeof(PythonTypeAttribute), false);
+            return _sysTypes.ContainsKey(t) || t.GetTypeInfo().IsDefined(typeof(PythonTypeAttribute), false);
         }
 
         /// <summary>
@@ -829,12 +830,12 @@ namespace IronPython.Runtime.Binding {
         private void DomainManager_AssemblyLoaded(object sender, AssemblyLoadedEventArgs e) {
             Assembly asm = e.Assembly;
 
-            ExtensionTypeAttribute[] attrs = (ExtensionTypeAttribute[])asm.GetCustomAttributes(typeof(ExtensionTypeAttribute), true);
+            var attrs = asm.GetCustomAttributes<ExtensionTypeAttribute>();
 
-            if (attrs.Length > 0) {
+            if (attrs.Any()) {
                 lock (_dlrExtensionTypes) {
                     foreach (ExtensionTypeAttribute attr in attrs) {
-                        if (attr.Extends.IsInterface) {
+                        if (attr.Extends.IsInterface()) {
                             _registeredInterfaceExtensions = true;
                         }
 

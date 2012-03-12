@@ -34,12 +34,16 @@ namespace Microsoft.Scripting.Utils {
         }
 
 #if FEATURE_REMOTING
-         public static object GetData(this Exception e, object key) {
+        public static object GetData(this Exception e, object key) {
             return e.Data[key];
         }
 
         public static void SetData(this Exception e, object key, object data) {
             e.Data[key] = data;
+        }
+
+        public static void RemoveData(this Exception e, object key) {
+            e.Data.Remove(key);
         }
 #else
 
@@ -82,6 +86,24 @@ namespace Microsoft.Scripting.Utils {
                 }
 
                 return data.First(entry => entry.Key == key).Value;
+            }
+        }
+
+        public static void RemoveData(this Exception e, object key) {
+            if (_exceptionData == null) {
+                return;
+            }
+
+            lock (_exceptionData) {
+                List<KeyValuePair<object, object>> data;
+                if (!_exceptionData.TryGetValue(e, out data)) {
+                    return;
+                }
+
+                int index = data.FindIndex(entry => entry.Key == key);
+                if (index >= 0) {
+                    data.RemoveAt(index);
+                }
             }
         }
 #endif

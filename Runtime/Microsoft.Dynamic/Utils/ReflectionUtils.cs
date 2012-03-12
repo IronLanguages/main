@@ -795,14 +795,6 @@ namespace Microsoft.Scripting.Utils {
 
         // TODO: FlattenHierarchy
         // TODO: inherited!
-        public static IEnumerable<MethodInfo> GetMethods(this Type type, string name) {
-            return type.GetTypeInfo().GetDeclaredMethods(name);
-        }
-
-        public static IEnumerable<MethodInfo> GetMethodsFlattenHierarchy(this Type type, string name) {
-            return type.GetTypeInfo().GetDeclaredMethods(name);
-        }
-
         public static MethodInfo GetMethod(this Type type, string name, Type[] parameterTypes) {
             return type.GetTypeInfo().GetDeclaredMethods(name).WithSignature(parameterTypes).Single();
         }
@@ -811,7 +803,7 @@ namespace Microsoft.Scripting.Utils {
             return type.GetMethods(name, bindingFlags).Single();
         }
 
-        public static IEnumerable<MethodInfo> GetMethods(this Type type, string name, BindingFlags bindingFlags) {
+        private static IEnumerable<MethodInfo> GetMethods(this Type type, string name, BindingFlags bindingFlags) {
             return type.GetTypeInfo().GetDeclaredMethods(name).WithBindingFlags(bindingFlags);
         }
 
@@ -917,8 +909,16 @@ namespace Microsoft.Scripting.Utils {
             return assembly.IsDefined(attributeType, false);
         }
 
+        public static T GetCustomAttribute<T>(this Assembly assembly, bool inherit = false) where T : Attribute {
+            return (T)Attribute.GetCustomAttribute(assembly, typeof(T), inherit);
+        }
+
         public static T GetCustomAttribute<T>(this MemberInfo member, bool inherit = false) where T : Attribute {
             return (T)Attribute.GetCustomAttribute(member, typeof(T), inherit);
+        }
+
+        public static IEnumerable<T> GetCustomAttributes<T>(this Assembly assembly, bool inherit = false) where T : Attribute {
+            return Attribute.GetCustomAttributes(assembly, typeof(T), inherit).Cast<T>();
         }
 
         public static IEnumerable<T> GetCustomAttributes<T>(this MemberInfo member, bool inherit = false) where T : Attribute {

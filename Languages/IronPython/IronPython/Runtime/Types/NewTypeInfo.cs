@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Reflection;
 using System.Collections.Generic;
 
 using IronPython.Runtime.Operations;
@@ -70,11 +71,11 @@ namespace IronPython.Runtime.Types {
 
                 if (curTypeToExtend == null || typeof(BuiltinFunction).IsAssignableFrom(curTypeToExtend) || typeof(PythonFunction).IsAssignableFrom(curTypeToExtend))
                     throw PythonOps.TypeError(typeName + ": {0} is not an acceptable base type", curBasePythonType.Name);
-                if (curTypeToExtend.ContainsGenericParameters)
+                if (curTypeToExtend.ContainsGenericParameters())
                     throw PythonOps.TypeError(typeName + ": cannot inhert from open generic instantiation {0}. Only closed instantiations are supported.", curBasePythonType);
 
                 foreach (Type interfaceType in baseInterfaces) {
-                    if (interfaceType.ContainsGenericParameters)
+                    if (interfaceType.ContainsGenericParameters())
                         throw PythonOps.TypeError(typeName + ": cannot inhert from open generic instantiation {0}. Only closed instantiations are supported.", interfaceType);
 
                     // collecting all the interfaces because we override them all.
@@ -85,7 +86,7 @@ namespace IronPython.Runtime.Types {
                 // then we better be in some esoteric __slots__ situation
                 if (!baseCLIType.IsSubclassOf(curTypeToExtend)) {
                     if (baseCLIType != typeof(object) && baseCLIType != curTypeToExtend &&
-                        (!baseCLIType.IsDefined(typeof(DynamicBaseTypeAttribute), false) && !curTypeToExtend.IsSubclassOf(baseCLIType))) {
+                        (!baseCLIType.GetTypeInfo().IsDefined(typeof(DynamicBaseTypeAttribute), false) && !curTypeToExtend.IsSubclassOf(baseCLIType))) {
                         throw PythonOps.TypeError(
                             typeName + ": can only extend one CLI or builtin type, not both {0} (for {1}) and {2} (for {3})",
                             baseCLIType.FullName,

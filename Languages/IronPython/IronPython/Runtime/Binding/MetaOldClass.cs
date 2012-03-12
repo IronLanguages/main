@@ -154,7 +154,7 @@ namespace IronPython.Runtime.Binding {
                                 typeof(OperationFailed)
                             )
                         ),
-                        Ast.Dynamic(
+                        DynamicExpression.Dynamic(
                             PythonContext.GetPythonContext(call).Invoke(
                                 signature
                             ),

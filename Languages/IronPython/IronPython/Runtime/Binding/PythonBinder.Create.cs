@@ -22,9 +22,9 @@ using Microsoft.Scripting.Ast;
 using System;
 using System.Dynamic;
 using System.Reflection;
-
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
 
@@ -40,7 +40,7 @@ namespace IronPython.Runtime.Binding {
 
             if (t != null) {
 
-                if (typeof(Delegate).IsAssignableFrom(t) && args.Length == 1) {
+                if (typeof(Delegate).GetTypeInfo().IsAssignableFrom(t.GetTypeInfo()) && args.Length == 1) {
                     // PythonOps.GetDelegate(CodeContext context, object callable, Type t);
                     return new DynamicMetaObject(
                         Ast.Call(

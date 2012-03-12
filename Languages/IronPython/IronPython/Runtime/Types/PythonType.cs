@@ -629,7 +629,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                     throw PythonOps.TypeError("expected one argument to make array type, got {0}", args.Length);
                 }
 
-                if (!UnderlyingSystemType.IsGenericTypeDefinition) {
+                if (!UnderlyingSystemType.IsGenericTypeDefinition()) {
                     throw new InvalidOperationException("MakeGenericType on non-generic type");
                 }
 
@@ -651,7 +651,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         [SpecialName, PropertyMethod, WrapperDescriptor, PythonHidden]
         public static string Get__clr_assembly__(PythonType self) {
-            return self.UnderlyingSystemType.Namespace + " in " + self.UnderlyingSystemType.Assembly.FullName;
+            return self.UnderlyingSystemType.Namespace + " in " + self.UnderlyingSystemType.GetTypeInfo().Assembly.FullName;
         }
 
         [SpecialName, PropertyMethod, WrapperDescriptor]
@@ -693,7 +693,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             string name = Name;
 
             if (IsSystemType) {
-                if (PythonTypeOps.IsRuntimeAssembly(UnderlyingSystemType.Assembly) || IsPythonType) {
+                if (PythonTypeOps.IsRuntimeAssembly(UnderlyingSystemType.GetTypeInfo().Assembly) || IsPythonType) {
                     object module = Get__module__(context, this);
                     if (!module.Equals("__builtin__")) {
                         return string.Format("<type '{0}.{1}'>", module, Name);
@@ -764,7 +764,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         private bool SubclassImpl(PythonType sub) {
-            if (UnderlyingSystemType.IsInterface) {
+            if (UnderlyingSystemType.IsInterface()) {
                 // interfaces aren't in bases, and therefore IsSubclassOf doesn't do this check.
                 if (UnderlyingSystemType.IsAssignableFrom(sub.UnderlyingSystemType)) {
                     return true;
@@ -1082,8 +1082,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// </summary>
         internal Type/*!*/ ExtensionType {
             get {
-                if (!_underlyingSystemType.IsEnum) {
-                    switch (Type.GetTypeCode(_underlyingSystemType)) {
+                if (!_underlyingSystemType.IsEnum()) {
+                    switch (_underlyingSystemType.GetTypeCode()) {
                         case TypeCode.String: return typeof(ExtensibleString);
                         case TypeCode.Int32: return typeof(Extensible<int>);
                         case TypeCode.Double: return typeof(Extensible<double>);
@@ -2410,8 +2410,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 } else {
                     baseType = _underlyingSystemType.GetBaseType();
                 }
-                
-                while (baseType.IsDefined(typeof(PythonHiddenBaseClassAttribute), false)) {
+
+                while (baseType.GetTypeInfo().IsDefined(typeof(PythonHiddenBaseClassAttribute), false)) {
                     baseType = baseType.GetBaseType();
                 }
 
@@ -2422,7 +2422,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                     Type newType;
                     if (TryReplaceExtensibleWithBase(curType, out newType)) {
                         mro.Add(DynamicHelpers.GetPythonTypeFromType(newType));
-                    } else if(!curType.IsDefined(typeof(PythonHiddenBaseClassAttribute), false)) {
+                    } else if(!curType.GetTypeInfo().IsDefined(typeof(PythonHiddenBaseClassAttribute), false)) {
                         mro.Add(DynamicHelpers.GetPythonTypeFromType(curType));
                     }
                     curType = curType.GetBaseType();

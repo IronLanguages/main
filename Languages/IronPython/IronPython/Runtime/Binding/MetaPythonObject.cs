@@ -58,14 +58,14 @@ namespace IronPython.Runtime.Binding {
                     Ast.Convert(
                         self,
                         typeof(IPythonObject)),
-                    TypeInfo._IPythonObject.PythonType
+                    PythonTypeInfo._IPythonObject.PythonType
                 )
             );
         }
 
         internal static MethodCallExpression MakeTryGetTypeMember(PythonContext/*!*/ PythonContext, PythonTypeSlot dts, ParameterExpression tmp, Expression instance, Expression pythonType) {
             return Ast.Call(
-                TypeInfo._PythonOps.SlotTryGetBoundValue,
+                PythonTypeInfo._PythonOps.SlotTryGetBoundValue,
                 AstUtils.Constant(PythonContext.SharedContext),
                 AstUtils.Convert(Utils.WeakConstant(dts), typeof(PythonTypeSlot)),
                 AstUtils.Convert(instance, typeof(object)),

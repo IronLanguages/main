@@ -613,7 +613,7 @@ namespace IronPython.Runtime.Binding {
             if (pyGetMem.IsNoThrow) {
                 return Ast.Field(
                     null,
-                    typeof(OperationFailed).GetField("Value")
+                    typeof(OperationFailed).GetDeclaredField("Value")
                 );
             } else {
                 return member.Throw(

@@ -200,7 +200,7 @@ namespace IronPython.Compiler {
         public Expression/*!*/ Delete() {
             return Expression.Assign(
                 Expression.Field(_closureCell, _cellField),
-                Expression.Field(null, typeof(Uninitialized).GetField("Instance"))
+                Expression.Field(null, typeof(Uninitialized).GetDeclaredField("Instance"))
             );
         }
 

@@ -19,7 +19,7 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Runtime.Binding;
 
 namespace IronPython.Runtime.Types {
-    internal static partial class TypeInfo {
+    internal static partial class PythonTypeInfo {
         public static Dictionary<string, PythonOperationKind> InitializeOperatorTable() {
             Dictionary<string, PythonOperationKind> pyOp = new Dictionary<string, PythonOperationKind>();
 

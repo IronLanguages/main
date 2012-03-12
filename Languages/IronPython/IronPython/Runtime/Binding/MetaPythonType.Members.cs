@@ -67,7 +67,7 @@ namespace IronPython.Runtime.Binding {
             PythonContext state = PythonContext.GetPythonContext(member);
 
             if (Value.IsSystemType) {
-                MemberTracker tt = MemberTracker.FromMemberInfo(Value.UnderlyingSystemType);
+                MemberTracker tt = MemberTracker.FromMemberInfo(Value.UnderlyingSystemType.GetTypeInfo());
                 MemberGroup mg = state.Binder.GetMember(MemberRequestKind.Set, Value.UnderlyingSystemType, member.Name);
 
                 // filter protected member access against .NET types, these can only be accessed from derived types...
@@ -106,7 +106,7 @@ namespace IronPython.Runtime.Binding {
             if (Value.IsSystemType) {
                 PythonContext state = PythonContext.GetPythonContext(member);
 
-                MemberTracker tt = MemberTracker.FromMemberInfo(Value.UnderlyingSystemType);
+                MemberTracker tt = MemberTracker.FromMemberInfo(Value.UnderlyingSystemType.GetTypeInfo());
 
                 // have the default binder perform it's operation against a TypeTracker and then
                 // replace the test w/ our own.

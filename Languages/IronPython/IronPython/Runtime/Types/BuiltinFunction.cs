@@ -829,9 +829,9 @@ namespace IronPython.Runtime.Types {
 
                         if (match) {
                             if (IsUnbound) {
-                                return Delegate.CreateDelegate(type, mi);
+                                return mi.CreateDelegate(type);
                             } else {
-                                return Delegate.CreateDelegate(type, _instance, mi);
+                                return mi.CreateDelegate(type, _instance);
                             }
                         }
                     }

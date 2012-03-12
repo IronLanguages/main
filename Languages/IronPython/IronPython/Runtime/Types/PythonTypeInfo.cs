@@ -50,7 +50,7 @@ namespace IronPython.Runtime.Types {
     ///     Cached member access - this is via static classes such as Object and provides various MemberInfo's so we're
     ///         not constantly looking up via reflection.
     /// </summary>
-    internal static partial class TypeInfo {
+    internal static partial class PythonTypeInfo {
         /// <summary> list of resolvers which we run to resolve items </summary>
         private static readonly MemberResolver/*!*/[]/*!*/ _resolvers = MakeResolverTable();
         [MultiRuntimeAware]
@@ -341,7 +341,7 @@ namespace IronPython.Runtime.Types {
 
                 // Do not map IComparable if this is a primitive builtin type.
                 if (_excludePrimitiveTypes) {
-                    if (type.IsPrimitive || type == typeof(BigInteger) ||
+                    if (type.IsPrimitive() || type == typeof(BigInteger) ||
                         type == typeof(string) || type == typeof(decimal)) {
                         return MemberGroup.EmptyGroup;
                     }
@@ -869,7 +869,7 @@ namespace IronPython.Runtime.Types {
         /// </summary>
         private static MemberGroup/*!*/ HashResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
 #if FEATURE_VALUE_EQUALITY
-            if (typeof(IStructuralEquatable).IsAssignableFrom(type) && !type.IsInterface) {
+            if (typeof(IStructuralEquatable).IsAssignableFrom(type) && !type.IsInterface()) {
 #else
             if ((typeof(IStructuralEquatable).IsAssignableFrom(type) ||
                  typeof(IValueEquality).IsAssignableFrom(type)) && !type.IsInterface) {
@@ -912,7 +912,7 @@ namespace IronPython.Runtime.Types {
         /// TODO: Can we just always fallback to object.__new__?  If not why not?
         /// </summary>
         private static MemberGroup/*!*/ NewResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-            if (type.IsSealed && type.IsAbstract) {
+            if (type.IsSealed() && type.IsAbstract()) {
                 // static types don't have __new__
                 return MemberGroup.EmptyGroup;
             }
@@ -979,13 +979,13 @@ namespace IronPython.Runtime.Types {
         /// Provides a resolution for __len__
         /// </summary>
         private static MemberGroup/*!*/ LengthResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-            if (!type.IsDefined(typeof(DontMapICollectionToLenAttribute), true)) {
+            if (!type.GetTypeInfo().IsDefined(typeof(DontMapICollectionToLenAttribute), true)) {
                 if (binder.GetInterfaces(type).Contains(typeof(ICollection))) {
                     return GetInstanceOpsMethod(type, "LengthMethod");
                 }
 
                 foreach (Type t in binder.GetInterfaces(type)) {
-                    if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(ICollection<>)) {
+                    if (t.IsGenericType() && t.GetGenericTypeDefinition() == typeof(ICollection<>)) {
                         MethodInfo genMeth = typeof(InstanceOps).GetMethod("GenericLengthMethod");
                         return new MemberGroup(
                             MethodTracker.FromMemberInfo(genMeth.MakeGenericMethod(t.GetGenericArguments()), type)
@@ -1025,7 +1025,7 @@ namespace IronPython.Runtime.Types {
                 }
             }
 
-            if (!type.IsDefined(typeof(DontMapIEnumerableToIterAttribute), true)) {
+            if (!type.GetTypeInfo().IsDefined(typeof(DontMapIEnumerableToIterAttribute), true)) {
                 // no special __iter__, use the default.
                 if (typeof(IEnumerable<>).IsAssignableFrom(type)) {
                     return GetInstanceOpsMethod(type, "IterMethodForGenericEnumerable");
@@ -1085,7 +1085,7 @@ namespace IronPython.Runtime.Types {
 
         private static MemberGroup/*!*/ AllResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
             // static types are like modules and define __all__.
-            if (type.IsAbstract && type.IsSealed) {
+            if (type.IsAbstract() && type.IsSealed()) {
                 return new MemberGroup(new ExtensionPropertyTracker("__all__", typeof(InstanceOps).GetMethod("Get__all__").MakeGenericMethod(type), null, null, type));
             }
 
@@ -1093,7 +1093,7 @@ namespace IronPython.Runtime.Types {
         }
 
         private static MemberGroup/*!*/ DirResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-            if (type.IsDefined(typeof(DontMapGetMemberNamesToDirAttribute), true)) {
+            if (type.GetTypeInfo().IsDefined(typeof(DontMapGetMemberNamesToDirAttribute), true)) {
                 return MemberGroup.EmptyGroup;
             }
 
@@ -1144,7 +1144,7 @@ namespace IronPython.Runtime.Types {
         }
 
         private static MemberGroup/*!*/ EnterResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-            if (!type.IsDefined(typeof(DontMapIDisposableToContextManagerAttribute), true) && typeof(IDisposable).IsAssignableFrom(type)) {
+            if (!type.GetTypeInfo().IsDefined(typeof(DontMapIDisposableToContextManagerAttribute), true) && typeof(IDisposable).IsAssignableFrom(type)) {
                 return GetInstanceOpsMethod(type, "EnterMethod");
             }
 
@@ -1152,7 +1152,7 @@ namespace IronPython.Runtime.Types {
         }
 
         private static MemberGroup/*!*/ ExitResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-            if (!type.IsDefined(typeof(DontMapIDisposableToContextManagerAttribute), true) && typeof(IDisposable).IsAssignableFrom(type)) {
+            if (!type.GetTypeInfo().IsDefined(typeof(DontMapIDisposableToContextManagerAttribute), true) && typeof(IDisposable).IsAssignableFrom(type)) {
                 return GetInstanceOpsMethod(type, "ExitMethod");
             }
 
@@ -1183,7 +1183,7 @@ namespace IronPython.Runtime.Types {
         /// The lookup is well ordered and not dependent upon the order of values returned by reflection.
         /// </summary>
         private static MemberGroup/*!*/ ContainsResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-            if (type.IsDefined(typeof(DontMapIEnumerableToContainsAttribute), true)) {
+            if (type.GetTypeInfo().IsDefined(typeof(DontMapIEnumerableToContainsAttribute), true)) {
                 // it's enumerable but doesn't have __contains__
                 return MemberGroup.EmptyGroup;
             }
@@ -1421,7 +1421,7 @@ namespace IronPython.Runtime.Types {
                 List<MemberInfo> filteredMembers = null;
                 for (int i = 0; i < foundMembersArray.Length; i++) {
                     var member = foundMembersArray[i];
-                    if (member.DeclaringType.IsDefined(typeof(PythonHiddenBaseClassAttribute), false)) {
+                    if (member.DeclaringType.GetTypeInfo().IsDefined(typeof(PythonHiddenBaseClassAttribute), false)) {
                         if (filteredMembers == null) {
                             filteredMembers = new List<MemberInfo>();
                             for (int j = 0; j < i; j++) {
@@ -1452,7 +1452,7 @@ namespace IronPython.Runtime.Types {
                 if (genTypes != null) {
                     List<MemberTracker> mt = new List<MemberTracker>(members);
                     foreach (Type t in genTypes) {
-                        mt.Add(MemberTracker.FromMemberInfo(t));
+                        mt.Add(MemberTracker.FromMemberInfo(t.GetTypeInfo()));
                     }
 
                     return new MemberGroup(mt.ToArray());
@@ -1501,7 +1501,7 @@ namespace IronPython.Runtime.Types {
                     res.AddRange(Binder.GetExtensionTypesInternal(pt.UnderlyingSystemType));
                 }
 
-                if (t.IsInterface) {
+                if (t.IsInterface()) {
                     foreach (Type iface in t.GetInterfaces()) {
                         res.Add(iface);
                     }
@@ -1524,7 +1524,7 @@ namespace IronPython.Runtime.Types {
             }
 
             public override IList<Type/*!*/>/*!*/ GetInterfaces(Type/*!*/ t) {
-                if (t.IsInterface) {
+                if (t.IsInterface()) {
                     return t.GetInterfaces();
                 }
 
