@@ -881,7 +881,7 @@
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
-          <NotParallelSafe>false</NotParallelSafe>
+          <NotParallelSafe>true</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
       </Tests>

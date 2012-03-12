@@ -47,34 +47,19 @@ namespace Microsoft.Scripting.Utils {
         }
 #else
 
-#if WP75 // TODO:
+#if WP75
         private static WeakDictionary<Exception, List<KeyValuePair<object, object>>> _exceptionData;
-        
-        public static void SetData(this Exception e, object key, object value) {
-            if (_exceptionData == null) {
-                Interlocked.CompareExchange(ref _exceptionData, new WeakDictionary<Exception, List<KeyValuePair<object, object>>>(), null);
-            }
-
-            List<KeyValuePair<object, object>> data;
-            lock (_exceptionData) {
-                if (_exceptionData.TryGetValue(e, out data)) {
-                    data = new List<KeyValuePair<object,object>>();
-                }
-            
-                int index = data.FindIndex(entry => entry.Key == key);
-                if (index >= 0) {
-                    data[index] = new KeyValuePair<object, object>(key, value);
-                } else {
-                    data.Add(new KeyValuePair<object, object>(key, value));
-                }
-            }
-        }
 #else
         private static ConditionalWeakTable<Exception, List<KeyValuePair<object, object>>> _exceptionData;
+#endif
 
         public static void SetData(this Exception e, object key, object value) {
             if (_exceptionData == null) {
+#if WP75
+                Interlocked.CompareExchange(ref _exceptionData, new WeakDictionary<Exception, List<KeyValuePair<object, object>>>(), null);
+#else
                 Interlocked.CompareExchange(ref _exceptionData, new ConditionalWeakTable<Exception, List<KeyValuePair<object, object>>>(), null);
+#endif
             }
 
             lock (_exceptionData) {
@@ -88,7 +73,7 @@ namespace Microsoft.Scripting.Utils {
                 }
             }
         }
-#endif
+
         public static object GetData(this Exception e, object key) {
             if (_exceptionData == null) {
                 return null;

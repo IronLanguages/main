@@ -113,6 +113,8 @@ namespace IronPython.Runtime.Exceptions {
             private System.Exception _clrException; // the cached CLR exception that is thrown
             private object[] _slots;                // slots, only used for storage of our weak reference.
 
+            public static string __doc__ = "Common base class for all non-exit exceptions.";
+
             #region Public API Surface
 
             public BaseException(PythonType/*!*/ type) {

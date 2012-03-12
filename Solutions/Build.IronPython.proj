@@ -59,6 +59,8 @@
     <DlrLibs Include="Microsoft.Scripting.xml" />
     <ClrDlrLibs Include="Microsoft.Scripting.Metadata.dll" />
     <ClrDlrLibs Include="Microsoft.Scripting.Metadata.xml" />
+    <ClrDlrLibs Include="Microsoft.Scripting.AspNet.dll" />
+    <ClrDlrLibs Include="Microsoft.Scripting.AspNet.xml" />
     <v2DlrLibs Include="Microsoft.Scripting.Core.dll" />
     <v2DlrLibs Include="Microsoft.Scripting.Core.xml" />
     <SilverlightDlrLibs Include="Microsoft.Scripting.Silverlight.dll" />
@@ -180,10 +182,10 @@
     <Copy SourceFiles="@(IronPythonModules->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" />
 
     <!-- Windows Phone 7.5 -->
-    <Copy SourceFiles="@(DlrLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\WP7" />
-    <Copy SourceFiles="@(v2DlrLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\WP7" />
-    <Copy SourceFiles="@(IronPythonLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\WP7" />
-    <Copy SourceFiles="@(IronPythonModules->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\WP7" />
+    <Copy SourceFiles="@(DlrLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4-WP71" />
+    <Copy SourceFiles="@(v2DlrLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4-WP71" />
+    <Copy SourceFiles="@(IronPythonLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4-WP71" />
+    <Copy SourceFiles="@(IronPythonModules->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4-WP71" />
 
     <!-- Mono for Android -->
     <Copy SourceFiles="@(DlrLibs->'$(AndroidBuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Android" />

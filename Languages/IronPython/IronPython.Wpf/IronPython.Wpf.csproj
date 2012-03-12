@@ -5,17 +5,19 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{65E997B7-E99B-4C83-B29E-9951429BB293}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <OutputPath>$(SolutionDir)..\bin\$(Configuration)\DLLs\</OutputPath>
+    <OutputPath>$(OutputPath)\DLLs</OutputPath>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>IronPython.Wpf</RootNamespace>
     <AssemblyName>IronPython.Wpf</AssemblyName>
-    <DocumentationFile>$(SolutionDir)..\bin\$(Configuration)\IronPython.Wpf.xml</DocumentationFile>
+    <DocumentationFile>$(OutputPath)\$(AssemblyName).xml</DocumentationFile>
     <BaseAddress>885063680</BaseAddress>
-    <OutputPath>$(OutputPath)\DLLs</OutputPath>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' "></PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "></PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' "></PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\BuildInfo.Generated.cs" />
@@ -53,6 +55,7 @@
     <Reference Include="PresentationCore, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(WpfReferences)\PresentationCore.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="PresentationFramework, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
