@@ -645,6 +645,9 @@ namespace IronPython.Modules {
             public object tm_isdst {
                 get { return _data[8]; }
             }
+            public int n_fields {
+                get { return _data.Length; }
+            }
 
             internal struct_time(int year, int month, int day, int hour, int minute, int second, int dayOfWeek, int dayOfYear, int isDst)
                 : base(new object[] { year, month, day, hour, minute, second, dayOfWeek, dayOfYear, isDst }) {
