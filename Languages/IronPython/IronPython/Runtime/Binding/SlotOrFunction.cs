@@ -88,7 +88,7 @@ namespace IronPython.Runtime.Binding {
             get {
                 if (_function != null) {
                     var method = _function.Overload.ReflectionInfo as MethodInfo;
-                    return method != null && method.IsDefined(typeof(MaybeNotImplementedAttribute), false);
+                    return method != null && method.ReturnTypeCustomAttributes.IsDefined(typeof(MaybeNotImplementedAttribute), false);
                 }
 
                 return true;
