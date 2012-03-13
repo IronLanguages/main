@@ -214,8 +214,8 @@
   
   <Target Name="NuGetPackage" DependsOnTargets="Stage" Condition="'$(OS)' == 'Windows_NT'">
     <PropertyGroup>
-        <NuGetVersion Condition="'$(ReleaseLevel)' == 'final'">$(MajorVersion).$(MinorVersion).$(MicroVersion)</NuGetVersion>
-        <NuGetVersion Condition="'$(ReleaseLevel)' != 'final'">$(MajorVersion).$(MinorVersion).$(MicroVersion)-$(ReleaseLevel)$(ReleaseSerial)</NuGetVersion>
+        <NuGetVersion Condition="'$(ReleaseLevel)' == 'final' and '$(ReleaseSerial)' == '0'">$(MajorVersion).$(MinorVersion).$(MicroVersion)</NuGetVersion>
+        <NuGetVersion Condition="'$(ReleaseLevel)' != 'final' or '$(ReleaseSerial)' != '0'">$(MajorVersion).$(MinorVersion).$(MicroVersion)-$(ReleaseLevel)$(ReleaseSerial)</NuGetVersion>
     </PropertyGroup>
     <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
     <Exec Command="$(UtilDir)\Misc\NuGet.exe pack -Version $(NuGetVersion) &quot;$(BaseDir)\Languages\IronPython\IronPython.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
