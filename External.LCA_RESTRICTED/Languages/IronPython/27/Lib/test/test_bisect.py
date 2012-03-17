@@ -176,6 +176,10 @@ class TestBisectPython(TestBisect):
 class TestBisectC(TestBisect):
     module = c_bisect
 
+    @unittest.skipIf(sys.platform=="cli", "Cannot compare two methods on IronPython")
+    def test_backcompatibility(self):
+        TestBisect.test_backcompatibility(self)
+
 #==============================================================================
 
 class TestInsort(unittest.TestCase):
@@ -212,6 +216,10 @@ class TestInsortPython(TestInsort):
 
 class TestInsortC(TestInsort):
     module = c_bisect
+
+    @unittest.skipIf(sys.platform=="cli", "Cannot compare two methods on IronPython")
+    def test_backcompatibility(self):
+        TestInsort.test_backcompatibility(self)
 
 #==============================================================================
 
