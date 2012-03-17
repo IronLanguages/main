@@ -51,6 +51,7 @@
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="mmap.cs" />
     <Compile Include="signal.cs" />
+    <Compile Include="winsound.cs" />
     <Compile Include="zipimport.cs" />
     <Compile Include="zlib\Compress.cs" />
     <Compile Include="zlib\Decompress.cs" />
@@ -66,6 +67,7 @@
     <Compile Include="zlib\zlib.net\ZStream.cs" />
     <Compile Include="zlib\zlib.net\ZStreamException.cs" />
     <Compile Include="zlib\ZlibModule.cs" />
+    <Compile Include="_bisect.cs" />
     <Compile Include="_codecs.cs" />
     <Compile Include="ModuleOps.cs" />
     <Compile Include="_bytesio.cs" />
