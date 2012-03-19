@@ -28,6 +28,8 @@ using System.Threading;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using System.Security.Policy;
+using System.Security;
 
 namespace Microsoft.Scripting.Hosting.Shell {
     /// <summary>
@@ -202,7 +204,17 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 return _exitCode = 1;
             }
 
-            _runtime = new ScriptRuntime(runtimeSetup);
+            bool sandbox = true;
+
+            if (sandbox)
+            {
+              var appDomain = CreateSandbox();
+              _runtime = ScriptRuntime.CreateRemote(appDomain, runtimeSetup);
+            }
+            else
+            {
+              _runtime = new ScriptRuntime(runtimeSetup);
+            }
 
             try {
                 _engine = _runtime.GetEngineByTypeName(provider);
@@ -213,6 +225,25 @@ namespace Microsoft.Scripting.Hosting.Shell {
 
             Execute();
             return _exitCode;
+        }
+
+        AppDomain CreateSandbox()
+        {
+          // starts with standard Internet Zone sandbox permissions
+          var evidence = new Evidence();
+          evidence.AddHostEvidence(new Zone(SecurityZone.Internet));
+          var permissionSet = SecurityManager.GetStandardSandbox(evidence);
+
+          // adds FileSystem access to the libraries directory
+          //var pythonLibsPath = 
+          //permissionSet.AddPermission(new FileIOPermission(FileIOPermissionAccess.PathDiscovery | FileIOPermissionAccess.Read, pythonLibsPath));
+
+          var setup = new AppDomainSetup();
+          setup.ApplicationBase = AppDomain.CurrentDomain.BaseDirectory;
+          setup.ApplicationName = "ConsoleScriptHost";
+
+          var domain = AppDomain.CreateDomain(setup.ApplicationName, evidence, setup, permissionSet, null);
+          return domain;
         }
 
         protected virtual ConsoleOptions ParseOptions(string/*!*/[]/*!*/ args, ScriptRuntimeSetup/*!*/ runtimeSetup, LanguageSetup/*!*/ languageSetup) {
