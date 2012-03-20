@@ -24,6 +24,7 @@ namespace IronPython.Hosting {
         private bool _skipImportSite;
         private bool _skipFistSourceLine;
         private string _runAsModule;
+        private bool _sandbox;
 
         public bool IgnoreEnvironmentVariables {
             get { return _ignoreEnvironmentVariables; }
@@ -38,6 +39,14 @@ namespace IronPython.Hosting {
         public string ModuleToRun {
             get { return _runAsModule; }
             set { _runAsModule = value; }
+        }
+
+        /// <summary>
+        /// Runs inside a default InternetZone sandbox.
+        /// </summary>
+        public bool Sandbox {
+            get { return _sandbox; }
+            set { _sandbox = value; }
         }
 
         /// <summary>

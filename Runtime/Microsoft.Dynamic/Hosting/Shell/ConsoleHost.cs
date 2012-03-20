@@ -146,6 +146,10 @@ namespace Microsoft.Scripting.Hosting.Shell {
             }
         }
 
+        protected virtual ScriptRuntime CreateScriptRuntime(ScriptRuntimeSetup runtimeSetup, ConsoleOptions options) {
+            return new ScriptRuntime(runtimeSetup);
+        }
+
         // The advanced console functions are in a special non-inlined function so that 
         // dependencies are pulled in only if necessary.
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -204,17 +208,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 return _exitCode = 1;
             }
 
-            bool sandbox = true;
-
-            if (sandbox)
-            {
-              var appDomain = CreateSandbox();
-              _runtime = ScriptRuntime.CreateRemote(appDomain, runtimeSetup);
-            }
-            else
-            {
-              _runtime = new ScriptRuntime(runtimeSetup);
-            }
+            _runtime = CreateScriptRuntime(runtimeSetup, _consoleOptions);
 
             try {
                 _engine = _runtime.GetEngineByTypeName(provider);
@@ -225,25 +219,6 @@ namespace Microsoft.Scripting.Hosting.Shell {
 
             Execute();
             return _exitCode;
-        }
-
-        AppDomain CreateSandbox()
-        {
-          // starts with standard Internet Zone sandbox permissions
-          var evidence = new Evidence();
-          evidence.AddHostEvidence(new Zone(SecurityZone.Internet));
-          var permissionSet = SecurityManager.GetStandardSandbox(evidence);
-
-          // adds FileSystem access to the libraries directory
-          //var pythonLibsPath = 
-          //permissionSet.AddPermission(new FileIOPermission(FileIOPermissionAccess.PathDiscovery | FileIOPermissionAccess.Read, pythonLibsPath));
-
-          var setup = new AppDomainSetup();
-          setup.ApplicationBase = AppDomain.CurrentDomain.BaseDirectory;
-          setup.ApplicationName = "ConsoleScriptHost";
-
-          var domain = AppDomain.CreateDomain(setup.ApplicationName, evidence, setup, permissionSet, null);
-          return domain;
         }
 
         protected virtual ConsoleOptions ParseOptions(string/*!*/[]/*!*/ args, ScriptRuntimeSetup/*!*/ runtimeSetup, LanguageSetup/*!*/ languageSetup) {
