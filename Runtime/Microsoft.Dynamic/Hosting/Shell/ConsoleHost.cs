@@ -28,8 +28,6 @@ using System.Threading;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using System.Security.Policy;
-using System.Security;
 
 namespace Microsoft.Scripting.Hosting.Shell {
     /// <summary>

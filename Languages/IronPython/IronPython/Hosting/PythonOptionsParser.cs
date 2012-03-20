@@ -196,7 +196,7 @@ namespace IronPython.Hosting {
                     
                     break;
 
-              case "-X:Sandbox":
+                case "-X:Sandbox":
                     ConsoleOptions.Sandbox = true;
                     break;
 
