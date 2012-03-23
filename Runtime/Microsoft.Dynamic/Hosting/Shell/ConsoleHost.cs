@@ -144,6 +144,10 @@ namespace Microsoft.Scripting.Hosting.Shell {
             }
         }
 
+        protected virtual ScriptRuntime CreateScriptRuntime(ScriptRuntimeSetup runtimeSetup, ConsoleOptions options) {
+            return new ScriptRuntime(runtimeSetup);
+        }
+
         // The advanced console functions are in a special non-inlined function so that 
         // dependencies are pulled in only if necessary.
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -202,7 +206,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 return _exitCode = 1;
             }
 
-            _runtime = new ScriptRuntime(runtimeSetup);
+            _runtime = CreateScriptRuntime(runtimeSetup, _consoleOptions);
 
             try {
                 _engine = _runtime.GetEngineByTypeName(provider);

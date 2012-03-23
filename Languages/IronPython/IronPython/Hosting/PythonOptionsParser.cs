@@ -196,6 +196,10 @@ namespace IronPython.Hosting {
                     
                     break;
 
+                case "-X:Sandbox":
+                    ConsoleOptions.Sandbox = true;
+                    break;
+
                 default:
                     base.ParseArgument(arg);
 

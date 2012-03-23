@@ -22,6 +22,9 @@ using Microsoft.Scripting.Hosting.Shell;
 
 using IronPython.Hosting;
 using IronPython.Runtime;
+using System.Diagnostics;
+using System.Security.Policy;
+using System.Security;
 
 internal sealed class PythonConsoleHost : ConsoleHost {
 
@@ -58,6 +61,37 @@ internal sealed class PythonConsoleHost : ConsoleHost {
         var pc = HostingHelpers.GetLanguageContext(Engine) as PythonContext;
         pc.SetModuleState(typeof(ScriptEngine), Engine);
         base.ExecuteInternal();
+    }
+
+    protected override ScriptRuntime CreateScriptRuntime(ScriptRuntimeSetup runtimeSetup, ConsoleOptions options) {
+        var pythonConsoleOptions = options as PythonConsoleOptions;
+        Debug.Assert(pythonConsoleOptions != null);
+
+        if (pythonConsoleOptions.Sandbox) {
+            var appDomain = CreateSandbox();
+            return ScriptRuntime.CreateRemote(appDomain, runtimeSetup);
+        }
+        else {
+            return base.CreateScriptRuntime(runtimeSetup, options);
+        }
+    }
+
+    private AppDomain CreateSandbox() {
+        // starts with standard Internet Zone sandbox permissions
+        var evidence = new Evidence();
+        evidence.AddHostEvidence(new Zone(SecurityZone.Internet));
+        var permissionSet = SecurityManager.GetStandardSandbox(evidence);
+
+        // TODO: add FileSystem access to the libraries directory
+        //var pythonLibsPath = 
+        //permissionSet.AddPermission(new FileIOPermission(FileIOPermissionAccess.PathDiscovery | FileIOPermissionAccess.Read, pythonLibsPath));
+
+        var setup = new AppDomainSetup();
+        setup.ApplicationBase = AppDomain.CurrentDomain.BaseDirectory;
+        setup.ApplicationName = "ConsoleScriptHost";
+
+        var domain = AppDomain.CreateDomain(setup.ApplicationName, evidence, setup, permissionSet, null);
+        return domain;
     }
 
     [STAThread]
