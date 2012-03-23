@@ -7,6 +7,7 @@ using System.Xml.Serialization;
 using System.Diagnostics;
 using System.Threading;
 using System.Reflection;
+using System.ComponentModel;
 
 namespace TestRunner {
     class Program {
@@ -203,40 +204,54 @@ namespace TestRunner {
 
         private void RunTestForConsole(Test test) {
             lock (this) {
-                if (!_quiet) {
+                if (!_quiet && _verbose) {
                     Console.Write("{0,-100}", test.Category.Name + " " + test.Name);
                 }
             }
-            var result = RunTest(test);
+
+            TestResult result = null;
+            try {
+                result = RunTest(test);
+            } catch (Exception e) {
+                result = new TestResult(test, TestResultStatus.Failed, 0, new List<string> { e.Message });
+            }
 
             lock (this) {
                 if (!_quiet) {
-                    const string resultFormat = "{0,-10}";
-                    var originalColor = Console.ForegroundColor;
-                    switch (result.Status) {
-                        case TestResultStatus.Skipped:
-                            Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.Write(resultFormat, "SKIPPED");
-                            break;
-                        case TestResultStatus.TimedOut:
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.Write(resultFormat, "TIMEOUT");
-                            break;
-                        case TestResultStatus.Passed:
-                            Console.ForegroundColor = ConsoleColor.Green;
-                            Console.Write(resultFormat, "PASSED");
-                            break;
-                        case TestResultStatus.Failed:
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.Write(resultFormat, "FAILED");
-                            break;
-                        case TestResultStatus.Disabled:
-                            Console.ForegroundColor = ConsoleColor.Blue;
-                            Console.Write(resultFormat, "DISABLED");
-                            break;
+                    if (_verbose) {
+                        const string resultFormat = "{0,-10}";
+                        var originalColor = Console.ForegroundColor;
+                        switch (result.Status) {
+                            case TestResultStatus.Skipped:
+                                Console.ForegroundColor = ConsoleColor.Yellow;
+                                Console.Write(resultFormat, "SKIPPED");
+                                break;
+                            case TestResultStatus.TimedOut:
+                                Console.ForegroundColor = ConsoleColor.Red;
+                                Console.Write(resultFormat, "TIMEOUT");
+                                break;
+                            case TestResultStatus.Passed:
+                                Console.ForegroundColor = ConsoleColor.Green;
+                                Console.Write(resultFormat, "PASSED");
+                                break;
+                            case TestResultStatus.Failed:
+                                Console.ForegroundColor = ConsoleColor.Red;
+                                Console.Write(resultFormat, "FAILED");
+                                break;
+                            case TestResultStatus.Disabled:
+                                Console.ForegroundColor = ConsoleColor.Blue;
+                                Console.Write(resultFormat, "DISABLED");
+                                break;
+                        }
+                        Console.ForegroundColor = originalColor;
+                        Console.WriteLine(result.EllapsedSeconds);
+                    } else {
+                        if (result.Status == TestResultStatus.Passed) {
+                            Console.Write(".");
+                        } else {
+                            Console.Write(result.Status.ToString()[0]);
+                        }
                     }
-                    Console.ForegroundColor = originalColor;
-                    Console.WriteLine(result.EllapsedSeconds);
                 }
 
                 if (result.IsFailure) {
@@ -278,8 +293,13 @@ namespace TestRunner {
 
             // start the process
             DateTime startTime = DateTime.Now;
-            var process = Process.Start(CreateProcessInfoFromTest(test));
-
+            Process process = null;
+            try {
+                process = Process.Start(CreateProcessInfoFromTest(test));
+            } catch (Win32Exception e) {
+                return new TestResult(test, TestResultStatus.Failed, 0, new List<string> { e.Message });
+            }
+            
             // get the output asynchronously
             List<string> output = new List<string>();
             process.OutputDataReceived += (sender, e) => {

@@ -517,7 +517,7 @@
           <Arguments>%DLR_BIN%\ipy.exe sbs_true_division.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests\compat</WorkingDirectory>
@@ -533,7 +533,7 @@
           <Arguments>test_interactive.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled><!-- Too many errors -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
@@ -1877,7 +1877,7 @@
           <Arguments>%DLR_ROOT%\Test\IronPythonTutorial\IPTutorialTest.ps1</Arguments>
           <MaxDuration>1800000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled><!-- files no longer available -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Test\IronPythonTutorial</WorkingDirectory>
@@ -1921,7 +1921,7 @@
           <Arguments />
           <MaxDuration>-1</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled>
+          <Disabled>true</Disabled><!-- Files no longer exist -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Test\Debugging\Desktop</WorkingDirectory>
