@@ -1091,7 +1091,8 @@ namespace IronPython.Modules {
                         InternalDateTime.Hour,
                         InternalDateTime.Minute,
                         InternalDateTime.Second,
-                        InternalDateTime.Millisecond * 1000 + _lostMicroseconds
+                        this.microsecond,
+                        this.tzinfo
                     )
                 );
             }
@@ -1271,6 +1272,19 @@ namespace IronPython.Modules {
             // supported operations
             private static time Add(time date, timedelta delta) {
                 return new time(date._timeSpan.Add(delta.TimeSpanWithDaysAndSeconds), delta._microseconds + date._lostMicroseconds, date._tz);
+            }
+
+            public PythonTuple __reduce__() {
+                return PythonTuple.MakeTuple(
+                    DynamicHelpers.GetPythonTypeFromType(GetType()),
+                    PythonTuple.MakeTuple(
+                        this.hour,
+                        this.minute,
+                        this.second,
+                        this.microsecond,
+                        this.tzinfo
+                    )
+                );
             }
 
             public bool __nonzero__() {
