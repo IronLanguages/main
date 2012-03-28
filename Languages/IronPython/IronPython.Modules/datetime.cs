@@ -675,7 +675,11 @@ namespace IronPython.Modules {
             }
 
             public virtual string __format__(CodeContext/*!*/ context, string dateFormat){
-                return this.strftime(context, dateFormat);
+                if (string.IsNullOrEmpty(dateFormat)) {
+                    return PythonOps.ToString(context, this);
+                } else {
+                    return this.strftime(context, dateFormat);
+                }
             }
 
             #endregion
