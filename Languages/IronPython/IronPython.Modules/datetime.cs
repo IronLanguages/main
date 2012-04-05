@@ -567,10 +567,9 @@ namespace IronPython.Modules {
 
             public override bool Equals(object obj) {
                 if (obj == null) return false;
-
-                Type t = obj.GetType();
-                if (t == typeof(date) || t == typeof(datetime)) {
-                    date other = (date)obj;
+                
+                date other = obj as date;
+                if (other != null && !(obj is datetime)) {
                     return this._dateTime == other._dateTime;
                 } else {
                     return false;
@@ -675,7 +674,11 @@ namespace IronPython.Modules {
             }
 
             public virtual string __format__(CodeContext/*!*/ context, string dateFormat){
-                return this.strftime(context, dateFormat);
+                if (string.IsNullOrEmpty(dateFormat)) {
+                    return PythonOps.ToString(context, this);
+                } else {
+                    return this.strftime(context, dateFormat);
+                }
             }
 
             #endregion
@@ -1091,7 +1094,8 @@ namespace IronPython.Modules {
                         InternalDateTime.Hour,
                         InternalDateTime.Minute,
                         InternalDateTime.Second,
-                        InternalDateTime.Millisecond * 1000 + _lostMicroseconds
+                        this.microsecond,
+                        this.tzinfo
                     )
                 );
             }
@@ -1271,6 +1275,19 @@ namespace IronPython.Modules {
             // supported operations
             private static time Add(time date, timedelta delta) {
                 return new time(date._timeSpan.Add(delta.TimeSpanWithDaysAndSeconds), delta._microseconds + date._lostMicroseconds, date._tz);
+            }
+
+            public PythonTuple __reduce__() {
+                return PythonTuple.MakeTuple(
+                    DynamicHelpers.GetPythonTypeFromType(GetType()),
+                    PythonTuple.MakeTuple(
+                        this.hour,
+                        this.minute,
+                        this.second,
+                        this.microsecond,
+                        this.tzinfo
+                    )
+                );
             }
 
             public bool __nonzero__() {
