@@ -53,7 +53,7 @@ Beep(frequency, duration) - Make a beep through the PC speaker.";
         public const int MB_ICONASTERISK = 0x00000040;
         public const int MB_ICONEXCLAMATION = 0x00000030;
         public const int MB_ICONHAND = 0x00000010;
-        public const int MB_ICONQUESTION = 0x00000020;        
+        public const int MB_ICONQUESTION = 0x00000020;
 
         #region Private Implementation Details
 
@@ -80,28 +80,52 @@ Beep(frequency, duration) - Make a beep through the PC speaker.";
 
 The sound argument can be a filename, data, or None.
 For flag values, ored together, see module documentation.")]
-        public static void PlaySound(CodeContext/*!*/ context, params object[] args) {
-            bool ok = false;
-            if (args.Length != 2) {
-                throw PythonOps.TypeError("PlaySound() takes exactly 2 arguments ({0} given)", args.Length);
-            }
-            if (!(args[1] is int)) {
-                throw PythonOps.TypeError("an integer is required");
-            }
-
-            int flags = (int)args[1];
+        public static void PlaySound(CodeContext/*!*/ context, [NotNull] string sound, int flags) {
             if (((flags & SND_ASYNC) == SND_ASYNC)
                 && ((flags & SND_MEMORY) == SND_MEMORY)) {
                 throw PythonOps.RuntimeError("Cannot play asynchronously from memory");
             }
 
-            if (args[0] is string) {
-                ok = PlaySound((string)args[0], IntPtr.Zero, flags);
-            } else if (args[0] is IList<byte>) {
-                ok = PlaySound(((IList<byte>)args[0]).ToArray(), IntPtr.Zero, flags);
-            } else if(args[0] == null) {
+            if (!PlaySound(sound, IntPtr.Zero, flags)) {
+                throw PythonOps.RuntimeError("Failed to play sound");
+            }
+        }
+
+        [Documentation(@"PlaySound(sound, flags) - a wrapper around the Windows PlaySound API
+
+The sound argument can be a filename, data, or None.
+For flag values, ored together, see module documentation.")]
+        public static void PlaySound(CodeContext/*!*/ context, [NotNull] IList<byte> sound, int flags) {
+            if (((flags & SND_ASYNC) == SND_ASYNC)
+                && ((flags & SND_MEMORY) == SND_MEMORY)) {
+                throw PythonOps.RuntimeError("Cannot play asynchronously from memory");
+            }
+
+            if (!PlaySound(sound.ToArray(), IntPtr.Zero, flags)) {
+                throw PythonOps.RuntimeError("Failed to play sound");
+            }
+        }
+
+        [Documentation(@"PlaySound(sound, flags) - a wrapper around the Windows PlaySound API
+
+The sound argument can be a filename, data, or None.
+For flag values, ored together, see module documentation.")]
+        public static void PlaySound(CodeContext/*!*/ context, object sound, int flags) {
+            bool ok = false;
+            if (((flags & SND_ASYNC) == SND_ASYNC)
+                && ((flags & SND_MEMORY) == SND_MEMORY)) {
+                throw PythonOps.RuntimeError("Cannot play asynchronously from memory");
+            }
+
+            if (sound == null) {
                 ok = PlaySound(IntPtr.Zero, IntPtr.Zero, flags);
-            } 
+            } else if(sound is string) {
+                ok = PlaySound((string)sound, IntPtr.Zero, flags);
+            } else if (sound is IList<byte>) {
+                ok = PlaySound(((IList<byte>)sound).ToArray(), IntPtr.Zero, flags);
+            } else {
+                throw PythonOps.RuntimeError("Failed to play sound");
+            }            
 
             if (!ok) {
                 throw PythonOps.RuntimeError("Failed to play sound");
@@ -126,17 +150,7 @@ The duration argument specifies the number of milliseconds.
         }
 
         [Documentation("MessageBeep(x) - call Windows MessageBeep(x). x defaults to MB_OK.")]
-        public static void MessageBeep(CodeContext/*!*/ context, params object[] args) {
-            int x = MB_OK;
-            if (args.Length == 1) {
-                if (PythonOps.CheckingConvertToInt(args[0])) {
-                    x = Convert.ToInt32(args[0]);
-                } else {
-                    throw PythonOps.TypeError("an integer is required");
-                }
-            } else if (args.Length > 1) {
-                throw PythonOps.TypeError("MessageBeep() takes at most 1 argument ({0} given)", args.Length);
-            }
+        public static void MessageBeep(CodeContext/*!*/ context, [DefaultParameterValue(MB_OK)] int x) {
             MessageBeep(x);
         }
 
