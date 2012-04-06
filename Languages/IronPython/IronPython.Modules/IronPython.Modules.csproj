@@ -50,6 +50,7 @@
     <Compile Include="NativeSignal.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="mmap.cs" />
+    <Compile Include="ResourceMetaPathImporter.cs" />
     <Compile Include="signal.cs" />
     <Compile Include="zipimport.cs" />
     <Compile Include="zlib\Compress.cs" />
