@@ -2132,7 +2132,7 @@ sqlite3IoTrace( "SQL %s\n", z.Trim() );
         //  memset(pParse->azVar, 0, pParse->nzVar*sizeof(pParse->azVar[0]));
         //}
         p.nzVar = (i16)pParse.nzVar;
-        p.azVar = new string[p.nzVar == 0 ? 1 : p.nzVar]; //p.azVar = (char*)p.apArg[nArg];
+        p.azVar = new string[p.nzVar == 0 ? (i16)1 : p.nzVar]; //p.azVar = (char*)p.apArg[nArg];
         for ( n = 0; n < p.nzVar; n++ )
         {
           p.azVar[n] = pParse.azVar[n];

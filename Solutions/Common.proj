@@ -132,7 +132,7 @@
   <PropertyGroup>
     <OutputPath>$(SolutionDir)..\bin\$(Configuration)</OutputPath>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>618</WarningsNotAsErrors>
+    <WarningsNotAsErrors>618;429;219;1717;162;414</WarningsNotAsErrors>
     <NoWarn>1591;1584;1574;444;1685;1573</NoWarn>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
