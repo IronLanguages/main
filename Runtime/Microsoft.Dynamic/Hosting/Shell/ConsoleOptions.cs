@@ -121,7 +121,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
 #endif
 
         public ConsoleOptions() {
-	    }
+        }
 
         protected ConsoleOptions(ConsoleOptions options) {
             ContractUtils.RequiresNotNull(options, "options");
