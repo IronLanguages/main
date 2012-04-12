@@ -47,6 +47,11 @@ internal sealed class PythonConsoleHost : ConsoleHost {
         return srs;
     }
 
+    protected override IConsole CreateConsole(ScriptEngine engine, CommandLine commandLine, ConsoleOptions options) {
+        PythonConsoleOptions pyoptions = (PythonConsoleOptions)options;
+        return pyoptions.BasicConsole ? new BasicConsole(options.ColorfulConsole) : new SuperConsole(commandLine, options.ColorfulConsole);
+    }
+
     protected override void ParseHostOptions(string/*!*/[]/*!*/ args) {
         // Python doesn't want any of the DLR base options.
         foreach (string s in args) {

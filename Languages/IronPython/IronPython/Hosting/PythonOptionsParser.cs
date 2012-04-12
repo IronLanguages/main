@@ -196,6 +196,10 @@ namespace IronPython.Hosting {
                     
                     break;
 
+                case "-X:BasicConsole":
+                    ConsoleOptions.BasicConsole = true;
+                    break;
+
                 default:
                     base.ParseArgument(arg);
 
@@ -262,6 +266,7 @@ namespace IronPython.Hosting {
                 { "-X:Python30",            "Enable available Python 3.0 features" },
                 { "-X:EnableProfiler",      "Enables profiling support in the compiler" },
                 { "-X:LightweightScopes",   "Generate optimized scopes that can be garbage collected" },
+                { "-X:BasicConsole",        "Use only the basic console features" },
             };
 
             // Ensure the combined options come out sorted

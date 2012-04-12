@@ -24,6 +24,7 @@ namespace IronPython.Hosting {
         private bool _skipImportSite;
         private bool _skipFistSourceLine;
         private string _runAsModule;
+        private bool _basicConsole = false;
 
         public bool IgnoreEnvironmentVariables {
             get { return _ignoreEnvironmentVariables; }
@@ -51,7 +52,10 @@ namespace IronPython.Hosting {
             set { _skipFistSourceLine = value; }
         }
 
-
+        public bool BasicConsole {
+            get { return _basicConsole; }
+            set { _basicConsole = value; }
+        }
     }
 }
 #endif
