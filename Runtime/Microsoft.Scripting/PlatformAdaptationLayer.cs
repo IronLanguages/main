@@ -241,9 +241,11 @@ namespace Microsoft.Scripting {
         public virtual void DeleteFile(string path, bool deleteReadOnly) {
 #if FEATURE_FILESYSTEM
             FileInfo info = new FileInfo(path);
+#if !ANDROID
             if (deleteReadOnly && info.IsReadOnly) {
                 info.IsReadOnly = false;
             }
+#endif
             info.Delete();
 #else
             throw new NotImplementedException();

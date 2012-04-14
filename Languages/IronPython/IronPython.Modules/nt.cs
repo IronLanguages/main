@@ -1699,11 +1699,11 @@ are defined in the signal module.")]
             }
             return true;
         }
-
+#endif
+        
         private static Exception DirectoryExists() {
             return PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_ALREADY_EXISTS, "directory already exists");
         }
-#endif
 
         #endregion
     }
