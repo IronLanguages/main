@@ -69,11 +69,14 @@
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(ReferencedPlatform)' == 'Win8'">
+    <!--
     <FrameworkReferences Condition="'$(FrameworkReferences)' == ''">$(ProgramFiles)\Reference Assemblies\Microsoft\Framework\.NETCore\v4.5</FrameworkReferences>
+    -->
+    <FrameworkReferences Condition="'$(FrameworkReferences)' == ''">F:\Win8RC</FrameworkReferences>
     <NoStdLib>true</NoStdLib>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkIdentifier>.NETCore</TargetFrameworkIdentifier>
-    <Features>FEATURE_DEFAULT_PARAMETER_VALUE;FEATURE_FUNCS_5_16;FEATURE_VARIANCE;FEATURE_CORE_DLR;FEATURE_TASKS;FEATURE_NUMERICS;FEATURE_REFEMIT;FEATURE_VALUE_EQUALITY;FEATURE_COMPRESSION;FEATURE_WARNING_EXCEPTION;FEATURE_ASSEMBLY_LOCATION;FEATURE_ENUM_NAMES_VALUES;FEATURE_OS_SERVICEPACK;FEATURE_WIN32EXCEPTION;FEATURE_APPLICATIONEXCEPTION;FEATURE_STOPWATCH;FEATURE_APARTMENTSTATE;FEATURE_GETINVALIDFILENAMECHARS;FEATURE_LOADWITHPARTIALNAME;FEATURE_DRIVENOTFOUNDEXCEPTION;FEATURE_ASSEMBLY_CODEBASE;FEATURE_FULL_NET</Features>
+    <Features>FEATURE_DEFAULT_PARAMETER_VALUE;FEATURE_FUNCS_5_16;FEATURE_VARIANCE;FEATURE_CORE_DLR;FEATURE_TASKS;FEATURE_NUMERICS;FEATURE_VALUE_EQUALITY;FEATURE_ASSEMBLY_LOCATION;FEATURE_ENUM_NAMES_VALUES;FEATURE_OS_SERVICEPACK;FEATURE_WIN32EXCEPTION;FEATURE_APPLICATIONEXCEPTION;FEATURE_STOPWATCH;FEATURE_APARTMENTSTATE;FEATURE_GETINVALIDFILENAMECHARS;FEATURE_LOADWITHPARTIALNAME;FEATURE_DRIVENOTFOUNDEXCEPTION;FEATURE_ASSEMBLY_CODEBASE;FEATURE_FULL_NET</Features>
     <PlatformSymbols>WIN8;CLR4;CLR45</PlatformSymbols>
     <IsSilverlight>false</IsSilverlight>
     <IsFullFramework>false</IsFullFramework>
@@ -277,9 +280,9 @@
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Core.dll</HintPath>
     </Reference>
-    <Reference Include="System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, ProcessorArchitecture=MSIL">
+    <Reference Include="System.Runtime.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Numerics.dll</HintPath>
+      <HintPath>$(FrameworkReferences)\System.Runtime.Numerics.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
@@ -361,6 +364,10 @@
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Dynamic.Runtime.dll</HintPath>
     </Reference>
+    <Reference Include="System.Text.Encoding.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
+      <SpecificVersion>True</SpecificVersion>
+      <HintPath>$(FrameworkReferences)\System.Text.Encoding.Extensions.dll</HintPath>
+    </Reference>
     <Reference Include="System.Text.Encoding, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Text.Encoding.dll</HintPath>
@@ -388,10 +395,6 @@
     <Reference Include="System.Text.RegularExpressions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Text.RegularExpressions.dll</HintPath>
-    </Reference>
-    <Reference Include="Win8Fixup">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SolutionDir)..\Util\References\Win8Fixup\Win8Fixup.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>

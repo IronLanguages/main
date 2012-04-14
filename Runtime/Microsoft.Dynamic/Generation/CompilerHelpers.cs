@@ -30,7 +30,6 @@ using System.Dynamic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Reflection.RuntimeExtensions;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Ast;
@@ -716,11 +715,7 @@ namespace Microsoft.Scripting.Generation {
             //Create a unique method name when the lambda doesn't have a name or the name is empty.
             var method = type.DefineMethod(methodName, CompilerHelpers.PublicStatic);
 
-#if WIN8 // TODO: this should be added to Win8P
-            ((dynamic)lambda).CompileToMethod(method, debugInfoGenerator);
-#else
             lambda.CompileToMethod(method, debugInfoGenerator);
-#endif
             var finished = type.CreateType();
 
             rewriter.InitializeFields(finished);

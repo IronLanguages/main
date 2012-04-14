@@ -37,11 +37,13 @@ namespace IronRuby.Runtime {
     using ScriptCodeFunc = Func<RubyScope, object, object>;
 
     internal class RubyScriptCode : ScriptCode {
+#if FEATURE_REFEMIT
         private sealed class CustomGenerator : DebugInfoGenerator {
             public override void MarkSequencePoint(LambdaExpression method, int ilOffset, DebugInfoExpression node) {
                 RubyMethodDebugInfo.GetOrCreate(method.Name).AddMapping(ilOffset, node.StartLine);
             }
         }
+#endif
 
         private readonly Expression<ScriptCodeFunc> _code;
         private readonly TopScopeFactoryKind _kind;
@@ -125,8 +127,10 @@ namespace IronRuby.Runtime {
 #endif
             if (noAdaptiveCompilation) {
                 Delegate result = lambda.Compile();
+#if !WIN8
                 // DLR closures should not be used:
                 Debug.Assert(!(result.Target is Closure) || ((Closure)result.Target).Locals == null);
+#endif
                 return result;
             } 
 

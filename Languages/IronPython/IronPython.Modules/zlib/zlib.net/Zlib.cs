@@ -42,6 +42,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 * and contributors of zlib.
 */
 using System;
+using System.Text;
 
 
 namespace ComponentAce.Compression.Libs.ZLib
@@ -409,9 +410,9 @@ namespace ComponentAce.Compression.Libs.ZLib
 		/// </summary>
 		/// <param name="sourceString">The string to be converted</param>
 		/// <returns>The new array of bytes</returns>
-		internal static byte[] ToByteArray(System.String sourceString)
+		internal static byte[] ToByteArray(string sourceString)
 		{
-			return System.Text.UTF8Encoding.UTF8.GetBytes(sourceString);
+			return Encoding.UTF8.GetBytes(sourceString);
 		}
 
 		/// <summary>
@@ -421,7 +422,7 @@ namespace ComponentAce.Compression.Libs.ZLib
 		/// <returns>The new array of chars</returns>
 		internal static char[] ToCharArray(byte[] byteArray) 
 		{
-			return System.Text.UTF8Encoding.UTF8.GetChars(byteArray);
+            return Encoding.UTF8.GetChars(byteArray);
         }
 
 
