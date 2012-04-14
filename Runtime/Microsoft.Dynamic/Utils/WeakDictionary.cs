@@ -83,21 +83,6 @@ namespace Microsoft.Scripting.Utils {
             return dict.TryGetValue(key, out value);
         }
 
-        public TValue GetOrCreateValue(TKey key) {
-            TValue value;
-            if (!TryGetValue(key, out value)) {
-                var ctor = typeof(TValue).GetConstructor(new Type[] { });
-                if (ctor == null) {
-                    throw new MissingMethodException(string.Format("{0} does not have a default constructor.", typeof(TValue).Name));
-                }
-
-                value = (TValue)ctor.Invoke(new object[] { });
-                Add(key, value);
-            }
-
-            return value;
-        }
-
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")] // TODO: fix
         public ICollection<TValue> Values {
             get {
