@@ -1347,7 +1347,7 @@ namespace Microsoft.Scripting.Utils {
         }
 
         public static bool HasDefaultValue(this ParameterInfo pi) {
-#if WP75 // CF doesn't support Optional nor DefaultParameterValue attributes
+#if !FEATURE_DEFAULT_PARAMETER_VALUE
             return pi.IsDefined(typeof(DefaultParameterValueAttribute), false);
 #else
             return (pi.Attributes & ParameterAttributes.HasDefault) != 0;
@@ -1382,7 +1382,7 @@ namespace Microsoft.Scripting.Utils {
         }
 
         public static object GetDefaultValue(this ParameterInfo info) {
-#if WP75 // CF doesn't support Optional nor DefaultParameterValue attributes
+#if !FEATURE_DEFAULT_PARAMETER_VALUE
             if (info.IsOptional) {
                 return info.ParameterType == typeof(object) ? Missing.Value : ScriptingRuntimeHelpers.GetPrimitiveDefaultValue(info.ParameterType);
             } 
