@@ -3,9 +3,6 @@
 import unittest
 from test import test_support
 import time
-if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=361876"):
-    import sys
-    sys.exit(0)
 
 import os
 import subprocess
