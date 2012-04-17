@@ -61,13 +61,15 @@ exec_tests = [
     # Pass,
     "pass",
     # Break
-    # "break", is breakcontinue and can not stay alone :-(
+    # "break", can not work outside a loop
+    "while x: break",
     # Continue
-    # "continue",
+    # "continue", can not work outside a loop
+    "while x: continue",
     # for statements with naked tuples (see http://bugs.python.org/issue6704)
     "for a,b in c: pass",
-    #"[(a,b) for a,b in c]",
-    #"((a,b) for a,b in c)",
+    "[(a,b) for a,b in c]",
+    "((a,b) for a,b in c)",
 ]
 
 # These are compiled through "single"
@@ -91,13 +93,13 @@ eval_tests = [
   # Dict
   "{ 1:2 }",
   # ListComp
-  #"[a for b in c if d]",
+  "[a for b in c if d]",
   # GeneratorExp
-  #"(a for b in c if d)",
+  "(a for b in c if d)",
   # Yield - yield expressions can't work outside a function
   #
   # Compare
-  #"1 < 2 < 3",
+  "1 < 2 < 3",
   # Call
   "f(1,2,c=3,*d,**e)",
   # Repr
@@ -109,7 +111,7 @@ eval_tests = [
   # Attribute
   "a.b",
   # Subscript
-  #"a[b:c]",
+  "a[b:c]",
   # Name
   "v",
   # List
@@ -117,7 +119,9 @@ eval_tests = [
   # Tuple
   "1,2,3",
   # Combination
-  #"a.b.c.d(a.b[1:2])",
+  "a.b.c.d(a.b[1:2])",
+  # ellipsis
+  "a[...]",
 
 ]
 
@@ -142,6 +146,12 @@ class AST_Tests(unittest.TestCase):
                 self._assertTrueorder(value, parent_pos)
 
     def test_snippets(self):
+        self.maxDiff = 2048
+        # Things which diverted from cpython:
+        # - col_offset of list comprehension in ironpython uses opening bracket, cpython points to first expr
+        # - same for generator
+        # - Slice in iron has col_offset and lineno set, in cpython both are not set
+        # - the way multiple compare are combined is different (this is still a possible bug)
         for input, output, kind in ((exec_tests, exec_results, "exec"),
                                     (single_tests, single_results, "single"),
                                     (eval_tests, eval_results, "eval")):
@@ -150,7 +160,13 @@ class AST_Tests(unittest.TestCase):
                 self.assertEqual(to_tuple(ast_tree), o)
                 self._assertTrueorder(ast_tree, (0, 0))
 
-    def _test_slice(self):
+    def test_slicex(self):
+        slc = ast.parse("x[1:2:3]").body[0].value.slice
+        self.assertEqual(slc.lower.n, 1)
+        self.assertEqual(slc.upper.n, 2)
+        self.assertEqual(slc.step.n, 3)
+
+    def test_slice(self):
         slc = ast.parse("x[::]").body[0].value.slice
         self.assertIsNone(slc.upper)
         self.assertIsNone(slc.lower)
@@ -170,12 +186,7 @@ class AST_Tests(unittest.TestCase):
         self.assertTrue(issubclass(ast.Gt, ast.AST))
 
     def test_nodeclasses(self):
-        # cpython takes it but 2 as operator makes for me no sense.
-        # x = ast.BinOp(1, 2, 3, lineno=0)
-        # self.assertEqual(x.left, 1)
-        # self.assertEqual(x.op, 2)
-        # self.assertEqual(x.right, 3)
-        # self.assertEqual(x.lineno, 0)
+        # IronPyhon performs argument typechecking
         l=ast.Str('A')
         o=ast.Mult()
         r=ast.Num('13')
@@ -186,15 +197,9 @@ class AST_Tests(unittest.TestCase):
         self.assertEqual(x.lineno, 42)
 
         # node raises exception when not given enough arguments
-        # self.assertRaises(TypeError, ast.BinOp, 1, 2)
         self.assertRaises(TypeError, ast.BinOp, l, o)
 
         # can set attributes through kwargs too
-        # x = ast.BinOp(left=1, op=2, right=3, lineno=0)
-        # self.assertEqual(x.left, 1)
-        # self.assertEqual(x.op, 2)
-        # self.assertEqual(x.right, 3)
-        # self.assertEqual(x.lineno, 0)
         x = ast.BinOp(left=l, op=o, right=r, lineno=42)
         self.assertEqual(x.left, l)
         self.assertEqual(x.op, o)
@@ -221,6 +226,11 @@ class AST_Tests(unittest.TestCase):
 
     def test_example_from_net(self):
         node = ast.Expression(ast.BinOp(ast.Str('xy'), ast.Mult(), ast.Num(3)))
+
+    def test_extra_attribute(self):
+        n=ast.Num()
+        n.extra_attribute=2
+        self.assertTrue(hasattr(n,'extra_attribute'))
 
     def test_operators(self):
         boolop0 = ast.BoolOp()
@@ -251,8 +261,6 @@ class AST_Tests(unittest.TestCase):
         set0 = ast.Set()
         set1 = ast.Set([ast.Num(1), ast.Num(2)])
         set2 = ast.Set([ast.Num(1), ast.Num(2)], 0, 0)
-
-
 
         lc0 = ast.ListComp()
         lc1 = ast.ListComp( ast.Name('x',ast.Load()), 
@@ -314,8 +322,6 @@ class AST_Tests(unittest.TestCase):
         call0 = ast.Call()
         call1 = ast.Call(ast.Name('chr', ast.Load()), [ast.Num(65)], [], None, None)
         call2 = ast.Call(ast.Name('chr', ast.Load()), [ast.Num(65)], [], None, None, 0, 0)
-
-        # TODO: test optionality of starargs and kvargs
         call20 = ast.Call(ast.Name('f', ast.Load()), [ast.Num(0)], [])
         call21 = ast.Call(ast.Name('f', ast.Load()), [ast.Num(0)], [], lineno=0, col_offset=0)
 
@@ -443,14 +449,25 @@ class AST_Tests(unittest.TestCase):
         raise1 = ast.Raise(ast.Call(ast.Name('Exception', ast.Load()), [], []), None, None)
         raise2 = ast.Raise(ast.Call(ast.Name('Exception', ast.Load()), [], []), None, None, 0, 0)
 
+    def test_attributes(self):
         # assert True, "bad"
         assert0 = ast.Assert()
+        self.assertFalse(hasattr(assert0, 'lineno'))
+        self.assertFalse(hasattr(assert0, 'col_offset'))
         assert1 = ast.Assert(ast.Name('True', ast.Load()), ast.Str('bad'))
-        assert assert1.lineno==0
-        assert assert1.col_offset==0
-        assert2 = ast.Assert(ast.Name('True', ast.Load()), ast.Str('bad'),1,2)
-        assert assert2.lineno==1
-        assert assert2.col_offset==2
+        self.assertFalse(hasattr(assert1, 'lineno'))
+        self.assertFalse(hasattr(assert1, 'col_offset'))
+        try:
+            tmp=assert1.lineno
+        except Exception as e:
+            self.assertTrue(isinstance(e,AttributeError))
+        try:
+            tmp=assert1.col_offset
+        except Exception as e:
+            self.assertTrue(isinstance(e,AttributeError))
+        assert2 = ast.Assert(ast.Name('True', ast.Load()), ast.Str('bad'),2,3)
+        self.assertEqual(assert2.lineno,2)
+        self.assertEqual(assert2.col_offset,3)
 
     def _test_pickling(self):
         import pickle
@@ -465,6 +482,8 @@ class AST_Tests(unittest.TestCase):
             for protocol in protocols:
                 for ast3 in (compile(i, "?", "exec", 0x400) for i in exec_tests):
                     # print ast.dump(ast3)
+                    # this one dies deep in the python guts
+                    # TypeError: expected list, got Module
                     ast2 = mod.loads(mod.dumps(ast3, protocol))
                     self.assertEqual(to_tuple(ast2), to_tuple(ast))
 
@@ -504,7 +523,8 @@ class ASTHelpers_Test(unittest.TestCase):
             'col_offset=0))'
         )
 
-    def _test_fix_missing_locations(self):
+    def test_fix_missing_locations(self):
+        self.maxDiff = 2048
         src = ast.parse('write("spam")')
         src.body.append(ast.Expr(ast.Call(ast.Name('spam', ast.Load()),
                                           [ast.Str('eggs')], [], None, None)))
@@ -520,7 +540,7 @@ class ASTHelpers_Test(unittest.TestCase):
             "col_offset=0), lineno=1, col_offset=0)])"
         )
 
-    def _test_increment_lineno(self):
+    def test_increment_lineno(self):
         src = ast.parse('1 + 1', mode='eval')
         self.assertEqual(ast.increment_lineno(src, n=3), src)
         self.assertEqual(ast.dump(src, include_attributes=True),
@@ -528,7 +548,6 @@ class ASTHelpers_Test(unittest.TestCase):
             'op=Add(), right=Num(n=1, lineno=4, col_offset=4), lineno=4, '
             'col_offset=0))'
         )
-        # I swear it passed in ipy-2.7-maint, but now it fails below
         # issue10869: do not increment lineno of root twice
         src = ast.parse('1 + 1', mode='eval')
         self.assertEqual(ast.increment_lineno(src.body, n=3), src.body)
@@ -593,7 +612,8 @@ def main():
         raise SystemExit
     test_main()
 
-#### EVERYTHING BELOW IS GENERATED #####
+
+#### GENERATED FOR IRONPYTHON ####
 exec_results = [
 ('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, None, []), [('Pass', (1, 9))], [])]),
 ('Module', [('ClassDef', (1, 0), 'C', [], [('Pass', (1, 8))], [])]),
@@ -615,11 +635,12 @@ exec_results = [
 ('Module', [('Global', (1, 0), ['v'])]),
 ('Module', [('Expr', (1, 0), ('Num', (1, 0), 1))]),
 ('Module', [('Pass', (1, 0))]),
-#('Module', [('Break', (1, 0))]),
-#('Module', [('Continue', (1, 0))]),
+('Module', [('While', (1, 0), ('Name', (1, 6), 'x', ('Load',)), [('Break', (1, 9))], [])]),
+('Module', [('While', (1, 0), ('Name', (1, 6), 'x', ('Load',)), [('Continue', (1, 9))], [])]),
 ('Module', [('For', (1, 0), ('Tuple', (1, 4), [('Name', (1, 4), 'a', ('Store',)), ('Name', (1, 6), 'b', ('Store',))], ('Store',)), ('Name', (1, 11), 'c', ('Load',)), [('Pass', (1, 14))], [])]),
-#('Module', [('Expr', (1, 0), ('ListComp', (1, 1), ('Tuple', (1, 2), [('Name', (1, 2), 'a', ('Load',)), ('Name', (1, 4), 'b', ('Load',))], ('Load',)), [('comprehension', ('Tuple', (1, 11), [('Name', (1, 11), 'a', ('Store',)), ('Name', (1, 13), 'b', ('Store',))], ('Store',)), ('Name', (1, 18), 'c', ('Load',)), [])]))]),
-#('Module', [('Expr', (1, 0), ('GeneratorExp', (1, 1), ('Tuple', (1, 2), [('Name', (1, 2), 'a', ('Load',)), ('Name', (1, 4), 'b', ('Load',))], ('Load',)), [('comprehension', ('Tuple', (1, 11), [('Name', (1, 11), 'a', ('Store',)), ('Name', (1, 13), 'b', ('Store',))], ('Store',)), ('Name', (1, 18), 'c', ('Load',)), [])]))]),
+('Module', [('Expr', (1, 0), ('ListComp', (1, 0), ('Tuple', (1, 1), [('Name', (1, 2), 'a', ('Load',)), ('Name', (1, 4), 'b', ('Load',))], ('Load',)), [('comprehension', ('Tuple',
+(1, 11), [('Name', (1, 11), 'a', ('Store',)), ('Name', (1, 13), 'b', ('Store',))], ('Store',)), ('Name', (1, 18), 'c', ('Load',)), [])]))]),
+('Module', [('Expr', (1, 0), ('GeneratorExp', (1, 0), ('Tuple', (1, 1), [('Name', (1, 2), 'a', ('Load',)), ('Name', (1, 4), 'b', ('Load',))], ('Load',)), [('comprehension', ('Tuple', (1, 11), [('Name', (1, 11), 'a', ('Store',)), ('Name', (1, 13), 'b', ('Store',))], ('Store',)), ('Name', (1, 18), 'c', ('Load',)), [])]))]),
 ]
 single_results = [
 ('Interactive', [('Expr', (1, 0), ('BinOp', (1, 0), ('Num', (1, 0), 1), ('Add',), ('Num', (1, 2), 2)))]),
@@ -630,18 +651,19 @@ eval_results = [
 ('Expression', ('UnaryOp', (1, 0), ('Not',), ('Name', (1, 4), 'v', ('Load',)))),
 ('Expression', ('Lambda', (1, 0), ('arguments', [], None, None, []), ('Name', (1, 7), 'None', ('Load',)))),
 ('Expression', ('Dict', (1, 0), [('Num', (1, 2), 1)], [('Num', (1, 4), 2)])),
-#('Expression', ('ListComp', (1, 1), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), [('Name', (1, 17), 'd', ('Load',))])])),
-#('Expression', ('GeneratorExp', (1, 1), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), [('Name', (1, 17), 'd', ('Load',))])])),
-#('Expression', ('Compare', (1, 0), ('Num', (1, 0), 1), [('Lt',), ('Lt',)], [('Num', (1, 4), 2), ('Num', (1, 8), 3)])),
+('Expression', ('ListComp', (1, 0), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), [('Name', (1, 17), 'd', ('Load',))])])),
+('Expression', ('GeneratorExp', (1, 0), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), [('Name', (1, 17), 'd', ('Load',))])])),
+('Expression', ('Compare', (1, 0), ('Num', (1, 0), 1), [('Lt',)], [('Compare', (1, 4), ('Num', (1, 4), 2), [('Lt',)], [('Num', (1, 8), 3)])])),
 ('Expression', ('Call', (1, 0), ('Name', (1, 0), 'f', ('Load',)), [('Num', (1, 2), 1), ('Num', (1, 4), 2)], [('keyword', 'c', ('Num', (1, 8), 3))], ('Name', (1, 11), 'd', ('Load',)), ('Name', (1, 15), 'e', ('Load',)))),
 ('Expression', ('Repr', (1, 0), ('Name', (1, 1), 'v', ('Load',)))),
 ('Expression', ('Num', (1, 0), 10L)),
 ('Expression', ('Str', (1, 0), 'string')),
 ('Expression', ('Attribute', (1, 0), ('Name', (1, 0), 'a', ('Load',)), 'b', ('Load',))),
-#('Expression', ('Subscript', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Slice', ('Name', (1, 2), 'b', ('Load',)), ('Name', (1, 4), 'c', ('Load',)), None), ('Load',))),
+('Expression', ('Subscript', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Slice', (1, 1), ('Name', (1, 2), 'b', ('Load',)), ('Name', (1, 4), 'c', ('Load',)), None), ('Load',))),
 ('Expression', ('Name', (1, 0), 'v', ('Load',))),
 ('Expression', ('List', (1, 0), [('Num', (1, 1), 1), ('Num', (1, 3), 2), ('Num', (1, 5), 3)], ('Load',))),
 ('Expression', ('Tuple', (1, 0), [('Num', (1, 0), 1), ('Num', (1, 2), 2), ('Num', (1, 4), 3)], ('Load',))),
-#('Expression', ('Call', (1, 0), ('Attribute', (1, 0), ('Attribute', (1, 0), ('Attribute', (1, 0), ('Name', (1, 0), 'a', ('Load',)), 'b', ('Load',)), 'c', ('Load',)), 'd', ('Load',)), [('Subscript', (1, 8), ('Attribute', (1, 8), ('Name', (1, 8), 'a', ('Load',)), 'b', ('Load',)), ('Slice', ('Num', (1, 12), 1), ('Num', (1, 14), 2), None), ('Load',))], [], None, None)),
+('Expression', ('Call', (1, 0), ('Attribute', (1, 0), ('Attribute', (1, 0), ('Attribute', (1, 0), ('Name', (1, 0), 'a', ('Load',)), 'b', ('Load',)), 'c', ('Load',)), 'd', ('Load',)), [('Subscript', (1, 8), ('Attribute', (1, 8), ('Name', (1, 8), 'a', ('Load',)), 'b', ('Load',)), ('Slice', (1, 11), ('Num', (1, 12), 1), ('Num', (1, 14), 2), None), ('Load',))], [], None, None)),
+('Expression', ('Subscript', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Ellipsis', (1, 1)), ('Load',))),
 ]
 main()
