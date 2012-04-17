@@ -23,6 +23,8 @@ using IronPython.Compiler;
 using IronPython.Compiler.Ast;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
+using IronPython.Runtime.Exceptions;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -107,8 +109,8 @@ namespace IronPython.Modules
         {
             private PythonTuple __fields = new PythonTuple();   // Genshi assumes _fields in not None
             private PythonTuple __attributes = new PythonTuple();   // Genshi assumes _fields in not None
-            protected int _lineno;
-            protected int _col_offset;
+            protected int? _lineno; // both lineno and col_offset are expected to be int, in cpython anything is accepted
+            protected int? _col_offset;
 
             public PythonTuple _fields {
                 get { return __fields; }
@@ -119,6 +121,87 @@ namespace IronPython.Modules
                 get { return __attributes; }
                 protected set { __attributes = value; }
             }
+
+            public int lineno {
+                get { 
+                    if (_lineno != null) return (int)_lineno;
+                    throw PythonOps.AttributeErrorForMissingAttribute(PythonTypeOps.GetName(this), "lineno");
+                }
+                set { _lineno = value; }
+            }
+
+            public int col_offset {
+                get { 
+                    if (_col_offset != null) return (int)_col_offset;
+                    throw PythonOps.AttributeErrorForMissingAttribute(PythonTypeOps.GetName(this), "col_offset");
+                }
+                set { _col_offset = value; }
+            }
+
+
+            private PythonDictionary _dict;    // the dictionary for extra values, created on demand
+
+            /// <summary>
+            /// Gets or sets the dictionary which is used for storing members not declared to have space reserved
+            /// within the exception object.
+            /// </summary>
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+            public PythonDictionary/*!*/ __dict__ {
+                get {
+                    EnsureDict();
+                    return _dict;
+                }
+                set {
+                    if (_dict == null) {
+                        throw PythonOps.TypeError("__dict__ must be a dictionary");
+                    }
+                    _dict = value;
+                }
+            }
+
+            /// <summary>
+            /// Provides custom member lookup access that fallbacks to the dictionary
+            /// </summary>
+            [SpecialName]
+            public object GetBoundMember(string name) {
+                if (_dict != null) {
+                    object res;
+                    if (_dict.TryGetValue(name, out res)) {
+                        return res;
+                    }
+                }
+
+                return OperationFailed.Value;
+            }
+
+            /// <summary>
+            /// Provides custom member assignment which stores values in the dictionary
+            /// </summary>
+            [SpecialName]
+            public void SetMemberAfter(string name, object value) {
+                EnsureDict();
+
+                _dict[name] = value;
+            }
+
+            /// <summary>
+            /// Provides custom member deletion which deletes values from the dictionary
+            /// or allows clearing 'message'.
+            /// </summary>
+            [SpecialName]
+            public bool DeleteCustomMember(string name) {
+                if (_dict == null)
+                    return false;
+
+                return _dict.Remove(name);
+            }
+
+            private void EnsureDict() {
+                if (_dict == null) {
+                    System.Threading.Interlocked.CompareExchange<PythonDictionary>(ref _dict, PythonDictionary.MakeSymbolDictionary(), null);
+                }
+            }
+
 
             protected void GetSourceLocation(Node node) {
                 _lineno = node.Start.Line;
@@ -574,16 +657,6 @@ namespace IronPython.Modules
             public excepthandler() {
                 _attributes = new PythonTuple(new[] { "lineno", "col_offset" });
             }
-
-            public int lineno {
-                get { return _lineno; }
-                set { _lineno = value; }
-            }
-
-            public int col_offset {
-                get { return _col_offset; }
-                set { _col_offset = value; }
-            }
         }
 
         [PythonType]
@@ -591,16 +664,6 @@ namespace IronPython.Modules
         {
             protected expr() {
                 _attributes = new PythonTuple(new[] { "lineno", "col_offset" });
-            }
-
-            public int lineno {
-                get { return _lineno; }
-                set { _lineno = value; }
-            }
-
-            public int col_offset {
-                get { return _col_offset; }
-                set { _col_offset = value; }
             }
         }
 
@@ -656,6 +719,7 @@ namespace IronPython.Modules
         [PythonType]
         public abstract class slice : expr // This is the only departure we make from the CPython _ast inheritence tree.
         {
+            // we should hide lineno and col_offset from parent
         }
 
         [PythonType]
@@ -663,16 +727,6 @@ namespace IronPython.Modules
         {
             protected stmt() {
                 _attributes = new PythonTuple(new[] { "lineno", "col_offset" });
-            }
-
-            public int lineno {
-                get { return _lineno; }
-                set { _lineno = value; }
-            }
-
-            public int col_offset {
-                get { return _col_offset; }
-                set { _col_offset = value; }
             }
         }
 
@@ -703,7 +757,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "test", "msg" });
             }
 
-            public Assert(expr test, expr msg, [Optional]int lineno, [Optional]int col_offset)
+            public Assert(expr test, expr msg, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _test = test;
                 _msg = msg;
@@ -739,7 +793,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "targets", "value" });
             }
 
-            public Assign(PythonList targets, expr value, [Optional]int lineno, [Optional]int col_offset)
+            public Assign(PythonList targets, expr value, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _targets = targets;
                 _value = value;
@@ -779,7 +833,7 @@ namespace IronPython.Modules
             }
 
             public Attribute(expr value, string attr, expr_context ctx,
-                [Optional]int lineno, [Optional]int col_offset)
+                [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _value = value;
                 _attr = attr;
@@ -823,7 +877,7 @@ namespace IronPython.Modules
             }
 
             public AugAssign(expr target, @operator op, expr value,
-                [Optional]int lineno, [Optional]int col_offset)
+                [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _target = target;
                 _op = op;
@@ -882,7 +936,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "left", "op", "right" });
             }
 
-            public BinOp(expr left, @operator op, expr right, [Optional]int lineno, [Optional]int col_offset)
+            public BinOp(expr left, @operator op, expr right, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _left = left;
                 _op = op;
@@ -942,7 +996,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "op", "values" });
             }
 
-            public BoolOp(boolop op, PythonList values, [Optional]int lineno, [Optional]int col_offset)
+            public BoolOp(boolop op, PythonList values, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _op = op;
                 _values = values;
@@ -999,7 +1053,7 @@ namespace IronPython.Modules
 
             public Call( expr func, PythonList args, PythonList keywords, 
                 [Optional]expr starargs, [Optional]expr kwargs,
-                [Optional]int lineno, [Optional]int col_offset) 
+                [Optional]int? lineno, [Optional]int? col_offset) 
                 :this() {
                 _func = func;
                 _args = args;
@@ -1067,7 +1121,7 @@ namespace IronPython.Modules
             }
 
             public ClassDef(string name, PythonList bases, PythonList body, PythonList decorator_list,
-                [Optional]int lineno, [Optional]int col_offset)
+                [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _name = name;
                 _bases = bases;
@@ -1121,7 +1175,7 @@ namespace IronPython.Modules
             }
 
             public Compare(expr left, PythonList ops, PythonList comparators, 
-                [Optional]int lineno, [Optional]int col_offset)
+                [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _left = left;
                 _ops = ops;
@@ -1158,7 +1212,7 @@ namespace IronPython.Modules
         {
             internal static Continue Instance = new Continue();
 
-            public Continue([Optional]int lineno, [Optional]int col_offset) {
+            public Continue([Optional]int? lineno, [Optional]int? col_offset) {
                 _lineno = lineno;
                 _col_offset = col_offset;
             }
@@ -1179,7 +1233,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "targets", });
             }
 
-            public Delete(PythonList targets, [Optional]int lineno, [Optional]int col_offset)
+            public Delete(PythonList targets, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _targets = targets;
                 _lineno = lineno;
@@ -1209,7 +1263,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "keys", "values" });
             }
 
-            public Dict(PythonList keys, PythonList values, [Optional]int lineno, [Optional]int col_offset)
+            public Dict(PythonList keys, PythonList values, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _keys = keys;
                 _values = values;
@@ -1249,7 +1303,7 @@ namespace IronPython.Modules
             }
 
             public DictComp(expr key, expr value, PythonList generators, 
-                [Optional]int lineno, [Optional]int col_offset)
+                [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _key = key;
                 _value = value;
@@ -1312,7 +1366,7 @@ namespace IronPython.Modules
             }
 
             public ExceptHandler([Optional]expr type, [Optional]expr name, PythonList body,
-                [Optional]int lineno, [Optional]int col_offset)
+                [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _type = type;
                 _name = name;
@@ -1359,7 +1413,7 @@ namespace IronPython.Modules
             }
 
             public Exec(expr body, [Optional]expr globals, [Optional]expr locals,
-               [Optional]int lineno, [Optional]int col_offset)
+               [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _body = body;
                 _globals = globals;
@@ -1403,7 +1457,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "value", });
             }
 
-            public Expr(expr value, [Optional]int lineno, [Optional]int col_offset)
+            public Expr(expr value,  [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _value = value;
                 _lineno = lineno;
@@ -1489,7 +1543,7 @@ namespace IronPython.Modules
             }
 
             public For(expr target, expr iter, PythonList body, [Optional]PythonList orelse,
-               [Optional]int lineno, [Optional]int col_offset)
+               [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _target = target;
                 _iter = iter;
@@ -1544,7 +1598,7 @@ namespace IronPython.Modules
             }
 
             public FunctionDef(string name, arguments args, PythonList body, PythonList decorators,
-                [Optional]int lineno, [Optional]int col_offset)
+                [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _name = name;
                 _args = args;
@@ -1599,7 +1653,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "elt", "generators" });
             }
 
-            public GeneratorExp(expr elt, PythonList generators, [Optional]int lineno, [Optional]int col_offset)
+            public GeneratorExp(expr elt, PythonList generators, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _elt = elt;
                 _generators = generators;
@@ -1666,7 +1720,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "names", });
             }
 
-            public Global(PythonList names, [Optional]int lineno, [Optional]int col_offset)
+            public Global(PythonList names, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _names = names;
                 _lineno = lineno;
@@ -1708,7 +1762,7 @@ namespace IronPython.Modules
             }
 
             public If(expr test, PythonList body, [Optional]PythonList orelse, 
-                [Optional]int lineno, [Optional]int col_offset)
+                [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _test = test;
                 _body = body;
@@ -1767,7 +1821,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "test", "body", "orelse" });
             }
 
-            public IfExp(expr test, expr body, expr orelse, [Optional]int lineno, [Optional]int col_offset)
+            public IfExp(expr test, expr body, expr orelse, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _test = test;
                 _body = body;
@@ -1808,7 +1862,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "names", });
             }
 
-            public Import(PythonList names, [Optional]int lineno, [Optional]int col_offset)
+            public Import(PythonList names, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _names = names;
                 _lineno = lineno;
@@ -1838,7 +1892,7 @@ namespace IronPython.Modules
             }
 
             public ImportFrom([Optional]string module, PythonList names, [Optional]int level,
-                [Optional]int lineno, [Optional]int col_offset)
+                [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _module = module;
                 _names = names;
@@ -1955,7 +2009,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "args", "body" });
             }
 
-            public Lambda(arguments args, expr body, [Optional]int lineno, [Optional]int col_offset)
+            public Lambda(arguments args, expr body, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _args = args;
                 _body = body;
@@ -1992,7 +2046,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "elts", "ctx" });
             }
 
-            public List(PythonList elts, expr_context ctx, [Optional]int lineno, [Optional]int col_offset)
+            public List(PythonList elts, expr_context ctx, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _elts = elts;
                 _ctx = ctx;
@@ -2030,7 +2084,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "elt", "generators" });
             }
 
-            public ListComp(expr elt, PythonList generators, [Optional]int lineno, [Optional]int col_offset)
+            public ListComp(expr elt, PythonList generators, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _elt = elt;
                 _generators = generators;
@@ -2130,7 +2184,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "id", "ctx" });
             }
 
-            public Name(string id, expr_context ctx, [Optional]int lineno, [Optional]int col_offset)
+            public Name(string id, expr_context ctx, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _id = id;
                 _ctx = ctx;
@@ -2180,7 +2234,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "n", });
             }
 
-            public Num(object n, [Optional]int lineno, [Optional]int col_offset)
+            public Num(object n, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _n = n;
                 _lineno = lineno;
@@ -2234,7 +2288,7 @@ namespace IronPython.Modules
             }
 
             public Print([Optional]expr dest, PythonList values, bool nl,
-               [Optional]int lineno, [Optional]int col_offset)
+               [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _dest = dest;
                 _values = values;
@@ -2283,7 +2337,7 @@ namespace IronPython.Modules
             }
 
             public Raise([Optional]expr type, [Optional]expr inst, [Optional]expr tback,
-                [Optional]int lineno, [Optional]int col_offset)
+                [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _type = type;
                 _inst = inst;
@@ -2327,7 +2381,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "value", });
             }
 
-            public Repr(expr value, [Optional]int lineno, [Optional]int col_offset)
+            public Repr(expr value, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _value = value;
                 _lineno = lineno;
@@ -2354,7 +2408,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "value", });
             }
 
-            public Return([Optional]expr value, [Optional]int lineno, [Optional]int col_offset)
+            public Return([Optional]expr value, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _value = value;
                 _lineno = lineno;
@@ -2391,7 +2445,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "elts" });
             }
 
-            public Set(PythonList elts, [Optional]int lineno, [Optional]int col_offset)
+            public Set(PythonList elts, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _elts = elts;
                 _lineno = lineno;
@@ -2415,7 +2469,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "elt", "generators" });
             }
 
-            public SetComp(expr elt, PythonList generators, [Optional]int lineno, [Optional]int col_offset)
+            public SetComp(expr elt, PythonList generators, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _elt = elt;
                 _generators = generators;
@@ -2452,7 +2506,10 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "lower", "upper", "step" });
             }
 
+
             public Slice([Optional]expr lower, [Optional]expr upper, [Optional]expr step)
+                // default interpretation of missing step is [:]
+                // in order to get [::], please provide explicit Name('None',Load.Instance)
                 : this() {
                 _lower = lower;
                 _upper = upper;
@@ -2465,8 +2522,11 @@ namespace IronPython.Modules
                     _lower = Convert(expr.SliceStart);
                 if (expr.SliceStop != null)
                     _upper = Convert(expr.SliceStop);
-                if (expr.StepProvided && expr.SliceStep != null)
-                    _step = Convert(expr.SliceStep);
+                if (expr.StepProvided)
+                    if (expr.SliceStep != null)
+                        _step = Convert(expr.SliceStep); // [x:y]
+                    else
+                        _step = new Name("None", Load.Instance); // [x:y:]
             }
 
             public expr lower {
@@ -2500,7 +2560,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "s", });
             }
 
-            public Str(string s, [Optional]int lineno, [Optional]int col_offset)
+            public Str(string s, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _s = s;
                 _lineno = lineno;
@@ -2531,7 +2591,7 @@ namespace IronPython.Modules
             }
 
             public Subscript( expr value, slice slice, expr_context ctx, 
-                [Optional]int lineno, [Optional]int col_offset )
+                [Optional]int? lineno, [Optional]int? col_offset )
                 : this() {
                 _value = value;
                 _slice = slice;
@@ -2544,14 +2604,16 @@ namespace IronPython.Modules
                 : this() {
                 _value = Convert(expr.Target);
                 AST index = Convert(expr.Index);
-                if (index is expr)
+                if (index is expr) {
                     if (index is Tuple && ((TupleExpression)expr.Index).IsExpandable)
                         _slice = new ExtSlice(((Tuple)index).elts);
+                    else if (index is Slice)
+                        _slice = (Slice)index;
+                    else if (index is Ellipsis)
+                        _slice = (Ellipsis)index;
                     else
                         _slice = new Index((expr)index);
-                else if (index is slice) // includes Ellipsis
-                    _slice = (slice)index;
-                else
+                } else
                     throw new ArgumentTypeException("Unexpected index expression: " + expr.Index.GetType());
 
                 _ctx = ctx;
@@ -2612,7 +2674,7 @@ namespace IronPython.Modules
             }
 
             public TryExcept(PythonList body, PythonList handlers, [Optional]PythonList orelse,
-                [Optional]int lineno, [Optional]int col_offset ) 
+                [Optional]int? lineno, [Optional]int? col_offset ) 
                 : this() {
                 _body = body;
                 _handlers = handlers;
@@ -2663,7 +2725,7 @@ namespace IronPython.Modules
             }
 
             public TryFinally(PythonList body, PythonList finalBody, 
-                [Optional]int lineno, [Optional]int col_offset)
+                [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _body = body;
                 _finalbody = finalbody;
@@ -2699,7 +2761,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "elts", "ctx" });
             }
 
-            public Tuple(PythonList elts, expr_context ctx, [Optional]int lineno, [Optional]int col_offset)
+            public Tuple(PythonList elts, expr_context ctx, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _elts = elts;
                 _ctx = ctx;
@@ -2743,7 +2805,7 @@ namespace IronPython.Modules
                 _operand = Convert(expression.Expression);
             }
 
-            public UnaryOp(unaryop op, expr operand, [Optional]int lineno, [Optional]int col_offset)
+            public UnaryOp(unaryop op, expr operand, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _op = op;
                 _operand = operand;
@@ -2786,7 +2848,7 @@ namespace IronPython.Modules
             }
 
             public While(expr test, PythonList body, [Optional]PythonList orelse,
-                [Optional]int lineno, [Optional]int col_offset)
+                [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _test = test;
                 _body = body;
@@ -2833,7 +2895,7 @@ namespace IronPython.Modules
             }
 
             public With(expr context_expr, [Optional]expr optional_vars, PythonList body,
-                [Optional]int lineno, [Optional]int col_offset)
+                [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _context_expr = context_expr;
                 _optional_vars = optional_vars;
@@ -2876,7 +2938,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "value", });
             }
 
-            public Yield([Optional]expr value, [Optional]int lineno, [Optional]int col_offset) 
+            public Yield([Optional]expr value, [Optional]int? lineno, [Optional]int? col_offset) 
                 : this() {
                 _value = value;
                 _lineno = lineno;
