@@ -122,7 +122,8 @@ eval_tests = [
   "a.b.c.d(a.b[1:2])",
   # ellipsis
   "a[...]",
-
+  # index
+  "a[1]",
 ]
 
 # TODO: expr_context, slice, boolop, operator, unaryop, cmpop, comprehension
@@ -662,11 +663,12 @@ eval_results = [
 ('Expression', ('Num', (1, 0), 10L)),
 ('Expression', ('Str', (1, 0), 'string')),
 ('Expression', ('Attribute', (1, 0), ('Name', (1, 0), 'a', ('Load',)), 'b', ('Load',))),
-('Expression', ('Subscript', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Slice', (1, 1), ('Name', (1, 2), 'b', ('Load',)), ('Name', (1, 4), 'c', ('Load',)), None), ('Load',))),
+('Expression', ('Subscript', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Slice', ('Name', (1, 2), 'b', ('Load',)), ('Name', (1, 4), 'c', ('Load',)), None), ('Load',))),
 ('Expression', ('Name', (1, 0), 'v', ('Load',))),
 ('Expression', ('List', (1, 0), [('Num', (1, 1), 1), ('Num', (1, 3), 2), ('Num', (1, 5), 3)], ('Load',))),
 ('Expression', ('Tuple', (1, 0), [('Num', (1, 0), 1), ('Num', (1, 2), 2), ('Num', (1, 4), 3)], ('Load',))),
-('Expression', ('Call', (1, 0), ('Attribute', (1, 0), ('Attribute', (1, 0), ('Attribute', (1, 0), ('Name', (1, 0), 'a', ('Load',)), 'b', ('Load',)), 'c', ('Load',)), 'd', ('Load',)), [('Subscript', (1, 8), ('Attribute', (1, 8), ('Name', (1, 8), 'a', ('Load',)), 'b', ('Load',)), ('Slice', (1, 11), ('Num', (1, 12), 1), ('Num', (1, 14), 2), None), ('Load',))], [], None, None)),
-('Expression', ('Subscript', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Ellipsis', (1, 1)), ('Load',))),
+('Expression', ('Call', (1, 0), ('Attribute', (1, 0), ('Attribute', (1, 0), ('Attribute', (1, 0), ('Name', (1, 0), 'a', ('Load',)), 'b', ('Load',)), 'c', ('Load',)), 'd', ('Load',)), [('Subscript', (1, 8), ('Attribute', (1, 8), ('Name', (1, 8), 'a', ('Load',)), 'b', ('Load',)), ('Slice', ('Num', (1, 12), 1), ('Num', (1, 14), 2), None), ('Load',))], [], None, None)),
+('Expression', ('Subscript', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Ellipsis',), ('Load',))),
+('Expression', ('Subscript', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Index', ('Num', (1, 1), 1)), ('Load',))),
 ]
 main()
