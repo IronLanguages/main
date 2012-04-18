@@ -146,7 +146,6 @@ class AST_Tests(unittest.TestCase):
                 self._assertTrueorder(value, parent_pos)
 
     def test_snippets(self):
-        self.maxDiff = 2048
         # Things which diverted from cpython:
         # - col_offset of list comprehension in ironpython uses opening bracket, cpython points to first expr
         # - same for generator
@@ -530,7 +529,6 @@ class ASTHelpers_Test(unittest.TestCase):
         )
 
     def test_fix_missing_locations(self):
-        self.maxDiff = 2048
         src = ast.parse('write("spam")')
         src.body.append(ast.Expr(ast.Call(ast.Name('spam', ast.Load()),
                                           [ast.Str('eggs')], [], None, None)))
