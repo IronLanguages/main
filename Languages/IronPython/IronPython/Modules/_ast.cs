@@ -138,70 +138,53 @@ namespace IronPython.Modules
                 set { _col_offset = value; }
             }
 
-
-            private PythonDictionary _dict;    // the dictionary for extra values, created on demand
-
-            /// <summary>
-            /// Gets or sets the dictionary which is used for storing members not declared to have space reserved
-            /// within the exception object.
-            /// </summary>
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-            public PythonDictionary/*!*/ __dict__ {
-                get {
-                    EnsureDict();
-                    return _dict;
-                }
-                set {
-                    if (_dict == null) {
-                        throw PythonOps.TypeError("__dict__ must be a dictionary");
-                    }
-                    _dict = value;
-                }
+            public void __setstate__(PythonDictionary state) {
+                restoreProperties(__attributes, state);
+                restoreProperties(__fields, state);
             }
 
-            /// <summary>
-            /// Provides custom member lookup access that fallbacks to the dictionary
-            /// </summary>
-            [SpecialName]
-            public object GetBoundMember(string name) {
-                if (_dict != null) {
-                    object res;
-                    if (_dict.TryGetValue(name, out res)) {
-                        return res;
+            internal void restoreProperties(IEnumerable<object> names, IDictionary source) {
+                foreach (object name in names) {
+                    if (name is string) {
+                        try {
+                            string key = (string)name;
+                            this.GetType().GetProperty(key).SetValue(this, source[key], null);
+                        } catch (System.Collections.Generic.KeyNotFoundException) {
+                            // ignore missing
+                        }
                     }
                 }
-
-                return OperationFailed.Value;
             }
 
-            /// <summary>
-            /// Provides custom member assignment which stores values in the dictionary
-            /// </summary>
-            [SpecialName]
-            public void SetMemberAfter(string name, object value) {
-                EnsureDict();
-
-                _dict[name] = value;
-            }
-
-            /// <summary>
-            /// Provides custom member deletion which deletes values from the dictionary
-            /// or allows clearing 'message'.
-            /// </summary>
-            [SpecialName]
-            public bool DeleteCustomMember(string name) {
-                if (_dict == null)
-                    return false;
-
-                return _dict.Remove(name);
-            }
-
-            private void EnsureDict() {
-                if (_dict == null) {
-                    System.Threading.Interlocked.CompareExchange<PythonDictionary>(ref _dict, PythonDictionary.MakeSymbolDictionary(), null);
+            internal void storeProperties(IEnumerable<object> names, IDictionary target) {
+                foreach (object name in names) {
+                    if (name is string) {
+                        string key = (string)name;
+                        object val;
+                        try {
+                            val = this.GetType().GetProperty(key).GetValue(this, null);
+                            target.Add(key, val);
+                        } catch (System.Reflection.TargetInvocationException) {
+                            // field not set
+                        }
+                    }
                 }
             }
 
+            internal PythonDictionary getstate() {
+                PythonDictionary d = new PythonDictionary(10);
+                storeProperties(__fields, d);
+                storeProperties(__attributes, d);
+                return d;
+            }
+
+            public virtual object/*!*/ __reduce__() {
+                return PythonTuple.MakeTuple(DynamicHelpers.GetPythonType(this), new PythonTuple(), getstate());
+            }
+
+            public virtual object/*!*/ __reduce_ex__(int protocol) {
+                return __reduce__();
+            }
 
             protected void GetSourceLocation(Node node) {
                 _lineno = node.Start.Line;
@@ -401,10 +384,13 @@ namespace IronPython.Modules
 
             internal static expr Convert(BinaryExpression expr) {
                 AST op = Convert(expr.Operator);
-                if (op is @operator)
-                    return new BinOp(expr, (@operator)op);
-                if (op is cmpop)
-                    return new Compare(expr, (cmpop)op);
+                if (BinaryExpression.IsComparison(expr)) {
+                    return new Compare(expr);
+                } else {
+                    if (op is @operator) {
+                        return new BinOp(expr, (@operator)op);
+                    }
+                }
 
                 throw new ArgumentTypeException("Unexpected operator type: " + op.GetType());
             }
@@ -719,7 +705,7 @@ namespace IronPython.Modules
         [PythonType]
         public abstract class slice : expr // This is the only departure we make from the CPython _ast inheritence tree.
         {
-            // we should hide lineno and col_offset from parent
+            // why is it different?
         }
 
         [PythonType]
@@ -1184,11 +1170,20 @@ namespace IronPython.Modules
                 _col_offset = col_offset;
             }
 
-            internal Compare(BinaryExpression expr, cmpop op)
+            internal Compare(BinaryExpression expr)
                 : this() {
                 _left = Convert(expr.Left);
-                _ops = PythonOps.MakeListNoCopy(op);
-                _comparators = PythonOps.MakeListNoCopy(Convert(expr.Right));
+                _ops = PythonOps.MakeList();
+                _comparators = PythonOps.MakeList();
+                while (BinaryExpression.IsComparison(expr.Right)) {
+                    BinaryExpression right = (BinaryExpression)expr.Right;
+                    // start accumulating ops and comparators
+                    _ops.Add(Convert(expr.Operator));
+                    _comparators.Add(Convert(right.Left));
+                    expr = right;
+                }
+                _ops.Add(Convert(expr.Operator));
+                _comparators.Add(Convert(expr.Right));
             }
 
             public expr left {
