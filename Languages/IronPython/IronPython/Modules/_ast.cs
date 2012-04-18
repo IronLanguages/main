@@ -308,6 +308,16 @@ namespace IronPython.Modules
                 return l;
             }
 
+            internal static slice TrySliceConvert(Compiler.Ast.Expression expr) {
+                if (expr is SliceExpression)
+                    return new Slice((SliceExpression)expr);
+                if (expr is ConstantExpression && ((ConstantExpression)expr).Value == PythonOps.Ellipsis)
+                    return Ellipsis.Instance;
+                if (expr is TupleExpression && ((TupleExpression)expr).IsExpandable)
+                    return new ExtSlice(((Tuple)Convert(expr)).elts);
+                return null;
+            }
+
             internal static expr Convert(Compiler.Ast.Expression expr) {
                 return Convert(expr, Load.Instance);
             }
@@ -351,8 +361,7 @@ namespace IronPython.Modules
                     ast = new IfExp((ConditionalExpression)expr);
                 else if (expr is IndexExpression)
                     ast = new Subscript((IndexExpression)expr, ctx);
-                else if (expr is SliceExpression)
-                    ast = new Slice((SliceExpression)expr);
+
                 else if (expr is BackQuoteExpression)
                     ast = new Repr((BackQuoteExpression)expr);
                 else
@@ -374,8 +383,7 @@ namespace IronPython.Modules
                     ast = new Str((string)expr.Value);
                 else if (expr.Value is IronPython.Runtime.Bytes)
                     ast = new Str(Converter.ConvertToString(expr.Value));
-                else if (expr.Value == PythonOps.Ellipsis)
-                    ast = Ellipsis.Instance;
+
                 else
                     throw new ArgumentTypeException("Unexpected constant type: " + expr.Value.GetType());
 
@@ -703,9 +711,8 @@ namespace IronPython.Modules
         }
 
         [PythonType]
-        public abstract class slice : expr // This is the only departure we make from the CPython _ast inheritence tree.
+        public abstract class slice : AST
         {
-            // why is it different?
         }
 
         [PythonType]
@@ -2598,20 +2605,10 @@ namespace IronPython.Modules
             internal Subscript(IndexExpression expr, expr_context ctx)
                 : this() {
                 _value = Convert(expr.Target);
-                AST index = Convert(expr.Index);
-                if (index is expr) {
-                    if (index is Tuple && ((TupleExpression)expr.Index).IsExpandable)
-                        _slice = new ExtSlice(((Tuple)index).elts);
-                    else if (index is Slice)
-                        _slice = (Slice)index;
-                    else if (index is Ellipsis)
-                        _slice = (Ellipsis)index;
-                    else
-                        _slice = new Index((expr)index);
-                } else
-                    throw new ArgumentTypeException("Unexpected index expression: " + expr.Index.GetType());
-
                 _ctx = ctx;
+                _slice = TrySliceConvert(expr.Index);
+                if (_slice == null)
+                    _slice = new Index(Convert(expr.Index));
             }
 
             public expr value {
