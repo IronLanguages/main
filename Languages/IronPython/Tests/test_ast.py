@@ -61,10 +61,10 @@ exec_tests = [
     # Pass,
     "pass",
     # Break
-    # "break", can not work outside a loop
+    # "break", doesn't work outside a loop
     "while x: break",
     # Continue
-    # "continue", can not work outside a loop
+    # "continue", doesn't work outside a loop
     "while x: continue",
     # for statements with naked tuples (see http://bugs.python.org/issue6704)
     "for a,b in c: pass",
@@ -151,7 +151,6 @@ class AST_Tests(unittest.TestCase):
         # - col_offset of list comprehension in ironpython uses opening bracket, cpython points to first expr
         # - same for generator
         # - Slice in iron has col_offset and lineno set, in cpython both are not set
-        # - the way multiple compare are combined is different (this is still a possible bug)
         for input, output, kind in ((exec_tests, exec_results, "exec"),
                                     (single_tests, single_results, "single"),
                                     (eval_tests, eval_results, "eval")):
@@ -227,7 +226,7 @@ class AST_Tests(unittest.TestCase):
     def test_example_from_net(self):
         node = ast.Expression(ast.BinOp(ast.Str('xy'), ast.Mult(), ast.Num(3)))
 
-    def test_extra_attribute(self):
+    def _test_extra_attribute(self):
         n=ast.Num()
         n.extra_attribute=2
         self.assertTrue(hasattr(n,'extra_attribute'))
@@ -469,7 +468,17 @@ class AST_Tests(unittest.TestCase):
         self.assertEqual(assert2.lineno,2)
         self.assertEqual(assert2.col_offset,3)
 
-    def _test_pickling(self):
+    def test_compare(self):
+        # 
+        c0 = to_tuple(ast.parse("a<b>c"))
+        c1 = to_tuple(ast.parse("(a<b)>c"))
+        c2 = to_tuple(ast.parse("a<(b>c)"))
+        self.assertNotEqual(c0,c1)
+        self.assertNotEqual(c1,c2)
+        self.assertNotEqual(c0,c2)
+
+
+    def test_pickling(self):
         import pickle
         mods = [pickle]
         try:
@@ -480,12 +489,9 @@ class AST_Tests(unittest.TestCase):
         protocols = [0, 1, 2]
         for mod in mods:
             for protocol in protocols:
-                for ast3 in (compile(i, "?", "exec", 0x400) for i in exec_tests):
-                    # print ast.dump(ast3)
-                    # this one dies deep in the python guts
-                    # TypeError: expected list, got Module
-                    ast2 = mod.loads(mod.dumps(ast3, protocol))
-                    self.assertEqual(to_tuple(ast2), to_tuple(ast))
+                for ast in (compile(i, "?", "exec", 0x400) for i in exec_tests):
+                    ast2 = mod.loads(mod.dumps(ast, protocol))
+                    self.assertEquals(to_tuple(ast2), to_tuple(ast))
 
 
 class ASTHelpers_Test(unittest.TestCase):
@@ -638,8 +644,7 @@ exec_results = [
 ('Module', [('While', (1, 0), ('Name', (1, 6), 'x', ('Load',)), [('Break', (1, 9))], [])]),
 ('Module', [('While', (1, 0), ('Name', (1, 6), 'x', ('Load',)), [('Continue', (1, 9))], [])]),
 ('Module', [('For', (1, 0), ('Tuple', (1, 4), [('Name', (1, 4), 'a', ('Store',)), ('Name', (1, 6), 'b', ('Store',))], ('Store',)), ('Name', (1, 11), 'c', ('Load',)), [('Pass', (1, 14))], [])]),
-('Module', [('Expr', (1, 0), ('ListComp', (1, 0), ('Tuple', (1, 1), [('Name', (1, 2), 'a', ('Load',)), ('Name', (1, 4), 'b', ('Load',))], ('Load',)), [('comprehension', ('Tuple',
-(1, 11), [('Name', (1, 11), 'a', ('Store',)), ('Name', (1, 13), 'b', ('Store',))], ('Store',)), ('Name', (1, 18), 'c', ('Load',)), [])]))]),
+('Module', [('Expr', (1, 0), ('ListComp', (1, 0), ('Tuple', (1, 1), [('Name', (1, 2), 'a', ('Load',)), ('Name', (1, 4), 'b', ('Load',))], ('Load',)), [('comprehension', ('Tuple', (1, 11), [('Name', (1, 11), 'a', ('Store',)), ('Name', (1, 13), 'b', ('Store',))], ('Store',)), ('Name', (1, 18), 'c', ('Load',)), [])]))]),
 ('Module', [('Expr', (1, 0), ('GeneratorExp', (1, 0), ('Tuple', (1, 1), [('Name', (1, 2), 'a', ('Load',)), ('Name', (1, 4), 'b', ('Load',))], ('Load',)), [('comprehension', ('Tuple', (1, 11), [('Name', (1, 11), 'a', ('Store',)), ('Name', (1, 13), 'b', ('Store',))], ('Store',)), ('Name', (1, 18), 'c', ('Load',)), [])]))]),
 ]
 single_results = [
@@ -653,7 +658,7 @@ eval_results = [
 ('Expression', ('Dict', (1, 0), [('Num', (1, 2), 1)], [('Num', (1, 4), 2)])),
 ('Expression', ('ListComp', (1, 0), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), [('Name', (1, 17), 'd', ('Load',))])])),
 ('Expression', ('GeneratorExp', (1, 0), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), [('Name', (1, 17), 'd', ('Load',))])])),
-('Expression', ('Compare', (1, 0), ('Num', (1, 0), 1), [('Lt',)], [('Compare', (1, 4), ('Num', (1, 4), 2), [('Lt',)], [('Num', (1, 8), 3)])])),
+('Expression', ('Compare', (1, 0), ('Num', (1, 0), 1), [('Lt',), ('Lt',)], [('Num', (1, 4), 2), ('Num', (1, 8), 3)])),
 ('Expression', ('Call', (1, 0), ('Name', (1, 0), 'f', ('Load',)), [('Num', (1, 2), 1), ('Num', (1, 4), 2)], [('keyword', 'c', ('Num', (1, 8), 3))], ('Name', (1, 11), 'd', ('Load',)), ('Name', (1, 15), 'e', ('Load',)))),
 ('Expression', ('Repr', (1, 0), ('Name', (1, 1), 'v', ('Load',)))),
 ('Expression', ('Num', (1, 0), 10L)),
