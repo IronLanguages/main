@@ -58,6 +58,8 @@ namespace IronPython.Modules {
                 prefix = String.Empty;
             } catch (ArgumentException) {
                 prefix = String.Empty;
+            } catch (MethodAccessException) {
+                prefix = String.Empty;
             }
 #else
             prefix = String.Empty;

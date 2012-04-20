@@ -2012,6 +2012,8 @@ namespace IronPython.Runtime {
             } catch (SecurityException) {
                 // we don't have permissions to get paths...
                 return String.Empty;
+            } catch (MethodAccessException) {
+                return String.Empty;
             }
 #else
             return String.Empty;
