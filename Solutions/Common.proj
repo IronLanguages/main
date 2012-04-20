@@ -5,6 +5,7 @@
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <SolutionDir Condition=" '$(SolutionDir)' == '' ">$(MSBuildThisFileDirectory)</SolutionDir>
+    <Mono Condition="'$(OS)' != 'Windows_NT'">true</Mono>
     
     <!-- The following two lines prevent csc.rsp and Microsoft.NETFramework.props from adding additional assembly references -->
     <NoConfig>true</NoConfig>
@@ -43,6 +44,20 @@
     <ReferencedPlatform Condition="'$(Configuration)' == 'Silverlight4Release' or '$(Configuration)' == 'Silverlight4Debug'">Silverlight4</ReferencedPlatform>
     <ReferencedPlatform Condition="'$(Configuration)' == 'Silverlight5Release' or '$(Configuration)' == 'Silverlight5Debug'">Silverlight5</ReferencedPlatform>
     <ReferencedPlatform Condition="'$(Configuration)' == 'AndroidRelease' or '$(Configuration)' == 'AndroidDebug'">Android</ReferencedPlatform>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Mono)' == 'true'">
+    <CscToolExeSuffix Condition="'$(OS)' == 'Windows_NT'">.bat</CscToolExeSuffix>
+    <CscToolExeSuffix Condition="'$(OS)' != 'Windows_NT'"></CscToolExeSuffix>
+
+    <CscToolExe>mcs$(CscToolExeSuffix)</CscToolExe>
+    <CscToolExe Condition="'$(ReferencedPlatform)' == 'V2'">gmcs$(CscToolExeSuffix)</CscToolExe>
+    <CscToolExe Condition="'$(ReferencedPlatform)' == 'V4'">dmcs$(CscToolExeSuffix)</CscToolExe>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CSharpTargets Condition="'$(CSharpTargets)' == ''">$(MSBuildBinPath)\Microsoft.CSharp.targets</CSharpTargets>
+    <CSharpTargets Condition="'$(CSharpTargets)' == '' and '$(ReferencedPlatform)' == 'Android'">$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets</CSharpTargets>
   </PropertyGroup>
 
   <!-- References -->
@@ -216,6 +231,11 @@
     <Reference Include="System.Numerics, Version=2.0.5.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Numerics.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Mono.Security, Version=2.0.5.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(FrameworkReferences)\Mono.Security.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
