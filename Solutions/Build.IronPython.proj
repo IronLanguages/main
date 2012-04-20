@@ -6,7 +6,7 @@
   <PropertyGroup>
     <BaseConfiguration Condition=" '$(BaseConfiguration)' == '' ">Debug</BaseConfiguration>
     <Mono Condition="'$(OS)' != 'Windows_NT'">true</Mono>
-    
+
     <Solution>IronPython.sln</Solution>
 
     <BaseDir>$(MSBuildProjectDirectory)\..</BaseDir>

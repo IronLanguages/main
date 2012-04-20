@@ -35,10 +35,8 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight4Release|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight5Debug|AnyCPU' ">
-    <NoWarn>1591;0429</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight5Release|AnyCPU' ">
-    <NoWarn>1591;0429</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'AndroidDebug|AnyCPU' ">
   </PropertyGroup>
@@ -535,7 +533,7 @@
       <Name>Microsoft.Dynamic</Name>
     </ProjectReference>
   </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(CSharpTargets)" />
   <Import Project="$(SolutionDir)Versioning.targets" />
   <Target Name="BeforeBuild" DependsOnTargets="GenerateBuildInfo;GenerateCurrentVersion" />
 </Project>

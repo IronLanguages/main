@@ -159,5 +159,5 @@
   <ItemGroup Condition=" '$(IsFullFramework)' == 'true' ">
     <Reference Include="System.Configuration" />
   </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(CSharpTargets)" />
 </Project>
