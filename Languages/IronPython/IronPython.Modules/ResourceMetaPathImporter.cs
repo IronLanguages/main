@@ -34,8 +34,7 @@ namespace IronPython.Modules {
             // we currently don't support bytecode, so just include the source versions.
             SearchOrder = new Dictionary<string, ModuleCodeType> {
                                                                      {
-                                                                         Path.DirectorySeparatorChar + "__init__.py"
-                                                                         ,
+                                                                         Path.DirectorySeparatorChar + "__init__.py",
                                                                          ModuleCodeType.Package |
                                                                          ModuleCodeType.Source
                                                                          },
@@ -253,7 +252,7 @@ module, or raises ResourceImportError if it wasn't found."
                 try {
                     var parsedSources =
                         from entry in files.Values
-                        let isPyFile = entry.FullName.EndsWith(".py", true, CultureInfo.InvariantCulture)
+                        let isPyFile = entry.FullName.EndsWith(".py", StringComparison.OrdinalIgnoreCase)
                         where isPyFile
                         let name = entry.FullName.Substring(0, entry.FullName.Length - 3)
                         let dottedName = name.Replace('\\', '.').Replace('/', '.')

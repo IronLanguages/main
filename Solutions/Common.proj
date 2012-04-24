@@ -69,10 +69,7 @@
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(ReferencedPlatform)' == 'Win8'">
-    <!--
     <FrameworkReferences Condition="'$(FrameworkReferences)' == ''">$(ProgramFiles)\Reference Assemblies\Microsoft\Framework\.NETCore\v4.5</FrameworkReferences>
-    -->
-    <FrameworkReferences Condition="'$(FrameworkReferences)' == ''">F:\Win8RC</FrameworkReferences>
     <NoStdLib>true</NoStdLib>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkIdentifier>.NETCore</TargetFrameworkIdentifier>
