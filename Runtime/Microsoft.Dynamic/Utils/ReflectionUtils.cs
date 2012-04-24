@@ -87,7 +87,7 @@ namespace System.Reflection {
     }
 }
 #else
-namespace System.Reflection.RuntimeExtensions {
+namespace System.Reflection {
     public static class RuntimeReflectionExtensions {
         public static MethodInfo GetRuntimeBaseDefinition(this MethodInfo method) {
             return method.GetBaseDefinition();
