@@ -70,6 +70,7 @@ exec_tests = [
     "for a,b in c: pass",
     "[(a,b) for a,b in c]",
     "((a,b) for a,b in c)",
+
 ]
 
 # These are compiled through "single"
@@ -124,6 +125,12 @@ eval_tests = [
   "a[...]",
   # index
   "a[1]",
+  # set
+  "{a,b,c}",
+  # DictComp
+  "{k:v for k,v in li}",
+  # SetComp
+  "{e for e in li}",
 ]
 
 # TODO: expr_context, slice, boolop, operator, unaryop, cmpop, comprehension
@@ -670,5 +677,8 @@ eval_results = [
 ('Expression', ('Call', (1, 0), ('Attribute', (1, 0), ('Attribute', (1, 0), ('Attribute', (1, 0), ('Name', (1, 0), 'a', ('Load',)), 'b', ('Load',)), 'c', ('Load',)), 'd', ('Load',)), [('Subscript', (1, 8), ('Attribute', (1, 8), ('Name', (1, 8), 'a', ('Load',)), 'b', ('Load',)), ('Slice', ('Num', (1, 12), 1), ('Num', (1, 14), 2), None), ('Load',))], [], None, None)),
 ('Expression', ('Subscript', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Ellipsis',), ('Load',))),
 ('Expression', ('Subscript', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Index', ('Num', (1, 1), 1)), ('Load',))),
+('Expression', ('Set', (1, 0), [('Name', (1, 1), 'a', ('Load',)), ('Name', (1, 3), 'b', ('Load',)), ('Name', (1, 5), 'c', ('Load',))])),
+('Expression', ('DictComp', (1, 0), ('Name', (1, 1), 'k', ('Load',)), ('Name', (1, 3), 'v', ('Load',)), [('comprehension', ('Tuple', (1, 9), [('Name', (1, 9), 'k', ('Store',)), ('Name', (1, 11), 'v', ('Store',))], ('Store',)), ('Name', (1, 16), 'li', ('Load',)), [])])),
+('Expression', ('SetComp', (1, 0), ('Name', (1, 1), 'e', ('Load',)), [('comprehension', ('Name', (1, 7), 'e', ('Store',)), ('Name', (1, 12), 'li', ('Load',)), [])])),
 ]
 main()
