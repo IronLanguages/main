@@ -361,12 +361,18 @@ namespace IronPython.Modules
                     ast = new IfExp((ConditionalExpression)expr);
                 else if (expr is IndexExpression)
                     ast = new Subscript((IndexExpression)expr, ctx);
-
                 else if (expr is BackQuoteExpression)
                     ast = new Repr((BackQuoteExpression)expr);
+                else if (expr is SetExpression)
+                    ast = new Set((SetExpression)expr);
+                else if (expr is DictionaryComprehension)
+                    ast = new DictComp((DictionaryComprehension)expr);
+                else if (expr is SetComprehension)
+                    ast = new SetComp((SetComprehension)expr);
                 else
                     throw new ArgumentTypeException("Unexpected expression type: " + expr.GetType());
 
+                // TODO: DictComp and SetComp throws here 
                 ast.GetSourceLocation(expr);
                 return ast;
             }
@@ -2454,7 +2460,13 @@ namespace IronPython.Modules
                 _col_offset = col_offset;
             }
 
-            // TODO: Convert is missing
+            internal Set(SetExpression setExpression)
+                : this() {
+                _elts = new PythonList(setExpression.Items.Count);
+                foreach (Compiler.Ast.Expression item in setExpression.Items) {
+                    _elts.Add(Convert(item));
+                }
+            }
 
             public PythonList elts {
                 get { return _elts; }
