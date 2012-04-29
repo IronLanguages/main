@@ -1363,7 +1363,7 @@ namespace IronPython.Runtime {
         }
 
         internal Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args) {
-#if !CLR2
+#if !CLR2 && !ANDROID
             if (args.RequestingAssembly != null && !_loadedAssemblies.Contains(args.RequestingAssembly)) {
                 return null;
             }
