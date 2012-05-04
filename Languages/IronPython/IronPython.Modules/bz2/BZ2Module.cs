@@ -16,6 +16,14 @@
  *
  * *************************************************************************/
 
+using System.Linq;
+using System.Collections.Generic;
+using System.IO;
+using System.Runtime.InteropServices;
+using Ionic.BZip2;
+using IronPython.Runtime;
+using Microsoft.Scripting.Runtime;
+
 [assembly: PythonModule("bz2", typeof(IronPython.Modules.Bz2.Bz2Module))]
 
 namespace IronPython.Modules.Bz2 {
@@ -26,15 +34,55 @@ the bz2 compression library. It implements a complete file
 interface, one shot (de)compression functions, and types for
 sequential (de)compression.";
 
-        private const int DEFAULT_COMPRESSLEVEL = 9;
+        internal const int DEFAULT_COMPRESSLEVEL = 9;
+        private const int PARALLEL_THRESHOLD = 10 * 1024 * 1024;    // 10 MiB recommended by ParallelBZip2OutputStream devs
 
-        public static string compress([BytesConversion]IList<byte> data, 
+        [Documentation(@"compress(data [, compresslevel=9]) -> string
+
+Compress data in one shot. If you want to compress data sequentially,
+use an instance of BZ2Compressor instead. The compresslevel parameter, if
+given, must be a number between 1 and 9.
+")]
+        public static Bytes compress([BytesConversion]IList<byte> data, 
                                       [DefaultParameterValue(DEFAULT_COMPRESSLEVEL)]int compresslevel) {
-            return null;
+            using (var mem = new MemoryStream()) {
+                using (var bz2 = data.Count > PARALLEL_THRESHOLD ? 
+                            (Stream)new ParallelBZip2OutputStream(mem, false) : 
+                            (Stream)new BZip2OutputStream(mem, false)) {
+                    var buffer = data.ToArray();
+                    bz2.Write(buffer, 0, data.Count);
+                }
+
+                return Bytes.Make(mem.ToArray());
+            }
         }
 
-        public static string decompress([BytesConversion]IList<byte> data) {
-            return null;
+        [Documentation(@"decompress(data) -> decompressed data
+
+Decompress data in one shot. If you want to decompress data sequentially,
+use an instance of BZ2Decompressor instead.
+")]
+        public static Bytes decompress([BytesConversion]IList<byte> data) {
+            byte[] buffer = new byte[1024 * 1024];
+
+            using (var output = new MemoryStream()) {
+                using (var input = new MemoryStream(data.ToArray(), false)) {
+                    using (var bz2 = new BZip2InputStream(input)) {
+
+                        int read = 0;
+                        while(true) {
+                            read = bz2.Read(buffer, 0, buffer.Length);
+                            if (read > 0) {
+                                output.Write(buffer, 0, read);
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                return Bytes.Make(output.ToArray());
+            }
         }
     }
 }
