@@ -16,8 +16,11 @@
  *
  * *************************************************************************/
 
+using System.Collections.Generic;
+using IronPython.Runtime;
+
 namespace IronPython.Modules.Bz2 {
-    public static partial class BZip2Module {
+    public static partial class Bz2Module {
         [PythonType]
         public class BZip2Decompressor {
             public const string __doc__ = 
