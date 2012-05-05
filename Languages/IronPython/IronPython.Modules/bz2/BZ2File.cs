@@ -16,20 +16,20 @@
  *
  * *************************************************************************/
 
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using IronPython.Runtime;
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using System.Runtime.InteropServices;
 using Ionic.BZip2;
+using IronPython.Runtime;
 using Microsoft.Scripting.Runtime;
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Modules.Bz2 {
     public static partial class Bz2Module {
         [PythonType]
-        public class BZ2File {
-            public const string __doc__ = 
+        public class BZ2File : PythonFile {
+            public const string __doc__ =
 @"BZ2File(name [, mode='r', buffering=0, compresslevel=9]) -> file object
 
 Open a bz2 file. The mode can be 'r' or 'w', for reading (default) or
@@ -38,42 +38,37 @@ exist, and truncated otherwise. If the buffering argument is given, 0 means
 unbuffered, and larger numbers specify the buffer size. If compresslevel
 is given, must be a number between 1 and 9.
 ";
+            public int buffering { get; private set; }
+            public int compresslevel { get; private set; }
 
-            private readonly string mode;
-            private readonly int buffering;
-            private readonly int compresslevel;
+            private Stream bz2Stream;
 
-            private Stream underlyingStream, bz2Stream;
+            public BZ2File(CodeContext context) : base(context) { }
 
-            [Documentation(@"close() -> None or (perhaps) an integer
-
-Close the file. Sets data attribute .closed to true. A closed file
-cannot be used for further I/O operations. close() may be called more
-than once without error.
-")]
-            public BZ2File(string filename,
+            public void __init__(CodeContext context,
+                string filename,
                 [DefaultParameterValue("r")]string mode,
                 [DefaultParameterValue(0)]int buffering,
                 [DefaultParameterValue(DEFAULT_COMPRESSLEVEL)]int compresslevel) {
 
-                this.mode = mode;
+                var pythonContext = PythonContext.GetContext(context);
+
                 this.buffering = buffering;
                 this.compresslevel = compresslevel;
 
-                if(mode.Contains("r")) {
-                    this.underlyingStream = File.OpenRead(filename);
-                    this.bz2Stream = new BZip2InputStream(this.underlyingStream);
-                } else if(mode.Contains("w")) {
-                    this.underlyingStream = File.Open(filename, FileMode.Create, FileAccess.Write);
+                if (mode.Contains("w")) {
+                    var underlyingStream = File.Open(filename, FileMode.Create, FileAccess.Write);
 
-                    if(mode.Contains("p")) {
-                        this.bz2Stream = new ParallelBZip2OutputStream(this.underlyingStream);
+                    if (mode.Contains("p")) {
+                        this.bz2Stream = new ParallelBZip2OutputStream(underlyingStream);
                     } else {
-                        this.bz2Stream = new BZip2OutputStream(this.underlyingStream);
+                        this.bz2Stream = new BZip2OutputStream(underlyingStream);
                     }
                 } else {
-                    throw new ArgumentException("Mode must be 'r' or 'w'.", "mode");
+                    this.bz2Stream = new BZip2InputStream(File.OpenRead(filename));
                 }
+
+                this.__init__(bz2Stream, pythonContext.DefaultEncoding, filename, mode);
             }
 
             [Documentation(@"close() -> None or (perhaps) an integer
@@ -82,7 +77,7 @@ Close the file. Sets data attribute .closed to true. A closed file
 cannot be used for further I/O operations. close() may be called more
 than once without error.
 ")]
-            public void close() {
+            public new void close() {
                 this.bz2Stream.Close();
             }
 
@@ -91,37 +86,9 @@ than once without error.
 Read at most size uncompressed bytes, returned as a string. If the size
 argument is negative or omitted, read until EOF is reached.
 ")]
-            public string read([DefaultParameterValue(0)]int size) {
-                byte[] bytes;
-                int count;
-
-                if (size < 1) {
-                    bytes = ReadAll(this.bz2Stream);
-                    count = bytes.Length;
-                } else {
-                    bytes = new byte[size];
-                    count = this.bz2Stream.Read(bytes, 0, bytes.Length);
-                }
-
-                return PythonAsciiEncoding.Instance.GetString(bytes, 0, count);
-            }
-
-            private static byte[] ReadAll(Stream s) {
-                byte[] output = null;
-                byte[] buffer = new byte[64 * 1024];
-                int pos = 0;
-
-                while(true) {
-                    int n = s.Read(buffer, 0, buffer.Length);
-                    if (n <= 0)
-                        break;
-
-                    Array.Resize(ref output, pos + n);
-                    Array.Copy(buffer, 0, output, pos, n);
-                    pos = output.Length;
-                }
-
-                return output;
+            public new string read([DefaultParameterValue(0)]int size) {
+                if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
+                return base.read(size);
             }
 
             [Documentation(@"readline([size]) -> string
@@ -131,8 +98,9 @@ A non-negative size argument will limit the maximum number of bytes to
 return (an incomplete line may be returned then). Return an empty
 string at EOF.
 ")]
-            public string readline([DefaultParameterValue(0)]int size) {
-                return null;
+            public new string readline([DefaultParameterValue(0)]int size) {
+                if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
+                return base.readline(size);
             }
 
             [Documentation(@"readlines([size]) -> list
@@ -141,8 +109,9 @@ Call readline() repeatedly and return a list of lines read.
 The optional size argument, if given, is an approximate bound on the
 total number of bytes in the lines returned.
 ")]
-            public List readlines([DefaultParameterValue(0)]int size) {
-                return null;
+            public new List readlines([DefaultParameterValue(0)]int size) {
+                if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
+                return base.readlines(size);
             }
 
             [Documentation(@"seek(offset [, whence]) -> None
@@ -156,16 +125,18 @@ negative, although many platforms allow seeking beyond the end of a file).
 Note that seeking of bz2 files is emulated, and depending on the parameters
 the operation may be extremely slow.
 ")]
-            public void seek(object offset, [DefaultParameterValue(0)]int whence) {
-                
+            public new void seek(long offset, [DefaultParameterValue(0)]int whence) {
+                if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
+                base.seek(offset, whence);
             }
 
             [Documentation(@"tell() -> int
 
 Return the current file position, an integer (may be a long integer).
 ")]
-            public object tell() {
-                return null;
+            public new object tell() {
+                if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
+                return base.tell();
             }
 
             [Documentation(@"write(data) -> None
@@ -173,9 +144,24 @@ Return the current file position, an integer (may be a long integer).
 Write the 'data' string to file. Note that due to buffering, close() may
 be needed before the file on disk reflects the data written.
 ")]
-            public void write([BytesConversion]IList<byte> data) {
-                byte[] bytes = data.ToArray();
-                this.bz2Stream.Write(bytes, 0, bytes.Length);
+            public new void write([BytesConversion]IList<byte> data) {
+                if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
+                base.write(data);
+            }
+
+            public new void write(object data) {
+                if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
+                base.write(data);
+            }
+
+            public new void write(string data) {
+                if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
+                base.write(data);
+            }
+
+            public new void write(PythonBuffer data) {
+                if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
+                base.write(data);
             }
 
             [Documentation(@"writelines(sequence_of_strings) -> None
@@ -184,9 +170,14 @@ Write the sequence of strings to the file. Note that newlines are not
 added. The sequence can be any iterable object producing strings. This is
 equivalent to calling write() for each string.
 ")]
-            public void writelines(IEnumerable<string> sequence_of_strings) {
+            public new void writelines(object sequence_of_strings) {
+                if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
+                base.writelines(sequence_of_strings);
+            }
+
+            public void __del__() {
+                this.close();
             }
         }
     }
 }
-
