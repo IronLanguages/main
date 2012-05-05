@@ -221,7 +221,7 @@ namespace Ionic.BZip2
                 buffer[destOffset++] = (byte) b;
             }
 
-            return (destOffset == offset) ? -1 : (destOffset - offset);
+            return destOffset - offset;
         }
 
         private void MakeMaps()

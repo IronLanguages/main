@@ -2,10 +2,6 @@
 from test import test_support
 from test.test_support import TESTFN, import_module
 
-if test_support.due_to_ironpython_bug("http://vstfdevdiv:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=307405"):
-    import sys
-    sys.exit(0)
-
 import unittest
 from cStringIO import StringIO
 import os
@@ -20,7 +16,7 @@ except ImportError:
 bz2 = import_module('bz2')
 from bz2 import BZ2File, BZ2Compressor, BZ2Decompressor
 
-has_cmdline_bunzip2 = sys.platform not in ("win32", "os2emx", "riscos")
+has_cmdline_bunzip2 = sys.platform not in ("win32", "os2emx", "riscos", 'cli')
 
 class BaseTest(unittest.TestCase):
     "Base for other testcases."

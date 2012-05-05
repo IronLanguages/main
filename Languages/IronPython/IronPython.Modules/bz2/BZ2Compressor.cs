@@ -28,7 +28,7 @@ using Microsoft.Scripting.Runtime;
 namespace IronPython.Modules.Bz2 {
     public static partial class Bz2Module {
         [PythonType]
-        public class BZCompressor {
+        public class BZ2Compressor {
             public const string __doc__ = 
 @"BZ2Compressor([compresslevel=9]) -> compressor object
 
@@ -43,7 +43,7 @@ must be a number between 1 and 9.
             private BZip2OutputStream bz2Output;
             private long lastPosition = 0;
 
-            public BZCompressor([DefaultParameterValue(DEFAULT_COMPRESSLEVEL)]int compresslevel) {
+            public BZ2Compressor([DefaultParameterValue(DEFAULT_COMPRESSLEVEL)]int compresslevel) {
                 this.compresslevel = compresslevel;
 
                 this.output = new MemoryStream();

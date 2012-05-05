@@ -63,7 +63,11 @@ Decompress data in one shot. If you want to decompress data sequentially,
 use an instance of BZ2Decompressor instead.
 ")]
         public static Bytes decompress([BytesConversion]IList<byte> data) {
-            byte[] buffer = new byte[1024 * 1024];
+            if (data.Count == 0) {
+                return new Bytes();
+            }
+
+            byte[] buffer = new byte[1024];
 
             using (var output = new MemoryStream()) {
                 using (var input = new MemoryStream(data.ToArray(), false)) {
