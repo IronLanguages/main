@@ -22,7 +22,7 @@ using IronPython.Runtime;
 namespace IronPython.Modules.Bz2 {
     public static partial class Bz2Module {
         [PythonType]
-        public class BZip2Decompressor {
+        public class BZ2Decompressor {
             public const string __doc__ = 
 @"BZ2Decompressor() -> decompressor object
 
@@ -31,7 +31,7 @@ data sequentially. If you want to decompress data in one shot, use the
 decompress() function instead.
 ";
 
-            public BZip2Decompressor() {
+            public BZ2Decompressor() {
             }
 
             public string decompress([BytesConversion]IList<byte> data) {

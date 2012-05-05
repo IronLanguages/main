@@ -28,7 +28,7 @@ using Microsoft.Scripting.Runtime;
 namespace IronPython.Modules.Bz2 {
     public static partial class Bz2Module {
         [PythonType]
-        public class BZip2File {
+        public class BZ2File {
             public const string __doc__ = 
 @"BZ2File(name [, mode='r', buffering=0, compresslevel=9]) -> file object
 
@@ -51,7 +51,7 @@ Close the file. Sets data attribute .closed to true. A closed file
 cannot be used for further I/O operations. close() may be called more
 than once without error.
 ")]
-            public BZip2File(string filename,
+            public BZ2File(string filename,
                 [DefaultParameterValue("r")]string mode,
                 [DefaultParameterValue(0)]int buffering,
                 [DefaultParameterValue(DEFAULT_COMPRESSLEVEL)]int compresslevel) {
