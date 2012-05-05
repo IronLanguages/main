@@ -47,8 +47,8 @@ given, must be a number between 1 and 9.
                                       [DefaultParameterValue(DEFAULT_COMPRESSLEVEL)]int compresslevel) {
             using (var mem = new MemoryStream()) {
                 using (var bz2 = data.Count > PARALLEL_THRESHOLD ? 
-                            (Stream)new ParallelBZip2OutputStream(mem, false) : 
-                            (Stream)new BZip2OutputStream(mem, false)) {
+                            (Stream)new ParallelBZip2OutputStream(mem, true) :
+                            (Stream)new BZip2OutputStream(mem, true)) {
                     var buffer = data.ToArray();
                     bz2.Write(buffer, 0, data.Count);
                 }
