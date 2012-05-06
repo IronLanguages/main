@@ -50,7 +50,7 @@ given, must be a number between 1 and 9.
                 using (var bz2 = data.Count > PARALLEL_THRESHOLD ? 
                             (Stream)new ParallelBZip2OutputStream(mem, true) :
                             (Stream)new BZip2OutputStream(mem, true)) {
-                    var buffer = data.ToArray();
+                    var buffer = data.ToArrayNoCopy();
                     bz2.Write(buffer, 0, data.Count);
                 }
 
@@ -71,7 +71,7 @@ use an instance of BZ2Decompressor instead.
             byte[] buffer = new byte[1024];
 
             using (var output = new MemoryStream()) {
-                using (var input = new MemoryStream(data.ToArray(), false)) {
+                using (var input = new MemoryStream(data.ToArrayNoCopy(), false)) {
                     using (var bz2 = new BZip2InputStream(input)) {
 
                         int read = 0;
@@ -92,6 +92,25 @@ use an instance of BZ2Decompressor instead.
 
                 return Bytes.Make(output.ToArray());
             }
+        }
+
+        /// <summary>
+        /// Try to convert IList(Of byte) to byte[] without copying, if possible.
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <returns></returns>
+        private static byte[] ToArrayNoCopy(this IList<byte> bytes) {
+            byte[] bytesA = bytes as byte[];
+            if (bytesA != null) {
+                return bytesA;
+            }
+
+            Bytes bytesP = bytes as Bytes;
+            if (bytesP != null) {
+                return bytesP.GetUnsafeByteArray();
+            }
+
+            return bytes.ToArray();
         }
     }
 }

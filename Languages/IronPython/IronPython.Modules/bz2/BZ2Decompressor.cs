@@ -66,7 +66,7 @@ unused_data attribute.
                 if (_finished)
                     throw PythonOps.EofError("End of stream was already found");
 
-                var bytes = data.ToArray();
+                var bytes = data.ToArrayNoCopy();
 
                 if (!InitializeMemoryStream(bytes))
                     AddData(bytes);
