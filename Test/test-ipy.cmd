@@ -1,1 +1,1 @@
-TestRunner\TestRunner\bin\Debug\TestRunner.exe IronPython.tests %*
+TestRunner\TestRunner\bin\Debug\TestRunner.exe IronPython.tests /verbose %*

@@ -45,6 +45,17 @@
   <ItemGroup>
     <Compile Include="array.cs" />
     <Compile Include="binascii.cs" />
+    <Compile Include="bz2\BZ2Compressor.cs" />
+    <Compile Include="bz2\BZ2Decompressor.cs" />
+    <Compile Include="bz2\BZ2File.cs" />
+    <Compile Include="bz2\BZ2Module.cs" />
+    <Compile Include="bz2\dotnetzip\BZip2\BitWriter.cs" />
+    <Compile Include="bz2\dotnetzip\BZip2\BZip2Compressor.cs" />
+    <Compile Include="bz2\dotnetzip\BZip2\BZip2InputStream.cs" />
+    <Compile Include="bz2\dotnetzip\BZip2\BZip2OutputStream.cs" />
+    <Compile Include="bz2\dotnetzip\BZip2\CRC32.cs" />
+    <Compile Include="bz2\dotnetzip\BZip2\ParallelBZip2OutputStream.cs" />
+    <Compile Include="bz2\dotnetzip\BZip2\Rand.cs" />
     <Compile Include="cmath.cs" />
     <Compile Include="msvcrt.cs" />
     <Compile Include="NativeSignal.cs" />
@@ -150,6 +161,9 @@
       <Project>{95289EA9-5778-489D-AB48-F81F2CE2DA32}</Project>
       <Name>IronPython</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="bz2\dotnetzip\source.txt" />
   </ItemGroup>
   <Import Project="$(CSharpTargets)" />
   <Import Project="$(SolutionDir)Versioning.targets" />

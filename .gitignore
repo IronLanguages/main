@@ -11,6 +11,7 @@ bin/
 *.suo
 *.csproj.user
 *.wixproj.user
+*.pidb
 
 # Generated files
 BuildInfo.Generated.cs

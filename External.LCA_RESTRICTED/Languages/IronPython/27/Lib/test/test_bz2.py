@@ -2,10 +2,6 @@
 from test import test_support
 from test.test_support import TESTFN, import_module
 
-if test_support.due_to_ironpython_bug("http://vstfdevdiv:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=307405"):
-    import sys
-    sys.exit(0)
-
 import unittest
 from cStringIO import StringIO
 import os
@@ -20,7 +16,7 @@ except ImportError:
 bz2 = import_module('bz2')
 from bz2 import BZ2File, BZ2Compressor, BZ2Decompressor
 
-has_cmdline_bunzip2 = sys.platform not in ("win32", "os2emx", "riscos")
+has_cmdline_bunzip2 = sys.platform not in ("win32", "os2emx", "riscos", 'cli')
 
 class BaseTest(unittest.TestCase):
     "Base for other testcases."
@@ -47,13 +43,22 @@ class BaseTest(unittest.TestCase):
         def decompress(self, data):
             return bz2.decompress(data)
 
+import random
+
 class BZ2FileTest(BaseTest):
     "Test BZ2File type miscellaneous methods."
 
     def setUp(self):
-        self.filename = TESTFN
+        self.filename = TESTFN + str(random.randint(0, 100000))
 
     def tearDown(self):
+        import clr
+        from System import GC
+        
+        for i in range(3):
+            GC.Collect()
+            GC.WaitForPendingFinalizers()
+        
         if os.path.isfile(self.filename):
             os.unlink(self.filename)
 
