@@ -56,6 +56,11 @@ is given, must be a number between 1 and 9.
                 this.buffering = buffering;
                 this.compresslevel = compresslevel;
 
+                if (!mode.Contains("b") && !mode.Contains("U")) {
+                    // bz2 files are always written in binary mode, unless they are in univeral newline mode
+                    mode = mode + 'b';
+                }
+
                 if (mode.Contains("w")) {
                     var underlyingStream = File.Open(filename, FileMode.Create, FileAccess.Write);
 
@@ -78,7 +83,7 @@ cannot be used for further I/O operations. close() may be called more
 than once without error.
 ")]
             public new void close() {
-                this.bz2Stream.Close();
+                base.close();
             }
 
             [Documentation(@"read([size]) -> string
@@ -86,8 +91,13 @@ than once without error.
 Read at most size uncompressed bytes, returned as a string. If the size
 argument is negative or omitted, read until EOF is reached.
 ")]
-            public new string read([DefaultParameterValue(0)]int size) {
-                if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
+            public new string read() {
+                ThrowIfClosed();
+                return base.read();
+            }
+
+            public new string read(int size) {
+                ThrowIfClosed();
                 return base.read(size);
             }
 
@@ -98,9 +108,14 @@ A non-negative size argument will limit the maximum number of bytes to
 return (an incomplete line may be returned then). Return an empty
 string at EOF.
 ")]
-            public new string readline([DefaultParameterValue(0)]int size) {
-                if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
-                return base.readline(size);
+            public new string readline() {
+                ThrowIfClosed();
+                return base.readline();
+            }
+
+            public new string readline(int sizehint) {
+                ThrowIfClosed();
+                return base.readline(sizehint);
             }
 
             [Documentation(@"readlines([size]) -> list
@@ -109,9 +124,23 @@ Call readline() repeatedly and return a list of lines read.
 The optional size argument, if given, is an approximate bound on the
 total number of bytes in the lines returned.
 ")]
-            public new List readlines([DefaultParameterValue(0)]int size) {
+            public new List readlines() {
                 if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
-                return base.readlines(size);
+                return base.readlines();
+            }
+
+            public new List readlines(int sizehint) {
+                if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
+                return base.readlines(sizehint);
+            }
+
+            [Documentation(@"xreadlines() -> self
+
+For backward compatibility. BZ2File objects now include the performance
+optimizations previously implemented in the xreadlines module.
+")]
+            public new BZ2File xreadlines() {
+                return this;
             }
 
             [Documentation(@"seek(offset [, whence]) -> None
@@ -126,8 +155,10 @@ Note that seeking of bz2 files is emulated, and depending on the parameters
 the operation may be extremely slow.
 ")]
             public new void seek(long offset, [DefaultParameterValue(0)]int whence) {
-                if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
-                base.seek(offset, whence);
+                throw new NotImplementedException();
+
+                //if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
+                //base.seek(offset, whence);
             }
 
             [Documentation(@"tell() -> int
@@ -135,8 +166,10 @@ the operation may be extremely slow.
 Return the current file position, an integer (may be a long integer).
 ")]
             public new object tell() {
-                if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
-                return base.tell();
+                throw new NotImplementedException();
+
+                //if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
+                //return base.tell();
             }
 
             [Documentation(@"write(data) -> None
@@ -145,22 +178,22 @@ Write the 'data' string to file. Note that due to buffering, close() may
 be needed before the file on disk reflects the data written.
 ")]
             public new void write([BytesConversion]IList<byte> data) {
-                if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
+                ThrowIfClosed();
                 base.write(data);
             }
 
             public new void write(object data) {
-                if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
+                ThrowIfClosed();
                 base.write(data);
             }
 
             public new void write(string data) {
-                if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
+                ThrowIfClosed();
                 base.write(data);
             }
 
             public new void write(PythonBuffer data) {
-                if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
+                ThrowIfClosed();
                 base.write(data);
             }
 
@@ -171,11 +204,22 @@ added. The sequence can be any iterable object producing strings. This is
 equivalent to calling write() for each string.
 ")]
             public new void writelines(object sequence_of_strings) {
-                if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
+                ThrowIfClosed();
                 base.writelines(sequence_of_strings);
             }
 
             public void __del__() {
+                this.close();
+            }
+
+            [Documentation("__enter__() -> self.")]
+            public new object __enter__() {
+                ThrowIfClosed();
+                return this;
+            }
+
+            [Documentation("__exit__(*excinfo) -> None.  Closes the file.")]
+            public new void __exit__(params object[] excinfo) {
                 this.close();
             }
         }

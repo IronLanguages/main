@@ -23,6 +23,7 @@ using System.Runtime.InteropServices;
 using Ionic.BZip2;
 using IronPython.Runtime;
 using Microsoft.Scripting.Runtime;
+using IronPython.Runtime.Operations;
 
 [assembly: PythonModule("bz2", typeof(IronPython.Modules.Bz2.Bz2Module))]
 
@@ -75,7 +76,11 @@ use an instance of BZ2Decompressor instead.
 
                         int read = 0;
                         while(true) {
-                            read = bz2.Read(buffer, 0, buffer.Length);
+                            try {
+                                read = bz2.Read(buffer, 0, buffer.Length);
+                            } catch (IOException e) {
+                                throw PythonOps.ValueError(e.Message);
+                            }
                             if (read > 0) {
                                 output.Write(buffer, 0, read);
                             } else {

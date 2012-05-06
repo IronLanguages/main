@@ -43,13 +43,22 @@ class BaseTest(unittest.TestCase):
         def decompress(self, data):
             return bz2.decompress(data)
 
+import random
+
 class BZ2FileTest(BaseTest):
     "Test BZ2File type miscellaneous methods."
 
     def setUp(self):
-        self.filename = TESTFN
+        self.filename = TESTFN + str(random.randint(0, 100000))
 
     def tearDown(self):
+        import clr
+        from System import GC
+        
+        for i in range(3):
+            GC.Collect()
+            GC.WaitForPendingFinalizers()
+        
         if os.path.isfile(self.filename):
             os.unlink(self.filename)
 
