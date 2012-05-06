@@ -24,6 +24,7 @@ using System.Runtime.InteropServices;
 using Ionic.BZip2;
 using IronPython.Runtime;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Modules.Bz2 {
     public static partial class Bz2Module {
@@ -87,7 +88,12 @@ You must not use the compressor object after calling this method.
 
                 byte[] result = new byte[newDataCount];
                 if (newDataCount > 0) {
+#if !SILVERLIGHT && !WP75
                     Array.Copy(this.output.GetBuffer(), this.lastPosition, result, 0, newDataCount);
+#else
+                    Array.Copy(this.output.GetBuffer(), (int)this.lastPosition, result, 0, (int)newDataCount);
+#endif
+
                     this.lastPosition = this.output.Position;
                 }
 

@@ -24,6 +24,7 @@ using Ionic.BZip2;
 using IronPython.Runtime;
 using Microsoft.Scripting.Runtime;
 using IronPython.Runtime.Operations;
+using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("bz2", typeof(IronPython.Modules.Bz2.Bz2Module))]
 

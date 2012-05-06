@@ -24,6 +24,7 @@ using Ionic.BZip2;
 using IronPython.Runtime;
 using Microsoft.Scripting.Runtime;
 using IronPython.Runtime.Operations;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Modules.Bz2 {
     public static partial class Bz2Module {
