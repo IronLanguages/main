@@ -1172,4 +1172,22 @@ def test_dict_comp():
         abc = {x:x for x in t if x == v}
         AreEqual(abc, {2:2})
 
+def test_cp32527():
+    '''test for duplicate key in dict under specific hash value conditions'''
+    d = {'1': 1, '2': 1, '3': 1, 'a7': 1, 'a8': 1}
+    #d now has 7 buckets internally, and computed hash for a7 and a8 keys will land on same starting bucket index
+    
+    #recycle the a7 bucket
+    d.pop('a7')
+    
+    #attempt to update the a8 bucket, which now comes after the recycled a7
+    d['a8'] = 5
+    
+    #if working properly, there will now be a recycled bucket (former home of a7) and a single a8 bucket
+    #if not working properly, there will instead be two a8 buckets
+    expected = 1
+    actual = d.keys().count('a8')
+    AreEqual(actual, expected)
+
+
 run_test(__name__)

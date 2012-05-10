@@ -315,25 +315,47 @@ namespace IronPython.Runtime {
             Debug.Assert(key != null);
 
             Debug.Assert(_count < buckets.Length);
-            int index = hc % buckets.Length;
+            int startIndex = hc % buckets.Length;
 
+            // scan forward for matching key first
+            int index = startIndex;
+            int firstUsableIndex = -1;
             for (; ; ) {
                 Bucket cur = buckets[index];
-                if (cur.Key == null || cur.Key == _removed) {
+                if (cur.Key == null) {
+                    // no entry was ever here, nothing more to probe
+                    if (firstUsableIndex == -1) {
+                        firstUsableIndex = index;
+                    }
                     break;
+                } else if (cur.Key == _removed) {
+                    // we recycled this bucket, so need to continue walking to see if a following bucket matches
+                    if (firstUsableIndex == -1) {
+                        // retain the index of the first recycled bucket, in case we need it later
+                        firstUsableIndex = index;
+                    }
                 } else if (Object.ReferenceEquals(key, cur.Key) || (cur.HashCode == hc && _eqFunc(key, cur.Key))) {
+                    // this bucket is a key match
                     _version++;
                     buckets[index].Value = value;
                     return false;
                 }
 
+                // keep walking
                 index = ProbeNext(buckets, index);
+
+                // if we ended up doing a full scan, then this means the key is not already in use and there are
+                // only recycled buckets available -- nothing more to probe
+                if (index == startIndex) {
+                    break;
+                }
             }
 
+            // the key wasn't found, but we did find a fresh or recycled (unused) bucket
             _version++;
-            buckets[index].HashCode = hc;
-            buckets[index].Value = value;
-            buckets[index].Key = key;
+            buckets[firstUsableIndex].HashCode = hc;
+            buckets[firstUsableIndex].Value = value;
+            buckets[firstUsableIndex].Key = key;
 
             return true;
         }
