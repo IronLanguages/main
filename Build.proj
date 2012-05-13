@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <BuildProject Include="Solutions\Build.IronPython.proj"/>
+    <!--<BuildProject Include="Solutions\Build.IronRuby.proj"/>-->
   </ItemGroup>
 
   <Target Name="Build">

@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <!--<Import Project="CustomBuild.proj" Condition="Exist('CustomBuild.proj')" />-->
+  <!--<Import Project="Versioning.targets" />-->
+  <PropertyGroup>
+    <DisplayVersion>1.1.4</DisplayVersion>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <BaseConfiguration Condition=" '$(BaseConfiguration)' == '' ">Debug</BaseConfiguration>
+    <Mono Condition="'$(OS)' != 'Windows_NT'">true</Mono>
+
+    <Solution>Ruby.sln</Solution>
+
+    <BaseDir>$(MSBuildProjectDirectory)\..</BaseDir>
+    <StageDir>$(BaseDir)\Stage\$(BaseConfiguration)\IronRuby-$(DisplayVersion)</StageDir>
+    <PackageDir>$(BaseDir)\Packages\$(BaseConfiguration)\IronRuby-$(DisplayVersion)</PackageDir>
+    <UtilDir>$(BaseDir)\Util</UtilDir>
+    <BinDir>$(BaseDir)\bin</BinDir>
+    
+    <BuildDir>$(BinDir)\$(BaseConfiguration)</BuildDir>
+    <v2BuildDir>$(BinDir)\v2$(BaseConfiguration)</v2BuildDir>
+    <AndroidBuildDir>$(BinDir)\Android$(BaseConfiguration)</AndroidBuildDir>
+    <WP7BuildDir>$(BinDir)\WP7$(BaseConfiguration)</WP7BuildDir>
+    <Silverlight4BuildDir>$(BinDir)\Silverlight4$(BaseConfiguration)</Silverlight4BuildDir>
+    <Silverlight5BuildDir>$(BinDir)\Silverlight5$(BaseConfiguration)</Silverlight5BuildDir>
+    <Win8BuildDir>$(BinDir)\Win8$(BaseConfiguration)</Win8BuildDir>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <BuildProject Include="$(Solution)">
+      <Properties>Configuration=$(BaseConfiguration)</Properties>
+    </BuildProject>
+    <BuildProject Include="$(Solution)">
+      <Properties>Configuration=v2$(BaseConfiguration)</Properties>
+    </BuildProject>
+    <BuildProject Include="$(Solution)">
+      <Properties>Configuration=WP7$(BaseConfiguration)</Properties>
+    </BuildProject>
+    <BuildProject Include="$(Solution)">
+      <Properties>Configuration=Silverlight4$(BaseConfiguration)</Properties>
+    </BuildProject>
+    <BuildProject Include="$(Solution)">
+      <Properties>Configuration=Silverlight5$(BaseConfiguration)</Properties>
+    </BuildProject>
+    <BuildProject Include="$(Solution)">
+      <Properties>Configuration=Android$(BaseConfiguration)</Properties>
+    </BuildProject>
+    <!--
+    <BuildProject Include="$(Solution)">
+      <Properties>Configuration=Win8$(BaseConfiguration)</Properties>
+    </BuildProject>
+    -->
+    <!--
+    <InstallerProject Include="$(BaseDir)\Msi\Ruby\IronRuby.Installer.wixproj">
+      <Properties>Configuration=$(BaseConfiguration);BaseInputPaths=$(StageDir);WixToolPath=$(UtilDir)\Wix35\;OutputPath=$(PackageDir)</Properties>
+    </InstallerProject>
+    -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <DlrLibs Include="Microsoft.Dynamic.dll" />
+    <DlrLibs Include="Microsoft.Dynamic.xml" />
+    <DlrLibs Include="Microsoft.Scripting.dll" />
+    <DlrLibs Include="Microsoft.Scripting.xml" />
+    <ClrDlrLibs Include="Microsoft.Scripting.Metadata.dll" />
+    <ClrDlrLibs Include="Microsoft.Scripting.Metadata.xml" />
+    <ClrDlrLibs Include="Microsoft.Scripting.AspNet.dll" />
+    <ClrDlrLibs Include="Microsoft.Scripting.AspNet.xml" />
+    <v2DlrLibs Include="Microsoft.Scripting.Core.dll" />
+    <v2DlrLibs Include="Microsoft.Scripting.Core.xml" />
+    <SilverlightDlrLibs Include="Microsoft.Scripting.Silverlight.dll" />
+
+    <IronRubyLibs Include="IronRuby.dll" />
+    <IronRubyLibs Include="IronRuby.xml" />
+    <IronRubyLibs Include="IronRuby.Libraries.dll" />
+    <IronRubyLibs Include="IronRuby.Libraries.xml" />
+    <IronRubyLibs Include="IronRuby.Libraries.Yaml.dll" />
+    <IronRubyLibs Include="IronRuby.Libraries.Yaml.xml" />
+
+    <IronRubyBins Include="ir.exe" />
+    <IronRubyBins Include="ir64.exe" />
+    <IronRubyBins Include="irw.exe" />
+    <IronRubyBins Include="irw64.exe" />
+
+    <ChironBins Include="Chiron.exe" />
+    <ChironBins Include="Chiron.exe.config" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <SilverlightScriptFiles Include="$(BaseDir)\Hosts\Silverlight\Public\script\*.*" />
+    <SilverlightScriptTemplates Include="$(BaseDir)\Hosts\Silverlight\Public\script\templates\ruby\**\*.*" />
+
+    <MiscFiles Include="$(BaseDir)\Languages\Ruby\Public\License.Rtf" />
+    <MiscFiles Include="$(BaseDir)\Languages\Ruby\Public\License.Ruby.txt" />
+    <MiscFiles Include="$(BaseDir)\Languages\Ruby\Public\License.CPL.txt" />
+    <MiscFiles Include="$(BaseDir)\Languages\Ruby\Public\LICENSE.APACHE.html" />
+    <MiscFiles Include="$(BaseDir)\Languages\Ruby\Public\Readme.txt" />
+    <Samples Include="$(BaseDir)\Languages\Ruby\Samples\**\*.*" />
+    <StdLib Include="$(BaseDir)\Languages\Ruby\StdLib\**\*.*" />
+  </ItemGroup>
+
+  <Target Name="Build">
+    <MSBuild Projects="@(BuildProject)" Targets="Build" Properties="%(BuildProject.Properties)" />
+  </Target>
+
+  <Target Name="Rebuild">
+    <MSBuild Projects="@(BuildProject)" Targets="Rebuild" Properties="%(BuildProject.Properties)" />
+  </Target>
+
+  <Target Name="Clean">
+    <MSBuild Projects="@(BuildProject)" Targets="Clean" Properties="%(BuildProject.Properties)" />
+    <MSBuild Projects="@(InstallerProject)" Targets="Clean" Condition=" '$(OS)' == 'Windows_NT'" />
+  </Target>
+
+  <Target Name="StageClean">
+    <RemoveDir Directories="$(StageDir)" />
+  </Target>
+  
+  <Target Name="Stage" DependsOnTargets="StageClean;Build">
+    <Copy SourceFiles="@(DlrLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\bin" />
+    <Copy SourceFiles="@(ClrDlrLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\bin" />
+    <Copy SourceFiles="@(IronRubyLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\bin" />
+    <Copy SourceFiles="@(IronRubyBins->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\bin" />
+    <Copy SourceFiles="@(MiscFiles)" DestinationFolder="$(StageDir)" />
+    <Copy SourceFiles="@(Samples)" DestinationFolder="$(StageDir)\Samples\%(RecursiveDir)" />
+    <Copy SourceFiles="@(StdLib)" DestinationFolder="$(StageDir)\Lib\%(RecursiveDir)" />
+
+    <!-- Continue to copy the Silverlight files here for compatibility with previous releases. -->
+    <Copy SourceFiles="@(DlrLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" />
+    <Copy SourceFiles="@(SilverlightDlrLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" />
+    <Copy SourceFiles="@(IronRubyLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" />
+    <Copy SourceFiles="@(ChironBins->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" />
+
+    <Copy SourceFiles="@(SilverlightScriptFiles)" DestinationFiles="@(SilverlightScriptFiles->'$(StageDir)\Silverlight\script\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(SilverlightScriptTemplates)" DestinationFiles="@(SilverlightScriptTemplates->'$(StageDir)\Silverlight\script\templates\Ruby\%(RecursiveDir)%(Filename)%(Extension)')" />
+
+    <!-- .NET 4 -->
+    <Copy SourceFiles="@(DlrLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net40" />
+    <Copy SourceFiles="@(ClrDlrLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net40" />
+    <Copy SourceFiles="@(IronRubyLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net40" />
+    <Copy SourceFiles="@(v4IronRubyModules->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net40" />
+    <Copy SourceFiles="@(IronRubyModules->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net40" />
+
+    <!-- .NET 3.5 -->
+    <Copy SourceFiles="@(DlrLibs->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" />
+    <Copy SourceFiles="@(ClrDlrLibs->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" />
+    <Copy SourceFiles="@(v2DlrLibs->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" />
+    <Copy SourceFiles="@(IronRubyLibs->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" />
+    <Copy SourceFiles="@(IronRubyModules->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" />
+
+    <!-- Windows Phone 7.5 -->
+    <Copy SourceFiles="@(DlrLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4-WP71" />
+    <Copy SourceFiles="@(v2DlrLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4-WP71" />
+    <Copy SourceFiles="@(IronRubyLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4-WP71" />
+    <Copy SourceFiles="@(IronRubyModules->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4-WP71" />
+
+    <!-- Mono for Android -->
+    <Copy SourceFiles="@(DlrLibs->'$(AndroidBuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Android" />
+    <Copy SourceFiles="@(v2DlrLibs->'$(AndroidBuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Android" />
+    <Copy SourceFiles="@(IronRubyLibs->'$(AndroidBuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Android" />
+    <Copy SourceFiles="@(IronRubyModules->'$(AndroidBuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Android" />
+
+    <!-- Silverlight 4 -->
+    <Copy SourceFiles="@(DlrLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4" />
+    <Copy SourceFiles="@(SilverlightDlrLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4" />
+    <Copy SourceFiles="@(IronRubyLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4" />
+    <Copy SourceFiles="@(IronRubyModules->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4" />
+
+    <!-- Silverlight 5 -->
+    <Copy SourceFiles="@(DlrLibs->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl5" />
+    <Copy SourceFiles="@(SilverlightDlrLibs->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl5" />
+    <Copy SourceFiles="@(IronRubyLibs->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl5" />
+    <Copy SourceFiles="@(IronRubyModules->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl5" />
+
+    <!-- Windows 8 "Metro" -->
+    <Copy SourceFiles="@(DlrLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Win8" />
+    <Copy SourceFiles="@(IronRubyLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Win8" />
+  </Target>
+  
+  <Target Name="NuGetPackage" DependsOnTargets="Stage" Condition="'$(OS)' == 'Windows_NT'">
+    <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
+    <Exec Command="$(UtilDir)\Misc\NuGet.exe pack &quot;$(BaseDir)\Languages\Ruby\IronRuby.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
+  </Target>
+
+  <Target Name="ZipPackage" DependsOnTargets="Stage" Condition="'$(OS)' == 'Windows_NT'">
+    <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
+    <Exec Command="$(UtilDir)\Misc\zip.exe -9 -r &quot;$(PackageDir)\IronRuby-$(DisplayVersion).zip&quot; &quot;IronRuby-$(DisplayVersion)&quot;" WorkingDirectory="$(StageDir)\.." />
+  </Target>
+  
+  <!--
+  <Target Name="Installer" DependsOnTargets="Stage" Condition="'$(OS)' == 'Windows_NT'">
+    <MSBuild Projects="@(InstallerProject)" Targets="Build" />
+  </Target>
+  -->
+</Project>

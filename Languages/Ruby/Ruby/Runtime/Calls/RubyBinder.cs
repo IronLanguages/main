@@ -80,7 +80,7 @@ namespace IronRuby.Runtime.Calls {
             return result;
         }
 
-#if DEBUG && !CLR2 && !SILVERLIGHT && !WIN8 && !ANDROID && !WP75
+#if DEBUG && FEATURE_FULL_CONSOLE
         // ExpressionWriter might call ToString on a live object that might dynamically invoke a method.
         // We need to prevent recursion in such case.
         [ThreadStatic]
@@ -107,7 +107,7 @@ namespace IronRuby.Runtime.Calls {
 
         [Conditional("DEBUG")]
         internal static void DumpRule(CallSiteBinder/*!*/ binder, BindingRestrictions/*!*/ restrictions, Expression/*!*/ expr) {
-#if DEBUG && FEATURE_FULL_CONSOLE && !CLR2
+#if DEBUG && FEATURE_FULL_CONSOLE
             if (RubyOptions.ShowRules) {
                 var oldColor = Console.ForegroundColor;
                 try {
