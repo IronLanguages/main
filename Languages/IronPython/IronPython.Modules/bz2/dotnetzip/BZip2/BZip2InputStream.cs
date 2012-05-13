@@ -221,7 +221,7 @@ namespace Ionic.BZip2
                 buffer[destOffset++] = (byte) b;
             }
 
-            return (destOffset == offset) ? -1 : (destOffset - offset);
+            return destOffset - offset;
         }
 
         private void MakeMaps()
@@ -1383,7 +1383,116 @@ namespace Ionic.BZip2
             }
         }
 
+        /// <summary>
+        /// Dump the current state of the decompressor, to restore it in case of an error.
+        /// This allows the decompressor to be essentially "rewound" and retried when more
+        /// data arrives.
+        /// 
+        /// This is only used by IronPython.
+        /// </summary>
+        /// <returns>The current state.</returns>
+        internal object DumpState() {
+            return new StateDump {
+                _disposed = _disposed,
+                totalBytesRead = this.totalBytesRead,
+                last = this.last,
 
+                origPtr = this.origPtr,
+
+                blockRandomised = this.blockRandomised,
+                bsBuff = this.bsBuff,
+                bsLive = this.bsLive,
+                nInUse = this.nInUse,
+                currentChar = this.currentChar,
+
+                currentState = this.currentState,
+
+                storedBlockCRC = this.storedBlockCRC,
+                storedCombinedCRC = this.storedCombinedCRC,
+                computedBlockCRC = this.computedBlockCRC,
+                computedCombinedCRC = this.computedCombinedCRC,
+
+                su_count = this.su_count,
+                su_ch2 = this.su_ch2,
+                su_chPrev = this.su_chPrev,
+                su_i2 = this.su_i2,
+                su_j2 = this.su_j2,
+                su_rNToGo = this.su_rNToGo,
+                su_rTPos = this.su_rTPos,
+                su_tPos = this.su_tPos,
+                su_z = this.su_z,
+            };
+        }
+
+        /// <summary>
+        /// Restore the internal compressor state if an error occurred.
+        /// </summary>
+        /// <param name="o">The old state.</param>
+        internal void RestoreState(object o) {
+            StateDump s = (StateDump)o;
+            this._disposed = s._disposed;
+            this.totalBytesRead = s.totalBytesRead;
+            this.last = s.last;
+
+            this.origPtr = s.origPtr;
+
+            this.bsBuff = s.bsBuff;
+            this.bsLive = s.bsLive;
+            this.nInUse = s.nInUse;
+            this.currentChar = s.currentChar;
+
+            this.currentState = s.currentState;
+
+            this.storedBlockCRC = s.storedBlockCRC;
+            this.storedCombinedCRC = s.storedCombinedCRC;
+            this.computedBlockCRC = s.computedBlockCRC;
+            this.computedCombinedCRC = s.computedCombinedCRC;
+
+            this.su_count = s.su_count;
+            this.su_ch2 = s.su_ch2;
+            this.su_chPrev = s.su_chPrev;
+            this.su_i2 = s.su_i2;
+            this.su_j2 = s.su_j2;
+            this.su_rNToGo = s.su_rNToGo;
+            this.su_rTPos = s.su_rTPos;
+            this.su_tPos = s.su_tPos;
+            this.su_z = s.su_z;
+        }
+
+        private struct StateDump {
+            public bool _disposed;
+            public Int64 totalBytesRead;
+            public int last;
+
+            /* for undoing the Burrows-Wheeler transform */
+            public int origPtr;
+
+            // blockSize100k: 0 .. 9.
+            //
+            // This var name is a misnomer. The actual block size is 100000
+            // * blockSize100k. (not 100k * blocksize100k)
+            public bool blockRandomised;
+            public int bsBuff;
+            public int bsLive;
+            public int nInUse;
+            public int currentChar;
+
+            public CState currentState;
+
+            public uint storedBlockCRC, storedCombinedCRC;
+            public uint computedBlockCRC, computedCombinedCRC;
+
+            // Variables used by setup* methods exclusively
+            public int su_count;
+            public int su_ch2;
+            public int su_chPrev;
+            public int su_i2;
+            public int su_j2;
+            public int su_rNToGo;
+            public int su_rTPos;
+            public int su_tPos;
+            public char su_z;
+        }
     }
 
     // /**
