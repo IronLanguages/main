@@ -1,4 +1,4 @@
-﻿/* ****************************************************************************
+/* ****************************************************************************
  *
  * Copyright (c) Jeff Hardy 2010. 
  * Copyright (c) Dan Eloff 2008-2009. 
@@ -372,7 +372,6 @@ namespace IronPython.Modules
                 else
                     throw new ArgumentTypeException("Unexpected expression type: " + expr.GetType());
 
-                // TODO: DictComp and SetComp throws here 
                 ast.GetSourceLocation(expr);
                 return ast;
             }
@@ -1031,7 +1030,10 @@ namespace IronPython.Modules
         {
             internal static Break Instance = new Break();
 
-            public Break([Optional]int lineno, [Optional]int col_offset) {
+            internal Break()
+                : this(null, null) { }
+
+            public Break([Optional]int? lineno, [Optional]int? col_offset) {
                 _lineno = lineno;
                 _col_offset = col_offset;
             }
@@ -1219,6 +1221,9 @@ namespace IronPython.Modules
         public class Continue : stmt
         {
             internal static Continue Instance = new Continue();
+
+            internal Continue()
+                : this(null, null) { }
 
             public Continue([Optional]int? lineno, [Optional]int? col_offset) {
                 _lineno = lineno;
@@ -2200,6 +2205,9 @@ namespace IronPython.Modules
                 _col_offset = col_offset;
             }
 
+            public Name(String id, expr_context ctx)
+                : this(id, ctx, null, null) { }
+
             internal Name(NameExpression expr, expr_context ctx)
                 : this(expr.Name, ctx) {
             }
@@ -2242,6 +2250,9 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "n", });
             }
 
+            internal Num(object n)
+                : this(n, null, null) { }
+
             public Num(object n, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _n = n;
@@ -2272,7 +2283,10 @@ namespace IronPython.Modules
         {
             internal static Pass Instance = new Pass();
 
-            public Pass([Optional]int lineno, [Optional]int col_offset) {
+            internal Pass()
+                : this(null, null) { }
+
+            public Pass([Optional]int? lineno, [Optional]int? col_offset) {
                 _lineno = lineno;
                 _col_offset = col_offset;
             }
@@ -2573,6 +2587,9 @@ namespace IronPython.Modules
             public Str() {
                 _fields = new PythonTuple(new[] { "s", });
             }
+
+            internal Str(String s)
+                : this(s, null, null) { }
 
             public Str(string s, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
