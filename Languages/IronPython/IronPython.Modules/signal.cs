@@ -27,11 +27,11 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-#if !SILVERLIGHT
+#if FEATURE_PROCESS
 
 [assembly: PythonModule("signal", typeof(IronPython.Modules.PythonSignal))]
 namespace IronPython.Modules {
-    public static class PythonSignal {
+    public static partial class PythonSignal {
         public const string __doc__ = @"This module provides mechanisms to use signal handlers in Python.
 
 Functions:
@@ -52,12 +52,28 @@ the first is the signal number, the second is the interrupted stack frame.";
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
-            PythonSignalState pss = new PythonSignalState(context);
-            context.SetModuleState(_PythonSignalStateKey, pss);
-            NativeSignal.SetConsoleCtrlHandler(pss.WinAllSignalsHandlerDelegate, true);
+            context.SetModuleState(_PythonSignalStateKey, MakeSignalState(context));
         }
 
-        #region Public API
+        private static PythonSignalState MakeSignalState(PythonContext context) {
+            if (Environment.OSVersion.Platform == PlatformID.Unix
+                || Environment.OSVersion.Platform == PlatformID.MacOSX) {
+                return MakePosixSignalState(context);
+            } else {
+                return MakeNtSignalState(context);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static PythonSignalState MakeNtSignalState(PythonContext context) {
+            return new NtSignalState(context);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static PythonSignalState MakePosixSignalState(PythonContext context) {
+            // Use SimpleSignalState until the real Posix one is written
+            return new SimpleSignalState(context);
+        }
 
         //Python signals
         public const int NSIG = 23;
@@ -70,13 +86,6 @@ the first is the signal number, the second is the interrupted stack frame.";
         public const int SIGTERM = 15;
         public const int SIG_DFL = 0;
         public const int SIG_IGN = 1;
-
-        //Windows signals
-        internal const uint CTRL_C_EVENT = 0;
-        internal const uint CTRL_BREAK_EVENT = 1;
-        internal const uint CTRL_CLOSE_EVENT = 2;
-        internal const uint CTRL_LOGOFF_EVENT = 5;
-        internal const uint CTRL_SHUTDOWN_EVENT = 6;
 
         public static BuiltinFunction default_int_handler = BuiltinFunction.MakeFunction("default_int_handler",
                     ArrayUtils.ConvertAll(typeof(PythonSignal).GetMember("default_int_handlerImpl"), (x) => (MethodBase)x),
@@ -126,7 +135,7 @@ A signal handler function is called with two arguments:
 the first is the signal number, the second is the interrupted stack frame.")]
         public static object signal(CodeContext/*!*/ context, int sig, object action) {
             //Negative scenarios - sig
-            if (sig < 1 || sig > 22) {
+            if (sig < 1 || sig >= NSIG) {
                 throw PythonOps.ValueError("signal number out of range");
             } else if (Array.IndexOf(_PySupportedSignals, sig) == -1) {
                 throw new RuntimeException("no IronPython support for given signal");
@@ -176,33 +185,25 @@ The fd must be non-blocking.")]
             throw new NotImplementedException(); //TODO
         }
 
-
-        #endregion
-
-        #region Private implementation details
-
         private static readonly object _PythonSignalStateKey = new object();
+        
         private static PythonSignalState GetPythonSignalState(CodeContext/*!*/ context) {
             return (PythonSignalState)PythonContext.GetContext(context).GetModuleState(_PythonSignalStateKey);
         }
+        
         private static void SetPythonSignalState(CodeContext/*!*/ context, PythonSignalState pss) {
             PythonContext.GetContext(context).SetModuleState(_PythonSignalStateKey, pss);
         }
 
-        private class PythonSignalState {
+        internal class PythonSignalState {
             //this provides us with access to the Main thread's stack
             public PythonContext SignalPythonContext;
 
             //Map out signal identifiers to their actual handlers
             public Dictionary<int, object> PySignalToPyHandler;
 
-            //We use a single Windows event handler to process all signals. This handler simply
-            //delegates the work out to PySignalToPyHandler.
-            public NativeSignal.WinSignalsHandler WinAllSignalsHandlerDelegate;
-
             public PythonSignalState(PythonContext pc) {
                 SignalPythonContext = pc;
-                WinAllSignalsHandlerDelegate = new NativeSignal.WinSignalsHandler(WindowsEventHandler);
                 PySignalToPyHandler = new Dictionary<int, object>() {
                     { SIGABRT, SIG_DFL},
                     { SIGBREAK, SIG_DFL},
@@ -213,90 +214,13 @@ The fd must be non-blocking.")]
                     { SIGTERM, SIG_DFL},
                 };
             }
-
-            //Our implementation of WinSignalsHandler
-            public bool WindowsEventHandler(uint winSignal) {
-                bool retVal;
-                int pySignal;
-
-                switch (winSignal) {
-                    case CTRL_C_EVENT:
-                        pySignal = SIGINT;
-                        break;
-                    case CTRL_BREAK_EVENT:
-                        pySignal = SIGBREAK;
-                        break;
-                    case CTRL_CLOSE_EVENT:
-                        pySignal = SIGBREAK;
-                        break;
-                    case CTRL_LOGOFF_EVENT:
-                        pySignal = SIGBREAK;
-                        break;
-                    case CTRL_SHUTDOWN_EVENT:
-                        pySignal = SIGBREAK;
-                        break;
-                    default:
-                        throw new Exception("unreachable");
-                }
-
-                lock (PySignalToPyHandler) {
-                    if (PySignalToPyHandler[pySignal].GetType() == typeof(int)) {
-                        int tempId = (int)PySignalToPyHandler[pySignal];
-
-                        if (tempId == SIG_DFL) {
-                            //SIG_DFL - we let Windows do whatever it normally would
-                            retVal = false;
-                        } else if (tempId == SIG_IGN) {
-                            //SIG_IGN - we do nothing, but tell Windows we handled the signal
-                            retVal = true;
-                        } else {
-                            throw new Exception("unreachable");
-                        }
-                    } else if (PySignalToPyHandler[pySignal] == default_int_handler) {
-                        if (pySignal != SIGINT) {
-                            //We're dealing with the default_int_handlerImpl which we
-                            //know doesn't care about the frame parameter
-                            retVal = true;
-                            default_int_handlerImpl(pySignal, null);
-                        } else {
-                            //Let the real interrupt handler throw a KeyboardInterrupt for SIGINT.
-                            //It handles this far more gracefully than we can
-                            retVal = false;
-                        }
-                    } else {
-                        //We're dealing with a callable matching PySignalHandler's signature
-                        retVal = true;
-                        PySignalHandler temp = (PySignalHandler)Converter.ConvertToDelegate(PySignalToPyHandler[pySignal],
-                                                                                            typeof(PySignalHandler));
-
-                        try {
-                            if (SignalPythonContext.PythonOptions.Frames) {
-                                temp.Invoke(pySignal, SysModule._getframeImpl(null,
-                                                                              0,
-                                                                              SignalPythonContext._mainThreadFunctionStack));
-                            } else {
-                                temp.Invoke(pySignal, null);
-                            }
-                        } catch (Exception e) {
-                            System.Console.WriteLine(SignalPythonContext.FormatException(e));
-                        }
-                    }
-                }
-
-                return retVal;
-            }
         }
-
-
 
         //List of all Signals CPython supports on Windows.  Notice the addition of '6'
         private static readonly int[] _PySupportedSignals = { SIGABRT, SIGBREAK, SIGFPE, SIGILL, SIGINT, SIGSEGV, SIGTERM, 6 };
 
         //Signature of Python functions that signal.signal(...) expects to be given
         private delegate object PySignalHandler(int signalnum, TraceBackFrame frame);
-
-
-        #endregion
     }
 }
 
