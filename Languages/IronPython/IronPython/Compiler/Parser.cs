@@ -2734,7 +2734,7 @@ namespace IronPython.Compiler {
                             if (!first) {
                                 ReportSyntaxError("invalid syntax");
                             }
-                            return FinishDictComp(e1, e2);
+                            return FinishDictComp(e1, e2, oStart, oEnd);
                         }
 
                         SliceExpression se = new SliceExpression(e1, e2, null, false);
@@ -2752,7 +2752,7 @@ namespace IronPython.Compiler {
                             if (!first) {
                                 ReportSyntaxError("invalid syntax");
                             }
-                            return FinishSetComp(e1);
+                            return FinishSetComp(e1, oStart, oEnd);
                         }
 
                         // error recovery
@@ -2800,17 +2800,43 @@ namespace IronPython.Compiler {
         }
 
         // comp_iter '}'
-        private SetComprehension FinishSetComp(Expression item) {
+        private SetComprehension FinishSetComp(Expression item, int oStart, int oEnd) {
             ComprehensionIterator[] iters = ParseCompIter();
             Eat(TokenKind.RightBrace);
-            return new SetComprehension(item, iters);
+
+            var cStart = GetStart();
+            var cEnd = GetEnd();
+            if (_sink != null) {
+                _sink.MatchPair(
+                    new SourceSpan(_tokenizer.IndexToLocation(oStart), _tokenizer.IndexToLocation(oEnd)),
+                    new SourceSpan(_tokenizer.IndexToLocation(cStart), _tokenizer.IndexToLocation(cEnd)),
+                    1
+                );
+            }
+
+            var ret = new SetComprehension(item, iters);
+            ret.SetLoc(_globalParent, oStart, cEnd);
+            return ret;
         }
 
         // comp_iter '}'
-        private DictionaryComprehension FinishDictComp(Expression key, Expression value) {
+        private DictionaryComprehension FinishDictComp(Expression key, Expression value, int oStart, int oEnd) {
             ComprehensionIterator[] iters = ParseCompIter();
             Eat(TokenKind.RightBrace);
-            return new DictionaryComprehension(key, value, iters);
+
+            var cStart = GetStart();
+            var cEnd = GetEnd();
+            
+            if (_sink != null) {
+                _sink.MatchPair(
+                    new SourceSpan(_tokenizer.IndexToLocation(oStart), _tokenizer.IndexToLocation(oEnd)),
+                    new SourceSpan(_tokenizer.IndexToLocation(cStart), _tokenizer.IndexToLocation(cEnd)),
+                    1
+                );
+            }
+            var ret = new DictionaryComprehension(key, value, iters);
+            ret.SetLoc(_globalParent, oStart, cEnd);
+            return ret;
         }
 
         // comp_iter: comp_for | comp_if
