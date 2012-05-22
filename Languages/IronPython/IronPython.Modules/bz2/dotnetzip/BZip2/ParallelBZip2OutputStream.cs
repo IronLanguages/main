@@ -343,9 +343,8 @@ namespace Ionic.BZip2
         /// <para>
         ///   This property sets an upper limit on the number of concurrent worker
         ///   threads to employ for compression. The implementation of this stream
-        ///   employs multiple threads from the .NET thread pool, via <see
-        ///   cref="System.Threading.ThreadPool.QueueUserWorkItem(WaitCallback)">
-        ///   ThreadPool.QueueUserWorkItem()</see>, to compress the incoming data by
+        ///   employs multiple threads from the .NET thread pool, via 
+        ///   ThreadPool.QueueUserWorkItem(), to compress the incoming data by
         ///   block.  As each block of data is compressed, this stream re-orders the
         ///   compressed blocks and writes them to the output stream.
         /// </para>
