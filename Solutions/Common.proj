@@ -190,26 +190,32 @@
     <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\mscorlib.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="mscorlib.Extensions, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\mscorlib.Extensions.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Core, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Core.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Net, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Net.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.Phone, Version=7.0.0.0, Culture=neutral, PublicKeyToken=24eec0d8c86cda1e">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(FrameworkReferences)\Microsoft.Phone.dll</HintPath>
+      <Private>False</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup Condition="'$(ReferencedPlatform)' == 'Android'">
@@ -243,178 +249,222 @@
     <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\mscorlib.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Core, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Core.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Net, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Net.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Numerics, Version=2.0.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Numerics.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Xml, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798ex">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Xml.dll</HintPath>
+      <Private>False</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup Condition="'$(ReferencedPlatform)' == 'Silverlight5'">
     <Reference Include="mscorlib, Version=5.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\mscorlib.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System, Version=5.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Core, Version=5.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Core.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Net, Version=5.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Net.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Numerics, Version=5.0.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Numerics.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Xml, Version=5.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798ex">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Xml.dll</HintPath>
+      <Private>False</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(ReferencedPlatform)' == 'Win8' ">
     <Reference Include="mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\mscorlib.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Core.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Runtime.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Runtime.Numerics.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\Microsoft.CSharp.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Runtime, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Runtime.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Threading.Tasks, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Threading.Tasks.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Runtime.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
+      <Private>true</Private>
       <HintPath>$(FrameworkReferences)\System.Runtime.Extensions.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Collections, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Collections.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Collections.Concurrent, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Collections.Concurrent.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.ObjectModel, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.ObjectModel.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Runtime.InteropServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Runtime.InteropServices.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Diagnostics.Tools, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Diagnostics.Tools.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Diagnostics.Contracts, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Diagnostics.Contracts.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Diagnostics.Debug, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Diagnostics.Debug.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Globalization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Globalization.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.IO, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.IO.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Reflection, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Reflection.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Reflection.Primitives, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Reflection.Primitives.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Reflection.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Reflection.Extensions.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Reflection.Emit, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Reflection.Emit.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Reflection.Emit.ILGeneration, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Reflection.Emit.ILGeneration.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Reflection.Emit.Lightweight, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Reflection.Emit.Lightweight.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Dynamic.Runtime, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Dynamic.Runtime.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Text.Encoding.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Text.Encoding.Extensions.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Text.Encoding, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Text.Encoding.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Threading, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Threading.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Threading.Tasks.Parallel, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Threading.Tasks.Parallel.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Linq, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Linq.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Linq.Expressions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Linq.Expressions.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Resources.ResourceManager, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Resources.ResourceManager.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Text.RegularExpressions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(FrameworkReferences)\System.Text.RegularExpressions.dll</HintPath>
+      <Private>False</Private>
     </Reference>
   </ItemGroup>
 </Project>
