@@ -58,9 +58,10 @@
     <Compile Include="bz2\dotnetzip\BZip2\Rand.cs" />
     <Compile Include="cmath.cs" />
     <Compile Include="msvcrt.cs" />
-    <Compile Include="NativeSignal.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="mmap.cs" />
+    <Compile Include="NtSignalState.cs" />
+    <Compile Include="SimpleSignalState.cs" />
     <Compile Include="ResourceMetaPathImporter.cs" />
     <Compile Include="signal.cs" />
     <Compile Include="winsound.cs" />

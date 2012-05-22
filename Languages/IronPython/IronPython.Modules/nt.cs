@@ -1428,25 +1428,6 @@ namespace IronPython.Modules {
         [Documentation(@"Send signal sig to the process pid. Constants for the specific signals available on the host platform 
 are defined in the signal module.")]
         public static void kill(CodeContext/*!*/ context, int pid, int sig) {
-            
-            //The following calls to GenerateConsoleCtrlEvent will fail under
-            //most circumstances. We'll try them any ways though as this seems
-            //to be the only mechanism in Windows to send signals to processes
-            switch (sig) {
-                case PythonSignal.SIGINT:
-                    if (NativeSignal.GenerateConsoleCtrlEvent(PythonSignal.CTRL_C_EVENT, (uint)pid)!= false) {
-                        return;
-                    }
-                    break;
-                case PythonSignal.SIGBREAK:
-                    if (NativeSignal.GenerateConsoleCtrlEvent(PythonSignal.CTRL_BREAK_EVENT, (uint)pid) != false) {
-                        return;
-                    }
-                    break;
-                default:
-                    throw PythonOps.ValueError("signal number out of range");
-            }
-            
             //If the calls to GenerateConsoleCtrlEvent didn't work, simply
             //forcefully kill the process.
             Process toKill = Process.GetProcessById(pid);
