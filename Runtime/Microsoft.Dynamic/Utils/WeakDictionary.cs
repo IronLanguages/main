@@ -16,7 +16,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace Microsoft.Scripting.Utils {
@@ -37,25 +36,15 @@ namespace Microsoft.Scripting.Utils {
     public class WeakDictionary<TKey, TValue> : IDictionary<TKey, TValue> {
         // The one and only comparer instance.
         static readonly IEqualityComparer<object> comparer = new WeakComparer<object>();
-        static readonly ConstructorInfo valueConstructor;
 
-        private IDictionary<object, TValue> dict = new Dictionary<object, TValue>(comparer);
-        private int version, cleanupVersion;
+        IDictionary<object, TValue> dict = new Dictionary<object, TValue>(comparer);
+        int version, cleanupVersion;
 
 #if SILVERLIGHT || WIN8 || WP75 // GC
         WeakReference cleanupGC = new WeakReference(new object());
 #else
         int cleanupGC = 0;
 #endif
-        static WeakDictionary()
-        {
-            var ctor = typeof(TValue).GetConstructor(new Type[] { });
-            if (ctor == null) {
-                throw new InvalidOperationException(string.Format("{0} does not have a default constructor.", typeof(TValue).Name));
-            }
-
-            valueConstructor = ctor;
-        }
 
         public WeakDictionary() {
         }
@@ -97,7 +86,12 @@ namespace Microsoft.Scripting.Utils {
         public TValue GetOrCreateValue(TKey key) {
             TValue value;
             if (!TryGetValue(key, out value)) {
-                value = (TValue)valueConstructor.Invoke(new object[] { });
+                var ctor = typeof(TValue).GetConstructor(new Type[] { });
+                if (ctor == null) {
+                    throw new MissingMethodException(string.Format("{0} does not have a default constructor.", typeof(TValue).Name));
+                }
+
+                value = (TValue)ctor.Invoke(new object[] { });
                 Add(key, value);
             }
 
