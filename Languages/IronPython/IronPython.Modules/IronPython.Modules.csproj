@@ -61,7 +61,6 @@
     <Compile Include="NativeSignal.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="mmap.cs" />
-    <Compile Include="pyexpat.cs" />
     <Compile Include="ResourceMetaPathImporter.cs" />
     <Compile Include="signal.cs" />
     <Compile Include="winsound.cs" />
