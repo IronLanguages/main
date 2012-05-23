@@ -49,12 +49,7 @@ namespace Microsoft.Scripting.Utils {
 #endif
         static WeakDictionary()
         {
-            var ctor = typeof(TValue).GetConstructor(new Type[] { });
-            if (ctor == null) {
-                throw new InvalidOperationException(string.Format("{0} does not have a default constructor.", typeof(TValue).Name));
-            }
-
-            valueConstructor = ctor;
+            valueConstructor = typeof(TValue).GetConstructor(new Type[] { });
         }
 
         public WeakDictionary() {
@@ -97,6 +92,10 @@ namespace Microsoft.Scripting.Utils {
         public TValue GetOrCreateValue(TKey key) {
             TValue value;
             if (!TryGetValue(key, out value)) {
+                if (valueConstructor == null) {
+                    throw new InvalidOperationException(string.Format("{0} does not have a default constructor.", typeof(TValue).Name));
+                }
+            
                 value = (TValue)valueConstructor.Invoke(new object[] { });
                 Add(key, value);
             }
