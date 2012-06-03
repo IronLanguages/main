@@ -31,6 +31,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Security.Policy;
+using System.Security.Permissions;
 using System.Text;
 using System.Threading;
 #if !CLR2 && !SILVERLIGHT
@@ -2301,6 +2302,7 @@ instOC = TestOC()
 #pragma warning restore 612, 618
 #if !CLR2
             System.Security.PermissionSet permSet = SecurityManager.GetStandardSandbox(evidence);
+            permSet.AddPermission(new ReflectionPermission(PermissionState.Unrestricted));
             AppDomain newDomain = AppDomain.CreateDomain("test", evidence, info, permSet, null);
 #else
             AppDomain newDomain = AppDomain.CreateDomain("test", evidence, info);
