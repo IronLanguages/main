@@ -1443,12 +1443,8 @@ def test_bytes_hashing():
         x = hashLib(b'abc')
         x.update(b'abc')
         
-        if is_ironpython: #http://ironpython.codeplex.com/workitem/27903
-            AssertError(TypeError, hashLib, bytearray(b'abc'))
-            AssertError(TypeError, x.update, bytearray(b'abc'))
-        else:
-            #For now just make sure this doesn't throw
-            temp = hashLib(bytearray(b'abc'))
-            x.update(bytearray(b'abc'))
+        #For now just make sure this doesn't throw
+        temp = hashLib(bytearray(b'abc'))
+        x.update(bytearray(b'abc'))
 
 run_test(__name__)
