@@ -1381,6 +1381,7 @@ namespace IronPython.Runtime {
             }
         }
 
+        [PythonHidden]
         protected void ThrowIfClosed() {
             if (!_isOpen) {
                 throw PythonOps.ValueError("I/O operation on closed file");
