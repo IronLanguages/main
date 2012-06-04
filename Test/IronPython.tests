@@ -1863,7 +1863,7 @@
           <Arguments>-X:Debug -X:Frames Test\test_class.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled>
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -2127,7 +2127,7 @@
           <Arguments>test\test_cookielib.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled>
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -2168,10 +2168,10 @@
         <Test>
           <Name>test_cPickle_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Debug Test\test_cPickle.py</Arguments>
+          <Arguments>Test\test_cPickle.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled>
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -2842,7 +2842,7 @@
           <Arguments>Test\test_hotshot.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled>
+          <Disabled>true</Disabled> <!-- No module named _hotshot -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -2886,7 +2886,7 @@
           <Arguments>Test\test_httpservers.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled>
+          <Disabled>true</Disabled> <!-- Causes the tests to hang -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -3040,7 +3040,7 @@
           <Arguments>Test\test_json.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled>
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -3288,7 +3288,7 @@
           <Arguments>Test\test_multibytecodec.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled>
+          <Disabled>true</Disabled> <!-- No module named _multibytecodec -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -3430,12 +3430,6 @@
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>true</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
-          <EnvironmentVariables>
-            <EnvironmentVariable>
-              <Name>IS_FLAKEY</Name>
-              <Value>1</Value>
-            </EnvironmentVariable>
-          </EnvironmentVariables>
         </Test>
         <Test>
           <Name>test_parser_cpy</Name>
@@ -3454,7 +3448,7 @@
           <Arguments>-X:Frames Test\test_peepholer.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled>
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -3509,7 +3503,7 @@
           <Arguments>-X:FullFrames Test\test_pickletools.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled>
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -3520,7 +3514,7 @@
           <Arguments>-X:FullFrames Test\test_pickle.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled>
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -3597,7 +3591,7 @@
           <Arguments>Test\test_poplib.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled>
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -3850,7 +3844,7 @@
           <Arguments>-X:Frames Test\test_set.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled><!--StackOverflow-->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -4099,7 +4093,7 @@
           <Arguments>Test\test_structmembers.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled>
+          <Disabled>true</Disabled> <!-- No module named _testcapi -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -4165,7 +4159,7 @@
           <Arguments>Test\test_symtable.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled>
+          <Disabled>true</Disabled> <!-- No module named _symtable -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -4185,9 +4179,9 @@
           <Name>test_sys_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
           <Arguments>-X:Frames Test\test_sys.py</Arguments>
-          <MaxDuration>600000</MaxDuration>
+          <MaxDuration>60000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled>
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -4198,7 +4192,7 @@
           <Arguments>-X:Frames Test\test_tarfile.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled>
+          <Disabled>true</Disabled><!-- The tests do not properly clean up temp files inall cases, which causes them to fail. -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -4209,7 +4203,7 @@
           <Arguments>Test\test_tcl.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled>
+          <Disabled>true</Disabled> <!-- No tcl module. -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -4270,7 +4264,7 @@
           <Arguments>Test\test_threaded_import.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled>
+          <Disabled>true</Disabled> <!-- Just plain broken. -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -4290,9 +4284,9 @@
           <Name>test_thread_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
           <Arguments>Test\test_thread.py</Arguments>
-          <MaxDuration>6000000</MaxDuration>
+          <MaxDuration>60000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled>
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -4347,7 +4341,7 @@
           <Arguments>Test\test_transformer.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled>
+          <Disabled>true</Disabled> <!-- No parser module -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -4710,7 +4704,7 @@
           <Arguments>Test\test_xpickle.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled>
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
