@@ -30,8 +30,8 @@ namespace IronPython.Runtime {
     [Serializable]
     internal sealed class PythonDynamicStackFrame : DynamicStackFrame, ISerializable 
     {
-        private readonly CodeContext/*!*/ _context;
-        private readonly FunctionCode/*!*/ _code;
+        private readonly CodeContext _context;
+        private readonly FunctionCode _code;
 
         public PythonDynamicStackFrame(CodeContext/*!*/ context, FunctionCode/*!*/ funcCode, int line)
             : base(GetMethod(context, funcCode), funcCode.co_name, funcCode.co_filename, line) {
@@ -57,8 +57,10 @@ namespace IronPython.Runtime {
         /// 
         /// If the function included a call to locals() or the FullFrames
         /// option is enabled then the code context includes all local variables.
+        /// 
+        /// Null if deserialized.
         /// </summary>
-        public CodeContext/*!*/ CodeContext {
+        public CodeContext CodeContext {
             get {
                 return _context;
             }
@@ -66,9 +68,9 @@ namespace IronPython.Runtime {
 
         /// <summary>
         /// Gets the code object for this frame.  This is used in creating
-        /// the trace back.
+        /// the trace back. Null if deserialized.
         /// </summary>
-        public FunctionCode/*!*/ Code {
+        public FunctionCode Code {
             get {
                 return _code;
             }

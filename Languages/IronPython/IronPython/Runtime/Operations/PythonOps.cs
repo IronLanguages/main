@@ -2239,7 +2239,7 @@ namespace IronPython.Runtime.Operations {
                 }
 
                 PythonDynamicStackFrame pyFrame = frame as PythonDynamicStackFrame;
-                if (pyFrame != null) {
+                if (pyFrame != null && pyFrame.CodeContext != null) {
                     CodeContext context = pyFrame.CodeContext;
                     FunctionCode code = pyFrame.Code;
 

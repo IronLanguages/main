@@ -242,10 +242,10 @@ namespace IronPython.Runtime {
             }
         }
 
-        class FunctionCaller {
+        public class FunctionCaller {
             protected readonly int _compat;
 
-            public FunctionCaller(int compat) {
+            internal FunctionCaller(int compat) {
                 _compat = compat;
             }
 
@@ -408,7 +408,7 @@ namespace IronPython.Runtime {
         internal const int MaxGeneratedFunctionArgs = 14;
 
 
-        class FunctionCaller<T0> : FunctionCaller {
+        public sealed class FunctionCaller<T0> : FunctionCaller {
             public FunctionCaller(int compat) : base(compat) { }
 
             public object Call1(CallSite site, CodeContext context, object func, T0 arg0) {
@@ -541,7 +541,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        class FunctionCaller<T0, T1> : FunctionCaller {
+        public sealed class FunctionCaller<T0, T1> : FunctionCaller {
             public FunctionCaller(int compat) : base(compat) { }
 
             public object Call2(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1) {
@@ -664,7 +664,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        class FunctionCaller<T0, T1, T2> : FunctionCaller {
+        public sealed class FunctionCaller<T0, T1, T2> : FunctionCaller {
             public FunctionCaller(int compat) : base(compat) { }
 
             public object Call3(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2) {
@@ -777,7 +777,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        class FunctionCaller<T0, T1, T2, T3> : FunctionCaller {
+        public sealed class FunctionCaller<T0, T1, T2, T3> : FunctionCaller {
             public FunctionCaller(int compat) : base(compat) { }
 
             public object Call4(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
@@ -880,7 +880,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        class FunctionCaller<T0, T1, T2, T3, T4> : FunctionCaller {
+        public sealed class FunctionCaller<T0, T1, T2, T3, T4> : FunctionCaller {
             public FunctionCaller(int compat) : base(compat) { }
 
             public object Call5(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
@@ -973,7 +973,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        class FunctionCaller<T0, T1, T2, T3, T4, T5> : FunctionCaller {
+        public sealed class FunctionCaller<T0, T1, T2, T3, T4, T5> : FunctionCaller {
             public FunctionCaller(int compat) : base(compat) { }
 
             public object Call6(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) {
@@ -1056,7 +1056,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        class FunctionCaller<T0, T1, T2, T3, T4, T5, T6> : FunctionCaller {
+        public sealed class FunctionCaller<T0, T1, T2, T3, T4, T5, T6> : FunctionCaller {
             public FunctionCaller(int compat) : base(compat) { }
 
             public object Call7(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) {
@@ -1129,7 +1129,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        class FunctionCaller<T0, T1, T2, T3, T4, T5, T6, T7> : FunctionCaller {
+        public sealed class FunctionCaller<T0, T1, T2, T3, T4, T5, T6, T7> : FunctionCaller {
             public FunctionCaller(int compat) : base(compat) { }
 
             public object Call8(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7) {
@@ -1192,7 +1192,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        class FunctionCaller<T0, T1, T2, T3, T4, T5, T6, T7, T8> : FunctionCaller {
+        public sealed class FunctionCaller<T0, T1, T2, T3, T4, T5, T6, T7, T8> : FunctionCaller {
             public FunctionCaller(int compat) : base(compat) { }
 
             public object Call9(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8) {
@@ -1245,7 +1245,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        class FunctionCaller<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> : FunctionCaller {
+        public sealed class FunctionCaller<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> : FunctionCaller {
             public FunctionCaller(int compat) : base(compat) { }
 
             public object Call10(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9) {
@@ -1288,7 +1288,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        class FunctionCaller<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> : FunctionCaller {
+        public sealed class FunctionCaller<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> : FunctionCaller {
             public FunctionCaller(int compat) : base(compat) { }
 
             public object Call11(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10) {
@@ -1321,7 +1321,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        class FunctionCaller<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> : FunctionCaller {
+        public sealed class FunctionCaller<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> : FunctionCaller {
             public FunctionCaller(int compat) : base(compat) { }
 
             public object Call12(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11) {
@@ -1344,7 +1344,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        class FunctionCaller<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> : FunctionCaller {
+        public sealed class FunctionCaller<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> : FunctionCaller {
             public FunctionCaller(int compat) : base(compat) { }
 
             public object Call13(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12) {
