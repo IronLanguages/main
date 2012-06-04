@@ -1,4 +1,6 @@
 import sys
+import decimal
+import unittest
 from unittest import TestCase, skipUnless
 
 import json
@@ -10,12 +12,12 @@ except ImportError:
     _json = None
 
 class TestScanString(TestCase):
+    @unittest.skipIf(sys.platform == 'cli', 'http://ironpython.codeplex.com/workitem/32802')
     def test_py_scanstring(self):
         self._test_scanstring(json.decoder.py_scanstring)
 
     @skipUnless(_json, 'test requires the _json module')
     def test_c_scanstring(self):
-        self._test_scanstring(json.decoder.c_scanstring)
 
     def _test_scanstring(self, scanstring):
         self.assertEqual(
@@ -107,6 +109,7 @@ class TestScanString(TestCase):
             scanstring('["Bad value", truth]', 2, None, True),
             (u'Bad value', 12))
 
+    @unittest.skipIf(sys.platform == 'cli', 'http://ironpython.codeplex.com/workitem/32802')
     def test_issue3623(self):
         self.assertRaises(ValueError, json.decoder.scanstring, b"xxx", 1,
                           "xxx")
