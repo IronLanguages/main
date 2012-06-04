@@ -10,7 +10,7 @@ import os.path
 import SocketServer
 import time
 
-from test_support import reap_threads, verbose, transient_internet
+from test.test_support import reap_threads, verbose, transient_internet
 import unittest
 
 try:
