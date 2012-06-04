@@ -14,6 +14,8 @@ from test import test_support
 import mmap
 import uuid
 
+import subprocess
+
 warnings.filterwarnings("ignore", "tempnam", RuntimeWarning, __name__)
 warnings.filterwarnings("ignore", "tmpnam", RuntimeWarning, __name__)
 
@@ -309,7 +311,7 @@ class StatAttributeTests(unittest.TestCase):
 
     # Restrict test to Win32, since there is no guarantee other
     # systems support centiseconds
-    if sys.platform == 'win32':
+    if os.name == 'nt':
         def get_file_system(path):
             root = os.path.splitdrive(os.path.abspath(path))[0] + '\\'
             import ctypes
@@ -632,7 +634,7 @@ class TestInvalidFD(unittest.TestCase):
         if hasattr(os, "write"):
             self.check(os.write, " ")
 
-if sys.platform != 'win32':
+if os.name == 'posix':
     class Win32ErrorTests(unittest.TestCase):
         pass
 
@@ -692,7 +694,7 @@ else:
     class PosixUidGidTests(unittest.TestCase):
         pass
 
-@unittest.skipUnless(sys.platform == "win32", "Win32 specific tests")
+@unittest.skipUnless(os.name == "nt", "Win32 specific tests")
 class Win32KillTests(unittest.TestCase):
     def _kill(self, sig):
         # Start sys.executable as a subprocess and communicate from the
@@ -748,10 +750,12 @@ class Win32KillTests(unittest.TestCase):
         os.kill(proc.pid, sig)
         self.assertEqual(proc.wait(), sig)
 
+    @unittest.skipIf(sys.platform == 'cli', 'ipy.exe does not support getting killed by signals.')
     def test_kill_sigterm(self):
         # SIGTERM doesn't mean anything special, but make sure it works
         self._kill(signal.SIGTERM)
 
+    @unittest.skipIf(sys.platform == 'cli', 'ipy.exe does not support getting killed by signals.')
     def test_kill_int(self):
         # os.kill on Windows can take an int which gets set as the exit code
         self._kill(100)
