@@ -286,12 +286,14 @@ class TypesTests(unittest.TestCase):
         except TypeError: pass
         else: self.fail("buffer slice assignment should raise TypeError")
 
-        # array.array() returns an object that does not implement a char buffer,
-        # something which int() uses for conversion.
-        import array
-        try: int(buffer(array.array('c')))
-        except TypeError: pass
-        else: self.fail("char buffer (at C level) not working")
+        # IronPython does allow this, even though CPython doesn't.
+        if sys.platform != 'cli':
+            # array.array() returns an object that does not implement a char buffer,
+            # something which int() uses for conversion.
+            import array
+            try: int(buffer(array.array('c')))
+            except TypeError: pass
+            else: self.fail("char buffer (at C level) not working")
 
     def test_int__format__(self):
         def test(i, format_spec, result):
