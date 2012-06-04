@@ -137,7 +137,7 @@ def selfless_method_caller_switch(cw):
     cw.exit_block()
         
 function_caller_template = """
-class FunctionCaller<%(typeParams)s> : FunctionCaller {
+public sealed class FunctionCaller<%(typeParams)s> : FunctionCaller {
     public FunctionCaller(int compat) : base(compat) { }
     
     public object Call%(argCount)d(CallSite site, CodeContext context, object func, %(callParams)s) {

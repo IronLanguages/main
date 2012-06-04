@@ -17,7 +17,7 @@ using Microsoft.Scripting.Utils;
 
 namespace IronPython.Modules {
 
-    internal class PythonBisectModule {
+    public class PythonBisectModule {
         public const string __doc__ = @"Bisection algorithms.
 
 This module provides support for maintaining a list in sorted order without

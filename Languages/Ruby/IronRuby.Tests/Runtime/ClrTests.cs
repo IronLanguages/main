@@ -29,6 +29,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 #if !CLR2
 using BigInt = System.Numerics.BigInteger;
+using System.Reflection.Emit;
 #endif
 
 namespace IronRuby.Tests {
@@ -391,6 +392,24 @@ Bar(O): 7
 Baz(I): 1
 10
 ");
+        }
+
+        public delegate void TestDelegate(string a);
+
+        public void SpecialMethods() {
+            var result = Engine.Execute(@"
+System::AppDomain.CurrentDomain.CreateInstance(""mscorlib"", ""System.Object"")
+");
+            Assert(result is System.Runtime.Remoting.ObjectHandle);
+
+            var dm = (DynamicMethod)Engine.Execute(@"
+System::Reflection::Emit::DynamicMethod.new(""foo"", 1.GetType(), System::Array[System::Type].new(0))
+");
+            Assert(dm.ReturnType == typeof(int));
+
+            var invoke = typeof(TestDelegate).GetMethod("Invoke");
+            var d = invoke.CreateDelegate(typeof(Action<string>));
+            Assert(d is Action<string>);
         }
 
         #endregion
