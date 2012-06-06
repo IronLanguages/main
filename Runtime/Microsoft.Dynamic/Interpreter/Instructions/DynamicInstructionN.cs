@@ -21,10 +21,11 @@ using System.Runtime.CompilerServices;
 using System.Reflection;
 
 using Microsoft.Scripting.Utils;
+using System.Security;
 
 namespace Microsoft.Scripting.Interpreter {
     internal sealed partial class DynamicInstructionN : Instruction {
-        private readonly CallInstruction _target;
+        private readonly CallInstruction _targetInvocationInstruction;
         private readonly object _targetDelegate;
         private readonly CallSite _site;
         private readonly int _argumentCount;
@@ -34,7 +35,8 @@ namespace Microsoft.Scripting.Interpreter {
             var methodInfo = delegateType.GetMethod("Invoke");
             var parameters = methodInfo.GetParameters();
 
-            _target = CallInstruction.Create(methodInfo, parameters);
+            // <Delegate>.Invoke is ok to target by a delegate in partial trust (SecurityException is not thrown):
+            _targetInvocationInstruction = CallInstruction.Create(methodInfo, parameters);
             _site = site;
             _argumentCount = parameters.Length - 1;
             _targetDelegate = site.GetType().GetInheritedFields("Target").First().GetValue(site);
@@ -56,7 +58,7 @@ namespace Microsoft.Scripting.Interpreter {
                 args[1 + i] = frame.Data[first + i];
             }
 
-            object ret = _target.InvokeInstance(_targetDelegate, args);
+            object ret = _targetInvocationInstruction.InvokeInstance(_targetDelegate, args);
             if (_isVoid) {
                 frame.StackIndex = first;
             } else {

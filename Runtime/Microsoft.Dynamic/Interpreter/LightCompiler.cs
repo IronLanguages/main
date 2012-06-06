@@ -31,6 +31,7 @@ using System.Reflection.Emit;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
+using System.Security;
 
 namespace Microsoft.Scripting.Interpreter {
     public sealed class ExceptionHandler {
@@ -424,9 +425,9 @@ namespace Microsoft.Scripting.Interpreter {
             }
 
             if (index.Indexer != null) {
-                _instructions.EmitCall(index.Indexer.GetGetMethod(true));
+                EmitCall(index.Indexer.GetGetMethod(true));
             } else if (index.Arguments.Count != 1) {
-                _instructions.EmitCall(index.Object.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance));
+                EmitCall(index.Object.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance));
             } else {
                 _instructions.EmitGetArrayItem(index.Object.Type);
             }
@@ -453,9 +454,9 @@ namespace Microsoft.Scripting.Interpreter {
             Compile(node.Right);
 
             if (index.Indexer != null) {
-                _instructions.EmitCall(index.Indexer.GetSetMethod(true));
+                EmitCall(index.Indexer.GetSetMethod(true));
             } else if (index.Arguments.Count != 1) {
-                _instructions.EmitCall(index.Object.Type.GetMethod("Set", BindingFlags.Public | BindingFlags.Instance));
+                EmitCall(index.Object.Type.GetMethod("Set", BindingFlags.Public | BindingFlags.Instance));
             } else {
                 _instructions.EmitSetArrayItem(index.Object.Type);
             }
@@ -474,11 +475,11 @@ namespace Microsoft.Scripting.Interpreter {
                 if (!asVoid) {
                     LocalDefinition local = _locals.DefineLocal(Expression.Parameter(node.Right.Type), start);
                     _instructions.EmitAssignLocal(local.Index);
-                    _instructions.EmitCall(method);
+                    EmitCall(method);
                     _instructions.EmitLoadLocal(local.Index);
                     _locals.UndefineLocal(local, _instructions.Count);
                 } else {
-                    _instructions.EmitCall(method);
+                    EmitCall(method);
                 }
                 return;
             }
@@ -541,7 +542,7 @@ namespace Microsoft.Scripting.Interpreter {
             if (node.Method != null) {
                 Compile(node.Left);
                 Compile(node.Right);
-                _instructions.EmitCall(node.Method);
+                EmitCall(node.Method);
             } else {
                 switch (node.NodeType) {
                     case ExpressionType.ArrayIndex:
@@ -637,7 +638,7 @@ namespace Microsoft.Scripting.Interpreter {
 
                 // We should be able to ignore Int32ToObject
                 if (node.Method != Runtime.ScriptingRuntimeHelpers.Int32ToObjectMethod) {
-                    _instructions.EmitCall(node.Method);
+                    EmitCall(node.Method);
                 }
             } else if (node.Type == typeof(void)) {
                 CompileAsVoid(node.Operand);
@@ -684,7 +685,7 @@ namespace Microsoft.Scripting.Interpreter {
             
             if (node.Method != null) {
                 Compile(node.Operand);
-                _instructions.EmitCall(node.Method);
+                EmitCall(node.Method);
             } else {
                 switch (node.NodeType) {
                     case ExpressionType.Not:
@@ -1229,8 +1230,32 @@ namespace Microsoft.Scripting.Interpreter {
                 foreach (var arg in node.Arguments) {
                     Compile(arg);
                 }
-                _instructions.EmitCall(node.Method, parameters);
+
+                EmitCall(node.Method, parameters);
             }
+        }
+
+        public void EmitCall(MethodInfo method) {
+            EmitCall(method, method.GetParameters());
+        }
+
+        public void EmitCall(MethodInfo method, ParameterInfo[] parameters) {
+            Instruction instruction;
+
+            try {
+                instruction = CallInstruction.Create(method, parameters);
+            } catch (SecurityException) {
+                _forceCompile = true;
+                
+                _instructions.Emit(new PopNInstruction((method.IsStatic ? 0 : 1) + parameters.Length));
+                if (method.ReturnType != typeof(void)) {
+                    _instructions.EmitLoad(null);
+                }
+
+                return;
+            }
+
+            _instructions.Emit(instruction);
         }
 
         private void CompileNewExpression(Expression expr) {
@@ -1281,7 +1306,7 @@ namespace Microsoft.Scripting.Interpreter {
                 if (node.Expression != null) {
                     Compile(node.Expression);
                 }
-                _instructions.EmitCall(method);
+                EmitCall(method);
                 return;
             }
 
