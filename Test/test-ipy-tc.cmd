@@ -4,11 +4,10 @@ setlocal
 
 set _test_root=%DLR_ROOT%\Test
 set _runner=%_test_root%\TestRunner\TestRunner\bin\Debug\TestRunner.exe
-set _tests=/category:Languages\IronPython\IronPython\2.X
 
 call :build_runner
 
-"%_runner%" "%_test_root%\IronPython.tests" /verbose /threads:2 /binpath:"%DLR_BIN%" /nunitoutput:"%_test_root%\TestResult.xml" %_tests%
+"%_runner%" "%_test_root%\IronPython.tests" /verbose /threads:2 /binpath:"%DLR_BIN%" %*
 
 endlocal
 goto:eof
