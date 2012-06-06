@@ -4,7 +4,6 @@ setlocal
 
 set _test_root=%DLR_ROOT%\Test
 set _runner=%_test_root%\TestRunner\TestRunner\bin\Debug\TestRunner.exe
-set _tests=/category:Languages\IronPython\IronPython\2.X
 
 call :build_runner
 
