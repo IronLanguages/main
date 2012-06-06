@@ -3,7 +3,7 @@
 # email package unit tests for (optional) Asian codecs
 
 import unittest
-from test.test_support import run_unittest, due_to_ironpython_bug
+from test.test_support import run_unittest
 
 from email.test.test_email import TestEmailBase
 from email.charset import Charset
@@ -21,8 +21,6 @@ except LookupError:
 
 class TestEmailAsianCodecs(TestEmailBase):
     def test_japanese_codecs(self):
-        if due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=360541"):
-            return
         eq = self.ndiffAssertEqual
         j = Charset("euc-jp")
         g = Charset("iso-8859-1")
@@ -55,8 +53,6 @@ Hello World! =?iso-2022-jp?b?GyRCJU8lbSE8JW8hPCVrJUkhKhsoQg==?=
         eq(h.__unicode__().encode('euc-jp'), long)
 
     def test_payload_encoding(self):
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28021"):
-            return
         jhello = '\xa5\xcf\xa5\xed\xa1\xbc\xa5\xef\xa1\xbc\xa5\xeb\xa5\xc9\xa1\xaa'
         jcode  = 'euc-jp'
         msg = Message()

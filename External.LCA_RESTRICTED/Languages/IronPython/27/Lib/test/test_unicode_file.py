@@ -1,14 +1,12 @@
 # Test some Unicode file name semantics
 # We dont test many operations on files other than
 # that their names can be used with Unicode characters.
-from test import test_support
 import os, glob, time, shutil
-if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=303481"):
-    import unicodedata
+import unicodedata
 
 import unittest
 from test.test_support import run_unittest, TESTFN_UNICODE
-from test.test_support import TESTFN_ENCODING, TESTFN_UNICODE_UNENCODEABLE
+from test.test_support import TESTFN_ENCODING, TESTFN_UNENCODABLE
 try:
     TESTFN_ENCODED = TESTFN_UNICODE.encode(TESTFN_ENCODING)
 except (UnicodeError, TypeError):
@@ -50,8 +48,7 @@ class TestUnicodeFiles(unittest.TestCase):
         self.assertTrue(os.path.exists(os.path.abspath(filename)))
         self.assertTrue(os.path.isfile(os.path.abspath(filename)))
         self.assertTrue(os.access(os.path.abspath(filename), os.R_OK))
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=363042"):
-            os.chmod(filename, 0777)
+        os.chmod(filename, 0777)
         os.utime(filename, None)
         os.utime(filename, (time.time(), time.time()))
         # Copy/rename etc tests using the same filename
@@ -71,11 +68,10 @@ class TestUnicodeFiles(unittest.TestCase):
 
         # Normalize the unicode strings, as round-tripping the name via the OS
         # may return a different (but equivalent) value.
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=303481"):
-            base = unicodedata.normalize("NFD", base)
-            file_list = [unicodedata.normalize("NFD", f) for f in file_list]
+        base = unicodedata.normalize("NFD", base)
+        file_list = [unicodedata.normalize("NFD", f) for f in file_list]
 
-            self.assertIn(base, file_list)
+        self.assertIn(base, file_list)
 
     # Do as many "equivalancy' tests as we can - ie, check that although we
     # have different types for the filename, they refer to the same file.
@@ -83,9 +79,8 @@ class TestUnicodeFiles(unittest.TestCase):
         # Note we only check "filename1 against filename2" - we don't bother
         # checking "filename2 against 1", as we assume we are called again with
         # the args reversed.
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=7279"):
-            self.assertTrue(type(filename1)!=type(filename2),
-                        "No point checking equivalent filenames of the same type")
+        self.assertTrue(type(filename1)!=type(filename2),
+                    "No point checking equivalent filenames of the same type")
         # stat and lstat should return the same results.
         self.assertEqual(os.stat(filename1),
                              os.stat(filename2))
@@ -133,11 +128,10 @@ class TestUnicodeFiles(unittest.TestCase):
                     cwd_result = os.getcwd().decode(TESTFN_ENCODING)
                     name_result = make_name.decode(TESTFN_ENCODING)
 
-                if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=303481"):
-                    cwd_result = unicodedata.normalize("NFD", cwd_result)
-                    name_result = unicodedata.normalize("NFD", name_result)
+                cwd_result = unicodedata.normalize("NFD", cwd_result)
+                name_result = unicodedata.normalize("NFD", name_result)
 
-                    self.assertEqual(os.path.basename(cwd_result),name_result)
+                self.assertEqual(os.path.basename(cwd_result),name_result)
             finally:
                 os.chdir(cwd)
         finally:
@@ -177,8 +171,8 @@ class TestUnicodeFiles(unittest.TestCase):
     def test_single_files(self):
         self._test_single(TESTFN_ENCODED)
         self._test_single(TESTFN_UNICODE)
-        if TESTFN_UNICODE_UNENCODEABLE is not None:
-            self._test_single(TESTFN_UNICODE_UNENCODEABLE)
+        if TESTFN_UNENCODABLE is not None:
+            self._test_single(TESTFN_UNENCODABLE)
 
     def test_equivalent_files(self):
         self._test_equivalent(TESTFN_ENCODED, TESTFN_UNICODE)
@@ -194,14 +188,13 @@ class TestUnicodeFiles(unittest.TestCase):
         self._do_directory(TESTFN_UNICODE+ext, TESTFN_ENCODED+ext, False)
         self._do_directory(TESTFN_UNICODE+ext, TESTFN_UNICODE+ext, False)
         # Our directory name that can't use a non-unicode name.
-        if TESTFN_UNICODE_UNENCODEABLE is not None:
-            self._do_directory(TESTFN_UNICODE_UNENCODEABLE+ext,
-                               TESTFN_UNICODE_UNENCODEABLE+ext,
+        if TESTFN_UNENCODABLE is not None:
+            self._do_directory(TESTFN_UNENCODABLE+ext,
+                               TESTFN_UNENCODABLE+ext,
                                False)
 
 def test_main():
-    if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=7279"):
-        run_unittest(__name__)
+    run_unittest(__name__)
 
 if __name__ == "__main__":
     test_main()

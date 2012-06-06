@@ -19,7 +19,6 @@ from lib2to3.pgen2 import token
 
 from . import support
 
-from test.test_support import due_to_ironpython_bug, gc_collect
 
 TEST_DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 FIXER_DIR = os.path.join(TEST_DATA_DIR, "fixers")
@@ -39,7 +38,6 @@ class TestRefactoringTool(unittest.TestCase):
 
     def tearDown(self):
         sys.path.pop()
-        gc_collect()
 
     def check_instances(self, instances, classes):
         for inst, cls in zip(instances, classes):
@@ -198,9 +196,6 @@ from __future__ import print_function"""
         return new_contents
 
     def test_refactor_file(self):
-        if due_to_ironpython_bug("Files in TFS enlistment are read-only"):
-            return
-
         test_file = os.path.join(FIXER_DIR, "parrot_example.py")
         self.check_file_refactoring(test_file, _DEFAULT_FIXERS)
 
@@ -228,6 +223,7 @@ from __future__ import print_function"""
                 "hi.py",
                 ".dumb",
                 ".after.py",
+                "notpy.npy",
                 "sappy"]
         expected = ["hi.py"]
         check(tree, expected)
@@ -236,21 +232,15 @@ from __future__ import print_function"""
         check(tree, tree)
 
     def test_file_encoding(self):
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         fn = os.path.join(TEST_DATA_DIR, "different_encoding.py")
         self.check_file_refactoring(fn)
 
     def test_bom(self):
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         fn = os.path.join(TEST_DATA_DIR, "bom.py")
         data = self.check_file_refactoring(fn)
         self.assertTrue(data.startswith(codecs.BOM_UTF8))
 
     def test_crlf_newlines(self):
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         old_sep = os.linesep
         os.linesep = "\r\n"
         try:

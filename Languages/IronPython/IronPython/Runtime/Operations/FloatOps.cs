@@ -79,18 +79,20 @@ namespace IronPython.Runtime.Operations {
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s) {
-            if (cls == TypeCache.Double) {
-                object value;
-                IPythonObject po = s as IPythonObject;
-                if (po != null &&
-                    PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__float__", out value)) {
-                    return value;
-                }
-
-                return ParseFloat(s.MakeString());
+            // First, check for subclasses of bytearray/bytes
+            object value;
+            IPythonObject po = s as IPythonObject;
+            if (po == null ||
+                !PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__float__", out value)) {
+                // If __float__oes not exist, just parse the string normally
+                value = ParseFloat(s.MakeString());
             }
 
-            return cls.CreateInstance(context, ParseFloat(s.MakeString()));
+            if (cls == TypeCache.Double) {
+                return value;
+            } else { 
+                return cls.CreateInstance(context, value);
+            }
         }
 
         public static PythonTuple as_integer_ratio(double self) {
@@ -1097,19 +1099,25 @@ namespace IronPython.Runtime.Operations {
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s) {
-            if (cls != TypeCache.Single) {
-                return cls.CreateInstance(context, s);
-            }
-
+            // First, check for subclasses of bytearray/bytes
             object value;
             IPythonObject po = s as IPythonObject;
-            if (po != null &&
-                PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__float__", out value)) {
-                if (value is double) return (float)(double)value;
-                return value;
+            if (po == null ||
+                !PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__float__", out value)) {
+                // If __float__ does not exist, just parse the string normally
+                value = ParseFloat(s.MakeString());
             }
 
-            return ParseFloat(s.MakeString());
+            if (!(value is double)) {
+                // The check for double is correct, because that's all Python types should be using
+                throw PythonOps.TypeError("__float__ returned non-float (type %s)", DynamicHelpers.GetPythonType(value));
+            }
+
+            if (cls == TypeCache.Single) {
+                return (float)value;
+            } else {
+                return cls.CreateInstance(context, (float)value);
+            }
         }
 
         private static object ParseFloat(string x) {

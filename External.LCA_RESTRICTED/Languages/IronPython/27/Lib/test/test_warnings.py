@@ -4,9 +4,9 @@ import os
 import StringIO
 import sys
 import unittest
+import subprocess
 from test import test_support
-if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/15512"):
-    import subprocess
+from test.script_helper import assert_python_ok
 
 import warning_tests
 
@@ -15,19 +15,6 @@ import warnings as original_warnings
 py_warnings = test_support.import_fresh_module('warnings', blocked=['_warnings'])
 c_warnings = test_support.import_fresh_module('warnings', fresh=['_warnings'])
 
-def skipUnderIPy(test):
-    def new_test(*args):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21417"):
-            return
-        test(*args)
-    return new_test
-
-def skipCTestUnderIPy(test):
-    def new_test(*args):
-        if args[0].module == c_warnings and test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21417"):
-            return
-        test(*args)
-    return new_test
 @contextmanager
 def warnings_state(module):
     """Use a specific warnings implementation in warning_tests."""
@@ -80,7 +67,6 @@ class FilterTests(object):
 
     """Testing the filtering functionality."""
 
-    @skipCTestUnderIPy
     def test_error(self):
         with original_warnings.catch_warnings(module=self.module) as w:
             self.module.resetwarnings()
@@ -93,11 +79,9 @@ class FilterTests(object):
                 module=self.module) as w:
             self.module.resetwarnings()
             self.module.filterwarnings("ignore", category=UserWarning)
-            print self.module.filters
             self.module.warn("FilterTests.test_ignore", UserWarning)
-            self.assertEquals(len(w), 0)
+            self.assertEqual(len(w), 0)
 
-    @skipCTestUnderIPy
     def test_always(self):
         with original_warnings.catch_warnings(record=True,
                 module=self.module) as w:
@@ -109,7 +93,6 @@ class FilterTests(object):
             self.module.warn(message, UserWarning)
             self.assertTrue(w[-1].message, message)
 
-    @skipCTestUnderIPy
     def test_default(self):
         with original_warnings.catch_warnings(record=True,
                 module=self.module) as w:
@@ -119,14 +102,13 @@ class FilterTests(object):
             for x in xrange(2):
                 self.module.warn(message, UserWarning)
                 if x == 0:
-                    self.assertEquals(w[-1].message, message)
+                    self.assertEqual(w[-1].message, message)
                     del w[:]
                 elif x == 1:
-                    self.assertEquals(len(w), 0)
+                    self.assertEqual(len(w), 0)
                 else:
                     raise ValueError("loop variant unhandled")
 
-    @skipCTestUnderIPy
     def test_module(self):
         with original_warnings.catch_warnings(record=True,
                 module=self.module) as w:
@@ -134,12 +116,11 @@ class FilterTests(object):
             self.module.filterwarnings("module", category=UserWarning)
             message = UserWarning("FilterTests.test_module")
             self.module.warn(message, UserWarning)
-            self.assertEquals(w[-1].message, message)
+            self.assertEqual(w[-1].message, message)
             del w[:]
             self.module.warn(message, UserWarning)
-            self.assertEquals(len(w), 0)
+            self.assertEqual(len(w), 0)
 
-    @skipCTestUnderIPy
     def test_once(self):
         with original_warnings.catch_warnings(record=True,
                 module=self.module) as w:
@@ -148,16 +129,15 @@ class FilterTests(object):
             message = UserWarning("FilterTests.test_once")
             self.module.warn_explicit(message, UserWarning, "test_warnings.py",
                                     42)
-            self.assertEquals(w[-1].message, message)
+            self.assertEqual(w[-1].message, message)
             del w[:]
             self.module.warn_explicit(message, UserWarning, "test_warnings.py",
                                     13)
-            self.assertEquals(len(w), 0)
+            self.assertEqual(len(w), 0)
             self.module.warn_explicit(message, UserWarning, "test_warnings2.py",
                                     42)
-            self.assertEquals(len(w), 0)
+            self.assertEqual(len(w), 0)
 
-    @skipCTestUnderIPy
     def test_inheritance(self):
         with original_warnings.catch_warnings(module=self.module) as w:
             self.module.resetwarnings()
@@ -177,9 +157,8 @@ class FilterTests(object):
                 self.module.warn("FilterTests.test_ordering", UserWarning)
             except UserWarning:
                 self.fail("order handling for actions failed")
-            self.assertEquals(len(w), 0)
+            self.assertEqual(len(w), 0)
 
-    @skipCTestUnderIPy
     def test_filterwarnings(self):
         # Test filterwarnings().
         # Implicitly also tests resetwarnings().
@@ -218,7 +197,6 @@ class WarnTests(unittest.TestCase):
 
     """Test warnings.warn() and warnings.warn_explicit()."""
 
-    @skipCTestUnderIPy
     def test_message(self):
         with original_warnings.catch_warnings(record=True,
                 module=self.module) as w:
@@ -229,7 +207,6 @@ class WarnTests(unittest.TestCase):
                 self.assertEqual(str(w[-1].message), text)
                 self.assertTrue(w[-1].category is UserWarning)
 
-    @skipUnderIPy
     def test_filename(self):
         with warnings_state(self.module):
             with original_warnings.catch_warnings(record=True,
@@ -241,7 +218,6 @@ class WarnTests(unittest.TestCase):
                 self.assertEqual(os.path.basename(w[-1].filename),
                                     "warning_tests.py")
 
-    @skipUnderIPy
     def test_stacklevel(self):
         # Test stacklevel argument
         # make sure all messages are different, so the warning won't be skipped
@@ -269,7 +245,6 @@ class WarnTests(unittest.TestCase):
                 self.assertEqual(os.path.basename(w[-1].filename),
                                     "sys")
 
-    @skipUnderIPy
     def test_missing_filename_not_main(self):
         # If __file__ is not specified and __main__ is not the module name,
         # then __file__ should be set to the module name.
@@ -284,7 +259,6 @@ class WarnTests(unittest.TestCase):
         finally:
             warning_tests.__file__ = filename
 
-    @skipUnderIPy
     def test_missing_filename_main_with_argv(self):
         # If __file__ is not specified and the caller is __main__ and sys.argv
         # exists, then use sys.argv[0] as the file.
@@ -304,7 +278,6 @@ class WarnTests(unittest.TestCase):
             warning_tests.__file__ = filename
             warning_tests.__name__ = module_name
 
-    @skipUnderIPy
     def test_missing_filename_main_without_argv(self):
         # If __file__ is not specified, the caller is __main__, and sys.argv
         # is not set, then '__main__' is the file name.
@@ -325,7 +298,6 @@ class WarnTests(unittest.TestCase):
             warning_tests.__name__ = module_name
             sys.argv = argv
 
-    @skipUnderIPy
     def test_missing_filename_main_with_argv_empty_string(self):
         # If __file__ is not specified, the caller is __main__, and sys.argv[0]
         # is the empty string, then '__main__ is the file name.
@@ -347,9 +319,8 @@ class WarnTests(unittest.TestCase):
             warning_tests.__name__ = module_name
             sys.argv = argv
 
-    @skipUnderIPy
     def test_warn_explicit_type_errors(self):
-        # warn_explicit() shoud error out gracefully if it is given objects
+        # warn_explicit() should error out gracefully if it is given objects
         # of the wrong types.
         # lineno is expected to be an integer.
         self.assertRaises(TypeError, self.module.warn_explicit,
@@ -384,8 +355,6 @@ class CWarnTests(BaseTest, WarnTests):
     # test_support.import_fresh_module utility function
     def test_accelerated(self):
         self.assertFalse(original_warnings is self.module)
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         self.assertFalse(hasattr(self.module.warn, 'func_code'))
 
 class PyWarnTests(BaseTest, WarnTests):
@@ -400,7 +369,6 @@ class PyWarnTests(BaseTest, WarnTests):
 
 class WCmdLineTests(unittest.TestCase):
 
-    @skipCTestUnderIPy
     def test_improper_input(self):
         # Uses the private _setoption() function to test the parsing
         # of command-line warning arguments
@@ -413,6 +381,22 @@ class WCmdLineTests(unittest.TestCase):
                               self.module._setoption, 'ignore:2::4:-5')
             self.module._setoption('error::Warning::0')
             self.assertRaises(UserWarning, self.module.warn, 'convert to error')
+
+    def test_improper_option(self):
+        # Same as above, but check that the message is printed out when
+        # the interpreter is executed. This also checks that options are
+        # actually parsed at all.
+        rc, out, err = assert_python_ok("-Wxxx", "-c", "pass")
+        self.assertIn(b"Invalid -W option ignored: invalid action: 'xxx'", err)
+
+    def test_warnings_bootstrap(self):
+        # Check that the warnings module does get loaded when -W<some option>
+        # is used (see issue #10372 for an example of silent bootstrap failure).
+        rc, out, err = assert_python_ok("-Wi", "-c",
+            "import sys; sys.modules['warnings'].warn('foo', RuntimeWarning)")
+        # '-Wi' was observed
+        self.assertFalse(out.strip())
+        self.assertNotIn(b'RuntimeWarning', err)
 
 class CWCmdLineTests(BaseTest, WCmdLineTests):
     module = c_warnings
@@ -427,7 +411,6 @@ class _WarningsTests(BaseTest):
 
     module = c_warnings
 
-    @skipCTestUnderIPy
     def test_filter(self):
         # Everything should function even if 'filters' is not in warnings.
         with original_warnings.catch_warnings(module=self.module) as w:
@@ -438,7 +421,6 @@ class _WarningsTests(BaseTest):
             self.assertRaises(UserWarning, self.module.warn,
                                 'convert to error')
 
-    @skipCTestUnderIPy
     def test_onceregistry(self):
         # Replacing or removing the onceregistry should be okay.
         global __warningregistry__
@@ -454,7 +436,7 @@ class _WarningsTests(BaseTest):
                 self.assertEqual(w[-1].message, message)
                 del w[:]
                 self.module.warn_explicit(message, UserWarning, "file", 42)
-                self.assertEquals(len(w), 0)
+                self.assertEqual(len(w), 0)
                 # Test the resetting of onceregistry.
                 self.module.onceregistry = {}
                 __warningregistry__ = {}
@@ -465,7 +447,7 @@ class _WarningsTests(BaseTest):
                 del self.module.onceregistry
                 __warningregistry__ = {}
                 self.module.warn_explicit(message, UserWarning, "file", 42)
-                self.assertEquals(len(w), 0)
+                self.assertEqual(len(w), 0)
         finally:
             self.module.onceregistry = original_registry
 
@@ -488,12 +470,11 @@ class _WarningsTests(BaseTest):
                 del self.module.defaultaction
                 __warningregistry__ = {}
                 registry = {}
-                if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                    self.module.warn_explicit(message, UserWarning, "<test>", 43,
-                                                registry=registry)
-                    self.assertEqual(w[-1].message, message)
-                    self.assertEqual(len(w), 1)
-                    self.assertEqual(len(registry), 1)
+                self.module.warn_explicit(message, UserWarning, "<test>", 43,
+                                            registry=registry)
+                self.assertEqual(w[-1].message, message)
+                self.assertEqual(len(w), 1)
+                self.assertEqual(len(registry), 1)
                 del w[:]
                 # Test setting.
                 self.module.defaultaction = "ignore"
@@ -506,8 +487,6 @@ class _WarningsTests(BaseTest):
             self.module.defaultaction = original
 
     def test_showwarning_missing(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         # Test that showwarning() missing is okay.
         text = 'del showwarning test'
         with original_warnings.catch_warnings(module=self.module):
@@ -518,7 +497,6 @@ class _WarningsTests(BaseTest):
                 result = stream.getvalue()
         self.assertIn(text, result)
 
-    @skipCTestUnderIPy
     def test_showwarning_not_callable(self):
         with original_warnings.catch_warnings(module=self.module):
             self.module.filterwarnings("always", category=UserWarning)
@@ -529,7 +507,6 @@ class _WarningsTests(BaseTest):
             finally:
                 self.module.showwarning = old_showwarning
 
-    @skipCTestUnderIPy
     def test_show_warning_output(self):
         # With showarning() missing, make sure that output is okay.
         text = 'test show_warning'
@@ -624,7 +601,6 @@ class CatchWarningTests(BaseTest):
         self.assertTrue(wmod.filters is orig_filters)
         self.assertTrue(wmod.showwarning is orig_showwarning)
 
-    @skipCTestUnderIPy
     def test_catch_warnings_recording(self):
         wmod = self.module
         # Ensure warnings are recorded when requested
@@ -677,7 +653,6 @@ class CatchWarningTests(BaseTest):
                 self.assertTrue(wmod.filters is not orig_filters)
             self.assertTrue(wmod.filters is orig_filters)
 
-    @skipCTestUnderIPy
     def test_check_warnings(self):
         # Explicit tests for the test_support convenience wrapper
         wmod = self.module
@@ -720,8 +695,6 @@ class PyCatchWarningTests(CatchWarningTests):
 class EnvironmentVariableTests(BaseTest):
 
     def test_single_warning(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/15512"):
-            return
         newenv = os.environ.copy()
         newenv["PYTHONWARNINGS"] = "ignore::DeprecationWarning"
         p = subprocess.Popen([sys.executable,
@@ -731,8 +704,6 @@ class EnvironmentVariableTests(BaseTest):
         self.assertEqual(p.wait(), 0)
 
     def test_comma_separated_warnings(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/15512"):
-            return
         newenv = os.environ.copy()
         newenv["PYTHONWARNINGS"] = ("ignore::DeprecationWarning,"
                                     "ignore::UnicodeWarning")
@@ -744,8 +715,6 @@ class EnvironmentVariableTests(BaseTest):
         self.assertEqual(p.wait(), 0)
 
     def test_envvar_and_command_line(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/15512"):
-            return
         newenv = os.environ.copy()
         newenv["PYTHONWARNINGS"] = "ignore::DeprecationWarning"
         p = subprocess.Popen([sys.executable, "-W" "ignore::UnicodeWarning",

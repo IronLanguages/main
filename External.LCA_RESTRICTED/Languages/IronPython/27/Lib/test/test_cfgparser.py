@@ -1,5 +1,6 @@
 import ConfigParser
 import StringIO
+import os
 import unittest
 import UserDict
 
@@ -186,7 +187,8 @@ class TestCaseBase(unittest.TestCase):
         self.assertEqual(cf.sections(), [],
                          "new ConfigParser should have no defined sections")
         self.assertFalse(cf.has_section("Foo"),
-                    "new ConfigParser should have no acknowledged sections")
+                         "new ConfigParser should have no acknowledged "
+                         "sections")
         self.assertRaises(ConfigParser.NoSectionError,
                           cf.options, "Foo")
         self.assertRaises(ConfigParser.NoSectionError,
@@ -355,8 +357,14 @@ class TestCaseBase(unittest.TestCase):
 
 class ConfigParserTestCase(TestCaseBase):
     config_class = ConfigParser.ConfigParser
+    allow_no_value = True
 
     def test_interpolation(self):
+        rawval = {
+            ConfigParser.ConfigParser: ("something %(with11)s "
+                                        "lots of interpolation (11 steps)"),
+            ConfigParser.SafeConfigParser: "%(with1)s",
+        }
         cf = self.get_interpolation_config()
         eq = self.assertEqual
         eq(cf.get("Foo", "getname"), "Foo")
@@ -390,6 +398,7 @@ class ConfigParserTestCase(TestCaseBase):
         cf.set('non-string', 'dict', {'pi': 3.14159, '%(': 1,
                                       '%(list)': '%(list)'})
         cf.set('non-string', 'string_with_interpolation', '%(list)s')
+        cf.set('non-string', 'no-value')
         self.assertEqual(cf.get('non-string', 'int', raw=True), 1)
         self.assertRaises(TypeError, cf.get, 'non-string', 'int')
         self.assertEqual(cf.get('non-string', 'list', raw=True),
@@ -402,7 +411,35 @@ class ConfigParserTestCase(TestCaseBase):
                                 raw=True), '%(list)s')
         self.assertRaises(ValueError, cf.get, 'non-string',
                           'string_with_interpolation', raw=False)
+        self.assertEqual(cf.get('non-string', 'no-value'), None)
 
+class MultilineValuesTestCase(TestCaseBase):
+    config_class = ConfigParser.ConfigParser
+    wonderful_spam = ("I'm having spam spam spam spam "
+                      "spam spam spam beaked beans spam "
+                      "spam spam and spam!").replace(' ', '\t\n')
+
+    def setUp(self):
+        cf = self.newconfig()
+        for i in range(100):
+            s = 'section{}'.format(i)
+            cf.add_section(s)
+            for j in range(10):
+                cf.set(s, 'lovely_spam{}'.format(j), self.wonderful_spam)
+        with open(test_support.TESTFN, 'w') as f:
+            cf.write(f)
+
+    def tearDown(self):
+        os.unlink(test_support.TESTFN)
+
+    def test_dominating_multiline_values(self):
+        # we're reading from file because this is where the code changed
+        # during performance updates in Python 3.2
+        cf_from_file = self.newconfig()
+        with open(test_support.TESTFN) as f:
+            cf_from_file.readfp(f)
+        self.assertEqual(cf_from_file.get('section8', 'lovely_spam4'),
+                         self.wonderful_spam.replace('\t\n', '\n'))
 
 class RawConfigParserTestCase(TestCaseBase):
     config_class = ConfigParser.RawConfigParser
@@ -493,6 +530,33 @@ class SafeConfigParserTestCaseNoValue(SafeConfigParserTestCase):
     allow_no_value = True
 
 
+class Issue7005TestCase(unittest.TestCase):
+    """Test output when None is set() as a value and allow_no_value == False.
+
+    http://bugs.python.org/issue7005
+
+    """
+
+    expected_output = "[section]\noption = None\n\n"
+
+    def prepare(self, config_class):
+        # This is the default, but that's the point.
+        cp = config_class(allow_no_value=False)
+        cp.add_section("section")
+        cp.set("section", "option", None)
+        sio = StringIO.StringIO()
+        cp.write(sio)
+        return sio.getvalue()
+
+    def test_none_as_value_stringified(self):
+        output = self.prepare(ConfigParser.ConfigParser)
+        self.assertEqual(output, self.expected_output)
+
+    def test_none_as_value_stringified_raw(self):
+        output = self.prepare(ConfigParser.RawConfigParser)
+        self.assertEqual(output, self.expected_output)
+
+
 class SortedTestCase(RawConfigParserTestCase):
     def newconfig(self, defaults=None):
         self.cf = self.config_class(defaults=defaults, dict_type=SortedDict)
@@ -508,23 +572,25 @@ class SortedTestCase(RawConfigParserTestCase):
                         "k=v\n")
         output = StringIO.StringIO()
         self.cf.write(output)
-        self.assertEquals(output.getvalue(),
-                          "[a]\n"
-                          "k = v\n\n"
-                          "[b]\n"
-                          "o1 = 4\n"
-                          "o2 = 3\n"
-                          "o3 = 2\n"
-                          "o4 = 1\n\n")
+        self.assertEqual(output.getvalue(),
+                         "[a]\n"
+                         "k = v\n\n"
+                         "[b]\n"
+                         "o1 = 4\n"
+                         "o2 = 3\n"
+                         "o3 = 2\n"
+                         "o4 = 1\n\n")
 
 
 def test_main():
     test_support.run_unittest(
         ConfigParserTestCase,
+        MultilineValuesTestCase,
         RawConfigParserTestCase,
         SafeConfigParserTestCase,
-        SortedTestCase,
         SafeConfigParserTestCaseNoValue,
+        SortedTestCase,
+        Issue7005TestCase,
         )
 
 

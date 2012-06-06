@@ -3,7 +3,7 @@ import array
 import unittest
 import struct
 import inspect
-from test.test_support import run_unittest, check_warnings, check_py3k_warnings, due_to_ironpython_bug
+from test.test_support import run_unittest, check_warnings, check_py3k_warnings
 
 import sys
 ISBIGENDIAN = sys.byteorder == "big"
@@ -62,8 +62,8 @@ class StructTest(unittest.TestCase):
 
         self.assertRaises(struct.error, struct.pack, 'iii', 3)
         self.assertRaises(struct.error, struct.pack, 'i', 3, 3, 3)
-        self.assertRaises(struct.error, struct.pack, 'i', 'foo')
-        self.assertRaises(struct.error, struct.pack, 'P', 'foo')
+        self.assertRaises((TypeError, struct.error), struct.pack, 'i', 'foo')
+        self.assertRaises((TypeError, struct.error), struct.pack, 'P', 'foo')
         self.assertRaises(struct.error, struct.unpack, 'd', 'flap')
         s = struct.pack('ii', 1, 2)
         self.assertRaises(struct.error, struct.unpack, 'iii', s)
@@ -243,7 +243,8 @@ class StructTest(unittest.TestCase):
                                                                  '\x01' + got)
                 else:
                     # x is out of range -- verify pack realizes that.
-                    self.assertRaises(struct.error, pack, format, x)
+                    self.assertRaises((OverflowError, ValueError, struct.error),
+                                      pack, format, x)
 
             def run(self):
                 from random import randrange
@@ -316,9 +317,8 @@ class StructTest(unittest.TestCase):
                                   randrange)
                 with check_warnings(("integer argument expected, "
                                      "got non-integer", DeprecationWarning)):
-                    self.assertRaises((TypeError, struct.error),
-                                      struct.pack, self.format,
-                                      3+42j)
+                    with self.assertRaises((TypeError, struct.error)):
+                        struct.pack(self.format, 3+42j)
 
                 # an attempt to convert a non-integer (with an
                 # implicit conversion via __int__) should succeed,
@@ -350,8 +350,6 @@ class StructTest(unittest.TestCase):
                                       struct.pack, self.format,
                                       obj)
 
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         byteorders = '', '@', '=', '<', '>', '!'
         for code in integer_codes:
             for byteorder in byteorders:
@@ -411,15 +409,9 @@ class StructTest(unittest.TestCase):
         # The same, but tack on a 1 bit so it rounds up to infinity.
         big = (1 << 25) - 1
         big = math.ldexp(big, 127 - 24)
-        # not big enough to overflow in IPy
-        if due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            struct.pack(">f", big)
-        else:
-            self.assertRaises(OverflowError, struct.pack, ">f", big)
+        self.assertRaises(OverflowError, struct.pack, ">f", big)
 
     def test_1530559(self):
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         # SF bug 1530559. struct.pack raises TypeError where it used to convert.
         for endian in ('', '>', '<'):
             for fmt in integer_codes:
@@ -458,12 +450,15 @@ class StructTest(unittest.TestCase):
 
         # Go beyond boundaries.
         small_buf = array.array('c', ' '*10)
-        self.assertRaises(struct.error, s.pack_into, small_buf, 0, test_string)
-        self.assertRaises(struct.error, s.pack_into, small_buf, 2, test_string)
+        self.assertRaises((ValueError, struct.error), s.pack_into, small_buf, 0,
+                          test_string)
+        self.assertRaises((ValueError, struct.error), s.pack_into, small_buf, 2,
+                          test_string)
 
         # Test bogus offset (issue 3694)
         sb = small_buf
-        self.assertRaises(TypeError, struct.pack_into, b'1', sb, None)
+        self.assertRaises((TypeError, struct.error), struct.pack_into, b'', sb,
+                          None)
 
     def test_pack_into_fn(self):
         test_string = 'Reykjavik rocks, eow!'
@@ -483,8 +478,10 @@ class StructTest(unittest.TestCase):
 
         # Go beyond boundaries.
         small_buf = array.array('c', ' '*10)
-        self.assertRaises(struct.error, pack_into, small_buf, 0, test_string)
-        self.assertRaises(struct.error, pack_into, small_buf, 2, test_string)
+        self.assertRaises((ValueError, struct.error), pack_into, small_buf, 0,
+                          test_string)
+        self.assertRaises((ValueError, struct.error), pack_into, small_buf, 2,
+                          test_string)
 
     def test_unpack_with_buffer(self):
         with check_py3k_warnings(("buffer.. not supported in 3.x",
@@ -499,6 +496,9 @@ class StructTest(unittest.TestCase):
             self.test_unpack_from(cls=buffer)
 
     def test_bool(self):
+        class ExplodingBool(object):
+            def __nonzero__(self):
+                raise IOError
         for prefix in tuple("<>!=")+('',):
             false = (), [], [], '', 0
             true = [1], 'test', 5, -1, 0xffffffffL+1, 0xffffffff//2
@@ -527,18 +527,17 @@ class StructTest(unittest.TestCase):
                 self.assertFalse(prefix, msg='encoded bool is not one byte: %r'
                                              %packed)
 
-            for c in '\x01\x7f\xff\x0f\xf0':
-                self.assertTrue(struct.unpack('>?', c)[0])
+            self.assertRaises(IOError, struct.pack, prefix + '?',
+                              ExplodingBool())
+
+        for c in [b'\x01', b'\x7f', b'\xff', b'\x0f', b'\xf0']:
+            self.assertTrue(struct.unpack('>?', c)[0])
 
     @unittest.skipUnless(IS32BIT, "Specific to 32bit machines")
     def test_crasher(self):
-        if due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         self.assertRaises(MemoryError, struct.pack, "357913941c", "a")
 
     def test_count_overflow(self):
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         hugecount = '{}b'.format(sys.maxsize+1)
         self.assertRaises(struct.error, struct.calcsize, hugecount)
 

@@ -1,4 +1,4 @@
-from test.test_support import run_unittest, verbose, due_to_ironpython_bug, is_cli
+from test.test_support import run_unittest, verbose
 import unittest
 import locale
 import sys
@@ -339,7 +339,7 @@ class TestFrFRNumberFormatting(FrFRCookedTest, BaseFormattingTest):
 class TestStringMethods(BaseLocalizedTest):
     locale_type = locale.LC_CTYPE
 
-    if sys.platform != 'sunos5' and not sys.platform.startswith("win") and not is_cli:
+    if sys.platform != 'sunos5' and not sys.platform.startswith("win"):
         # Test BSD Rune locale's bug for isctype functions.
 
         def test_isspace(self):
@@ -376,14 +376,12 @@ class TestMiscellaneous(unittest.TestCase):
     def test_getpreferredencoding(self):
         # Invoke getpreferredencoding to make sure it does not cause exceptions.
         enc = locale.getpreferredencoding()
-        if enc and not due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
+        if enc:
             # If encoding non-empty, make sure it is valid
             codecs.lookup(enc)
 
     if hasattr(locale, "strcoll"):
         def test_strcoll_3303(self):
-            if due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=15372"):
-                return
             # test crasher from bug #3303
             self.assertRaises(TypeError, locale.strcoll, u"a", None)
 

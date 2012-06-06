@@ -273,7 +273,7 @@ class Test(unittest.TestCase):
         s1.h = 0x1234
         s1.i = 0x12345678
         s1.d = 3.14
-        s2 = bytes(struct.pack(fmt, 0x12, 0x1234, 0x12345678, 3.14))
+        s2 = struct.pack(fmt, 0x12, 0x1234, 0x12345678, 3.14)
         self.assertEqual(bin(s1), bin(s2))
 
 if __name__ == "__main__":

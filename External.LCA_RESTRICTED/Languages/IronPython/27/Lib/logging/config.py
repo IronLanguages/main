@@ -226,14 +226,14 @@ def _install_loggers(cp, handlers, disable_existing_loggers):
             propagate = 1
         logger = logging.getLogger(qn)
         if qn in existing:
-            i = existing.index(qn)
+            i = existing.index(qn) + 1 # start with the entry after qn
             prefixed = qn + "."
             pflen = len(prefixed)
             num_existing = len(existing)
-            i = i + 1 # look at the entry after qn
-            while (i < num_existing) and (existing[i][:pflen] == prefixed):
-                child_loggers.append(existing[i])
-                i = i + 1
+            while i < num_existing:
+                if existing[i][:pflen] == prefixed:
+                    child_loggers.append(existing[i])
+                i += 1
             existing.remove(qn)
         if "level" in opts:
             level = cp.get(sectname, "level")
@@ -866,6 +866,7 @@ def listen(port=DEFAULT_LOGGING_CONFIG_PORT):
                 logging._acquireLock()
                 abort = self.abort
                 logging._releaseLock()
+            self.socket.close()
 
     class Server(threading.Thread):
 
@@ -895,8 +896,10 @@ def stopListening():
     Stop the listening server which was created with a call to listen().
     """
     global _listener
-    if _listener:
-        logging._acquireLock()
-        _listener.abort = 1
-        _listener = None
+    logging._acquireLock()
+    try:
+        if _listener:
+            _listener.abort = 1
+            _listener = None
+    finally:
         logging._releaseLock()

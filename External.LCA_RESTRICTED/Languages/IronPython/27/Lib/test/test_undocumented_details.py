@@ -1,4 +1,4 @@
-from test.test_support import run_unittest, check_py3k_warnings, due_to_ironpython_bug
+from test.test_support import run_unittest, check_py3k_warnings
 import unittest
 
 class TestImplementationComparisons(unittest.TestCase):
@@ -12,8 +12,6 @@ class TestImplementationComparisons(unittest.TestCase):
         self.assertTrue(int != str)
 
     def test_cell_comparisons(self):
-        if due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         def f(x):
             if x:
                 y = 1

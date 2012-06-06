@@ -8,13 +8,11 @@ import unittest
 import warnings
 import sys
 import signal
+import subprocess
 import time
 from test import test_support
-
-if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/15512"):
-    subprocess = None
-else:
-    import subprocess
+import mmap
+import uuid
 
 warnings.filterwarnings("ignore", "tempnam", RuntimeWarning, __name__)
 warnings.filterwarnings("ignore", "tmpnam", RuntimeWarning, __name__)
@@ -30,13 +28,8 @@ class FileTests(unittest.TestCase):
         f = os.open(test_support.TESTFN, os.O_CREAT|os.O_RDWR)
         os.close(f)
         self.assertTrue(os.access(test_support.TESTFN, os.W_OK))
-<<<<<<< HEAD
-    
-    @unittest.skipIf(test_support.is_cli, "http://ironpython.codeplex.com/workitem/7267")
-=======
 
     @unittest.skipIf(sys.platform == 'cli', 'IronPython has no os.dup')
->>>>>>> add5aa5... A bunch of work to get the test suite running smoothly.
     def test_closerange(self):
         first = os.open(test_support.TESTFN, os.O_CREAT|os.O_RDWR)
         # We must allocate two consecutive file descriptors, otherwise
@@ -73,12 +66,9 @@ class TemporaryFileTests(unittest.TestCase):
         os.mkdir(test_support.TESTFN)
 
     def tearDown(self):
-        test_support.gc_collect()
         for name in self.files:
             os.unlink(name)
-        for i in xrange(2):
-            if os.path.exists(test_support.TESTFN):
-                os.rmdir(test_support.TESTFN)
+        os.rmdir(test_support.TESTFN)
 
     def check_tempfile(self, name):
         # make sure it doesn't already exist:
@@ -92,16 +82,18 @@ class TemporaryFileTests(unittest.TestCase):
     def test_tempnam(self):
         if not hasattr(os, "tempnam"):
             return
-        warnings.filterwarnings("ignore", "tempnam", RuntimeWarning,
-                                r"test_os$")
-        self.check_tempfile(os.tempnam())
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", "tempnam", RuntimeWarning,
+                                    r"test_os$")
+            warnings.filterwarnings("ignore", "tempnam", DeprecationWarning)
+            self.check_tempfile(os.tempnam())
 
-        name = os.tempnam(test_support.TESTFN)
-        self.check_tempfile(name)
+            name = os.tempnam(test_support.TESTFN)
+            self.check_tempfile(name)
 
-        name = os.tempnam(test_support.TESTFN, "pfx")
-        self.assertTrue(os.path.basename(name)[:3] == "pfx")
-        self.check_tempfile(name)
+            name = os.tempnam(test_support.TESTFN, "pfx")
+            self.assertTrue(os.path.basename(name)[:3] == "pfx")
+            self.check_tempfile(name)
 
     def test_tmpfile(self):
         if not hasattr(os, "tmpfile"):
@@ -120,63 +112,69 @@ class TemporaryFileTests(unittest.TestCase):
         # test that a subsequent call to os.tmpfile() raises the same error. If
         # it doesn't, assume we're on XP or below and the user running the test
         # has administrative privileges, and proceed with the test as normal.
-        if sys.platform == 'win32':
-            name = '\\python_test_os_test_tmpfile.txt'
-            if os.path.exists(name):
-                os.remove(name)
-            try:
-                fp = open(name, 'w')
-            except IOError, first:
-                # open() failed, assert tmpfile() fails in the same way.
-                # Although open() raises an IOError and os.tmpfile() raises an
-                # OSError(), 'args' will be (13, 'Permission denied') in both
-                # cases.
-                try:
-                    fp = os.tmpfile()
-                except OSError, second:
-                    self.assertEqual(first.args, second.args)
-                else:
-                    self.fail("expected os.tmpfile() to raise OSError")
-                return
-            else:
-                # open() worked, therefore, tmpfile() should work.  Close our
-                # dummy file and proceed with the test as normal.
-                fp.close()
-                os.remove(name)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", "tmpfile", DeprecationWarning)
 
-        fp = os.tmpfile()
-        fp.write("foobar")
-        fp.seek(0,0)
-        s = fp.read()
-        fp.close()
-        self.assertTrue(s == "foobar")
+            if sys.platform == 'win32':
+                name = '\\python_test_os_test_tmpfile.txt'
+                if os.path.exists(name):
+                    os.remove(name)
+                try:
+                    fp = open(name, 'w')
+                except IOError, first:
+                    # open() failed, assert tmpfile() fails in the same way.
+                    # Although open() raises an IOError and os.tmpfile() raises an
+                    # OSError(), 'args' will be (13, 'Permission denied') in both
+                    # cases.
+                    try:
+                        fp = os.tmpfile()
+                    except OSError, second:
+                        self.assertEqual(first.args, second.args)
+                    else:
+                        self.fail("expected os.tmpfile() to raise OSError")
+                    return
+                else:
+                    # open() worked, therefore, tmpfile() should work.  Close our
+                    # dummy file and proceed with the test as normal.
+                    fp.close()
+                    os.remove(name)
+
+            fp = os.tmpfile()
+            fp.write("foobar")
+            fp.seek(0,0)
+            s = fp.read()
+            fp.close()
+            self.assertTrue(s == "foobar")
 
     def test_tmpnam(self):
         if not hasattr(os, "tmpnam"):
             return
-        warnings.filterwarnings("ignore", "tmpnam", RuntimeWarning,
-                                r"test_os$")
-        name = os.tmpnam()
-        if sys.platform in ("win32",):
-            # The Windows tmpnam() seems useless.  From the MS docs:
-            #
-            #     The character string that tmpnam creates consists of
-            #     the path prefix, defined by the entry P_tmpdir in the
-            #     file STDIO.H, followed by a sequence consisting of the
-            #     digit characters '0' through '9'; the numerical value
-            #     of this string is in the range 1 - 65,535.  Changing the
-            #     definitions of L_tmpnam or P_tmpdir in STDIO.H does not
-            #     change the operation of tmpnam.
-            #
-            # The really bizarre part is that, at least under MSVC6,
-            # P_tmpdir is "\\".  That is, the path returned refers to
-            # the root of the current drive.  That's a terrible place to
-            # put temp files, and, depending on privileges, the user
-            # may not even be able to open a file in the root directory.
-            self.assertFalse(os.path.exists(name),
-                        "file already exists for temporary file")
-        else:
-            self.check_tempfile(name)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", "tmpnam", RuntimeWarning,
+                                    r"test_os$")
+            warnings.filterwarnings("ignore", "tmpnam", DeprecationWarning)
+
+            name = os.tmpnam()
+            if sys.platform in ("win32",):
+                # The Windows tmpnam() seems useless.  From the MS docs:
+                #
+                #     The character string that tmpnam creates consists of
+                #     the path prefix, defined by the entry P_tmpdir in the
+                #     file STDIO.H, followed by a sequence consisting of the
+                #     digit characters '0' through '9'; the numerical value
+                #     of this string is in the range 1 - 65,535.  Changing the
+                #     definitions of L_tmpnam or P_tmpdir in STDIO.H does not
+                #     change the operation of tmpnam.
+                #
+                # The really bizarre part is that, at least under MSVC6,
+                # P_tmpdir is "\\".  That is, the path returned refers to
+                # the root of the current drive.  That's a terrible place to
+                # put temp files, and, depending on privileges, the user
+                # may not even be able to open a file in the root directory.
+                self.assertFalse(os.path.exists(name),
+                            "file already exists for temporary file")
+            else:
+                self.check_tempfile(name)
 
 # Test attributes on return values from os.*stat* family.
 class StatAttributeTests(unittest.TestCase):
@@ -188,7 +186,6 @@ class StatAttributeTests(unittest.TestCase):
         f.close()
 
     def tearDown(self):
-        test_support.gc_collect()
         os.unlink(self.fname)
         os.rmdir(test_support.TESTFN)
 
@@ -200,8 +197,8 @@ class StatAttributeTests(unittest.TestCase):
         result = os.stat(self.fname)
 
         # Make sure direct access works
-        self.assertEquals(result[stat.ST_SIZE], 3)
-        self.assertEquals(result.st_size, 3)
+        self.assertEqual(result[stat.ST_SIZE], 3)
+        self.assertEqual(result.st_size, 3)
 
         # Make sure all the attributes are there
         members = dir(result)
@@ -212,8 +209,8 @@ class StatAttributeTests(unittest.TestCase):
                     def trunc(x): return int(x)
                 else:
                     def trunc(x): return x
-                self.assertEquals(trunc(getattr(result, attr)),
-                                  result[getattr(stat, name)])
+                self.assertEqual(trunc(getattr(result, attr)),
+                                 result[getattr(stat, name)])
                 self.assertIn(attr, members)
 
         try:
@@ -248,7 +245,7 @@ class StatAttributeTests(unittest.TestCase):
         except TypeError:
             pass
 
-        # Use the constructr with a too-long tuple.
+        # Use the constructor with a too-long tuple.
         try:
             result2 = os.stat_result((0,1,2,3,4,5,6,7,8,9,10,11,12,13,14))
         except TypeError:
@@ -267,13 +264,13 @@ class StatAttributeTests(unittest.TestCase):
                 return
 
         # Make sure direct access works
-        self.assertEquals(result.f_bfree, result[3])
+        self.assertEqual(result.f_bfree, result[3])
 
         # Make sure all the attributes are there.
         members = ('bsize', 'frsize', 'blocks', 'bfree', 'bavail', 'files',
                     'ffree', 'favail', 'flag', 'namemax')
         for value, member in enumerate(members):
-            self.assertEquals(getattr(result, 'f_' + member), result[value])
+            self.assertEqual(getattr(result, 'f_' + member), result[value])
 
         # Make sure that assignment really fails
         try:
@@ -295,13 +292,12 @@ class StatAttributeTests(unittest.TestCase):
         except TypeError:
             pass
 
-        # Use the constructr with a too-long tuple.
+        # Use the constructor with a too-long tuple.
         try:
             result2 = os.statvfs_result((0,1,2,3,4,5,6,7,8,9,10,11,12,13,14))
         except TypeError:
             pass
 
-    @unittest.skipIf(test_support.is_cli, "http://ironpython.codeplex.com/workitem/26154")
     def test_utime_dir(self):
         delta = 1000000
         st = os.stat(test_support.TESTFN)
@@ -309,7 +305,7 @@ class StatAttributeTests(unittest.TestCase):
         # time stamps in stat, but not in utime.
         os.utime(test_support.TESTFN, (st.st_atime, int(st.st_mtime-delta)))
         st2 = os.stat(test_support.TESTFN)
-        self.assertEquals(st2.st_mtime, int(st.st_mtime-delta))
+        self.assertEqual(st2.st_mtime, int(st.st_mtime-delta))
 
     # Restrict test to Win32, since there is no guarantee other
     # systems support centiseconds
@@ -326,7 +322,12 @@ class StatAttributeTests(unittest.TestCase):
             def test_1565150(self):
                 t1 = 1159195039.25
                 os.utime(self.fname, (t1, t1))
-                self.assertEquals(os.stat(self.fname).st_mtime, t1)
+                self.assertEqual(os.stat(self.fname).st_mtime, t1)
+
+            def test_large_time(self):
+                t1 = 5000000000 # some day in 2128
+                os.utime(self.fname, (t1, t1))
+                self.assertEqual(os.stat(self.fname).st_mtime, t1)
 
         def test_1686475(self):
             # Verify that an open file can be stat'ed
@@ -358,8 +359,9 @@ class EnvironTests(mapping_tests.BasicTestMappingProtocol):
     def test_update2(self):
         if os.path.exists("/bin/sh"):
             os.environ.update(HELLO="World")
-            value = os.popen("/bin/sh -c 'echo $HELLO'").read().strip()
-            self.assertEquals(value, "World")
+            with os.popen("/bin/sh -c 'echo $HELLO'") as popen:
+                value = popen.read().strip()
+                self.assertEqual(value, "World")
 
 class WalkTests(unittest.TestCase):
     """Tests for os.walk()."""
@@ -464,9 +466,7 @@ class WalkTests(unittest.TestCase):
             for name in dirs:
                 dirname = os.path.join(root, name)
                 if not os.path.islink(dirname):
-                    for i in xrange(2):
-                        if os.path.exists(dirname):
-                            os.rmdir(dirname)
+                    os.rmdir(dirname)
                 else:
                     os.remove(dirname)
         os.rmdir(test_support.TESTFN)
@@ -494,20 +494,15 @@ class MakedirTests (unittest.TestCase):
 
 
     def tearDown(self):
-        # try this twice because things like anti-virus can interfere w/ the directories
-        # getting deleted.
-        for i in xrange(2):
-            path = os.path.join(test_support.TESTFN, 'dir1', 'dir2', 'dir3',
-                                'dir4', 'dir5', 'dir6')
-                                
-            # If the tests failed, the bottom-most directory ('../dir6')
-            # may not have been created, so we look for the outermost directory
-            # that exists.
-            while not os.path.exists(path) and path != test_support.TESTFN:
-                path = os.path.dirname(path)
-    
-            if os.path.exists(path):
-                os.removedirs(path)
+        path = os.path.join(test_support.TESTFN, 'dir1', 'dir2', 'dir3',
+                            'dir4', 'dir5', 'dir6')
+        # If the tests failed, the bottom-most directory ('../dir6')
+        # may not have been created, so we look for the outermost directory
+        # that exists.
+        while not os.path.exists(path) and path != test_support.TESTFN:
+            path = os.path.dirname(path)
+
+        os.removedirs(path)
 
 class DevNullTests (unittest.TestCase):
     def test_devnull(self):
@@ -532,7 +527,6 @@ class URandomTests (unittest.TestCase):
         except NotImplementedError:
             pass
 
-    @unittest.skipIf(test_support.is_cli, "execv not implemented: http://ironpython.codeplex.com/workitem/28171")
     def test_execvpe_with_bad_arglist(self):
         self.assertRaises(ValueError, os.execvpe, 'notepad', [], None)
 
@@ -730,6 +724,9 @@ class Win32KillTests(unittest.TestCase):
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
                                 stdin=subprocess.PIPE)
+        self.addCleanup(proc.stdout.close)
+        self.addCleanup(proc.stderr.close)
+        self.addCleanup(proc.stdin.close)
 
         count, max = 0, 100
         while count < max and proc.poll() is None:
@@ -760,13 +757,23 @@ class Win32KillTests(unittest.TestCase):
         self._kill(100)
 
     def _kill_with_event(self, event, name):
+        tagname = "test_os_%s" % uuid.uuid1()
+        m = mmap.mmap(-1, 1, tagname)
+        m[0] = '0'
         # Run a script which has console control handling enabled.
         proc = subprocess.Popen([sys.executable,
                    os.path.join(os.path.dirname(__file__),
-                                "win_console_handler.py")],
+                                "win_console_handler.py"), tagname],
                    creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
         # Let the interpreter startup before we send signals. See #3137.
-        time.sleep(0.5)
+        count, max = 0, 20
+        while count < max and proc.poll() is None:
+            if m[0] == '1':
+                break
+            time.sleep(0.5)
+            count += 1
+        else:
+            self.fail("Subprocess didn't finish initialization")
         os.kill(proc.pid, event)
         # proc.send_signal(event) could also be done here.
         # Allow time for the signal to be passed and the process to exit.

@@ -34,9 +34,6 @@ class TestNodes(support.TestCase):
     if sys.version_info >= (2,6):
         # warnings.catch_warnings is new in 2.6.
         def test_deprecated_prefix_methods(self):
-            from test import test_support
-            if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                return
             l = pytree.Leaf(100, "foo")
             with warnings.catch_warnings(record=True) as w:
                 warnings.simplefilter("always", DeprecationWarning)
@@ -181,17 +178,42 @@ class TestNodes(support.TestCase):
         self.assertEqual(str(n1), "foo**bar")
         self.assertTrue(isinstance(n1.children, list))
 
+    def test_leaves(self):
+        l1 = pytree.Leaf(100, "foo")
+        l2 = pytree.Leaf(100, "bar")
+        l3 = pytree.Leaf(100, "fooey")
+        n2 = pytree.Node(1000, [l1, l2])
+        n3 = pytree.Node(1000, [l3])
+        n1 = pytree.Node(1000, [n2, n3])
+
+        self.assertEqual(list(n1.leaves()), [l1, l2, l3])
+
+    def test_depth(self):
+        l1 = pytree.Leaf(100, "foo")
+        l2 = pytree.Leaf(100, "bar")
+        n2 = pytree.Node(1000, [l1, l2])
+        n3 = pytree.Node(1000, [])
+        n1 = pytree.Node(1000, [n2, n3])
+
+        self.assertEqual(l1.depth(), 2)
+        self.assertEqual(n3.depth(), 1)
+        self.assertEqual(n1.depth(), 0)
+
     def test_post_order(self):
         l1 = pytree.Leaf(100, "foo")
         l2 = pytree.Leaf(100, "bar")
-        n1 = pytree.Node(1000, [l1, l2])
-        self.assertEqual(list(n1.post_order()), [l1, l2, n1])
+        l3 = pytree.Leaf(100, "fooey")
+        c1 = pytree.Node(1000, [l1, l2])
+        n1 = pytree.Node(1000, [c1, l3])
+        self.assertEqual(list(n1.post_order()), [l1, l2, c1, l3, n1])
 
     def test_pre_order(self):
         l1 = pytree.Leaf(100, "foo")
         l2 = pytree.Leaf(100, "bar")
-        n1 = pytree.Node(1000, [l1, l2])
-        self.assertEqual(list(n1.pre_order()), [n1, l1, l2])
+        l3 = pytree.Leaf(100, "fooey")
+        c1 = pytree.Node(1000, [l1, l2])
+        n1 = pytree.Node(1000, [c1, l3])
+        self.assertEqual(list(n1.pre_order()), [n1, c1, l1, l2, l3])
 
     def test_changed(self):
         l1 = pytree.Leaf(100, "f")

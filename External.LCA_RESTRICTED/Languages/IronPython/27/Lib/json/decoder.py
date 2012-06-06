@@ -161,6 +161,12 @@ def JSONObject(s_and_end, encoding, strict, scan_once, object_hook,
             nextchar = s[end:end + 1]
         # Trivial empty object
         if nextchar == '}':
+            if object_pairs_hook is not None:
+                result = object_pairs_hook(pairs)
+                return result, end
+            pairs = {}
+            if object_hook is not None:
+                pairs = object_hook(pairs)
             return pairs, end + 1
         elif nextchar != '"':
             raise ValueError(errmsg("Expecting property name", s, end))
@@ -310,6 +316,15 @@ class JSONDecoder(object):
         place of the given ``dict``.  This can be used to provide custom
         deserializations (e.g. to support JSON-RPC class hinting).
 
+        ``object_pairs_hook``, if specified will be called with the result of
+        every JSON object decoded with an ordered list of pairs.  The return
+        value of ``object_pairs_hook`` will be used instead of the ``dict``.
+        This feature can be used to implement custom decoders that rely on the
+        order that the key and value pairs are decoded (for example,
+        collections.OrderedDict will remember the order of insertion). If
+        ``object_hook`` is also defined, the ``object_pairs_hook`` takes
+        priority.
+
         ``parse_float``, if specified, will be called with the string
         of every JSON float to be decoded. By default this is equivalent to
         float(num_str). This can be used to use another datatype or parser
@@ -324,6 +339,11 @@ class JSONDecoder(object):
         following strings: -Infinity, Infinity, NaN.
         This can be used to raise an exception if invalid JSON numbers
         are encountered.
+
+        If ``strict`` is false (true is the default), then control
+        characters will be allowed inside strings.  Control characters in
+        this context are those with character codes in the 0-31 range,
+        including ``'\\t'`` (tab), ``'\\n'``, ``'\\r'`` and ``'\\0'``.
 
         """
         self.encoding = encoding

@@ -1,7 +1,6 @@
 import unittest
 import ctypes
 import gc
-from test import test_support
 
 MyCallback = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_int)
 OtherCallback = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_int, ctypes.c_ulonglong)
@@ -22,25 +21,20 @@ class RefcountTestCase(unittest.TestCase):
             #print "called back with", value
             return value
 
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=22374"):
-            self.assertEqual(grc(callback), 2)
+        self.assertEqual(grc(callback), 2)
         cb = MyCallback(callback)
 
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=22374"):
-            self.assertTrue(grc(callback) > 2)
+        self.assertTrue(grc(callback) > 2)
         result = f(-10, cb)
         self.assertEqual(result, -18)
         cb = None
 
         gc.collect()
 
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=22374"):
-            self.assertEqual(grc(callback), 2)
+        self.assertEqual(grc(callback), 2)
 
 
     def test_refcount(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=22374"):
-            return
         from sys import getrefcount as grc
         def func(*args):
             pass
@@ -96,10 +90,9 @@ class AnotherLeak(unittest.TestCase):
             return a * b * 2
         f = proto(func)
 
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=22374"):
-            a = sys.getrefcount(ctypes.c_int)
-            f(1, 2)
-            self.assertEqual(sys.getrefcount(ctypes.c_int), a)
+        a = sys.getrefcount(ctypes.c_int)
+        f(1, 2)
+        self.assertEqual(sys.getrefcount(ctypes.c_int), a)
 
 if __name__ == '__main__':
     unittest.main()

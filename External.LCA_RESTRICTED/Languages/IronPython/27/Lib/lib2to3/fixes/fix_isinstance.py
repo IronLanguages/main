@@ -14,7 +14,7 @@ from ..fixer_util import token
 
 
 class FixIsinstance(fixer_base.BaseFix):
-
+    BM_compatible = True
     PATTERN = """
     power<
         'isinstance'
@@ -45,7 +45,7 @@ class FixIsinstance(fixer_base.BaseFix):
             del new_args[-1]
         if len(new_args) == 1:
             atom = testlist.parent
-            new_args[0].prefix = atom.get_prefix()
+            new_args[0].prefix = atom.prefix
             atom.replace(new_args[0])
         else:
             args[:] = new_args

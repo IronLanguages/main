@@ -99,8 +99,6 @@ class DumbDBMTestCase(unittest.TestCase):
         f.close()
 
     def test_line_endings(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=315197"):
-            return
         # test for bug #1172763: dumbdbm would die if the line endings
         # weren't what was expected.
         f = dumbdbm.open(_fname)

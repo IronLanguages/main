@@ -19,6 +19,16 @@ import sys
 # Local imports
 from lib2to3.pgen2 import tokenize
 from ..pgen2.parse import ParseError
+from lib2to3.pygram import python_symbols as syms
+
+
+class TestDriver(support.TestCase):
+
+    def test_formfeed(self):
+        s = """print 1\n\x0Cprint 2\n"""
+        t = driver.parse_string(s)
+        self.assertEqual(t.children[0].children[0].type, syms.print_stmt)
+        self.assertEqual(t.children[1].children[0].type, syms.print_stmt)
 
 
 class GrammarTest(support.TestCase):
@@ -161,10 +171,6 @@ class TestParserIdempotency(support.TestCase):
                 source = fp.read()
                 source = source.decode(encoding)
             tree = driver.parse_string(source)
-            
-            from test import test_support
-            if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                continue
             new = unicode(tree)
             if diff(filepath, new, encoding):
                 self.fail("Idempotency failed: %s" % filepath)

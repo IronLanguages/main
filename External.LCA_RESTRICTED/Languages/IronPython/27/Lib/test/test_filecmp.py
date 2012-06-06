@@ -20,7 +20,6 @@ class FileCompareTestCase(unittest.TestCase):
         self.dir = tempfile.gettempdir()
 
     def tearDown(self):
-        test_support.force_gc_collect("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321793")
         os.unlink(self.name)
         os.unlink(self.name_same)
         os.unlink(self.name_diff)
@@ -65,7 +64,6 @@ class DirCompareTestCase(unittest.TestCase):
         output.close()
 
     def tearDown(self):
-        test_support.force_gc_collect("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321793")
         shutil.rmtree(self.dir)
         shutil.rmtree(self.dir_same)
         shutil.rmtree(self.dir_diff)

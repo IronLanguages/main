@@ -1,6 +1,6 @@
 import os, sys, string, random, tempfile, unittest
 
-from test.test_support import run_unittest, due_to_ironpython_incompatibility, force_gc_collect
+from test.test_support import run_unittest
 
 class TestImport(unittest.TestCase):
 
@@ -22,16 +22,11 @@ class TestImport(unittest.TestCase):
         self.package_dir = os.path.join(self.test_dir,
                                         self.package_name)
         os.mkdir(self.package_dir)
-        if not due_to_ironpython_incompatibility("need to close file explicitly"):
-            open(os.path.join(self.package_dir, '__init__'+os.extsep+'py'), 'w')
-        else:
-            f = open(os.path.join(self.package_dir, '__init__'+os.extsep+'py'), 'w')
+        open(os.path.join(
+                self.package_dir, '__init__'+os.extsep+'py'), 'w').close()
         self.module_path = os.path.join(self.package_dir, 'foo'+os.extsep+'py')
-        if due_to_ironpython_incompatibility("need to close file explicitly"):
-            f.close()
 
     def tearDown(self):
-        force_gc_collect("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321793")
         for file in os.listdir(self.package_dir):
             os.remove(os.path.join(self.package_dir, file))
         os.rmdir(self.package_dir)

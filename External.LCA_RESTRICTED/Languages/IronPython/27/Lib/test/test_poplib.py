@@ -330,7 +330,7 @@ class TestTimeouts(TestCase):
 
 def test_main():
     tests = [TestPOP3Class, TestTimeouts]
-    if SUPPORTS_SSL and not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=28750"):
+    if SUPPORTS_SSL:
         tests.append(TestPOP3_SSLClass)
     thread_info = test_support.threading_setup()
     try:

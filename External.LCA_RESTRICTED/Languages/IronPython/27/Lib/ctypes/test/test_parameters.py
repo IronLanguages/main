@@ -1,5 +1,4 @@
 import unittest, sys
-from test.test_support import due_to_ironpython_bug
 
 class SimpleTypesTestCase(unittest.TestCase):
 
@@ -98,8 +97,7 @@ class SimpleTypesTestCase(unittest.TestCase):
         self.assertEqual(x.contents.value, 42)
         self.assertEqual(LPINT(c_int(42)).contents.value, 42)
 
-        if not due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=24755"):
-            self.assertEqual(LPINT.from_param(None), None)
+        self.assertEqual(LPINT.from_param(None), None)
 
         if c_int != c_long:
             self.assertRaises(TypeError, LPINT.from_param, pointer(c_long(42)))

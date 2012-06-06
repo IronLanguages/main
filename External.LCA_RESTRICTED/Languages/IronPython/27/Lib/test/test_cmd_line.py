@@ -4,11 +4,8 @@
 
 import test.test_support, unittest
 import sys
-
-if test.test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=301267 and http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=8786"):
-    sys.exit(0)
-
 from test.script_helper import spawn_python, kill_python, python_exit_code
+
 
 class CmdLineTest(unittest.TestCase):
     def start_python(self, *args):

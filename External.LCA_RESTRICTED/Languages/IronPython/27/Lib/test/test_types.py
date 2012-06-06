@@ -1,7 +1,7 @@
 # Python test set -- part 6, built-in types
 
 from test.test_support import run_unittest, have_unicode, run_with_locale, \
-                              check_py3k_warnings, due_to_ironpython_incompatibility, due_to_ironpython_bug
+                              check_py3k_warnings
 import unittest
 import sys
 import locale
@@ -114,8 +114,7 @@ class TypesTests(unittest.TestCase):
         self.assertEqual('%e' % 1.5e-101, '1.500000e-101')
 
         self.assertEqual('%g' % 1.0, '1')
-        if not due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            self.assertEqual('%#g' % 1.0, '1.00000')
+        self.assertEqual('%#g' % 1.0, '1.00000')
 
     def test_normal_integers(self):
         # Ensure the first 256 integers are shared
@@ -407,8 +406,7 @@ class TypesTests(unittest.TestCase):
         test(-123456, "#012X", '-0X00001E240')
 
         # issue 5782, commas with no specifier type
-        if not due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            test(1234, '010,', '00,001,234')
+        test(1234, '010,', '00,001,234')
 
         # make sure these are errors
 
@@ -612,9 +610,8 @@ class TypesTests(unittest.TestCase):
         test(-1.0, ' g', '-1')
         test( 1.0, '+g', '+1')
         test(-1.0, '+g', '-1')
-        if not due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=22007"):
-            test(1.1234e200, 'g', '1.1234e+200')
-            test(1.1234e200, 'G', '1.1234E+200')
+        test(1.1234e200, 'g', '1.1234e+200')
+        test(1.1234e200, 'G', '1.1234E+200')
 
 
         test(1.0, 'f', '1.000000')
@@ -656,9 +653,8 @@ class TypesTests(unittest.TestCase):
         # and a number after the decimal.  This is tricky, because
         # a totaly empty format specifier means something else.
         # So, just use a sign flag
-        if not due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=22007"):
-            test(1e200, '+g', '+1e+200')
-            test(1e200, '+', '+1e+200')
+        test(1e200, '+g', '+1e+200')
+        test(1e200, '+', '+1e+200')
         test(1.1e200, '+g', '+1.1e+200')
         test(1.1e200, '+', '+1.1e+200')
 
@@ -676,8 +672,7 @@ class TypesTests(unittest.TestCase):
         test(-123456.12341234, '011.2f', '-0123456.12')
 
         # issue 5782, commas with no specifier type
-        if not due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            test(1.2, '010,.2', '0,000,001.2')
+        test(1.2, '010,.2', '0,000,001.2')
 
         # 0 padding with commas
         test(1234., '011,f', '1,234.000000')
@@ -687,11 +682,10 @@ class TypesTests(unittest.TestCase):
         test(-1234., '013,f', '-1,234.000000')
         test(-1234., '014,f', '-01,234.000000')
         test(-12345., '015,f', '-012,345.000000')
-        if not due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            test(-123456., '016,f', '-0,123,456.000000')
-            test(-123456., '017,f', '-0,123,456.000000')
-            test(-123456.12341234, '017,f', '-0,123,456.123412')
-            test(-123456.12341234, '013,.2f', '-0,123,456.12')
+        test(-123456., '016,f', '-0,123,456.000000')
+        test(-123456., '017,f', '-0,123,456.000000')
+        test(-123456.12341234, '017,f', '-0,123,456.123412')
+        test(-123456.12341234, '013,.2f', '-0,123,456.12')
 
          # % formatting
         test(-1.0, '%', '-100.000000%')
@@ -714,9 +708,8 @@ class TypesTests(unittest.TestCase):
                 self.assertRaises(ValueError, format, -1e-100, format_spec)
 
         # Alternate formatting is not supported
-        if not due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=22007"):
-            self.assertRaises(ValueError, format, 0.0, '#')
-            self.assertRaises(ValueError, format, 0.0, '#20f')
+        self.assertRaises(ValueError, format, 0.0, '#')
+        self.assertRaises(ValueError, format, 0.0, '#20f')
 
         # Issue 6902
         test(12345.6, "0<20", '12345.60000000000000')
@@ -736,18 +729,22 @@ class TypesTests(unittest.TestCase):
         # Check that we can't ask for too many digits. This is
         # probably a CPython specific test. It tries to put the width
         # into a C long.
-        if not due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            self.assertRaises(ValueError, format, 0, '1'*10000 + 'd')
+        self.assertRaises(ValueError, format, 0, '1'*10000 + 'd')
 
         # Similar with the precision.
-            self.assertRaises(ValueError, format, 0, '.' + '1'*10000 + 'd')
+        self.assertRaises(ValueError, format, 0, '.' + '1'*10000 + 'd')
 
         # And may as well test both.
-            self.assertRaises(ValueError, format, 0, '1'*1000 + '.' + '1'*10000 + 'd')
+        self.assertRaises(ValueError, format, 0, '1'*1000 + '.' + '1'*10000 + 'd')
 
         # Make sure commas aren't allowed with various type codes
         for code in 'xXobns':
             self.assertRaises(ValueError, format, 0, ',' + code)
+
+    def test_internal_sizes(self):
+        self.assertGreater(object.__basicsize__, 0)
+        self.assertGreater(tuple.__itemsize__, 0)
+
 
 def test_main():
     with check_py3k_warnings(

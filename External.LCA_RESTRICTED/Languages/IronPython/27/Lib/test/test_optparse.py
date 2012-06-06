@@ -3,7 +3,7 @@
 # (taradino@softhome.net) -- translated from the original Optik
 # test suite to this PyUnit-based version.
 #
-# $Id: test_optparse.py 82242 2010-06-26 03:27:32Z r.david.murray $
+# $Id$
 #
 
 import sys
@@ -427,19 +427,19 @@ class TestTypeAliases(BaseTest):
 
     def test_str_aliases_string(self):
         self.parser.add_option("-s", type="str")
-        self.assertEquals(self.parser.get_option("-s").type, "string")
+        self.assertEqual(self.parser.get_option("-s").type, "string")
 
     def test_new_type_object(self):
         self.parser.add_option("-s", type=str)
-        self.assertEquals(self.parser.get_option("-s").type, "string")
+        self.assertEqual(self.parser.get_option("-s").type, "string")
         self.parser.add_option("-x", type=int)
-        self.assertEquals(self.parser.get_option("-x").type, "int")
+        self.assertEqual(self.parser.get_option("-x").type, "int")
 
     def test_old_type_object(self):
         self.parser.add_option("-s", type=types.StringType)
-        self.assertEquals(self.parser.get_option("-s").type, "string")
+        self.assertEqual(self.parser.get_option("-s").type, "string")
         self.parser.add_option("-x", type=types.IntType)
-        self.assertEquals(self.parser.get_option("-x").type, "int")
+        self.assertEqual(self.parser.get_option("-x").type, "int")
 
 
 # Custom type for testing processing of default values.
@@ -791,15 +791,13 @@ class TestBool(BaseTest):
         (options, args) = self.assertParseOK(["-q"],
                                              {'verbose': 0},
                                              [])
-        if hasattr(__builtins__, 'False'):
-            self.assertTrue(options.verbose is False)
+        self.assertTrue(options.verbose is False)
 
     def test_bool_true(self):
         (options, args) = self.assertParseOK(["-v"],
                                              {'verbose': 1},
                                              [])
-        if hasattr(__builtins__, 'True'):
-            self.assertTrue(options.verbose is True)
+        self.assertTrue(options.verbose is True)
 
     def test_bool_flicker_on_and_off(self):
         self.assertParseOK(["-qvq", "-q", "-v"],

@@ -3,7 +3,6 @@
 
 from test.test_support import run_unittest, check_syntax_error, \
                               check_py3k_warnings
-from test.test_support import due_to_ironpython_bug
 import unittest
 import sys
 # testing import *
@@ -27,8 +26,7 @@ class TokenTests(unittest.TestCase):
         self.assertEqual(0377, 255)
         self.assertEqual(2147483647, 017777777777)
         # "0x" is not a valid literal
-        if not due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertRaises(SyntaxError, eval, "0x")
+        self.assertRaises(SyntaxError, eval, "0x")
         from sys import maxint
         if maxint == 2147483647:
             self.assertEqual(-2147483647-1, -020000000000)
@@ -162,9 +160,9 @@ class GrammarTests(unittest.TestCase):
                    ('(compound, first)', 'two', 'compound', 'first'))
         else:
             self.assertEqual(f4.func_code.co_varnames,
-                      ('two', '.1', 'compound', 'argument',  'list'))
+                  ('two', '.1', 'compound', 'argument',  'list'))
             self.assertEqual(f5.func_code.co_varnames,
-                      ('.0', 'two', 'compound', 'first'))
+                  ('.0', 'two', 'compound', 'first'))
         def a1(one_arg,): pass
         def a2(two, args,): pass
         def v0(*rest): pass
@@ -316,7 +314,7 @@ class GrammarTests(unittest.TestCase):
         ### simple_stmt: small_stmt (';' small_stmt)* [';']
         x = 1; pass; del x
         def foo():
-            # verify statments that end with semi-colons
+            # verify statements that end with semi-colons
             x = 1; pass; del x;
         foo()
 

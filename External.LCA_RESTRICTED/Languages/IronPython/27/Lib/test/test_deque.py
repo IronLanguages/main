@@ -89,8 +89,6 @@ class TestBasic(unittest.TestCase):
             test_support.unlink(test_support.TESTFN)
 
     def test_maxlen_zero(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28359"):
-            return
         it = iter(range(100))
         deque(it, maxlen=0)
         self.assertEqual(list(it), [])
@@ -106,8 +104,6 @@ class TestBasic(unittest.TestCase):
         self.assertEqual(list(it), [])
 
     def test_maxlen_attribute(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28359"):
-            return
         self.assertEqual(deque().maxlen, None)
         self.assertEqual(deque('abc').maxlen, None)
         self.assertEqual(deque('abc', maxlen=4).maxlen, 4)
@@ -118,8 +114,6 @@ class TestBasic(unittest.TestCase):
             d.maxlen = 10
 
     def test_count(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28359"):
-            return
         for s in ('', 'abracadabra', 'simsalabim'*500+'abc'):
             s = list(s)
             d = deque(s)
@@ -143,6 +137,15 @@ class TestBasic(unittest.TestCase):
         m.d = d
         self.assertRaises(RuntimeError, d.count, 3)
 
+        # test issue11004
+        # block advance failed after rotation aligned elements on right side of block
+        d = deque([None]*16)
+        for i in range(len(d)):
+            d.rotate(-1)
+        d.rotate(1)
+        self.assertEqual(d.count(1), 0)
+        self.assertEqual(d.count(None), 16)
+
     def test_comparisons(self):
         d = deque('xabc'); d.popleft()
         for e in [d, deque('abc'), deque('ab'), deque(), list(d)]:
@@ -165,14 +168,10 @@ class TestBasic(unittest.TestCase):
         self.assertRaises(TypeError, d.extend, 1)
         d.extend('bcd')
         self.assertEqual(list(d), list('abcd'))
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28359"):
-            return
         d.extend(d)
         self.assertEqual(list(d), list('abcdabcd'))
 
     def test_iadd(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28359"):
-            return
         d = deque('a')
         d += 'bcd'
         self.assertEqual(list(d), list('abcd'))
@@ -184,9 +183,8 @@ class TestBasic(unittest.TestCase):
         self.assertRaises(TypeError, d.extendleft, 1)
         d.extendleft('bcd')
         self.assertEqual(list(d), list(reversed('abcd')))
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28359"):
-            d.extendleft(d)
-            self.assertEqual(list(d), list('abcddcba'))
+        d.extendleft(d)
+        self.assertEqual(list(d), list('abcddcba'))
         d = deque()
         d.extendleft(range(1000))
         self.assertEqual(list(d), list(reversed(range(1000))))
@@ -239,15 +237,13 @@ class TestBasic(unittest.TestCase):
         self.assertEqual(len(d), 0)
 
     def test_reverse(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28359"):
-            return
         n = 500         # O(n**2) test, don't make this too big
         data = [random.random() for i in range(n)]
         for i in range(n):
             d = deque(data[:i])
             r = d.reverse()
             self.assertEqual(list(d), list(reversed(data[:i])))
-            self.assert_(r is None)
+            self.assertIs(r, None)
             d.reverse()
             self.assertEqual(list(d), data[:i])
         self.assertRaises(TypeError, d.reverse, 1)          # Arity is zero
@@ -506,8 +502,6 @@ class TestBasic(unittest.TestCase):
             gc.collect()
 
     def test_container_iterator(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=25419"):
-            return
         # Bug #3680: tp_traverse was not implemented for deque iterator objects
         class C(object):
             pass
@@ -578,40 +572,39 @@ class TestSubclass(unittest.TestCase):
         d.clear()
         self.assertEqual(len(d), 0)
 
-    if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=149148"):
-        def test_copy_pickle(self):
+    def test_copy_pickle(self):
 
-            d = Deque('abc')
+        d = Deque('abc')
 
-            e = d.__copy__()
-            self.assertEqual(type(d), type(e))
-            self.assertEqual(list(d), list(e))
+        e = d.__copy__()
+        self.assertEqual(type(d), type(e))
+        self.assertEqual(list(d), list(e))
 
-            e = Deque(d)
-            self.assertEqual(type(d), type(e))
-            self.assertEqual(list(d), list(e))
+        e = Deque(d)
+        self.assertEqual(type(d), type(e))
+        self.assertEqual(list(d), list(e))
 
-            s = pickle.dumps(d)
-            e = pickle.loads(s)
-            self.assertNotEqual(id(d), id(e))
-            self.assertEqual(type(d), type(e))
-            self.assertEqual(list(d), list(e))
+        s = pickle.dumps(d)
+        e = pickle.loads(s)
+        self.assertNotEqual(id(d), id(e))
+        self.assertEqual(type(d), type(e))
+        self.assertEqual(list(d), list(e))
 
-            d = Deque('abcde', maxlen=4)
+        d = Deque('abcde', maxlen=4)
 
-            e = d.__copy__()
-            self.assertEqual(type(d), type(e))
-            self.assertEqual(list(d), list(e))
+        e = d.__copy__()
+        self.assertEqual(type(d), type(e))
+        self.assertEqual(list(d), list(e))
 
-            e = Deque(d)
-            self.assertEqual(type(d), type(e))
-            self.assertEqual(list(d), list(e))
+        e = Deque(d)
+        self.assertEqual(type(d), type(e))
+        self.assertEqual(list(d), list(e))
 
-            s = pickle.dumps(d)
-            e = pickle.loads(s)
-            self.assertNotEqual(id(d), id(e))
-            self.assertEqual(type(d), type(e))
-            self.assertEqual(list(d), list(e))
+        s = pickle.dumps(d)
+        e = pickle.loads(s)
+        self.assertNotEqual(id(d), id(e))
+        self.assertEqual(type(d), type(e))
+        self.assertEqual(list(d), list(e))
 
 ##    def test_pickle(self):
 ##        d = Deque('abc')
@@ -633,8 +626,6 @@ class TestSubclass(unittest.TestCase):
 ##        self.assertRaises(TypeError, pickle.dumps, d)
 
     def test_weakref(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24093"):
-            return
         d = deque('gallahad')
         p = weakref.proxy(d)
         self.assertEqual(str(p), str(d))

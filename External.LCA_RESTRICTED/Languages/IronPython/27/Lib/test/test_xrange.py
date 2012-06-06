@@ -96,15 +96,13 @@ class XrangeTest(unittest.TestCase):
         self.assertRaises(OverflowError, xrange, -sys.maxint-1, sys.maxint, 2)
 
     def test_pickling(self):
-        if test.test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         testcases = [(13,), (0, 11), (-22, 10), (20, 3, -1),
                      (13, 21, 3), (-2, 2, 2)]
         for proto in range(pickle.HIGHEST_PROTOCOL + 1):
             for t in testcases:
                 r = xrange(*t)
-                self.assertEquals(list(pickle.loads(pickle.dumps(r, proto))),
-                                  list(r))
+                self.assertEqual(list(pickle.loads(pickle.dumps(r, proto))),
+                                 list(r))
 
     def test_range_iterators(self):
         # see issue 7298
@@ -133,9 +131,6 @@ class XrangeTest(unittest.TestCase):
             except OverflowError:
                 pass
             else:
-                # IronPython's FixSliceIndices incorrectly handles overflow
-                if sum(map(abs, [start, end, step])) > sys.maxint and test.test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                    continue
                 iter2 = pyrange_reversed(start, end, step)
                 test_id = "reversed(xrange({}, {}, {}))".format(start, end, step)
                 self.assert_iterators_equal(iter1, iter2, test_id, limit=100)

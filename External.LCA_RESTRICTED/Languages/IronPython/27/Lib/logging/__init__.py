@@ -107,7 +107,7 @@ logThreads = 1
 #
 # If you don't want multiprocessing information in the log, set this to zero
 #
-logMultiprocessing = 0
+logMultiprocessing = 1
 
 #
 # If you don't want process information in the log, set this to zero
@@ -617,12 +617,16 @@ def _removeHandlerRef(wr):
     """
     Remove a handler reference from the internal cleanup list.
     """
-    _acquireLock()
-    try:
-        if wr in _handlerList:
-            _handlerList.remove(wr)
-    finally:
-        _releaseLock()
+    # This function can be called during module teardown, when globals are
+    # set to None. If _acquireLock is None, assume this is the case and do
+    # nothing.
+    if _acquireLock is not None:
+        _acquireLock()
+        try:
+            if wr in _handlerList:
+                _handlerList.remove(wr)
+        finally:
+            _releaseLock()
 
 def _addHandlerRef(handler):
     """
@@ -1207,7 +1211,7 @@ class Logger(Filterer):
             if filename == _srcfile:
                 f = f.f_back
                 continue
-            rv = (filename, f.f_lineno, co.co_name)
+            rv = (co.co_filename, f.f_lineno, co.co_name)
             break
         return rv
 
@@ -1259,20 +1263,23 @@ class Logger(Filterer):
         """
         Add the specified handler to this logger.
         """
-        if not (hdlr in self.handlers):
-            self.handlers.append(hdlr)
+        _acquireLock()
+        try:
+            if not (hdlr in self.handlers):
+                self.handlers.append(hdlr)
+        finally:
+            _releaseLock()
 
     def removeHandler(self, hdlr):
         """
         Remove the specified handler from this logger.
         """
-        if hdlr in self.handlers:
-            #hdlr.close()
-            hdlr.acquire()
-            try:
+        _acquireLock()
+        try:
+            if hdlr in self.handlers:
                 self.handlers.remove(hdlr)
-            finally:
-                hdlr.release()
+        finally:
+            _releaseLock()
 
     def callHandlers(self, record):
         """
@@ -1493,22 +1500,28 @@ def basicConfig(**kwargs):
     using sys.stdout or sys.stderr), whereas FileHandler closes its stream
     when the handler is closed.
     """
-    if len(root.handlers) == 0:
-        filename = kwargs.get("filename")
-        if filename:
-            mode = kwargs.get("filemode", 'a')
-            hdlr = FileHandler(filename, mode)
-        else:
-            stream = kwargs.get("stream")
-            hdlr = StreamHandler(stream)
-        fs = kwargs.get("format", BASIC_FORMAT)
-        dfs = kwargs.get("datefmt", None)
-        fmt = Formatter(fs, dfs)
-        hdlr.setFormatter(fmt)
-        root.addHandler(hdlr)
-        level = kwargs.get("level")
-        if level is not None:
-            root.setLevel(level)
+    # Add thread safety in case someone mistakenly calls
+    # basicConfig() from multiple threads
+    _acquireLock()
+    try:
+        if len(root.handlers) == 0:
+            filename = kwargs.get("filename")
+            if filename:
+                mode = kwargs.get("filemode", 'a')
+                hdlr = FileHandler(filename, mode)
+            else:
+                stream = kwargs.get("stream")
+                hdlr = StreamHandler(stream)
+            fs = kwargs.get("format", BASIC_FORMAT)
+            dfs = kwargs.get("datefmt", None)
+            fmt = Formatter(fs, dfs)
+            hdlr.setFormatter(fmt)
+            root.addHandler(hdlr)
+            level = kwargs.get("level")
+            if level is not None:
+                root.setLevel(level)
+    finally:
+        _releaseLock()
 
 #---------------------------------------------------------------------------
 # Utility functions at module level.
@@ -1612,8 +1625,19 @@ def shutdown(handlerList=_handlerList):
         #we just ignore them if raiseExceptions is not set
         try:
             h = wr()
-            h.flush()
-            h.close()
+            if h:
+                try:
+                    h.acquire()
+                    h.flush()
+                    h.close()
+                except (IOError, ValueError):
+                    # Ignore errors which might be caused
+                    # because handlers have been closed but
+                    # references to them are still around at
+                    # application exit.
+                    pass
+                finally:
+                    h.release()
         except:
             if raiseExceptions:
                 raise
@@ -1635,8 +1659,14 @@ class NullHandler(Handler):
     a NullHandler and add it to the top-level logger of the library module or
     package.
     """
+    def handle(self, record):
+        pass
+
     def emit(self, record):
         pass
+
+    def createLock(self):
+        self.lock = None
 
 # Warnings integration
 

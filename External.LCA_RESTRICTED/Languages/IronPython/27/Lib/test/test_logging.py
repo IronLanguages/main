@@ -38,8 +38,7 @@ from SocketServer import ThreadingTCPServer, StreamRequestHandler
 import struct
 import sys
 import tempfile
-from test.test_support import captured_stdout, run_with_locale, run_unittest, \
-     due_to_ironpython_bug
+from test.test_support import captured_stdout, run_with_locale, run_unittest
 import textwrap
 import unittest
 import warnings
@@ -121,13 +120,13 @@ class BaseTest(unittest.TestCase):
         except AttributeError:
             # StringIO.StringIO lacks a reset() method.
             actual_lines = stream.getvalue().splitlines()
-        self.assertEquals(len(actual_lines), len(expected_values))
+        self.assertEqual(len(actual_lines), len(expected_values))
         for actual, expected in zip(actual_lines, expected_values):
             match = pat.search(actual)
             if not match:
                 self.fail("Log line does not match expected pattern:\n" +
                             actual)
-            self.assertEquals(tuple(match.groups()), expected)
+            self.assertEqual(tuple(match.groups()), expected)
         s = stream.read()
         if s:
             self.fail("Remaining output at end of log stream:\n" + s)
@@ -563,6 +562,38 @@ class ConfigFileTest(BaseTest):
     datefmt=
     """
 
+    # config1a moves the handler to the root.
+    config1a = """
+    [loggers]
+    keys=root,parser
+
+    [handlers]
+    keys=hand1
+
+    [formatters]
+    keys=form1
+
+    [logger_root]
+    level=WARNING
+    handlers=hand1
+
+    [logger_parser]
+    level=DEBUG
+    handlers=
+    propagate=1
+    qualname=compiler.parser
+
+    [handler_hand1]
+    class=StreamHandler
+    level=NOTSET
+    formatter=form1
+    args=(sys.stdout,)
+
+    [formatter_form1]
+    format=%(levelname)s ++ %(message)s
+    datefmt=
+    """
+
     # config2 has a subtle configuration error that should be reported
     config2 = config1.replace("sys.stdout", "sys.stbout")
 
@@ -641,6 +672,44 @@ class ConfigFileTest(BaseTest):
     datefmt=
     """
 
+    # config7 adds a compiler logger.
+    config7 = """
+    [loggers]
+    keys=root,parser,compiler
+
+    [handlers]
+    keys=hand1
+
+    [formatters]
+    keys=form1
+
+    [logger_root]
+    level=WARNING
+    handlers=hand1
+
+    [logger_compiler]
+    level=DEBUG
+    handlers=
+    propagate=1
+    qualname=compiler
+
+    [logger_parser]
+    level=DEBUG
+    handlers=
+    propagate=1
+    qualname=compiler.parser
+
+    [handler_hand1]
+    class=StreamHandler
+    level=NOTSET
+    formatter=form1
+    args=(sys.stdout,)
+
+    [formatter_form1]
+    format=%(levelname)s ++ %(message)s
+    datefmt=
+    """
+
     def apply_config(self, conf):
         file = cStringIO.StringIO(textwrap.dedent(conf))
         logging.config.fileConfig(file)
@@ -693,7 +762,7 @@ class ConfigFileTest(BaseTest):
             except RuntimeError:
                 logging.exception("just testing")
             sys.stdout.seek(0)
-            self.assertEquals(output.getvalue(),
+            self.assertEqual(output.getvalue(),
                 "ERROR:root:just testing\nGot a [RuntimeError]\n")
             # Original logger output is empty
             self.assert_log_lines([])
@@ -703,6 +772,49 @@ class ConfigFileTest(BaseTest):
 
     def test_config6_ok(self):
         self.test_config1_ok(config=self.config6)
+
+    def test_config7_ok(self):
+        with captured_stdout() as output:
+            self.apply_config(self.config1a)
+            logger = logging.getLogger("compiler.parser")
+            # See issue #11424. compiler-hyphenated sorts
+            # between compiler and compiler.xyz and this
+            # was preventing compiler.xyz from being included
+            # in the child loggers of compiler because of an
+            # overzealous loop termination condition.
+            hyphenated = logging.getLogger('compiler-hyphenated')
+            # All will output a message
+            logger.info(self.next_message())
+            logger.error(self.next_message())
+            hyphenated.critical(self.next_message())
+            self.assert_log_lines([
+                ('INFO', '1'),
+                ('ERROR', '2'),
+                ('CRITICAL', '3'),
+            ], stream=output)
+            # Original logger output is empty.
+            self.assert_log_lines([])
+        with captured_stdout() as output:
+            self.apply_config(self.config7)
+            logger = logging.getLogger("compiler.parser")
+            self.assertFalse(logger.disabled)
+            # Both will output a message
+            logger.info(self.next_message())
+            logger.error(self.next_message())
+            logger = logging.getLogger("compiler.lexer")
+            # Both will output a message
+            logger.info(self.next_message())
+            logger.error(self.next_message())
+            # Will not appear
+            hyphenated.critical(self.next_message())
+            self.assert_log_lines([
+                ('INFO', '4'),
+                ('ERROR', '5'),
+                ('INFO', '6'),
+                ('ERROR', '7'),
+            ], stream=output)
+            # Original logger output is empty.
+            self.assert_log_lines([])
 
 class LogRecordStreamHandler(StreamRequestHandler):
 
@@ -812,7 +924,7 @@ class SocketHandlerTest(BaseTest):
         logger = logging.getLogger("tcp")
         logger.error("spam")
         logger.debug("eggs")
-        self.assertEquals(self.get_output(), "spam\neggs\n")
+        self.assertEqual(self.get_output(), "spam\neggs\n")
 
 
 class MemoryTest(BaseTest):
@@ -894,8 +1006,6 @@ class EncodingTest(BaseTest):
                 os.remove(fn)
 
     def test_encoding_cyrillic_unicode(self):
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17454"):
-            return
         log = logging.getLogger("test")
         #Get a message in Unicode: Do svidanya in Cyrillic (meaning goodbye)
         message = u'\u0434\u043e \u0441\u0432\u0438\u0434\u0430\u043d\u0438\u044f'
@@ -1530,7 +1640,7 @@ class ConfigDictTest(BaseTest):
             except RuntimeError:
                 logging.exception("just testing")
             sys.stdout.seek(0)
-            self.assertEquals(output.getvalue(),
+            self.assertEqual(output.getvalue(),
                 "ERROR:root:just testing\nGot a [RuntimeError]\n")
             # Original logger output is empty
             self.assert_log_lines([])
@@ -1545,7 +1655,7 @@ class ConfigDictTest(BaseTest):
             except RuntimeError:
                 logging.exception("just testing")
             sys.stdout.seek(0)
-            self.assertEquals(output.getvalue(),
+            self.assertEqual(output.getvalue(),
                 "ERROR:root:just testing\nGot a [RuntimeError]\n")
             # Original logger output is empty
             self.assert_log_lines([])

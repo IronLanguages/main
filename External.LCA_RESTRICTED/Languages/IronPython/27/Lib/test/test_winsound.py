@@ -6,9 +6,9 @@ import time
 
 import os
 import subprocess
-import ctypes
 
 winsound = test_support.import_module('winsound')
+ctypes = test_support.import_module('ctypes')
 import _winreg
 
 def has_sound(sound):

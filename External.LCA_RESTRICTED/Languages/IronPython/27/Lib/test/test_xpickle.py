@@ -9,13 +9,12 @@ import cPickle
 import os
 import os.path
 import pickle
+import subprocess
 import sys
 import types
 import unittest
 
 from test import test_support
-if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/15512"):
-    import subprocess
 
 # Most distro-supplied Pythons don't include the tests
 # or test support files, and some don't include a way to get these back even if
@@ -58,7 +57,8 @@ class DumpPickle_LoadCPickle(AbstractPickleTests):
         return cPickle.loads(buf)
 
 def have_python_version(name):
-    """Check whether the given name is a valid Python binary.
+    """Check whether the given name is a valid Python binary and has
+    test.test_support.
 
     This respects your PATH.
 
@@ -68,7 +68,7 @@ def have_python_version(name):
     Returns:
         True if the name is valid, False otherwise.
     """
-    return os.system(name + " -c 'import sys; sys.exit()'") == 0
+    return os.system(name + " -c 'import test.test_support'") == 0
 
 
 class AbstractCompatTests(AbstractPickleTests):
@@ -96,8 +96,6 @@ class AbstractCompatTests(AbstractPickleTests):
         Returns:
             The pickled data received from the child process.
         """
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/15512"):
-            return
         # Prevent the subprocess from picking up invalid .pyc files.
         target = __file__
         if target[-1] in ("c", "o"):

@@ -2,7 +2,6 @@
 
 import platform
 import unittest
-from test import test_support
 from test.test_support import fcmp, have_unicode, TESTFN, unlink, \
                               run_unittest, check_py3k_warnings
 import warnings
@@ -72,8 +71,7 @@ class BuiltinTest(unittest.TestCase):
         __import__(name='time', level=0)
         self.assertRaises(ImportError, __import__, 'spamspam')
         self.assertRaises(TypeError, __import__, 1, 2, 3, 4)
-        if not test_support.due_to_ironpython_bug("http://vstfdevdiv:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=304906"):
-            self.assertRaises(ValueError, __import__, '')
+        self.assertRaises(ValueError, __import__, '')
         self.assertRaises(TypeError, __import__, 'sys', name='sys')
 
     def test_abs(self):
@@ -229,11 +227,9 @@ class BuiltinTest(unittest.TestCase):
         self.assertRaises(TypeError, cmp)
 
     def test_coerce(self):
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertTrue(not fcmp(coerce(1, 1.1), (1.0, 1.1)))
+        self.assertTrue(not fcmp(coerce(1, 1.1), (1.0, 1.1)))
         self.assertEqual(coerce(1, 1L), (1L, 1L))
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertTrue(not fcmp(coerce(1L, 1.1), (1.0, 1.1)))
+        self.assertTrue(not fcmp(coerce(1L, 1.1), (1.0, 1.1)))
         self.assertRaises(TypeError, coerce)
         class BadNumber:
             def __coerce__(self, other):
@@ -283,8 +279,7 @@ class BuiltinTest(unittest.TestCase):
         class Foo(types.ModuleType):
             __dict__ = 8
         f = Foo("foo")
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertRaises(TypeError, dir, f)
+        self.assertRaises(TypeError, dir, f)
 
         # dir(type)
         self.assertIn("strip", dir(str))
@@ -312,8 +307,7 @@ class BuiltinTest(unittest.TestCase):
             def __init__(self):
                 self.bar = "wow"
         f = Foo()
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertNotIn("__repr__", dir(f))
+        self.assertNotIn("__repr__", dir(f))
         self.assertIn("bar", dir(f))
 
         # dir(obj_using __dir__)
@@ -494,9 +488,8 @@ class BuiltinTest(unittest.TestCase):
 
         locals = M()
         locals['z'] = 0
-        if not test_support.due_to_ironpython_bug("http://vstfdevdiv:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=299393"):
-            execfile(TESTFN, globals, locals)
-            self.assertEqual(locals['z'], 2)
+        execfile(TESTFN, globals, locals)
+        self.assertEqual(locals['z'], 2)
 
         unlink(TESTFN)
         self.assertRaises(TypeError, execfile)
@@ -622,17 +615,15 @@ class BuiltinTest(unittest.TestCase):
         self.assertRaises(TypeError, getattr, sys, 1)
         self.assertRaises(TypeError, getattr, sys, 1, "foo")
         self.assertRaises(TypeError, getattr)
-        if have_unicode and not test_support.due_to_ironpython_incompatibility("no way to tell the difference between unicode or simply string"):
+        if have_unicode:
             self.assertRaises(UnicodeError, getattr, sys, unichr(sys.maxunicode))
-        else:
-            self.assertRaises(AttributeError, getattr, sys, unichr(sys.maxunicode))
 
     def test_hasattr(self):
         import sys
         self.assertTrue(hasattr(sys, 'stdout'))
         self.assertRaises(TypeError, hasattr, sys, 1)
         self.assertRaises(TypeError, hasattr)
-        if have_unicode and not test_support.due_to_ironpython_bug("http://vstfdevdiv:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=409521"):
+        if have_unicode:
             self.assertRaises(UnicodeError, hasattr, sys, unichr(sys.maxunicode))
 
         # Check that hasattr allows SystemExit and KeyboardInterrupts by
@@ -660,15 +651,15 @@ class BuiltinTest(unittest.TestCase):
         class X:
             def __hash__(self):
                 return 2**100
-        self.assertEquals(type(hash(X())), int)
+        self.assertEqual(type(hash(X())), int)
         class Y(object):
             def __hash__(self):
                 return 2**100
-        self.assertEquals(type(hash(Y())), int)
+        self.assertEqual(type(hash(Y())), int)
         class Z(long):
             def __hash__(self):
                 return self
-        self.assertEquals(hash(Z(42)), hash(42L))
+        self.assertEqual(hash(Z(42)), hash(42L))
 
     def test_hex(self):
         self.assertEqual(hex(16), '0x10')
@@ -702,7 +693,7 @@ class BuiltinTest(unittest.TestCase):
         # provide too much opportunity for insane things to happen.
         # We don't want them in the interned dict and if they aren't
         # actually interned, we don't want to create the appearance
-        # that they are by allowing intern() to succeeed.
+        # that they are by allowing intern() to succeed.
         class S(str):
             def __hash__(self):
                 return 123
@@ -939,7 +930,7 @@ class BuiltinTest(unittest.TestCase):
         self.assertEqual(next(it), 1)
         self.assertRaises(StopIteration, next, it)
         self.assertRaises(StopIteration, next, it)
-        self.assertEquals(next(it, 42), 42)
+        self.assertEqual(next(it, 42), 42)
 
         class Iter(object):
             def __iter__(self):
@@ -948,7 +939,7 @@ class BuiltinTest(unittest.TestCase):
                 raise StopIteration
 
         it = iter(Iter())
-        self.assertEquals(next(it, 42), 42)
+        self.assertEqual(next(it, 42), 42)
         self.assertRaises(StopIteration, next, it)
 
         def gen():
@@ -956,9 +947,9 @@ class BuiltinTest(unittest.TestCase):
             return
 
         it = gen()
-        self.assertEquals(next(it), 1)
+        self.assertEqual(next(it), 1)
         self.assertRaises(StopIteration, next, it)
-        self.assertEquals(next(it, 42), 42)
+        self.assertEqual(next(it, 42), 42)
 
     def test_oct(self):
         self.assertEqual(oct(100), '0144')
@@ -1117,8 +1108,7 @@ class BuiltinTest(unittest.TestCase):
             def __cmp__(self, other):
                 raise RuntimeError
             __hash__ = None # Invalid cmp makes this unhashable
-        if not test_support.due_to_ironpython_bug("http://vstfdevdiv:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=302549"):
-            self.assertRaises(RuntimeError, range, a, a + 1, badzero(1))
+        self.assertRaises(RuntimeError, range, a, a + 1, badzero(1))
 
         # Reject floats.
         self.assertRaises(TypeError, range, 1., 1., 1.)
@@ -1138,8 +1128,7 @@ class BuiltinTest(unittest.TestCase):
                 self.n = int(n)
             def __int__(self):
                 return self.n
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            self.assertEqual(range(I0(bignum), I0(bignum + 1)), [bignum])
+        self.assertEqual(range(I0(bignum), I0(bignum + 1)), [bignum])
         self.assertEqual(range(I0(smallnum), I0(smallnum + 1)), [smallnum])
 
         # New-style user-defined class with __int__ method
@@ -1148,8 +1137,7 @@ class BuiltinTest(unittest.TestCase):
                 self.n = int(n)
             def __int__(self):
                 return self.n
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            self.assertEqual(range(I1(bignum), I1(bignum + 1)), [bignum])
+        self.assertEqual(range(I1(bignum), I1(bignum + 1)), [bignum])
         self.assertEqual(range(I1(smallnum), I1(smallnum + 1)), [smallnum])
 
         # New-style user-defined class with failing __int__ method
@@ -1207,9 +1195,6 @@ class BuiltinTest(unittest.TestCase):
             sys.stdin = cStringIO.StringIO("    'whitespace'")
             self.assertEqual(input(), 'whitespace')
             sys.stdin = cStringIO.StringIO()
-            if test_support.due_to_ironpython_bug("http://vstfdevdiv:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=302176"):
-                return
-            #BUG 302176
             self.assertRaises(EOFError, input)
 
             # SF 876178: make sure input() respect future options.
@@ -1233,10 +1218,8 @@ class BuiltinTest(unittest.TestCase):
             self.assertEqual(sys.stdout.getvalue().splitlines(), expected)
 
             del sys.stdout
-            #BUG 302176
             self.assertRaises(RuntimeError, input, 'prompt')
             del sys.stdin
-            #BUG 302176
             self.assertRaises(RuntimeError, input, 'prompt')
         finally:
             sys.stdin = savestdin
@@ -1463,11 +1446,8 @@ class BuiltinTest(unittest.TestCase):
         __dict__ = property(fget=getDict)
 
     def test_vars(self):
-        if test_support.due_to_ironpython_bug("http://vstfdevdiv:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=302608"):
-            return
         self.assertEqual(set(vars()), set(dir()))
         import sys
-        #Bug 302608
         self.assertEqual(set(vars(sys)), set(dir(sys)))
         self.assertEqual(self.get_vars_f0(), {})
         self.assertEqual(self.get_vars_f2(), {'a': 1, 'b': 2})
@@ -1582,14 +1562,12 @@ class BuiltinTest(unittest.TestCase):
         # for builtin types, format(x, "") == str(x)
         empty_format_spec(17**13)
         empty_format_spec(1.0)
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=22007"):
-            empty_format_spec(3.1415e104)
-            empty_format_spec(-3.1415e104)
-            empty_format_spec(3.1415e-104)
-            empty_format_spec(-3.1415e-104)
+        empty_format_spec(3.1415e104)
+        empty_format_spec(-3.1415e104)
+        empty_format_spec(3.1415e-104)
+        empty_format_spec(-3.1415e-104)
         empty_format_spec(object)
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            empty_format_spec(None)
+        empty_format_spec(None)
 
         # TypeError because self.__format__ returns the wrong type
         class BadFormatResult:
@@ -1643,8 +1621,6 @@ class BuiltinTest(unittest.TestCase):
 
         for cls in [object, B, C]:
             for fmt_str in fmt_strs:
-                if fmt_str == 's' and test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                    continue
                 test_deprecated_format_string(cls(), fmt_str, len(fmt_str) != 0)
         # --------------------------------------------------------------------
 
@@ -1655,19 +1631,16 @@ class BuiltinTest(unittest.TestCase):
     def test_bin(self):
         self.assertEqual(bin(0), '0b0')
         self.assertEqual(bin(1), '0b1')
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertEqual(bin(-1), '-0b1')
+        self.assertEqual(bin(-1), '-0b1')
         self.assertEqual(bin(2**65), '0b1' + '0' * 65)
         self.assertEqual(bin(2**65-1), '0b' + '1' * 65)
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertEqual(bin(-(2**65)), '-0b1' + '0' * 65)
-            self.assertEqual(bin(-(2**65-1)), '-0b' + '1' * 65)
+        self.assertEqual(bin(-(2**65)), '-0b1' + '0' * 65)
+        self.assertEqual(bin(-(2**65-1)), '-0b' + '1' * 65)
 
     def test_bytearray_translate(self):
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            x = bytearray(b"abc")
-            self.assertRaises(ValueError, x.translate, b"1", 1)
-            self.assertRaises(TypeError, x.translate, b"1"*256, 1)
+        x = bytearray("abc")
+        self.assertRaises(ValueError, x.translate, "1", 1)
+        self.assertRaises(TypeError, x.translate, "1"*256, 1)
 
 class TestSorted(unittest.TestCase):
 

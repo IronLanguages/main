@@ -7,8 +7,7 @@
 from test import test_support
 from test.test_support import TESTFN
 import unittest, StringIO, codecs, sys, os
-if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21399"):
-    import _multibytecodec
+import _multibytecodec
 
 ALL_CJKENCODINGS = [
 # _codecs_cn
@@ -30,22 +29,16 @@ ALL_CJKENCODINGS = [
 class Test_MultibyteCodec(unittest.TestCase):
 
     def test_nullcoding(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321506"):
-            return
         for enc in ALL_CJKENCODINGS:
             self.assertEqual(''.decode(enc), u'')
             self.assertEqual(unicode('', enc), u'')
             self.assertEqual(u''.encode(enc), '')
 
     def test_str_decode(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321775"):
-            return
         for enc in ALL_CJKENCODINGS:
             self.assertEqual('abcd'.encode(enc), 'abcd')
 
     def test_errorcallback_longindex(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321775"):
-            return
         dec = codecs.getdecoder('euc-kr')
         myreplace  = lambda exc: (u'', sys.maxint+1)
         codecs.register_error('test.cjktest', myreplace)
@@ -53,25 +46,11 @@ class Test_MultibyteCodec(unittest.TestCase):
                           'apple\x92ham\x93spam', 'test.cjktest')
 
     def test_codingspec(self):
-        try:
-            for enc in ALL_CJKENCODINGS:
-                if not test_support.due_to_ironpython_incompatibility("Merlin 321793"):
-                    print >> open(TESTFN, 'w'), '# coding:', enc
-                    exec open(TESTFN)
-                else:
-                    f = open(TESTFN, 'w')
-                    print >> f, '# coding:', enc
-                    f.close()
-                    
-                    f = open(TESTFN)
-                    exec f
-                    f.close()
-        finally:
-            os.unlink(TESTFN)
+        for enc in ALL_CJKENCODINGS:
+            code = '# coding: {}\n'.format(enc)
+            exec code
 
     def test_init_segfault(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21399"):
-            return
         # bug #3305: this used to segfault
         self.assertRaises(AttributeError,
                           _multibytecodec.MultibyteStreamReader, None)
@@ -83,8 +62,6 @@ class Test_IncrementalEncoder(unittest.TestCase):
 
     def test_stateless(self):
         # cp949 encoder isn't stateful at all.
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321775"):
-            return
         encoder = codecs.getincrementalencoder('cp949')()
         self.assertEqual(encoder.encode(u'\ud30c\uc774\uc36c \ub9c8\uc744'),
                          '\xc6\xc4\xc0\xcc\xbd\xe3 \xb8\xb6\xc0\xbb')
@@ -102,8 +79,6 @@ class Test_IncrementalEncoder(unittest.TestCase):
         #   U+00E6 U+0300 => ABC4
         #   U+0300 => ABDC
 
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321775"):
-            return
         encoder = codecs.getincrementalencoder('jisx0213')()
         self.assertEqual(encoder.encode(u'\u00e6\u0300'), '\xab\xc4')
         self.assertEqual(encoder.encode(u'\u00e6'), '')
@@ -118,8 +93,6 @@ class Test_IncrementalEncoder(unittest.TestCase):
         self.assertEqual(encoder.encode('', True), '')
 
     def test_stateful_keep_buffer(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321775"):
-            return
         encoder = codecs.getincrementalencoder('jisx0213')()
         self.assertEqual(encoder.encode(u'\u00e6'), '')
         self.assertRaises(UnicodeEncodeError, encoder.encode, u'\u0123')
@@ -132,8 +105,6 @@ class Test_IncrementalEncoder(unittest.TestCase):
         self.assertEqual(encoder.encode(u'', True), '\xa9\xdc')
 
     def test_issue5640(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321775"):
-            return
         encoder = codecs.getincrementalencoder('shift-jis')('backslashreplace')
         self.assertEqual(encoder.encode(u'\xff'), b'\\xff')
         self.assertEqual(encoder.encode(u'\n'), b'\n')
@@ -142,8 +113,6 @@ class Test_IncrementalDecoder(unittest.TestCase):
 
     def test_dbcs(self):
         # cp949 decoder is simple with only 1 or 2 bytes sequences.
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321775"):
-            return
         decoder = codecs.getincrementaldecoder('cp949')()
         self.assertEqual(decoder.decode('\xc6\xc4\xc0\xcc\xbd'),
                          u'\ud30c\uc774')
@@ -152,8 +121,6 @@ class Test_IncrementalDecoder(unittest.TestCase):
         self.assertEqual(decoder.decode(''), u'')
 
     def test_dbcs_keep_buffer(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321775"):
-            return
         decoder = codecs.getincrementaldecoder('cp949')()
         self.assertEqual(decoder.decode('\xc6\xc4\xc0'), u'\ud30c')
         self.assertRaises(UnicodeDecodeError, decoder.decode, '', True)
@@ -164,8 +131,6 @@ class Test_IncrementalDecoder(unittest.TestCase):
         self.assertEqual(decoder.decode('\xcc'), u'\uc774')
 
     def test_iso2022(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321775"):
-            return
         decoder = codecs.getincrementaldecoder('iso2022-jp')()
         ESC = '\x1b'
         self.assertEqual(decoder.decode(ESC + '('), u'')
@@ -182,9 +147,6 @@ class Test_IncrementalDecoder(unittest.TestCase):
 
 class Test_StreamReader(unittest.TestCase):
     def test_bug1728403(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            # LookupError: unknown encoding: cp949
-            return
         try:
             open(TESTFN, 'w').write('\xa1')
             f = codecs.open(TESTFN, encoding='cp949')
@@ -192,7 +154,6 @@ class Test_StreamReader(unittest.TestCase):
         finally:
             try: f.close()
             except: pass
-            test_support.gc_collect()
             os.unlink(TESTFN)
 
 class Test_StreamWriter(unittest.TestCase):
@@ -249,8 +210,6 @@ class Test_StreamWriter(unittest.TestCase):
         pass
 
     def test_streamwriter_strwrite(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321506"):
-            return
         s = StringIO.StringIO()
         wr = codecs.getwriter('gb18030')(s)
         wr.write('abcd')
@@ -258,15 +217,11 @@ class Test_StreamWriter(unittest.TestCase):
 
 class Test_ISO2022(unittest.TestCase):
     def test_g2(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321506"):
-            return
         iso2022jp2 = '\x1b(B:hu4:unit\x1b.A\x1bNi de famille'
         uni = u':hu4:unit\xe9 de famille'
         self.assertEqual(iso2022jp2.decode('iso2022-jp-2'), uni)
 
     def test_iso2022_jp_g0(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321506"):
-            return
         self.assertNotIn('\x0e', u'\N{SOFT HYPHEN}'.encode('iso-2022-jp-2'))
         for encoding in ('iso-2022-jp-2004', 'iso-2022-jp-3'):
             e = u'\u3406'.encode(encoding)

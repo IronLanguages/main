@@ -12,8 +12,7 @@ from weakref import proxy
 import io
 import _pyio as pyio
 
-from test.test_support import TESTFN, run_unittest, gc_collect, \
-    due_to_ironpython_bug, due_to_ironpython_incompatibility
+from test.test_support import TESTFN, run_unittest
 from UserList import UserList
 
 class AutoFileTests(unittest.TestCase):
@@ -31,19 +30,16 @@ class AutoFileTests(unittest.TestCase):
         # verify weak references
         p = proxy(self.f)
         p.write(b'teststring')
-        self.assertEquals(self.f.tell(), p.tell())
+        self.assertEqual(self.f.tell(), p.tell())
         self.f.close()
         self.f = None
-        if due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=18130"):
-            return
         self.assertRaises(ReferenceError, getattr, p, 'tell')
 
     def testAttributes(self):
         # verify expected attributes exist
         f = self.f
         f.name     # merely shouldn't blow up
-        if not due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317194"):
-            f.mode     # ditto
+        f.mode     # ditto
         f.closed   # ditto
 
     def testReadinto(self):
@@ -52,9 +48,8 @@ class AutoFileTests(unittest.TestCase):
         self.f.close()
         a = array('b', b'x'*10)
         self.f = self.open(TESTFN, 'rb')
-        if not due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317208"):
-            n = self.f.readinto(a)
-            self.assertEquals(b'12', a.tostring()[:n])
+        n = self.f.readinto(a)
+        self.assertEqual(b'12', a.tostring()[:n])
 
     def testReadinto_text(self):
         # verify readinto refuses text files
@@ -71,7 +66,7 @@ class AutoFileTests(unittest.TestCase):
         self.f.close()
         self.f = self.open(TESTFN, 'rb')
         buf = self.f.read()
-        self.assertEquals(buf, b'12')
+        self.assertEqual(buf, b'12')
 
     def testWritelinesIntegers(self):
         # verify writelines with integers
@@ -92,7 +87,7 @@ class AutoFileTests(unittest.TestCase):
 
     def testErrors(self):
         f = self.f
-        self.assertEquals(f.name, TESTFN)
+        self.assertEqual(f.name, TESTFN)
         self.assertTrue(not f.isatty())
         self.assertTrue(not f.closed)
 
@@ -102,8 +97,6 @@ class AutoFileTests(unittest.TestCase):
         self.assertTrue(f.closed)
 
     def testMethods(self):
-        if due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317208"):
-            return
         methods = [('fileno', ()),
                    ('flush', ()),
                    ('isatty', ()),
@@ -131,12 +124,12 @@ class AutoFileTests(unittest.TestCase):
             self.assertRaises(ValueError, method, *args)
 
         # file is closed, __exit__ shouldn't do anything
-        self.assertEquals(self.f.__exit__(None, None, None), None)
+        self.assertEqual(self.f.__exit__(None, None, None), None)
         # it must also return None if an exception was given
         try:
             1 // 0
         except:
-            self.assertEquals(self.f.__exit__(*sys.exc_info()), None)
+            self.assertEqual(self.f.__exit__(*sys.exc_info()), None)
 
     def testReadWhenWriting(self):
         self.assertRaises(IOError, self.f.read)
@@ -150,12 +143,7 @@ class PyAutoFileTests(AutoFileTests):
 
 class OtherFileTests(unittest.TestCase):
 
-    def tearDown(self):
-        gc_collect()
-
     def testModeStrings(self):
-        if due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317194"):
-            return
         # check invalid mode strings
         for mode in ("", "aU", "wU+"):
             try:
@@ -177,8 +165,6 @@ class OtherFileTests(unittest.TestCase):
         self.assertRaises((IOError, ValueError), sys.stdin.truncate)
 
     def testBadModeArgument(self):
-        if due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317194"):
-            return
         # verify that we get a sensible error message for bad mode argument
         bad_mode = "qwerty"
         try:
@@ -200,10 +186,7 @@ class OtherFileTests(unittest.TestCase):
         for s in (-1, 0, 1, 512):
             try:
                 f = self.open(TESTFN, 'wb', s)
-                if due_to_ironpython_incompatibility("bytes vs str vs unicode"):
-                    f.write(bytes(str(s)))
-                else:
-                    f.write(str(s).encode("ascii"))
+                f.write(str(s).encode("ascii"))
                 f.close()
                 f.close()
                 f = self.open(TESTFN, 'rb', s)
@@ -212,11 +195,9 @@ class OtherFileTests(unittest.TestCase):
                 f.close()
             except IOError as msg:
                 self.fail('error setting buffer size %d: %s' % (s, str(msg)))
-            self.assertEquals(d, s)
+            self.assertEqual(d, s)
 
     def testTruncateOnWindows(self):
-        if due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317194"):
-            return
         # SF bug <http://www.python.org/sf/801631>
         # "file.truncate fault on windows"
 
@@ -247,8 +228,6 @@ class OtherFileTests(unittest.TestCase):
             os.unlink(TESTFN)
 
     def testIteration(self):
-        if due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317194"):
-            return
         # Test the complex interaction when mixing file-iteration and the
         # various read* methods.
         dataoffset = 16384
@@ -361,7 +340,6 @@ def test_main():
         run_unittest(CAutoFileTests, PyAutoFileTests,
                      COtherFileTests, PyOtherFileTests)
     finally:
-        gc_collect()
         if os.path.exists(TESTFN):
             os.unlink(TESTFN)
 

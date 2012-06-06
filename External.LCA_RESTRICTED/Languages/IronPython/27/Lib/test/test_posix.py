@@ -6,10 +6,12 @@ from test import test_support
 posix = test_support.import_module('posix')
 
 import errno
+import sys
 import time
 import os
 import pwd
 import shutil
+import sys
 import unittest
 import warnings
 
@@ -36,11 +38,13 @@ class PosixTester(unittest.TestCase):
                              "getpid", "getpgrp", "getppid", "getuid",
                            ]
 
-        for name in NO_ARG_FUNCTIONS:
-            posix_func = getattr(posix, name, None)
-            if posix_func is not None:
-                posix_func()
-                self.assertRaises(TypeError, posix_func, 1)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", "", DeprecationWarning)
+            for name in NO_ARG_FUNCTIONS:
+                posix_func = getattr(posix, name, None)
+                if posix_func is not None:
+                    posix_func()
+                    self.assertRaises(TypeError, posix_func, 1)
 
     if hasattr(posix, 'getresuid'):
         def test_getresuid(self):
@@ -101,7 +105,7 @@ class PosixTester(unittest.TestCase):
             try:
                 posix.initgroups(name, 13)
             except OSError as e:
-                self.assertEquals(e.errno, errno.EPERM)
+                self.assertEqual(e.errno, errno.EPERM)
             else:
                 self.fail("Expected OSError to be raised by initgroups")
 
@@ -288,14 +292,18 @@ class PosixTester(unittest.TestCase):
 
     def test_tempnam(self):
         if hasattr(posix, 'tempnam'):
-            self.assertTrue(posix.tempnam())
-            self.assertTrue(posix.tempnam(os.curdir))
-            self.assertTrue(posix.tempnam(os.curdir, 'blah'))
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", "tempnam", DeprecationWarning)
+                self.assertTrue(posix.tempnam())
+                self.assertTrue(posix.tempnam(os.curdir))
+                self.assertTrue(posix.tempnam(os.curdir, 'blah'))
 
     def test_tmpfile(self):
         if hasattr(posix, 'tmpfile'):
-            fp = posix.tmpfile()
-            fp.close()
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", "tmpfile", DeprecationWarning)
+                fp = posix.tmpfile()
+                fp.close()
 
     def test_utime(self):
         if hasattr(posix, 'utime'):
@@ -345,8 +353,13 @@ class PosixTester(unittest.TestCase):
                     os.chdir(dirname)
                     try:
                         os.getcwd()
-                        if current_path_length < 1027:
+                        if current_path_length < 4099:
                             _create_and_do_getcwd(dirname, current_path_length + len(dirname) + 1)
+                    except OSError as e:
+                        expected_errno = errno.ENAMETOOLONG
+                        if 'sunos' in sys.platform or 'openbsd' in sys.platform:
+                            expected_errno = errno.ERANGE # Issue 9185
+                        self.assertEqual(e.errno, expected_errno)
                     finally:
                         os.chdir('..')
                         os.rmdir(dirname)
@@ -357,9 +370,60 @@ class PosixTester(unittest.TestCase):
                 os.chdir(curdir)
                 shutil.rmtree(base_path)
 
+    @unittest.skipUnless(hasattr(os, 'getegid'), "test needs os.getegid()")
+    def test_getgroups(self):
+        with os.popen('id -G') as idg:
+            groups = idg.read().strip()
+
+        if not groups:
+            raise unittest.SkipTest("need working 'id -G'")
+
+        # 'id -G' and 'os.getgroups()' should return the same
+        # groups, ignoring order and duplicates.
+        # #10822 - it is implementation defined whether posix.getgroups()
+        # includes the effective gid so we include it anyway, since id -G does
+        self.assertEqual(
+                set([int(x) for x in groups.split()]),
+                set(posix.getgroups() + [posix.getegid()]))
+
+class PosixGroupsTester(unittest.TestCase):
+
+    def setUp(self):
+        if posix.getuid() != 0:
+            raise unittest.SkipTest("not enough privileges")
+        if not hasattr(posix, 'getgroups'):
+            raise unittest.SkipTest("need posix.getgroups")
+        if sys.platform == 'darwin':
+            raise unittest.SkipTest("getgroups(2) is broken on OSX")
+        self.saved_groups = posix.getgroups()
+
+    def tearDown(self):
+        if hasattr(posix, 'setgroups'):
+            posix.setgroups(self.saved_groups)
+        elif hasattr(posix, 'initgroups'):
+            name = pwd.getpwuid(posix.getuid()).pw_name
+            posix.initgroups(name, self.saved_groups[0])
+
+    @unittest.skipUnless(hasattr(posix, 'initgroups'),
+                         "test needs posix.initgroups()")
+    def test_initgroups(self):
+        # find missing group
+
+        g = max(self.saved_groups) + 1
+        name = pwd.getpwuid(posix.getuid()).pw_name
+        posix.initgroups(name, g)
+        self.assertIn(g, posix.getgroups())
+
+    @unittest.skipUnless(hasattr(posix, 'setgroups'),
+                         "test needs posix.setgroups()")
+    def test_setgroups(self):
+        for groups in [[0], range(16)]:
+            posix.setgroups(groups)
+            self.assertListEqual(groups, posix.getgroups())
+
 
 def test_main():
-    test_support.run_unittest(PosixTester)
+    test_support.run_unittest(PosixTester, PosixGroupsTester)
 
 if __name__ == '__main__':
     test_main()

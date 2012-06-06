@@ -16,6 +16,7 @@ except ImportError:
 
 import io
 from io import (__all__, SEEK_SET, SEEK_CUR, SEEK_END)
+from errno import EINTR
 
 __metaclass__ = type
 
@@ -546,6 +547,8 @@ class RawIOBase(IOBase):
             return self.readall()
         b = bytearray(n.__index__())
         n = self.readinto(b)
+        if n is None:
+            return None
         del b[n:]
         return bytes(b)
 
@@ -557,13 +560,17 @@ class RawIOBase(IOBase):
             if not data:
                 break
             res += data
-        return bytes(res)
+        if res:
+            return bytes(res)
+        else:
+            # b'' or None
+            return data
 
     def readinto(self, b):
         """Read up to len(b) bytes into b.
 
         Returns number of bytes read (0 for EOF), or None if the object
-        is set not to block as has no data to read.
+        is set not to block and has no data to read.
         """
         self._unsupported("readinto")
 
@@ -676,7 +683,7 @@ class _BufferedIOMixin(BufferedIOBase):
     """
 
     def __init__(self, raw):
-        self.raw = raw
+        self._raw = raw
 
     ### Positioning ###
 
@@ -720,8 +727,8 @@ class _BufferedIOMixin(BufferedIOBase):
         if self.raw is None:
             raise ValueError("raw stream already detached")
         self.flush()
-        raw = self.raw
-        self.raw = None
+        raw = self._raw
+        self._raw = None
         return raw
 
     ### Inquiries ###
@@ -734,6 +741,10 @@ class _BufferedIOMixin(BufferedIOBase):
 
     def writable(self):
         return self.raw.writable()
+
+    @property
+    def raw(self):
+        return self._raw
 
     @property
     def closed(self):
@@ -931,7 +942,12 @@ class BufferedReader(_BufferedIOMixin):
             current_size = 0
             while True:
                 # Read until EOF or until read() would block.
-                chunk = self.raw.read()
+                try:
+                    chunk = self.raw.read()
+                except IOError as e:
+                    if e.errno != EINTR:
+                        raise
+                    continue
                 if chunk in empty_values:
                     nodata_val = chunk
                     break
@@ -950,7 +966,12 @@ class BufferedReader(_BufferedIOMixin):
         chunks = [buf[pos:]]
         wanted = max(self.buffer_size, n)
         while avail < n:
-            chunk = self.raw.read(wanted)
+            try:
+                chunk = self.raw.read(wanted)
+            except IOError as e:
+                if e.errno != EINTR:
+                    raise
+                continue
             if chunk in empty_values:
                 nodata_val = chunk
                 break
@@ -979,7 +1000,14 @@ class BufferedReader(_BufferedIOMixin):
         have = len(self._read_buf) - self._read_pos
         if have < want or have <= 0:
             to_read = self.buffer_size - have
-            current = self.raw.read(to_read)
+            while True:
+                try:
+                    current = self.raw.read(to_read)
+                except IOError as e:
+                    if e.errno != EINTR:
+                        raise
+                    continue
+                break
             if current:
                 self._read_buf = self._read_buf[self._read_pos:] + current
                 self._read_pos = 0
@@ -1086,7 +1114,12 @@ class BufferedWriter(_BufferedIOMixin):
         written = 0
         try:
             while self._write_buf:
-                n = self.raw.write(self._write_buf)
+                try:
+                    n = self.raw.write(self._write_buf)
+                except IOError as e:
+                    if e.errno != EINTR:
+                        raise
+                    continue
                 if n > len(self._write_buf) or n < 0:
                     raise IOError("write() returned incorrect number of bytes")
                 del self._write_buf[:n]
@@ -1454,7 +1487,7 @@ class TextIOWrapper(TextIOBase):
             if not isinstance(errors, basestring):
                 raise ValueError("invalid errors: %r" % errors)
 
-        self.buffer = buffer
+        self._buffer = buffer
         self._line_buffering = line_buffering
         self._encoding = encoding
         self._errors = errors
@@ -1508,6 +1541,10 @@ class TextIOWrapper(TextIOBase):
     @property
     def line_buffering(self):
         return self._line_buffering
+
+    @property
+    def buffer(self):
+        return self._buffer
 
     def seekable(self):
         return self._seekable
@@ -1722,8 +1759,8 @@ class TextIOWrapper(TextIOBase):
         if self.buffer is None:
             raise ValueError("buffer is already detached")
         self.flush()
-        buffer = self.buffer
-        self.buffer = None
+        buffer = self._buffer
+        self._buffer = None
         return buffer
 
     def seek(self, cookie, whence=0):

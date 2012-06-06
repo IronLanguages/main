@@ -64,17 +64,16 @@ class GettextBaseTest(unittest.TestCase):
     def setUp(self):
         if not os.path.isdir(LOCALEDIR):
             os.makedirs(LOCALEDIR)
-        fp = open(MOFILE, 'wb')
-        fp.write(base64.decodestring(GNU_MO_DATA))
-        fp.close()
-        fp = open(UMOFILE, 'wb')
-        fp.write(base64.decodestring(UMO_DATA))
-        fp.close()
-        fp = open(MMOFILE, 'wb')
-        fp.write(base64.decodestring(MMO_DATA))
-        fp.close()
+        with open(MOFILE, 'wb') as fp:
+            fp.write(base64.decodestring(GNU_MO_DATA))
+        with open(UMOFILE, 'wb') as fp:
+            fp.write(base64.decodestring(UMO_DATA))
+        with open(MMOFILE, 'wb') as fp:
+            fp.write(base64.decodestring(MMO_DATA))
+
         self.env = test_support.EnvironmentVarGuard()
         self.env['LANGUAGE'] = 'xx'
+        gettext._translations.clear()
 
     def tearDown(self):
         self.env.__exit__()
@@ -134,9 +133,8 @@ trggrkg zrffntr pngnybt yvoenel.''')
     def test_the_alternative_interface(self):
         eq = self.assertEqual
         # test the alternative interface
-        fp = open(self.mofile, 'rb')
-        t = gettext.GNUTranslations(fp)
-        fp.close()
+        with open(self.mofile, 'rb') as fp:
+            t = gettext.GNUTranslations(fp)
         # Install the translation object
         t.install()
         eq(_('nudge nudge'), 'wink wink')
@@ -226,9 +224,8 @@ class PluralFormsTestCase(GettextBaseTest):
 
     def test_plural_forms2(self):
         eq = self.assertEqual
-        fp = open(self.mofile, 'rb')
-        t = gettext.GNUTranslations(fp)
-        fp.close()
+        with open(self.mofile, 'rb') as fp:
+            t = gettext.GNUTranslations(fp)
         x = t.ngettext('There is %s file', 'There are %s files', 1)
         eq(x, 'Hay %s fichero')
         x = t.ngettext('There is %s file', 'There are %s files', 2)
@@ -298,40 +295,65 @@ class PluralFormsTestCase(GettextBaseTest):
 class UnicodeTranslationsTest(GettextBaseTest):
     def setUp(self):
         GettextBaseTest.setUp(self)
-        fp = open(UMOFILE, 'rb')
-        try:
-            self.t = gettext.GNUTranslations(fp) #because bug in line 77
-        finally:
-            fp.close()
-        self._ = self.t.ugettext # because line 308 didn't run
+        with open(UMOFILE, 'rb') as fp:
+            self.t = gettext.GNUTranslations(fp)
+        self._ = self.t.ugettext
 
     def test_unicode_msgid(self):
         unless = self.assertTrue
-        unless(isinstance(self._(''), unicode)) #because line 311 didn't run
-        unless(isinstance(self._(u''), unicode))#because line 311 didn't run
+        unless(isinstance(self._(''), unicode))
+        unless(isinstance(self._(u''), unicode))
 
     def test_unicode_msgstr(self):
         eq = self.assertEqual
-        eq(self._(u'ab\xde'), u'\xa4yz')#because line 311 didn't run
+        eq(self._(u'ab\xde'), u'\xa4yz')
 
 
 class WeirdMetadataTest(GettextBaseTest):
     def setUp(self):
         GettextBaseTest.setUp(self)
-        fp = open(MMOFILE, 'rb')
-        try:
+        with open(MMOFILE, 'rb') as fp:
             try:
                 self.t = gettext.GNUTranslations(fp)
             except:
                 self.tearDown()
                 raise
-        finally:
-            fp.close()
 
     def test_weird_metadata(self):
         info = self.t.info()
         self.assertEqual(info['last-translator'],
            'John Doe <jdoe@example.com>\nJane Foobar <jfoobar@example.com>')
+
+
+class DummyGNUTranslations(gettext.GNUTranslations):
+    def foo(self):
+        return 'foo'
+
+
+class GettextCacheTestCase(GettextBaseTest):
+    def test_cache(self):
+        self.localedir = os.curdir
+        self.mofile = MOFILE
+
+        self.assertEqual(len(gettext._translations), 0)
+
+        t = gettext.translation('gettext', self.localedir)
+
+        self.assertEqual(len(gettext._translations), 1)
+
+        t = gettext.translation('gettext', self.localedir,
+                                class_=DummyGNUTranslations)
+
+        self.assertEqual(len(gettext._translations), 2)
+        self.assertEqual(t.__class__, DummyGNUTranslations)
+
+        # Calling it again doesn't add to the cache
+
+        t = gettext.translation('gettext', self.localedir,
+                                class_=DummyGNUTranslations)
+
+        self.assertEqual(len(gettext._translations), 2)
+        self.assertEqual(t.__class__, DummyGNUTranslations)
 
 
 def test_main():

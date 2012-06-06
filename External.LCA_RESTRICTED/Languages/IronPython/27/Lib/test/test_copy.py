@@ -526,6 +526,26 @@ class TestCopy(unittest.TestCase):
         self.assertEqual(x.foo, y.foo)
         self.assertTrue(x.foo is not y.foo)
 
+    def test_deepcopy_dict_subclass(self):
+        class C(dict):
+            def __init__(self, d=None):
+                if not d:
+                    d = {}
+                self._keys = list(d.keys())
+                dict.__init__(self, d)
+            def __setitem__(self, key, item):
+                dict.__setitem__(self, key, item)
+                if key not in self._keys:
+                    self._keys.append(key)
+        x = C(d={'foo':0})
+        y = copy.deepcopy(x)
+        self.assertEqual(x, y)
+        self.assertEqual(x._keys, y._keys)
+        self.assertTrue(x is not y)
+        x['bar'] = 1
+        self.assertNotEqual(x, y)
+        self.assertNotEqual(x._keys, y._keys)
+
     def test_copy_list_subclass(self):
         class C(list):
             pass
@@ -617,8 +637,6 @@ class TestCopy(unittest.TestCase):
         self.assertEqual(v[c], d)
         self.assertEqual(len(v), 2)
         del c, d
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         self.assertEqual(len(v), 1)
         x, y = C(), C()
         # The underlying containers are decoupled
@@ -648,8 +666,6 @@ class TestCopy(unittest.TestCase):
         self.assertEqual(v[a].i, b.i)
         self.assertEqual(v[c].i, d.i)
         del c
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         self.assertEqual(len(v), 1)
 
     def test_deepcopy_weakvaluedict(self):
@@ -673,8 +689,6 @@ class TestCopy(unittest.TestCase):
         self.assertTrue(t is d)
         del x, y, z, t
         del d
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         self.assertEqual(len(v), 1)
 
     def test_deepcopy_bound_method(self):

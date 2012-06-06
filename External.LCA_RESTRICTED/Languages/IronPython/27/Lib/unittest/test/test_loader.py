@@ -3,7 +3,6 @@ import types
 
 
 import unittest
-from test.test_support import due_to_ironpython_bug
 
 
 class Test_TestLoader(unittest.TestCase):
@@ -168,11 +167,11 @@ class Test_TestLoader(unittest.TestCase):
         loader = unittest.TestLoader()
         suite = loader.loadTestsFromModule(m)
         self.assertIsInstance(suite, unittest.TestSuite)
-        self.assertEquals(load_tests_args, [loader, suite, None])
+        self.assertEqual(load_tests_args, [loader, suite, None])
 
         load_tests_args = []
         suite = loader.loadTestsFromModule(m, use_load_tests=False)
-        self.assertEquals(load_tests_args, [])
+        self.assertEqual(load_tests_args, [])
 
     def test_loadTestsFromModule__faulty_load_tests(self):
         m = types.ModuleType('m')
@@ -207,13 +206,9 @@ class Test_TestLoader(unittest.TestCase):
         try:
             loader.loadTestsFromName('')
         except ValueError, e:
-            if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/21116"):
-                self.assertEqual(str(e), "String cannot have zero length.")
-            else:
-                self.assertEqual(str(e), "Empty module name")
+            self.assertEqual(str(e), "Empty module name")
         else:
-            if not due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/21116"):
-                self.fail("TestLoader.loadTestsFromName failed to raise ValueError")
+            self.fail("TestLoader.loadTestsFromName failed to raise ValueError")
 
     # "The specifier name is a ``dotted name'' that may resolve either to
     # a module, a test case class, a TestSuite instance, a test method
@@ -431,10 +426,7 @@ class Test_TestLoader(unittest.TestCase):
         try:
             loader.loadTestsFromName('testcase_1.testfoo', m)
         except AttributeError, e:
-            if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/21116"):
-                self.assertEqual(str(e), "'type' object has no attribute 'testfoo'")
-            else:
-                self.assertEqual(str(e), "type object 'MyTestCase' has no attribute 'testfoo'")
+            self.assertEqual(str(e), "type object 'MyTestCase' has no attribute 'testfoo'")
         else:
             self.fail("Failed to raise AttributeError")
 
@@ -592,14 +584,9 @@ class Test_TestLoader(unittest.TestCase):
         try:
             loader.loadTestsFromNames([''])
         except ValueError, e:
-            if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/21116"):
-                self.assertEqual(str(e), "String cannot have zero length.")
-            else:
-                self.assertEqual(str(e), "Empty module name")
+            self.assertEqual(str(e), "Empty module name")
         else:
-            # only seems to be a problem on win7
-            if not due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/21116"):
-                self.fail("TestLoader.loadTestsFromNames failed to raise ValueError")
+            self.fail("TestLoader.loadTestsFromNames failed to raise ValueError")
 
     # "The specifier name is a ``dotted name'' that may resolve either to
     # a module, a test case class, a TestSuite instance, a test method
@@ -835,10 +822,7 @@ class Test_TestLoader(unittest.TestCase):
         try:
             loader.loadTestsFromNames(['testcase_1.testfoo'], m)
         except AttributeError, e:
-            if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/21116"):
-                self.assertEqual(str(e), "'type' object has no attribute 'testfoo'")
-            else:
-                self.assertEqual(str(e), "type object 'MyTestCase' has no attribute 'testfoo'")
+            self.assertEqual(str(e), "type object 'MyTestCase' has no attribute 'testfoo'")
         else:
             self.fail("Failed to raise AttributeError")
 
@@ -934,8 +918,7 @@ class Test_TestLoader(unittest.TestCase):
             self.assertEqual(list(suite), [unittest.TestSuite()])
 
             # module should now be loaded, thanks to loadTestsFromName()
-            if not due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                self.assertIn(module_name, sys.modules)
+            self.assertIn(module_name, sys.modules)
         finally:
             if module_name in sys.modules:
                 del sys.modules[module_name]

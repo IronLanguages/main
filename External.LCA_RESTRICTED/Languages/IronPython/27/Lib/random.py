@@ -46,6 +46,7 @@ from math import log as _log, exp as _exp, pi as _pi, e as _e, ceil as _ceil
 from math import sqrt as _sqrt, acos as _acos, cos as _cos, sin as _sin
 from os import urandom as _urandom
 from binascii import hexlify as _hexlify
+import hashlib as _hashlib
 
 __all__ = ["Random","seed","random","uniform","randint","choice","sample",
            "randrange","shuffle","normalvariate","lognormvariate",
@@ -140,6 +141,18 @@ class Random(_random.Random):
             raise ValueError("state with version %s passed to "
                              "Random.setstate() of version %s" %
                              (version, self.VERSION))
+
+    def jumpahead(self, n):
+        """Change the internal state to one that is likely far away
+        from the current state.  This method will not be in Py3.x,
+        so it is better to simply reseed.
+        """
+        # The super.jumpahead() method uses shuffling to change state,
+        # so it needs a large and "interesting" n to work with.  Here,
+        # we use hashing to create a large n for the shuffle.
+        s = repr(n) + repr(self.getstate())
+        n = int(_hashlib.new('sha512', s).hexdigest(), 16)
+        super(Random, self).jumpahead(n)
 
 ## ---- Methods below this point do not need to be overridden when
 ## ---- subclassing for the purpose of using a different core generator.
@@ -292,15 +305,6 @@ class Random(_random.Random):
         large population:   sample(xrange(10000000), 60)
         """
 
-        # XXX Although the documentation says `population` is "a sequence",
-        # XXX attempts are made to cater to any iterable with a __len__
-        # XXX method.  This has had mixed success.  Examples from both
-        # XXX sides:  sets work fine, and should become officially supported;
-        # XXX dicts are much harder, and have failed in various subtle
-        # XXX ways across attempts.  Support for mapping types should probably
-        # XXX be dropped (and users should pass mapping.keys() or .values()
-        # XXX explicitly).
-
         # Sampling without replacement entails tracking either potential
         # selections (the pool) in a list or previous selections in a set.
 
@@ -313,7 +317,7 @@ class Random(_random.Random):
 
         n = len(population)
         if not 0 <= k <= n:
-            raise ValueError, "sample larger than population"
+            raise ValueError("sample larger than population")
         random = self.random
         _int = int
         result = [None] * k
@@ -486,6 +490,12 @@ class Random(_random.Random):
 
         Conditions on the parameters are alpha > 0 and beta > 0.
 
+        The probability distribution function is:
+
+                    x ** (alpha - 1) * math.exp(-x / beta)
+          pdf(x) =  --------------------------------------
+                      math.gamma(alpha) * beta ** alpha
+
         """
 
         # alpha > 0, beta > 0, mean is alpha*beta, variance is alpha*beta**2
@@ -588,7 +598,7 @@ class Random(_random.Random):
 
 ## -------------------- beta --------------------
 ## See
-## http://sourceforge.net/bugs/?func=detailbug&bug_id=130030&group_id=5470
+## http://mail.python.org/pipermail/python-bugs-list/2001-January/003752.html
 ## for Ivan Frohne's insightful analysis of why the original implementation:
 ##
 ##    def betavariate(self, alpha, beta):

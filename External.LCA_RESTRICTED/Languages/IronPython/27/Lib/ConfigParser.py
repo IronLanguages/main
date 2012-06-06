@@ -398,12 +398,11 @@ class RawConfigParser:
         for section in self._sections:
             fp.write("[%s]\n" % section)
             for (key, value) in self._sections[section].items():
-                if key != "__name__":
-                    if value is None:
-                        fp.write("%s\n" % (key))
-                    else:
-                        fp.write("%s = %s\n" %
-                                 (key, str(value).replace('\n', '\n\t')))
+                if key == "__name__":
+                    continue
+                if (value is not None) or (self._optcre == self.OPTCRE):
+                    key = " = ".join((key, str(value).replace('\n', '\n\t')))
+                fp.write("%s\n" % (key))
             fp.write("\n")
 
     def remove_option(self, section, option):
@@ -464,10 +463,10 @@ class RawConfigParser:
         leading whitespace.  Blank lines, lines beginning with a '#',
         and just about everything else are ignored.
         """
-        cursect = None                            # None, or a dictionary
+        cursect = None                        # None, or a dictionary
         optname = None
         lineno = 0
-        e = None                                  # None, or an exception
+        e = None                              # None, or an exception
         while True:
             line = fp.readline()
             if not line:
@@ -483,7 +482,7 @@ class RawConfigParser:
             if line[0].isspace() and cursect is not None and optname:
                 value = line.strip()
                 if value:
-                    cursect[optname] = "%s\n%s" % (cursect[optname], value)
+                    cursect[optname].append(value)
             # a section header or option header?
             else:
                 # is it a section header?
@@ -508,6 +507,7 @@ class RawConfigParser:
                     mo = self._optcre.match(line)
                     if mo:
                         optname, vi, optval = mo.group('option', 'vi', 'value')
+                        optname = self.optionxform(optname.rstrip())
                         # This check is fine because the OPTCRE cannot
                         # match if it would set optval to None
                         if optval is not None:
@@ -518,11 +518,13 @@ class RawConfigParser:
                                 if pos != -1 and optval[pos-1].isspace():
                                     optval = optval[:pos]
                             optval = optval.strip()
-                        # allow empty values
-                        if optval == '""':
-                            optval = ''
-                        optname = self.optionxform(optname.rstrip())
-                        cursect[optname] = optval
+                            # allow empty values
+                            if optval == '""':
+                                optval = ''
+                            cursect[optname] = [optval]
+                        else:
+                            # valueless option handling
+                            cursect[optname] = optval
                     else:
                         # a non-fatal parsing error occurred.  set up the
                         # exception but keep going. the exception will be
@@ -535,30 +537,72 @@ class RawConfigParser:
         if e:
             raise e
 
+        # join the multi-line values collected while reading
+        all_sections = [self._defaults]
+        all_sections.extend(self._sections.values())
+        for options in all_sections:
+            for name, val in options.items():
+                if isinstance(val, list):
+                    options[name] = '\n'.join(val)
+
+import UserDict as _UserDict
+
+class _Chainmap(_UserDict.DictMixin):
+    """Combine multiple mappings for successive lookups.
+
+    For example, to emulate Python's normal lookup sequence:
+
+        import __builtin__
+        pylookup = _Chainmap(locals(), globals(), vars(__builtin__))
+    """
+
+    def __init__(self, *maps):
+        self._maps = maps
+
+    def __getitem__(self, key):
+        for mapping in self._maps:
+            try:
+                return mapping[key]
+            except KeyError:
+                pass
+        raise KeyError(key)
+
+    def keys(self):
+        result = []
+        seen = set()
+        for mapping in self_maps:
+            for key in mapping:
+                if key not in seen:
+                    result.append(key)
+                    seen.add(key)
+        return result
 
 class ConfigParser(RawConfigParser):
 
     def get(self, section, option, raw=False, vars=None):
         """Get an option value for a given section.
 
-        All % interpolations are expanded in the return values, based on the
-        defaults passed into the constructor, unless the optional argument
-        `raw' is true.  Additional substitutions may be provided using the
-        `vars' argument, which must be a dictionary whose contents overrides
-        any pre-existing defaults.
+        If `vars' is provided, it must be a dictionary. The option is looked up
+        in `vars' (if provided), `section', and in `defaults' in that order.
+
+        All % interpolations are expanded in the return values, unless the
+        optional argument `raw' is true. Values for interpolation keys are
+        looked up in the same manner as the option.
 
         The section DEFAULT is special.
         """
-        d = self._defaults.copy()
+        sectiondict = {}
         try:
-            d.update(self._sections[section])
+            sectiondict = self._sections[section]
         except KeyError:
             if section != DEFAULTSECT:
                 raise NoSectionError(section)
         # Update with the entry specific variables
+        vardict = {}
         if vars:
             for key, value in vars.items():
-                d[self.optionxform(key)] = value
+                vardict[self.optionxform(key)] = value
+        d = _Chainmap(vardict, sectiondict, self._defaults)
         option = self.optionxform(option)
         try:
             value = d[option]
@@ -689,13 +733,13 @@ class SafeConfigParser(ConfigParser):
         if self._optcre is self.OPTCRE or value:
             if not isinstance(value, basestring):
                 raise TypeError("option values must be strings")
-        # check for bad percent signs:
-        # first, replace all "good" interpolations
-        tmp_value = value.replace('%%', '')
-        tmp_value = self._interpvar_re.sub('', tmp_value)
-        # then, check if there's a lone percent sign left
-        percent_index = tmp_value.find('%')
-        if percent_index != -1:
-            raise ValueError("invalid interpolation syntax in %r at "
-                             "position %d" % (value, percent_index))
+        if value is not None:
+            # check for bad percent signs:
+            # first, replace all "good" interpolations
+            tmp_value = value.replace('%%', '')
+            tmp_value = self._interpvar_re.sub('', tmp_value)
+            # then, check if there's a lone percent sign left
+            if '%' in tmp_value:
+                raise ValueError("invalid interpolation syntax in %r at "
+                                "position %d" % (value, tmp_value.find('%')))
         ConfigParser.set(self, section, option, value)

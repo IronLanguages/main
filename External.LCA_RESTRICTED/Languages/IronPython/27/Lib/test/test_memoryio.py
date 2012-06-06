@@ -23,17 +23,17 @@ class MemorySeekTestMixin:
         buf = self.buftype("1234567890")
         bytesIo = self.ioclass(buf)
 
-        self.assertEquals(buf[:1], bytesIo.read(1))
-        self.assertEquals(buf[1:5], bytesIo.read(4))
-        self.assertEquals(buf[5:], bytesIo.read(900))
-        self.assertEquals(self.EOF, bytesIo.read())
+        self.assertEqual(buf[:1], bytesIo.read(1))
+        self.assertEqual(buf[1:5], bytesIo.read(4))
+        self.assertEqual(buf[5:], bytesIo.read(900))
+        self.assertEqual(self.EOF, bytesIo.read())
 
     def testReadNoArgs(self):
         buf = self.buftype("1234567890")
         bytesIo = self.ioclass(buf)
 
-        self.assertEquals(buf, bytesIo.read())
-        self.assertEquals(self.EOF, bytesIo.read())
+        self.assertEqual(buf, bytesIo.read())
+        self.assertEqual(self.EOF, bytesIo.read())
 
     def testSeek(self):
         buf = self.buftype("1234567890")
@@ -41,21 +41,21 @@ class MemorySeekTestMixin:
 
         bytesIo.read(5)
         bytesIo.seek(0)
-        self.assertEquals(buf, bytesIo.read())
+        self.assertEqual(buf, bytesIo.read())
 
         bytesIo.seek(3)
-        self.assertEquals(buf[3:], bytesIo.read())
+        self.assertEqual(buf[3:], bytesIo.read())
         self.assertRaises(TypeError, bytesIo.seek, 0.0)
 
     def testTell(self):
         buf = self.buftype("1234567890")
         bytesIo = self.ioclass(buf)
 
-        self.assertEquals(0, bytesIo.tell())
+        self.assertEqual(0, bytesIo.tell())
         bytesIo.seek(5)
-        self.assertEquals(5, bytesIo.tell())
+        self.assertEqual(5, bytesIo.tell())
         bytesIo.seek(10000)
-        self.assertEquals(10000, bytesIo.tell())
+        self.assertEqual(10000, bytesIo.tell())
 
 
 class MemoryTestMixin:
@@ -185,10 +185,7 @@ class MemoryTestMixin:
         memio.seek(0)
         self.assertEqual(memio.readline(5), buf[:5])
         # readline() accepts long objects
-        if support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/22896"):
-            self.assertEqual(memio.readline(5), buf[5:10])
-        else:
-            self.assertEqual(memio.readline(5L), buf[5:10])
+        self.assertEqual(memio.readline(5L), buf[5:10])
         self.assertEqual(memio.readline(5), buf[10:15])
         memio.seek(0)
         self.assertEqual(memio.readline(-1), buf)
@@ -351,8 +348,6 @@ class MemoryTestMixin:
             m = MemIO(buf, None)
             return m.getvalue()
         self.assertEqual(test1(), buf)
-        if support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=20021"):
-            return
         self.assertEqual(test2(), buf)
 
     def test_instance_dict_leak(self):
@@ -363,8 +358,6 @@ class MemoryTestMixin:
             memio.foo = 1
 
     def test_pickling(self):
-        if support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/22896"):
-            return
         buf = self.buftype("1234567890")
         memio = self.ioclass(buf)
         memio.foo = 42
@@ -379,7 +372,7 @@ class MemoryTestMixin:
 
         # Pickle expects the class to be on the module level. Here we use a
         # little hack to allow the PickleTestMemIO class to derive from
-        # self.ioclass without having to define all combinations explictly on
+        # self.ioclass without having to define all combinations explicitly on
         # the module-level.
         import __main__
         PickleTestMemIO.__module__ = '__main__'
@@ -407,10 +400,7 @@ class PyBytesIOTest(MemoryTestMixin, MemorySeekTestMixin, unittest.TestCase):
 
     @staticmethod
     def buftype(s):
-        if support.due_to_ironpython_incompatibility("str.encode() does not return bytes"):
-            return bytes(s, "ascii")
-        else:
-            return s.encode("ascii")
+        return s.encode("ascii")
     ioclass = pyio.BytesIO
     EOF = b""
 
@@ -448,6 +438,11 @@ class PyBytesIOTest(MemoryTestMixin, MemorySeekTestMixin, unittest.TestCase):
         self.assertEqual(a.tostring(), b"1234567890d")
         memio.close()
         self.assertRaises(ValueError, memio.readinto, b)
+        memio = self.ioclass(b"123")
+        b = bytearray()
+        memio.seek(42)
+        memio.readinto(b)
+        self.assertEqual(b, b"")
 
     def test_relative_seek(self):
         buf = self.buftype("1234567890")
@@ -466,8 +461,6 @@ class PyBytesIOTest(MemoryTestMixin, MemorySeekTestMixin, unittest.TestCase):
         self.assertEqual(memio.read(), buf[1:])
 
     def test_unicode(self):
-        if support.due_to_ironpython_incompatibility("IronPython supports byte operations on unicode strings"):
-            return
         memio = self.ioclass()
 
         self.assertRaises(TypeError, self.ioclass, "1234567890")
@@ -620,20 +613,16 @@ class CBytesIOTest(PyBytesIOTest):
 
 
     def test_getstate(self):
-        if support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/22896"):
-            return
         memio = self.ioclass()
         state = memio.__getstate__()
         self.assertEqual(len(state), 3)
         bytearray(state[0]) # Check if state[0] supports the buffer interface.
         self.assertIsInstance(state[1], int)
-        self.assert_(isinstance(state[2], dict) or state[2] is None)
+        self.assertTrue(isinstance(state[2], dict) or state[2] is None)
         memio.close()
         self.assertRaises(ValueError, memio.__getstate__)
 
     def test_setstate(self):
-        if support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/22896"):
-            return
         # This checks whether __setstate__ does proper input validation.
         memio = self.ioclass()
         memio.__setstate__((b"no error", 0, None))
@@ -675,7 +664,7 @@ class CStringIOTest(PyStringIOTest):
         self.assertIsInstance(state[0], unicode)
         self.assertIsInstance(state[1], str)
         self.assertIsInstance(state[2], int)
-        self.assert_(isinstance(state[3], dict) or state[3] is None)
+        self.assertTrue(isinstance(state[3], dict) or state[3] is None)
         memio.close()
         self.assertRaises(ValueError, memio.__getstate__)
 
@@ -712,11 +701,6 @@ class CStringIOPickleTest(PyStringIOPickleTest):
 def test_main():
     tests = [PyBytesIOTest, PyStringIOTest, CBytesIOTest, CStringIOTest,
              PyStringIOPickleTest, CStringIOPickleTest]
-    if support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17454"):
-        tests.remove(CStringIOTest)
-        tests.remove(PyStringIOTest)
-        tests.remove(CStringIOPickleTest)
-        tests.remove(PyStringIOPickleTest)
     support.run_unittest(*tests)
 
 if __name__ == '__main__':

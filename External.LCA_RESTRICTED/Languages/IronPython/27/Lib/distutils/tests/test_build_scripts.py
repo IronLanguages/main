@@ -8,6 +8,7 @@ from distutils.core import Distribution
 import sysconfig
 
 from distutils.tests import support
+from test.test_support import run_unittest
 
 
 class BuildScriptsTestCase(support.TempdirManager,
@@ -71,8 +72,10 @@ class BuildScriptsTestCase(support.TempdirManager,
 
     def write_script(self, dir, name, text):
         f = open(os.path.join(dir, name), "w")
-        f.write(text)
-        f.close()
+        try:
+            f.write(text)
+        finally:
+            f.close()
 
     def test_version_int(self):
         source = self.mkdtemp()
@@ -106,4 +109,4 @@ def test_suite():
     return unittest.makeSuite(BuildScriptsTestCase)
 
 if __name__ == "__main__":
-    unittest.main(defaultTest="test_suite")
+    run_unittest(test_suite())

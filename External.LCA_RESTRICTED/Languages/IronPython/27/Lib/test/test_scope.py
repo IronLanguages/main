@@ -1,7 +1,6 @@
 import unittest
 from test.test_support import check_syntax_error, check_py3k_warnings, \
-                              check_warnings, run_unittest, \
-                              due_to_ironpython_bug, due_to_ironpython_incompatibility
+                              check_warnings, run_unittest
 
 
 class ScopeTests(unittest.TestCase):
@@ -434,8 +433,7 @@ self.assertEqual(g.get(), 13)
         for i in range(100):
             f1()
 
-        if not due_to_ironpython_incompatibility('__del__ related'):
-            self.assertEqual(Foo.count, 0)
+        self.assertEqual(Foo.count, 0)
 
     def testClassAndGlobal(self):
 
@@ -525,7 +523,7 @@ self.assertTrue(X.passed)
                 def f(self):
                     return x
 
-            self.assertEquals(x, 12) # Used to raise UnboundLocalError
+            self.assertEqual(x, 12) # Used to raise UnboundLocalError
         finally:
             sys.settrace(None)
 
@@ -649,14 +647,18 @@ result2 = h()
         self.assertEqual(2, global_ns["result2"])
         self.assertEqual(9, global_ns["result9"])
 
+    def testTopIsNotSignificant(self):
+        # See #9997.
+        def top(a):
+            pass
+        def b():
+            global a
+
 
 def test_main():
-    if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
+    with check_warnings(("import \* only allowed at module level",
+                         SyntaxWarning)):
         run_unittest(ScopeTests)
-    else:
-        with check_warnings(("import \* only allowed at module level",
-                             SyntaxWarning)):
-            run_unittest(ScopeTests)
 
 if __name__ == '__main__':
     test_main()

@@ -6,7 +6,7 @@ import os
 import shutil
 import sys
 import test.test_support
-from test.test_support import captured_stdout
+from test.test_support import captured_stdout, run_unittest
 import unittest
 from distutils.tests import support
 
@@ -52,7 +52,11 @@ class CoreTestCase(support.EnvironGuard, unittest.TestCase):
             shutil.rmtree(path)
 
     def write_setup(self, text, path=test.test_support.TESTFN):
-        open(path, "w").write(text)
+        f = open(path, "w")
+        try:
+            f.write(text)
+        finally:
+            f.close()
         return path
 
     def test_run_setup_provides_file(self):
@@ -85,7 +89,7 @@ class CoreTestCase(support.EnvironGuard, unittest.TestCase):
         with captured_stdout() as stdout:
             distutils.core.setup(name='bar')
         stdout.seek(0)
-        self.assertEquals(stdout.read(), 'bar\n')
+        self.assertEqual(stdout.read(), 'bar\n')
 
         distutils.core.DEBUG = True
         try:
@@ -95,10 +99,10 @@ class CoreTestCase(support.EnvironGuard, unittest.TestCase):
             distutils.core.DEBUG = False
         stdout.seek(0)
         wanted = "options (after parsing config files):\n"
-        self.assertEquals(stdout.readlines()[0], wanted)
+        self.assertEqual(stdout.readlines()[0], wanted)
 
 def test_suite():
     return unittest.makeSuite(CoreTestCase)
 
 if __name__ == "__main__":
-    unittest.main(defaultTest="test_suite")
+    run_unittest(test_suite())

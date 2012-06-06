@@ -1,7 +1,6 @@
 import sys
 import unittest
 from ctypes import *
-from test import test_support
 
 class MemFunctionsTest(unittest.TestCase):
 ##    def test_overflow(self):
@@ -18,7 +17,7 @@ class MemFunctionsTest(unittest.TestCase):
         # large buffers apparently increase the chance that the memory
         # is allocated in high address space.
         a = create_string_buffer(1000000)
-        p = b"Hello, World"
+        p = "Hello, World"
         result = memmove(a, p, len(p))
         self.assertEqual(a.value, "Hello, World")
 
@@ -51,15 +50,14 @@ class MemFunctionsTest(unittest.TestCase):
                              [97])
 
     def test_string_at(self):
-        s = string_at(b"foo bar")
+        s = string_at("foo bar")
         # XXX The following may be wrong, depending on how Python
         # manages string instances
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=22374"):
-            self.assertEqual(2, sys.getrefcount(s))
+        self.assertEqual(2, sys.getrefcount(s))
         self.assertTrue(s, "foo bar")
 
-        self.assertEqual(string_at(b"foo bar", 8), "foo bar\0")
-        self.assertEqual(string_at(b"foo bar", 3), "foo")
+        self.assertEqual(string_at("foo bar", 8), "foo bar\0")
+        self.assertEqual(string_at("foo bar", 3), "foo")
 
     try:
         create_unicode_buffer

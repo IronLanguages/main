@@ -67,8 +67,7 @@ class ThreadRunningTests(BasicThreadTest):
         # Various stack size tests.
         self.assertEqual(thread.stack_size(), 0, "initial stack size is not 0")
 
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=7827"):
-            thread.stack_size(0)
+        thread.stack_size(0)
         self.assertEqual(thread.stack_size(), 0, "stack_size not reset to default")
 
         if os.name not in ("nt", "os2", "posix"):
@@ -87,10 +86,7 @@ class ThreadRunningTests(BasicThreadTest):
 
         if tss_supported:
             fail_msg = "stack_size(%d) failed - should succeed"
-            sizes = [262144, 0x100000]
-            if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=7827"):
-                sizes.append(0)
-            for tss in sizes:
+            for tss in (262144, 0x100000, 0):
                 thread.stack_size(tss)
                 self.assertEqual(thread.stack_size(), tss, fail_msg % tss)
                 verbose_print("successfully set stack_size(%d)" % tss)
@@ -106,8 +102,7 @@ class ThreadRunningTests(BasicThreadTest):
                 self.done_mutex.acquire()
                 verbose_print("all tasks done")
 
-            if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=7827"):
-                thread.stack_size(0)
+            thread.stack_size(0)
 
     def test__count(self):
         # Test the _count() function.
@@ -133,8 +128,6 @@ class ThreadRunningTests(BasicThreadTest):
         del task
         while not done:
             time.sleep(0.01)
-            import gc
-            gc.collect()
         self.assertEqual(thread._count(), orig)
 
 
@@ -206,10 +199,9 @@ class LockTests(lock_tests.LockTests):
 
 class TestForkInThread(unittest.TestCase):
     def setUp(self):
-        if not due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/17475"):
-            self.read_fd, self.write_fd = os.pipe()
+        self.read_fd, self.write_fd = os.pipe()
 
-    @unittest.skipIf(hasattr(sys, "getwindowsversion"),
+    @unittest.skipIf(sys.platform.startswith('win'),
                      "This test is only appropriate for POSIX-like systems.")
     @test_support.reap_threads
     def test_forkinthread(self):

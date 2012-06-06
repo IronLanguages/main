@@ -2,9 +2,10 @@
 
 Utility functions for manipulating directories and directory trees."""
 
-__revision__ = "$Id: dir_util.py 76956 2009-12-21 01:22:46Z tarek.ziade $"
+__revision__ = "$Id$"
 
 import os
+import errno
 from distutils.errors import DistutilsFileError, DistutilsInternalError
 from distutils import log
 
@@ -68,11 +69,12 @@ def mkpath(name, mode=0777, verbose=1, dry_run=0):
 
         if not dry_run:
             try:
-                os.mkdir(head)
-                created_dirs.append(head)
+                os.mkdir(head, mode)
             except OSError, exc:
-                raise DistutilsFileError, \
-                      "could not create '%s': %s" % (head, exc[-1])
+                if not (exc.errno == errno.EEXIST and os.path.isdir(head)):
+                    raise DistutilsFileError(
+                          "could not create '%s': %s" % (head, exc.args[-1]))
+            created_dirs.append(head)
 
         _path_created[abs_head] = 1
     return created_dirs

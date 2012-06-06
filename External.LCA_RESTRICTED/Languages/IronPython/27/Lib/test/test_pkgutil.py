@@ -1,4 +1,4 @@
-from test.test_support import run_unittest, due_to_ironpython_bug, force_gc_collect
+from test.test_support import run_unittest
 import unittest
 import sys
 import imp
@@ -19,7 +19,6 @@ class PkgutilTests(unittest.TestCase):
 
     def tearDown(self):
         del sys.path[0]
-        force_gc_collect("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321793")
         shutil.rmtree(self.dirname)
 
     def test_getdata_filesys(self):
@@ -69,8 +68,6 @@ class PkgutilTests(unittest.TestCase):
         z.writestr(pkg + '/sub/res.txt', RESOURCE_DATA)
         z.close()
 
-        if due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         # Check we can read the resources
         sys.path.insert(0, zip_file)
         res1 = pkgutil.get_data(pkg, 'res.txt')
@@ -126,8 +123,6 @@ class PkgutilPEP302Tests(unittest.TestCase):
 def test_main():
     run_unittest(PkgutilTests, PkgutilPEP302Tests)
     # this is necessary if test is run repeated (like when finding leaks)
-    if due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=391"):
-        return
     import zipimport
     zipimport._zip_directory_cache.clear()
 

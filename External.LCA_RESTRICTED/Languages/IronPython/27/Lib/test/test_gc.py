@@ -1,7 +1,5 @@
 import unittest
 from test.test_support import verbose, run_unittest
-from test import test_support
-
 import sys
 import gc
 import weakref
@@ -39,8 +37,6 @@ class GC_Detector(object):
 
 class GCTests(unittest.TestCase):
     def test_list(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314459"):
-            return
         l = []
         l.append(l)
         gc.collect()
@@ -48,8 +44,6 @@ class GCTests(unittest.TestCase):
         self.assertEqual(gc.collect(), 1)
 
     def test_dict(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314459"):
-            return
         d = {}
         d[1] = d
         gc.collect()
@@ -57,8 +51,6 @@ class GCTests(unittest.TestCase):
         self.assertEqual(gc.collect(), 1)
 
     def test_tuple(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314459"):
-            return
         # since tuples are immutable we close the loop with a list
         l = []
         t = (l,)
@@ -74,8 +66,6 @@ class GCTests(unittest.TestCase):
         A.a = A
         gc.collect()
         del A
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314459"):
-            return
         self.assertNotEqual(gc.collect(), 0)
 
     def test_newstyleclass(self):
@@ -83,8 +73,6 @@ class GCTests(unittest.TestCase):
             pass
         gc.collect()
         del A
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314459"):
-            return
         self.assertNotEqual(gc.collect(), 0)
 
     def test_instance(self):
@@ -94,13 +82,9 @@ class GCTests(unittest.TestCase):
         a.a = a
         gc.collect()
         del a
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314459"):
-            return
         self.assertNotEqual(gc.collect(), 0)
 
     def test_newinstance(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314459"):
-            return
         class A(object):
             pass
         a = A()
@@ -132,13 +116,9 @@ class GCTests(unittest.TestCase):
         a = A()
         gc.collect()
         del a
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314459"):
-            return
         self.assertNotEqual(gc.collect(), 0)
 
     def test_finalizer(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314477"):
-            return
         # A() is uncollectable if it is part of a cycle, make sure it shows up
         # in gc.garbage.
         class A:
@@ -163,8 +143,6 @@ class GCTests(unittest.TestCase):
         gc.garbage.remove(obj)
 
     def test_finalizer_newclass(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314477"):
-            return
         # A() is uncollectable if it is part of a cycle, make sure it shows up
         # in gc.garbage.
         class A(object):
@@ -189,8 +167,6 @@ class GCTests(unittest.TestCase):
         gc.garbage.remove(obj)
 
     def test_function(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314459"):
-            return
         # Tricky: f -> d -> f, code should call d.clear() after the exec to
         # break the cycle.
         d = {}
@@ -200,8 +176,6 @@ class GCTests(unittest.TestCase):
         self.assertEqual(gc.collect(), 2)
 
     def test_frame(self):
-        if test_support.due_to_ironpython_bug("CodePlex 12876"):
-            return
         def f():
             frame = sys._getframe()
         gc.collect()
@@ -209,8 +183,6 @@ class GCTests(unittest.TestCase):
         self.assertEqual(gc.collect(), 1)
 
     def test_saveall(self):
-        if test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314470"):
-            return
         # Verify that cyclic garbage like lists show up in gc.garbage if the
         # SAVEALL option is enabled.
 
@@ -235,8 +207,6 @@ class GCTests(unittest.TestCase):
         self.assertEqual(id(obj), id_L)
 
     def test_del(self):
-        if test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314470"):
-            return
         # __del__ methods can trigger collection, make this to happen
         thresholds = gc.get_threshold()
         gc.enable()
@@ -252,8 +222,6 @@ class GCTests(unittest.TestCase):
         gc.set_threshold(*thresholds)
 
     def test_del_newclass(self):
-        if test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314470"):
-            return
         # __del__ methods can trigger collection, make this to happen
         thresholds = gc.get_threshold()
         gc.enable()
@@ -275,8 +243,6 @@ class GCTests(unittest.TestCase):
     # - disposed tuples are not freed, but reused
     # - the call to assertEqual somehow avoids building its args tuple
     def test_get_count(self):
-        if test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314470"):
-            return
         # Avoid future allocation of method object
         assertEqual = self._baseAssertEqual
         gc.collect()
@@ -287,8 +253,6 @@ class GCTests(unittest.TestCase):
         assertEqual(gc.get_count(), (2, 0, 0))
 
     def test_collect_generations(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314459"):
-            return
         # Avoid future allocation of method object
         assertEqual = self.assertEqual
         gc.collect()
@@ -301,8 +265,6 @@ class GCTests(unittest.TestCase):
         assertEqual(gc.get_count(), (0, 0, 0))
 
     def test_trashcan(self):
-        if test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314470"):
-            return
         class Ouch:
             n = 0
             def __del__(self):
@@ -338,8 +300,6 @@ class GCTests(unittest.TestCase):
         gc.disable()
 
     def test_boom(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314459"):
-            return
         class Boom:
             def __getattr__(self, someattribute):
                 del self.attr
@@ -364,8 +324,6 @@ class GCTests(unittest.TestCase):
         self.assertEqual(len(gc.garbage), garbagelen)
 
     def test_boom2(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314459"):
-            return
         class Boom2:
             def __init__(self):
                 self.x = 0
@@ -393,8 +351,6 @@ class GCTests(unittest.TestCase):
         self.assertEqual(len(gc.garbage), garbagelen)
 
     def test_boom_new(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314459"):
-            return
         # boom__new and boom2_new are exactly like boom and boom2, except use
         # new-style classes.
 
@@ -415,8 +371,6 @@ class GCTests(unittest.TestCase):
         self.assertEqual(len(gc.garbage), garbagelen)
 
     def test_boom2_new(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314459"):
-            return
         class Boom2_New(object):
             def __init__(self):
                 self.x = 0
@@ -439,8 +393,6 @@ class GCTests(unittest.TestCase):
         self.assertEqual(len(gc.garbage), garbagelen)
 
     def test_get_referents(self):
-        if test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314470"):
-            return
         alist = [1, 3, 5]
         got = gc.get_referents(alist)
         got.sort()
@@ -464,8 +416,6 @@ class GCTests(unittest.TestCase):
         self.assertEqual(gc.get_referents(1, 'a', 4j), [])
 
     def test_is_tracked(self):
-        if test_support.due_to_ironpython_incompatibility("http://ironpython.codeplex.com/workitem/17458"):
-            return
         # Atomic built-in types are not tracked, user-defined objects and
         # mutable containers are.
         # NOTE: types with special optimizations (e.g. tuple) have tests
@@ -497,8 +447,6 @@ class GCTests(unittest.TestCase):
         self.assertTrue(gc.is_tracked(set()))
 
     def test_bug1055820b(self):
-        if test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314470"):
-            return
         # Corresponds to temp2b.py in the bug report.
 
         ouch = []
@@ -530,8 +478,6 @@ class GCTogglingTests(unittest.TestCase):
         gc.disable()
 
     def test_bug1055820c(self):
-        if test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314470"):
-            return
         # Corresponds to temp2c.py in the bug report.  This is pretty
         # elaborate.
 
@@ -602,8 +548,6 @@ class GCTogglingTests(unittest.TestCase):
             self.assertEqual(x, None)
 
     def test_bug1055820d(self):
-        if test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314470"):
-            return
         # Corresponds to temp2d.py in the bug report.  This is very much like
         # test_bug1055820c, but uses a __del__ method instead of a weakref
         # callback to sneak in a resurrection of cyclic trash.
@@ -673,18 +617,15 @@ class GCTogglingTests(unittest.TestCase):
 def test_main():
     enabled = gc.isenabled()
     gc.disable()
-    if not test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314470"):
-        assert not gc.isenabled()
+    assert not gc.isenabled()
     debug = gc.get_debug()
-    if not test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314470"):
-        gc.set_debug(debug & ~gc.DEBUG_LEAK) # this test is supposed to leak
+    gc.set_debug(debug & ~gc.DEBUG_LEAK) # this test is supposed to leak
 
     try:
         gc.collect() # Delete 2nd generation garbage
         run_unittest(GCTests, GCTogglingTests)
     finally:
-        if not test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314470"):
-            gc.set_debug(debug)
+        gc.set_debug(debug)
         # test gc.enable() even if GC is disabled by default
         if verbose:
             print "restoring automatic collection"

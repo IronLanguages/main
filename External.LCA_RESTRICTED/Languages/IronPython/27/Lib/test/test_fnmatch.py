@@ -3,10 +3,15 @@
 from test import test_support
 import unittest
 
-from fnmatch import fnmatch, fnmatchcase
+from fnmatch import fnmatch, fnmatchcase, _MAXCACHE, _cache
+from fnmatch import fnmatch, fnmatchcase, _MAXCACHE, _cache, _purge
 
 
 class FnmatchTestCase(unittest.TestCase):
+
+    def tearDown(self):
+        _purge()
+
     def check_match(self, filename, pattern, should_match=1, fn=fnmatch):
         if should_match:
             self.assertTrue(fn(filename, pattern),
@@ -37,8 +42,6 @@ class FnmatchTestCase(unittest.TestCase):
         check('a', r'[!\]')
         check('\\', r'[!\]', 0)
 
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         # test that filenames with newlines in them are handled correctly.
         # http://bugs.python.org/issue6665
         check('foo\nbar', 'foo*')
@@ -51,6 +54,15 @@ class FnmatchTestCase(unittest.TestCase):
         check('AbC', 'abc', 0, fnmatchcase)
         check('abc', 'AbC', 0, fnmatchcase)
 
+    def test_cache_clearing(self):
+        # check that caches do not grow too large
+        # http://bugs.python.org/issue7846
+
+        # string pattern cache
+        for i in range(_MAXCACHE + 1):
+            fnmatch('foo', '?' * i)
+
+        self.assertLessEqual(len(_cache), _MAXCACHE)
 
 def test_main():
     test_support.run_unittest(FnmatchTestCase)

@@ -2,9 +2,7 @@
 
 import unittest
 from test.test_support import run_unittest, TESTFN, unlink, have_unicode, \
-                              check_py3k_warnings, cpython_only, \
-                              is_cli64, due_to_ironpython_incompatibility, \
-                              due_to_ironpython_bug
+                              check_py3k_warnings, cpython_only
 
 # Test result of triple loop (too big to inline)
 TRIPLETS = [(0, 0, 0), (0, 0, 1), (0, 0, 2),
@@ -125,8 +123,6 @@ class TestCase(unittest.TestCase):
 
     # Test a new_style class with __iter__ but no next() method
     def test_new_style_iter_class(self):
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         class IterClass(object):
             def __iter__(self):
                 return self
@@ -898,8 +894,6 @@ class TestCase(unittest.TestCase):
         self.assertEqual(list(b), [])
 
     def test_3720(self):
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         # Avoid a crash, when an iterator deletes its next() method.
         class BadIterator(object):
             def __iter__(self):

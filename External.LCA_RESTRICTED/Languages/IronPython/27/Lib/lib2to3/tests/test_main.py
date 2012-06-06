@@ -29,9 +29,6 @@ class TestMain(unittest.TestCase):
             sys.stderr = save_stderr
 
     def test_unencodable_diff(self):
-        from test import test_support
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         input_stream = StringIO.StringIO(u"print 'nothing'\nprint u'über'\n")
         out = StringIO.StringIO()
         out_enc = codecs.getwriter("ascii")(out)

@@ -58,9 +58,6 @@ class ComplexTest(unittest.TestCase):
                 return
             else:
                 msg += ': zeros have different signs'
-                if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28352"):
-                    print msg.format(x, y)
-                    return
         self.fail(msg.format(x, y))
 
     def assertClose(self, x, y, eps=1e-9):
@@ -129,13 +126,10 @@ class ComplexTest(unittest.TestCase):
 
         a = A()
         self.assertRaises(TypeError, lambda: a + 2.0j)
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28352"):
-            return
         self.assertTrue(a < 2.0j)
 
     def test_richcompare(self):
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28352"):
-            self.assertEqual(complex.__eq__(1+1j, 1L<<10000), False)
+        self.assertEqual(complex.__eq__(1+1j, 1L<<10000), False)
         self.assertEqual(complex.__lt__(1+1j, None), NotImplemented)
         self.assertIs(complex.__eq__(1+1j, 1+1j), True)
         self.assertIs(complex.__eq__(1+1j, 2+2j), False)
@@ -147,8 +141,6 @@ class ComplexTest(unittest.TestCase):
         self.assertRaises(TypeError, complex.__ge__, 1+1j, 2+2j)
 
     def test_richcompare_boundaries(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28352"):
-            return
         def check(n, deltas, is_equal, imag = 0.0):
             for delta in deltas:
                 i = n + delta
@@ -272,16 +264,13 @@ class ComplexTest(unittest.TestCase):
         self.assertAlmostEqual(complex("(1+2j)"), 1+2j)
         self.assertAlmostEqual(complex("(1.3+2.2j)"), 1.3+2.2j)
         self.assertAlmostEqual(complex("3.14+1J"), 3.14+1j)
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28352"):
-            self.assertAlmostEqual(complex(" ( +3.14-6J )"), 3.14-6j)
-            self.assertAlmostEqual(complex(" ( +3.14-J )"), 3.14-1j)
-            self.assertAlmostEqual(complex(" ( +3.14+j )"), 3.14+1j)
+        self.assertAlmostEqual(complex(" ( +3.14-6J )"), 3.14-6j)
+        self.assertAlmostEqual(complex(" ( +3.14-J )"), 3.14-1j)
+        self.assertAlmostEqual(complex(" ( +3.14+j )"), 3.14+1j)
         self.assertAlmostEqual(complex("J"), 1j)
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28352"):
-            self.assertAlmostEqual(complex("( j )"), 1j)
+        self.assertAlmostEqual(complex("( j )"), 1j)
         self.assertAlmostEqual(complex("+J"), 1j)
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28352"):
-            self.assertAlmostEqual(complex("( -j)"), -1j)
+        self.assertAlmostEqual(complex("( -j)"), -1j)
         self.assertAlmostEqual(complex('1e-500'), 0.0 + 0.0j)
         self.assertAlmostEqual(complex('-1e-500j'), 0.0 - 0.0j)
         self.assertAlmostEqual(complex('-1e-500+1e-500j'), -0.0 + 0.0j)
@@ -338,8 +327,7 @@ class ComplexTest(unittest.TestCase):
         self.assertRaises(ValueError, complex, "(1+2j)123")
         if test_support.have_unicode:
             self.assertRaises(ValueError, complex, unicode("x"))
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28352"):
-            self.assertRaises(ValueError, complex, "1j+2")
+        self.assertRaises(ValueError, complex, "1j+2")
         self.assertRaises(ValueError, complex, "1e1ej")
         self.assertRaises(ValueError, complex, "1e++1ej")
         self.assertRaises(ValueError, complex, ")1+2j(")
@@ -348,7 +336,7 @@ class ComplexTest(unittest.TestCase):
         self.assertRaises(ValueError, complex, "1.11.1j")
         self.assertRaises(ValueError, complex, "1e1.1j")
 
-        if test_support.have_unicode and not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28352"):
+        if test_support.have_unicode:
             # check that complex accepts long unicode strings
             self.assertEqual(type(complex(unicode("1"*500))), complex)
 
@@ -513,14 +501,12 @@ class ComplexTest(unittest.TestCase):
         def test_plus_minus_0j(self):
             # test that -0j and 0j literals are not identified
             z1, z2 = 0j, -0j
-            self.assertEquals(atan2(z1.imag, -1.), atan2(0., -1.))
-            self.assertEquals(atan2(z2.imag, -1.), atan2(-0., -1.))
+            self.assertEqual(atan2(z1.imag, -1.), atan2(0., -1.))
+            self.assertEqual(atan2(z2.imag, -1.), atan2(-0., -1.))
 
     @unittest.skipUnless(float.__getformat__("double").startswith("IEEE"),
                          "test requires IEEE 754 doubles")
     def test_overflow(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28352"):
-            return
         self.assertEqual(complex("1e500"), complex(INF, 0.0))
         self.assertEqual(complex("-1e500j"), complex(0.0, -INF))
         self.assertEqual(complex("-1e500+1.8e308j"), complex(-INF, INF))
@@ -555,8 +541,6 @@ class ComplexTest(unittest.TestCase):
                                               0.0 + roundtrip.imag)
 
     def test_format(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28352"):
-            return
         # empty format string is same as str()
         self.assertEqual(format(1+3j, ''), str(1+3j))
         self.assertEqual(format(1.5+3.5j, ''), str(1.5+3.5j))
@@ -574,6 +558,16 @@ class ComplexTest(unittest.TestCase):
         self.assertEqual(format(z, '-'), str(z))
         self.assertEqual(format(z, '<'), str(z))
         self.assertEqual(format(z, '10'), str(z))
+        z = complex(0.0, 3.0)
+        self.assertEqual(format(z, ''), str(z))
+        self.assertEqual(format(z, '-'), str(z))
+        self.assertEqual(format(z, '<'), str(z))
+        self.assertEqual(format(z, '2'), str(z))
+        z = complex(-0.0, 2.0)
+        self.assertEqual(format(z, ''), str(z))
+        self.assertEqual(format(z, '-'), str(z))
+        self.assertEqual(format(z, '<'), str(z))
+        self.assertEqual(format(z, '3'), str(z))
 
         self.assertEqual(format(1+3j, 'g'), '1+3j')
         self.assertEqual(format(3j, 'g'), '0+3j')

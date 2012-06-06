@@ -106,8 +106,7 @@ class SliceTest(unittest.TestCase):
 
         self.assertEqual(range(10)[::sys.maxint - 1], [0])
 
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=300711"): 
-            self.assertRaises(OverflowError, slice(None).indices, 1L<<100)
+        self.assertRaises(OverflowError, slice(None).indices, 1L<<100)
 
     def test_setslice_without_getslice(self):
         tmp = []
@@ -118,7 +117,7 @@ class SliceTest(unittest.TestCase):
         x = X()
         with test_support.check_py3k_warnings():
             x[1:2] = 42
-        self.assertEquals(tmp, [(1, 2, 42)])
+        self.assertEqual(tmp, [(1, 2, 42)])
 
     def test_pickle(self):
         s = slice(10, 20, 3)

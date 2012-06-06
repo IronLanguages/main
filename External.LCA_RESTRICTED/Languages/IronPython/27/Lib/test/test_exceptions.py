@@ -7,7 +7,6 @@ import pickle, cPickle
 
 from test.test_support import (TESTFN, unlink, run_unittest, captured_output,
                                check_warnings, cpython_only)
-from test.test_support import is_cli, is_cli64, due_to_ironpython_incompatibility, due_to_ironpython_bug
 from test.test_pep352 import ignore_deprecation_warnings
 
 # XXX This is not really enough, each *operation* should be tested!
@@ -33,8 +32,8 @@ class ExceptionTests(unittest.TestCase):
             raise exc("spam")
         except exc, err:
             buf2 = str(err)
-        self.assertEquals(buf1, buf2)
-        self.assertEquals(exc.__name__, excname)
+        self.assertEqual(buf1, buf2)
+        self.assertEqual(exc.__name__, excname)
 
     def testRaising(self):
         self.raise_catch(AttributeError, "AttributeError")
@@ -136,7 +135,7 @@ class ExceptionTests(unittest.TestCase):
             finally:
                 continue'''
 
-        if not sys.platform.startswith('java') and not is_cli:
+        if not sys.platform.startswith('java'):
             ckmsg(s, "'continue' not supported inside 'finally' clause")
 
         s = '''if 1:
@@ -164,7 +163,7 @@ class ExceptionTests(unittest.TestCase):
             except TypeError, err:
                 exc, err, tb = sys.exc_info()
                 co = tb.tb_frame.f_code
-                self.assertEquals(co.co_name, "test_capi1")
+                self.assertEqual(co.co_name, "test_capi1")
                 self.assertTrue(co.co_filename.endswith('test_exceptions'+os.extsep+'py'))
             else:
                 self.fail("Expected exception")
@@ -176,14 +175,14 @@ class ExceptionTests(unittest.TestCase):
             except RuntimeError, err:
                 exc, err, tb = sys.exc_info()
                 co = tb.tb_frame.f_code
-                self.assertEquals(co.co_name, "__init__")
+                self.assertEqual(co.co_name, "__init__")
                 self.assertTrue(co.co_filename.endswith('test_exceptions'+os.extsep+'py'))
                 co2 = tb.tb_frame.f_back.f_code
-                self.assertEquals(co2.co_name, "test_capi2")
+                self.assertEqual(co2.co_name, "test_capi2")
             else:
                 self.fail("Expected exception")
 
-        if not sys.platform.startswith('java') and not is_cli:
+        if not sys.platform.startswith('java'):
             test_capi1()
             test_capi2()
 
@@ -195,9 +194,8 @@ class ExceptionTests(unittest.TestCase):
         else:
             self.assertEqual(str(WindowsError(1001)),
                                  "1001")
-            if not due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-                self.assertEqual(str(WindowsError(1001, "message")),
-                                    "[Error 1001] message")
+            self.assertEqual(str(WindowsError(1001, "message")),
+                                 "[Error 1001] message")
             self.assertEqual(WindowsError(1001, "message").errno, 22)
             self.assertEqual(WindowsError(1001, "message").winerror, 1001)
 
@@ -286,14 +284,14 @@ class ExceptionTests(unittest.TestCase):
                 if type(e) is not exc:
                     raise
                 # Verify module name
-                self.assertEquals(type(e).__module__, 'exceptions')
+                self.assertEqual(type(e).__module__, 'exceptions')
                 # Verify no ref leaks in Exc_str()
                 s = str(e)
                 for checkArgName in expected:
-                    self.assertEquals(repr(getattr(e, checkArgName)),
-                                      repr(expected[checkArgName]),
-                                      'exception "%s", attribute "%s"' %
-                                       (repr(e), checkArgName))
+                    self.assertEqual(repr(getattr(e, checkArgName)),
+                                     repr(expected[checkArgName]),
+                                     'exception "%s", attribute "%s"' %
+                                      (repr(e), checkArgName))
 
                 # test for pickling support
                 for p in pickle, cPickle:
@@ -302,47 +300,44 @@ class ExceptionTests(unittest.TestCase):
                         for checkArgName in expected:
                             got = repr(getattr(new, checkArgName))
                             want = repr(expected[checkArgName])
-                            self.assertEquals(got, want,
-                                              'pickled "%r", attribute "%s"' %
-                                              (e, checkArgName))
+                            self.assertEqual(got, want,
+                                             'pickled "%r", attribute "%s"' %
+                                             (e, checkArgName))
 
 
-    if not due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24752"):
-        def testDeprecatedMessageAttribute(self):
-            # Accessing BaseException.message and relying on its value set by
-            # BaseException.__init__ triggers a deprecation warning.
-            exc = BaseException("foo")
-            with check_warnings(("BaseException.message has been deprecated "
-                                 "as of Python 2.6", DeprecationWarning)) as w:
-                self.assertEqual(exc.message, "foo")
-            self.assertEqual(len(w.warnings), 1)
-    
-        def testRegularMessageAttribute(self):
-            # Accessing BaseException.message after explicitly setting a value
-            # for it does not trigger a deprecation warning.
-            exc = BaseException("foo")
-            exc.message = "bar"
-            with check_warnings(quiet=True) as w:
-                self.assertEqual(exc.message, "bar")
-            self.assertEqual(len(w.warnings), 0)
-            # Deleting the message is supported, too.
-            del exc.message
-            with self.assertRaises(AttributeError):
-                exc.message
-    
-        @ignore_deprecation_warnings
-        def testPickleMessageAttribute(self):
-            # Pickling with message attribute must work, as well.
-            e = Exception("foo")
-            f = Exception("foo")
-            f.message = "bar"
-            for p in pickle, cPickle:
-                ep = p.loads(p.dumps(e))
-                with warnings.catch_warnings():
-                    ignore_message_warning()
-                    self.assertEqual(ep.message, "foo")
-                fp = p.loads(p.dumps(f))
-                self.assertEqual(fp.message, "bar")
+    def testDeprecatedMessageAttribute(self):
+        # Accessing BaseException.message and relying on its value set by
+        # BaseException.__init__ triggers a deprecation warning.
+        exc = BaseException("foo")
+        with check_warnings(("BaseException.message has been deprecated "
+                             "as of Python 2.6", DeprecationWarning)) as w:
+            self.assertEqual(exc.message, "foo")
+        self.assertEqual(len(w.warnings), 1)
+
+    def testRegularMessageAttribute(self):
+        # Accessing BaseException.message after explicitly setting a value
+        # for it does not trigger a deprecation warning.
+        exc = BaseException("foo")
+        exc.message = "bar"
+        with check_warnings(quiet=True) as w:
+            self.assertEqual(exc.message, "bar")
+        self.assertEqual(len(w.warnings), 0)
+        # Deleting the message is supported, too.
+        del exc.message
+        with self.assertRaises(AttributeError):
+            exc.message
+
+    @ignore_deprecation_warnings
+    def testPickleMessageAttribute(self):
+        # Pickling with message attribute must work, as well.
+        e = Exception("foo")
+        f = Exception("foo")
+        f.message = "bar"
+        for p in pickle, cPickle:
+            ep = p.loads(p.dumps(e))
+            self.assertEqual(ep.message, "foo")
+            fp = p.loads(p.dumps(f))
+            self.assertEqual(fp.message, "bar")
 
     @ignore_deprecation_warnings
     def testSlicing(self):
@@ -364,19 +359,9 @@ class ExceptionTests(unittest.TestCase):
                 self.fancy_arg = fancy_arg
 
         x = DerivedException(fancy_arg=42)
-        self.assertEquals(x.fancy_arg, 42)
+        self.assertEqual(x.fancy_arg, 42)
 
     def testInfiniteRecursion(self):
-        if is_cli64:
-            print "Dev10 Bug 409568"
-            return
-            
-        if is_cli: 
-            import sys
-            import System
-            _cli_saved_limit = sys.getrecursionlimit()
-            sys.setrecursionlimit(1001)
-            
         def f():
             return f()
         self.assertRaises(RuntimeError, f)
@@ -400,10 +385,6 @@ class ExceptionTests(unittest.TestCase):
             else:
                 self.fail("Should have raised KeyError")
 
-        if is_cli:
-            import sys
-            sys.setrecursionlimit(_cli_saved_limit)
-
     def testUnicodeStrUsage(self):
         # Make sure both instances and classes have a str and unicode
         # representation.
@@ -413,7 +394,6 @@ class ExceptionTests(unittest.TestCase):
         self.assertTrue(unicode(Exception(u'a')))
         self.assertTrue(unicode(Exception(u'\xe1')))
 
-    @unittest.skipIf(is_cli, "http://ironpython.codeplex.com/workitem/28171")
     def testUnicodeChangeAttributes(self):
         # See issue 7309. This was a crasher.
 
@@ -462,8 +442,6 @@ class ExceptionTests(unittest.TestCase):
             __metaclass__ = Meta
             pass
 
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         with captured_output("stderr") as stderr:
             try:
                 raise KeyError()
@@ -505,8 +483,6 @@ class TestSameStrAndUnicodeMsg(unittest.TestCase):
     def check_same_msg(self, exc, msg):
         """Helper function that checks if str(exc) == unicode(exc) == msg"""
         self.assertEqual(str(exc), msg)
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         self.assertEqual(str(exc), unicode(exc))
 
     def test_builtin_exceptions(self):
@@ -542,8 +518,6 @@ class TestSameStrAndUnicodeMsg(unittest.TestCase):
         # if __str__ returns a non-ascii unicode string str() should fail
         # but unicode() should return the unicode string
         e = ExcWithOverriddenStr(msg=u'f\xf6\xf6') # no args
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         self.assertRaises(UnicodeEncodeError, str, e)
         self.assertEqual(unicode(e), u'f\xf6\xf6')
 
@@ -556,8 +530,7 @@ class TestSameStrAndUnicodeMsg(unittest.TestCase):
         # string, str() should try to return str(self.args[0]) and fail.
         # unicode() should return unicode(self.args[0]) and succeed.
         e = Exception(u'f\xf6\xf6')
-        if not due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            self.assertRaises(UnicodeEncodeError, str, e)
+        self.assertRaises(UnicodeEncodeError, str, e)
         self.assertEqual(unicode(e), u'f\xf6\xf6')
 
     def test_1_arg_with_overridden___str__(self):
@@ -570,8 +543,6 @@ class TestSameStrAndUnicodeMsg(unittest.TestCase):
         # if __str__ returns a non-ascii unicode string, str() should fail
         # but unicode() should succeed.
         e = ExcWithOverriddenStr('arg', msg=u'f\xf6\xf6') # 1 arg
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         self.assertRaises(UnicodeEncodeError, str, e)
         self.assertEqual(unicode(e), u'f\xf6\xf6')
 
@@ -598,8 +569,6 @@ class TestSameStrAndUnicodeMsg(unittest.TestCase):
         # but unicode() should succeed
         e = ExcWithOverriddenStr('arg1', u'f\xf6\xf6', u'arg3', # 3 args
                                  msg=u'f\xf6\xf6')
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         self.assertRaises(UnicodeEncodeError, str, e)
         self.assertEqual(unicode(e), u'f\xf6\xf6')
 
