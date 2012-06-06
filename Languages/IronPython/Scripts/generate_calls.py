@@ -172,7 +172,9 @@ public object Default%(argCount)dCall0(CallSite site, CodeContext context, objec
 }"""
 
 def function_callers(cw):
-    cw.write('internal const int MaxGeneratedFunctionArgs = %d;' % (MAX_ARGS-2))
+    cw.write('''class FunctionCallerProperties {
+    internal const int MaxGeneratedFunctionArgs = %d;
+}''' % (MAX_ARGS-2))
     cw.write('')
     for nparams in range(1, MAX_ARGS-2):        
         cw.write(function_caller_template % {
