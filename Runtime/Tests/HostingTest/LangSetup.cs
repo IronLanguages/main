@@ -40,7 +40,7 @@ namespace HostingTest{
 
         static LangSetup() {
             Python = new LangSetup( new[] { "IronPython","Python","py" },new[] { ".py" }, "IronPython 3.0",
-                "IronPython.Runtime.PythonContext", "IronPython, Version=3.0.0.0, Culture=neutral"
+                "IronPython.Runtime.PythonContext", "IronPython, Version=2.9.0.0, Culture=neutral"
             );
 
             Ruby = new LangSetup( new[] { "IronRuby", "Ruby", "rb" }, new[] { ".rb" },"IronRuby",
