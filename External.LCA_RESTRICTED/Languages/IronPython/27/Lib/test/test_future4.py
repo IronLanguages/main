@@ -3,9 +3,6 @@ from __future__ import unicode_literals
 import unittest
 from test import test_support
 
-if test_support.due_to_ironpython_incompatibility("str == unicode in IronPython but bytes in CPython"):
-    str = bytes
-
 class TestFuture(unittest.TestCase):
     def assertType(self, obj, typ):
         self.assertTrue(type(obj) is typ,

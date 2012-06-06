@@ -21,12 +21,11 @@ class MimeToolsTest(unittest.TestCase):
                     'uuencode', 'x-uuencode', 'uue', 'x-uue']:
             i = StringIO.StringIO(start)
             o = StringIO.StringIO()
-            if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317561"):
-                mimetools.encode(i, o, enc)
-                i = StringIO.StringIO(o.getvalue())
-                o = StringIO.StringIO()
-                mimetools.decode(i, o, enc)
-                self.assertEqual(o.getvalue(), start)
+            mimetools.encode(i, o, enc)
+            i = StringIO.StringIO(o.getvalue())
+            o = StringIO.StringIO()
+            mimetools.decode(i, o, enc)
+            self.assertEqual(o.getvalue(), start)
 
     def test_boundary(self):
         s = set([""])

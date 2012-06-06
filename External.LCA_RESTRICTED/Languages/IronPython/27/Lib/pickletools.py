@@ -1215,10 +1215,11 @@ opcodes = [
       stack_before=[anyobject],
       stack_after=[pytuple],
       proto=2,
-      doc="""One-tuple.
+      doc="""Build a one-tuple out of the topmost item on the stack.
 
       This code pops one value off the stack and pushes a tuple of
-      length 1 whose one item is that value back onto it.  IOW:
+      length 1 whose one item is that value back onto it.  In other
+      words:
 
           stack[-1] = tuple(stack[-1:])
       """),
@@ -1229,10 +1230,11 @@ opcodes = [
       stack_before=[anyobject, anyobject],
       stack_after=[pytuple],
       proto=2,
-      doc="""One-tuple.
+      doc="""Build a two-tuple out of the top two items on the stack.
 
-      This code pops two values off the stack and pushes a tuple
-      of length 2 whose items are those values back onto it.  IOW:
+      This code pops two values off the stack and pushes a tuple of
+      length 2 whose items are those values back onto it.  In other
+      words:
 
           stack[-2:] = [tuple(stack[-2:])]
       """),
@@ -1243,10 +1245,11 @@ opcodes = [
       stack_before=[anyobject, anyobject, anyobject],
       stack_after=[pytuple],
       proto=2,
-      doc="""One-tuple.
+      doc="""Build a three-tuple out of the top three items on the stack.
 
-      This code pops three values off the stack and pushes a tuple
-      of length 3 whose items are those values back onto it.  IOW:
+      This code pops three values off the stack and pushes a tuple of
+      length 3 whose items are those values back onto it.  In other
+      words:
 
           stack[-3:] = [tuple(stack[-3:])]
       """),
@@ -1368,7 +1371,7 @@ opcodes = [
       proto=0,
       doc="""Read an object from the memo and push it on the stack.
 
-      The index of the memo object to push is given by the newline-teriminated
+      The index of the memo object to push is given by the newline-terminated
       decimal string following.  BINGET and LONG_BINGET are space-optimized
       versions.
       """),

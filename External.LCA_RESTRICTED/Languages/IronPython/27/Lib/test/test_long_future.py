@@ -7,7 +7,7 @@ import sys
 import random
 import math
 import unittest
-from test.test_support import run_unittest, due_to_ironpython_bug
+from test.test_support import run_unittest
 
 # decorator for skipping tests on non-IEEE 754 platforms
 requires_IEEE_754 = unittest.skipUnless(
@@ -139,8 +139,6 @@ class TrueDivisionTests(unittest.TestCase):
         self.check_truediv(12345, 345678 * 2**(DBL_MANT_DIG - DBL_MIN_EXP))
         # ... a much larger or smaller than b
         self.check_truediv(12345*2**100, 98765)
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         self.check_truediv(12345*2**30, 98765*7**81)
         # ... a / b near a boundary: one of 1, 2**DBL_MANT_DIG, 2**DBL_MIN_EXP,
         #                 2**DBL_MAX_EXP, 2**(DBL_MIN_EXP-DBL_MANT_DIG)

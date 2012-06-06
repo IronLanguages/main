@@ -1,10 +1,7 @@
-from test.test_support import TESTFN, run_unittest, import_module, is_cli, is_net40, force_gc_collect
+from test.test_support import TESTFN, run_unittest, import_module, unlink, requires
 import unittest
-import os, re, itertools, sys
+import os, re, itertools, socket, sys
 
-if is_cli and not is_net40:
-    print "mmap unsupported on .NET 2.0. Skipping test."
-    sys.exit(0)
 mmap = import_module('mmap')
 
 PAGESIZE = mmap.PAGESIZE
@@ -16,7 +13,6 @@ class MmapTests(unittest.TestCase):
             os.unlink(TESTFN)
 
     def tearDown(self):
-        force_gc_collect()
         try:
             os.unlink(TESTFN)
         except OSError:
@@ -122,8 +118,7 @@ class MmapTests(unittest.TestCase):
     def test_access_parameter(self):
         # Test for "access" keyword parameter
         mapsize = 10
-        with open(TESTFN, "wb") as f:
-            f.write("a"*mapsize)
+        open(TESTFN, "wb").write("a"*mapsize)
         f = open(TESTFN, "rb")
         m = mmap.mmap(f.fileno(), mapsize, access=mmap.ACCESS_READ)
         self.assertEqual(m[:], 'a'*mapsize, "Readonly memory map data incorrect.")
@@ -173,11 +168,11 @@ class MmapTests(unittest.TestCase):
             self.fail("Able to resize readonly memory map")
         f.close()
         del m, f
-        with open(TESTFN, "rb") as f:
-            self.assertEqual(f.read(), 'a'*mapsize,
+        self.assertEqual(open(TESTFN, "rb").read(), 'a'*mapsize,
                "Readonly memory map data file was modified")
 
         # Opening mmap with size too big
+        import sys
         f = open(TESTFN, "r+b")
         try:
             m = mmap.mmap(f.fileno(), mapsize+1)
@@ -186,18 +181,16 @@ class MmapTests(unittest.TestCase):
             # CAUTION:  This also changes the size of the file on disk, and
             # later tests assume that the length hasn't changed.  We need to
             # repair that.
-            if hasattr(sys, 'getwindowsversion'):
+            if sys.platform.startswith('win'):
                 self.fail("Opening mmap with size+1 should work on Windows.")
         else:
             # we expect a ValueError on Unix, but not on Windows
-            if not hasattr(sys, 'getwindowsversion'):
+            if not sys.platform.startswith('win'):
                 self.fail("Opening mmap with size+1 should raise ValueError.")
             m.close()
         f.close()
-        if hasattr(sys, 'getwindowsversion'):
+        if sys.platform.startswith('win'):
             # Repair damage from the resizing test.
-            del m, f
-            force_gc_collect()
             f = open(TESTFN, 'r+b')
             f.truncate(mapsize)
             f.close()
@@ -226,9 +219,8 @@ class MmapTests(unittest.TestCase):
         self.assertEqual(m[:], 'd' * mapsize,
                "Copy-on-write memory map data not written correctly.")
         m.flush()
-        with open(TESTFN, "rb") as f:
-            self.assertEqual(f.read(), 'c'*mapsize,
-                   "Copy-on-write test data file should not be modified.")
+        self.assertEqual(open(TESTFN, "rb").read(), 'c'*mapsize,
+               "Copy-on-write test data file should not be modified.")
         # Ensuring copy-on-write maps cannot be resized
         self.assertRaises(TypeError, m.resize, 2*mapsize)
         f.close()
@@ -246,6 +238,14 @@ class MmapTests(unittest.TestCase):
                               flags=mmap.MAP_PRIVATE,
                               prot=mmap.PROT_READ, access=mmap.ACCESS_WRITE)
             f.close()
+
+            # Try writing with PROT_EXEC and without PROT_WRITE
+            prot = mmap.PROT_READ | getattr(mmap, 'PROT_EXEC', 0)
+            with open(TESTFN, "r+b") as f:
+                m = mmap.mmap(f.fileno(), mapsize, prot=prot)
+                self.assertRaises(TypeError, m.write, b"abcdef")
+                self.assertRaises(TypeError, m.write_byte, 0)
+                m.close()
 
     def test_bad_file_desc(self):
         # Try opening a bad file descriptor...
@@ -333,6 +333,36 @@ class MmapTests(unittest.TestCase):
             self.assertEqual(mf.read(2**16), 2**16 * "m")
             mf.close()
             f.close()
+
+    def test_length_0_offset(self):
+        # Issue #10916: test mapping of remainder of file by passing 0 for
+        # map length with an offset doesn't cause a segfault.
+        if not hasattr(os, "stat"):
+            self.skipTest("needs os.stat")
+        # NOTE: allocation granularity is currently 65536 under Win64,
+        # and therefore the minimum offset alignment.
+        with open(TESTFN, "wb") as f:
+            f.write((65536 * 2) * b'm') # Arbitrary character
+
+        with open(TESTFN, "rb") as f:
+            mf = mmap.mmap(f.fileno(), 0, offset=65536, access=mmap.ACCESS_READ)
+            try:
+                self.assertRaises(IndexError, mf.__getitem__, 80000)
+            finally:
+                mf.close()
+
+    def test_length_0_large_offset(self):
+        # Issue #10959: test mapping of a file by passing 0 for
+        # map length with a large offset doesn't cause a segfault.
+        if not hasattr(os, "stat"):
+            self.skipTest("needs os.stat")
+
+        with open(TESTFN, "wb") as f:
+            f.write(115699 * b'm') # Arbitrary character
+
+        with open(TESTFN, "w+b") as f:
+            self.assertRaises(ValueError, mmap.mmap, f.fileno(), 0,
+                              offset=2147418112)
 
     def test_move(self):
         # make move works everywhere (64-bit format problem earlier)
@@ -425,7 +455,7 @@ class MmapTests(unittest.TestCase):
                     data = "".join(reversed(data))
                     L[start:stop:step] = data
                     m[start:stop:step] = data
-                    self.assertEquals(m[:], "".join(L))
+                    self.assertEqual(m[:], "".join(L))
 
     def make_mmap_file (self, f, halfsize):
         # Write 2 pages worth of data to the file
@@ -520,27 +550,27 @@ class MmapTests(unittest.TestCase):
         f.close()
         # Test write_byte()
         for i in xrange(len(data)):
-            self.assertEquals(m.tell(), i)
+            self.assertEqual(m.tell(), i)
             m.write_byte(data[i])
-            self.assertEquals(m.tell(), i+1)
+            self.assertEqual(m.tell(), i+1)
         self.assertRaises(ValueError, m.write_byte, "x")
-        self.assertEquals(m[:], data)
+        self.assertEqual(m[:], data)
         # Test read_byte()
         m.seek(0)
         for i in xrange(len(data)):
-            self.assertEquals(m.tell(), i)
-            self.assertEquals(m.read_byte(), data[i])
-            self.assertEquals(m.tell(), i+1)
+            self.assertEqual(m.tell(), i)
+            self.assertEqual(m.read_byte(), data[i])
+            self.assertEqual(m.tell(), i+1)
         self.assertRaises(ValueError, m.read_byte)
         # Test read()
         m.seek(3)
-        self.assertEquals(m.read(3), "345")
-        self.assertEquals(m.tell(), 6)
+        self.assertEqual(m.read(3), "345")
+        self.assertEqual(m.tell(), 6)
         # Test write()
         m.seek(3)
         m.write("bar")
-        self.assertEquals(m.tell(), 6)
-        self.assertEquals(m[:], "012bar6789")
+        self.assertEqual(m.tell(), 6)
+        self.assertEqual(m[:], "012bar6789")
         m.seek(8)
         self.assertRaises(ValueError, m.write, "bar")
 
@@ -555,18 +585,18 @@ class MmapTests(unittest.TestCase):
             m1[:] = data1
             m2 = mmap.mmap(-1, len(data2), tagname="foo")
             m2[:] = data2
-            self.assertEquals(m1[:], data2)
-            self.assertEquals(m2[:], data2)
+            self.assertEqual(m1[:], data2)
+            self.assertEqual(m2[:], data2)
             m2.close()
             m1.close()
 
-            # Test differnt tag
+            # Test different tag
             m1 = mmap.mmap(-1, len(data1), tagname="foo")
             m1[:] = data1
             m2 = mmap.mmap(-1, len(data2), tagname="boo")
             m2[:] = data2
-            self.assertEquals(m1[:], data1)
-            self.assertEquals(m2[:], data2)
+            self.assertEqual(m1[:], data1)
+            self.assertEqual(m2[:], data2)
             m2.close()
             m1.close()
 
@@ -580,8 +610,7 @@ class MmapTests(unittest.TestCase):
             m.close()
 
             # Should not crash (Issue 5385)
-            with open(TESTFN, "wb") as f:
-                f.write("x"*10)
+            open(TESTFN, "wb").write("x"*10)
             f = open(TESTFN, "r+b")
             m = mmap.mmap(f.fileno(), 0)
             f.close()
@@ -595,9 +624,74 @@ class MmapTests(unittest.TestCase):
                 pass
             m.close()
 
+        def test_invalid_descriptor(self):
+            # socket file descriptors are valid, but out of range
+            # for _get_osfhandle, causing a crash when validating the
+            # parameters to _get_osfhandle.
+            s = socket.socket()
+            try:
+                with self.assertRaises(mmap.error):
+                    m = mmap.mmap(s.fileno(), 10)
+            finally:
+                s.close()
+
+
+class LargeMmapTests(unittest.TestCase):
+
+    def setUp(self):
+        unlink(TESTFN)
+
+    def tearDown(self):
+        unlink(TESTFN)
+
+    def _working_largefile(self):
+        # Only run if the current filesystem supports large files.
+        f = open(TESTFN, 'wb', buffering=0)
+        try:
+            f.seek(0x80000001)
+            f.write(b'x')
+            f.flush()
+        except (IOError, OverflowError):
+            raise unittest.SkipTest("filesystem does not have largefile support")
+        finally:
+            f.close()
+            unlink(TESTFN)
+
+    def test_large_offset(self):
+        if sys.platform[:3] == 'win' or sys.platform == 'darwin':
+            requires('largefile',
+                'test requires %s bytes and a long time to run' % str(0x180000000))
+        self._working_largefile()
+        with open(TESTFN, 'wb') as f:
+            f.seek(0x14FFFFFFF)
+            f.write(b" ")
+
+        with open(TESTFN, 'rb') as f:
+            m = mmap.mmap(f.fileno(), 0, offset=0x140000000, access=mmap.ACCESS_READ)
+            try:
+                self.assertEqual(m[0xFFFFFFF], b" ")
+            finally:
+                m.close()
+
+    def test_large_filesize(self):
+        if sys.platform[:3] == 'win' or sys.platform == 'darwin':
+            requires('largefile',
+                'test requires %s bytes and a long time to run' % str(0x180000000))
+        self._working_largefile()
+        with open(TESTFN, 'wb') as f:
+            f.seek(0x17FFFFFFF)
+            f.write(b" ")
+
+        with open(TESTFN, 'rb') as f:
+            m = mmap.mmap(f.fileno(), 0x10000, access=mmap.ACCESS_READ)
+            try:
+                self.assertEqual(m.size(), 0x180000000)
+            finally:
+                m.close()
+
 
 def test_main():
-    run_unittest(MmapTests)
+    run_unittest(MmapTests, LargeMmapTests)
 
 if __name__ == '__main__':
     test_main()

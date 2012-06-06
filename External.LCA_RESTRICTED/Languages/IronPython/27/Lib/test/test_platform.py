@@ -2,8 +2,7 @@ import sys
 import os
 import unittest
 import platform
-if hasattr(os, "symlink"):
-    import subprocess
+import subprocess
 
 from test import test_support
 
@@ -50,26 +49,16 @@ class PlatformTest(unittest.TestCase):
         res = platform.processor()
 
     def setUp(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317178"):
-            return
         self.save_version = sys.version
         self.save_subversion = sys.subversion
         self.save_platform = sys.platform
 
     def tearDown(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317178"):
-            return
         sys.version = self.save_version
         sys.subversion = self.save_subversion
         sys.platform = self.save_platform
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317178"):
-            return
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317178"):
-            return
 
     def test_sys_version(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317178"):
-            return
         # Old test.
         for input, output in (
             ('2.4.3 (#1, Jun 21 2006, 13:54:21) \n[GCC 3.3.4 (pre 3.3.5 20040809)]',
@@ -87,8 +76,6 @@ class PlatformTest(unittest.TestCase):
                 (name, version, '', '', buildno, builddate, compiler), output)
 
         # Tests for python_implementation(), python_version(), python_branch(),
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317178"):
-            return
         # python_revision(), python_build(), and python_compiler().
         sys_versions = {
             ("2.6.1 (r261:67515, Dec  6 2008, 15:26:00) \n[GCC 4.0.1 (Apple Computer, Inc. build 5370)]",
@@ -196,17 +183,36 @@ class PlatformTest(unittest.TestCase):
             # On Snow Leopard, sw_vers reports 10.6.0 as 10.6
             if len_diff > 0:
                 expect_list.extend(['0'] * len_diff)
-            self.assertEquals(result_list, expect_list)
+            self.assertEqual(result_list, expect_list)
 
             # res[1] claims to contain
             # (version, dev_stage, non_release_version)
             # That information is no longer available
-            self.assertEquals(res[1], ('', '', ''))
+            self.assertEqual(res[1], ('', '', ''))
 
             if sys.byteorder == 'little':
-                self.assertEquals(res[2], 'i386')
+                self.assertEqual(res[2], 'i386')
             else:
-                self.assertEquals(res[2], 'PowerPC')
+                self.assertEqual(res[2], 'PowerPC')
+
+
+    @unittest.skipUnless(sys.platform == 'darwin', "OSX only test")
+    def test_mac_ver_with_fork(self):
+        # Issue7895: platform.mac_ver() crashes when using fork without exec
+        #
+        # This test checks that the fix for that issue works.
+        #
+        pid = os.fork()
+        if pid == 0:
+            # child
+            info = platform.mac_ver()
+            os._exit(0)
+
+        else:
+            # parent
+            cpid, sts = os.waitpid(pid, 0)
+            self.assertEqual(cpid, pid)
+            self.assertEqual(sts, 0)
 
     def test_dist(self):
         res = platform.dist()

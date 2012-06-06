@@ -1,12 +1,10 @@
 """
 Test the API of the symtable module.
 """
-from test import test_support
-if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=361322"):
-    import sys
-    sys.exit(0)
 import symtable
 import unittest
+
+from test import test_support
 
 
 TEST_CODE = """

@@ -27,8 +27,6 @@ class FutureTest(unittest.TestCase):
         from test import test_future3
 
     def test_badfuture3(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317178"):
-            return
         try:
             from test import badsyntax_future3
         except SyntaxError, msg:
@@ -37,8 +35,6 @@ class FutureTest(unittest.TestCase):
             self.fail("expected exception didn't occur")
 
     def test_badfuture4(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317178"):
-            return
         try:
             from test import badsyntax_future4
         except SyntaxError, msg:
@@ -47,8 +43,6 @@ class FutureTest(unittest.TestCase):
             self.fail("expected exception didn't occur")
 
     def test_badfuture5(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317178"):
-            return
         try:
             from test import badsyntax_future5
         except SyntaxError, msg:
@@ -57,8 +51,6 @@ class FutureTest(unittest.TestCase):
             self.fail("expected exception didn't occur")
 
     def test_badfuture6(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317178"):
-            return
         try:
             from test import badsyntax_future6
         except SyntaxError, msg:
@@ -67,8 +59,6 @@ class FutureTest(unittest.TestCase):
             self.fail("expected exception didn't occur")
 
     def test_badfuture7(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317178"):
-            return
         try:
             from test import badsyntax_future7
         except SyntaxError, msg:
@@ -77,8 +67,6 @@ class FutureTest(unittest.TestCase):
             self.fail("expected exception didn't occur")
 
     def test_badfuture8(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317178"):
-            return
         try:
             from test import badsyntax_future8
         except SyntaxError, msg:
@@ -87,8 +75,6 @@ class FutureTest(unittest.TestCase):
             self.fail("expected exception didn't occur")
 
     def test_badfuture9(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317178"):
-            return
         try:
             from test import badsyntax_future9
         except SyntaxError, msg:
@@ -97,8 +83,6 @@ class FutureTest(unittest.TestCase):
             self.fail("expected exception didn't occur")
 
     def test_parserhack(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         # test that the parser.c::future_hack function works as expected
         # Note: although this test must pass, it's not testing the original
         #       bug as of 2.6 since the with statement is not optional and

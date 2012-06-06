@@ -1,6 +1,5 @@
-from test import test_support
-import unittest
-import sys, codecs, htmlentitydefs
+import test.test_support, unittest
+import sys, codecs, htmlentitydefs, unicodedata
 
 class PosReturn:
     # this can be used for configurable callbacks
@@ -104,9 +103,6 @@ class CodecCallbackTest(unittest.TestCase):
         self.assertEqual(sin.encode("iso-8859-15", "test.xmlcharnamereplace"), sout)
 
     def test_uninamereplace(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=303481"):
-            return
-        import unicodedata
         # We're using the names from the unicode database this time,
         # and we're doing "syntax highlighting" here, i.e. we include
         # the replaced text in ANSI escape sequences. For this it is
@@ -158,8 +154,6 @@ class CodecCallbackTest(unittest.TestCase):
         self.assertEqual(sin.encode("iso-8859-15", "backslashreplace"), sout)
 
     def test_decoding_callbacks(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=15544"):
-            return
         # This is a test for a decoding callback handler
         # that allows the decoding of the invalid sequence
         # "\xc0\x80" and returns "\x00" instead of raising an error.
@@ -185,8 +179,6 @@ class CodecCallbackTest(unittest.TestCase):
                           "utf-8", "test.relaxedutf8")
 
     def test_charmapencode(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=303938"):
-            return
         # For charmap encodings the replacement string will be
         # mapped through the encoding again. This means, that
         # to be able to use e.g. the "replace" handler, the
@@ -194,7 +186,7 @@ class CodecCallbackTest(unittest.TestCase):
         charmap = dict([ (ord(c), 2*c.upper()) for c in "abcdefgh"])
         sin = u"abc"
         sout = "AABBCC"
-        self.assertEquals(codecs.charmap_encode(sin, "strict", charmap)[0], sout)
+        self.assertEqual(codecs.charmap_encode(sin, "strict", charmap)[0], sout)
 
         sin = u"abcA"
         self.assertRaises(UnicodeError, codecs.charmap_encode, sin, "strict", charmap)
@@ -202,7 +194,7 @@ class CodecCallbackTest(unittest.TestCase):
         charmap[ord("?")] = "XYZ"
         sin = u"abcDEF"
         sout = "AABBCCXYZXYZXYZ"
-        self.assertEquals(codecs.charmap_encode(sin, "replace", charmap)[0], sout)
+        self.assertEqual(codecs.charmap_encode(sin, "replace", charmap)[0], sout)
 
         charmap[ord("?")] = u"XYZ"
         self.assertRaises(TypeError, codecs.charmap_encode, sin, "replace", charmap)
@@ -211,8 +203,6 @@ class CodecCallbackTest(unittest.TestCase):
         self.assertRaises(TypeError, codecs.charmap_encode, sin, "replace", charmap)
 
     def test_decodeunicodeinternal(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=15506"):
-            return
         self.assertRaises(
             UnicodeDecodeError,
             "\x00\x00\x00\x00\x00".decode,
@@ -242,8 +232,6 @@ class CodecCallbackTest(unittest.TestCase):
             )
 
     def test_callbacks(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=304331"):
-            return
         def handler1(exc):
             if not isinstance(exc, UnicodeEncodeError) \
                and not isinstance(exc, UnicodeDecodeError):
@@ -298,8 +286,6 @@ class CodecCallbackTest(unittest.TestCase):
         )
 
     def test_longstrings(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=148421"):
-            return
         # test long strings to check for memory overflow problems
         errors = [ "strict", "ignore", "replace", "xmlcharrefreplace",
                    "backslashreplace"]
@@ -341,11 +327,9 @@ class CodecCallbackTest(unittest.TestCase):
 
         # check with the correct number and type of arguments
         exc = exctype(*args)
-        self.assertEquals(str(exc), msg)
+        self.assertEqual(str(exc), msg)
 
     def test_unicodeencodeerror(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=304331"):
-            return
         self.check_exceptionobjectargs(
             UnicodeEncodeError,
             ["ascii", u"g\xfcrk", 1, 2, "ouch"],
@@ -379,8 +363,6 @@ class CodecCallbackTest(unittest.TestCase):
             )
 
     def test_unicodedecodeerror(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=304331"):
-            return
         self.check_exceptionobjectargs(
             UnicodeDecodeError,
             ["ascii", "g\xfcrk", 1, 2, "ouch"],
@@ -393,8 +375,6 @@ class CodecCallbackTest(unittest.TestCase):
         )
 
     def test_unicodetranslateerror(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=304331"):
-            return
         self.check_exceptionobjectargs(
             UnicodeTranslateError,
             [u"g\xfcrk", 1, 2, "ouch"],
@@ -437,12 +417,11 @@ class CodecCallbackTest(unittest.TestCase):
         )
 
         # If the correct exception is passed in, "strict" raises it
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=303935"):
-            self.assertRaises(
-                UnicodeEncodeError,
-                codecs.strict_errors,
-                UnicodeEncodeError("ascii", u"\u3042", 0, 1, "ouch")
-            )
+        self.assertRaises(
+            UnicodeEncodeError,
+            codecs.strict_errors,
+            UnicodeEncodeError("ascii", u"\u3042", 0, 1, "ouch")
+        )
 
     def test_badandgoodignoreexceptions(self):
         # "ignore" complains about a non-exception passed in
@@ -457,18 +436,16 @@ class CodecCallbackTest(unittest.TestCase):
            codecs.ignore_errors,
            UnicodeError("ouch")
         )
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=303935"):
-            return
         # If the correct exception is passed in, "ignore" returns an empty replacement
-        self.assertEquals(
+        self.assertEqual(
             codecs.ignore_errors(UnicodeEncodeError("ascii", u"\u3042", 0, 1, "ouch")),
             (u"", 1)
         )
-        self.assertEquals(
+        self.assertEqual(
             codecs.ignore_errors(UnicodeDecodeError("ascii", "\xff", 0, 1, "ouch")),
             (u"", 1)
         )
-        self.assertEquals(
+        self.assertEqual(
             codecs.ignore_errors(UnicodeTranslateError(u"\u3042", 0, 1, "ouch")),
             (u"", 1)
         )
@@ -496,18 +473,16 @@ class CodecCallbackTest(unittest.TestCase):
             codecs.replace_errors,
             BadObjectUnicodeDecodeError()
         )
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=303935"):
-            return
         # With the correct exception, "replace" returns an "?" or u"\ufffd" replacement
-        self.assertEquals(
+        self.assertEqual(
             codecs.replace_errors(UnicodeEncodeError("ascii", u"\u3042", 0, 1, "ouch")),
             (u"?", 1)
         )
-        self.assertEquals(
+        self.assertEqual(
             codecs.replace_errors(UnicodeDecodeError("ascii", "\xff", 0, 1, "ouch")),
             (u"\ufffd", 1)
         )
-        self.assertEquals(
+        self.assertEqual(
             codecs.replace_errors(UnicodeTranslateError(u"\u3042", 0, 1, "ouch")),
             (u"\ufffd", 1)
         )
@@ -539,9 +514,7 @@ class CodecCallbackTest(unittest.TestCase):
         # Use the correct exception
         cs = (0, 1, 9, 10, 99, 100, 999, 1000, 9999, 10000, 0x3042)
         s = "".join(unichr(c) for c in cs)
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=303935"):
-            return
-        self.assertEquals(
+        self.assertEqual(
             codecs.xmlcharrefreplace_errors(
                 UnicodeEncodeError("ascii", s, 0, len(s), "ouch")
             ),
@@ -572,42 +545,38 @@ class CodecCallbackTest(unittest.TestCase):
             codecs.backslashreplace_errors,
             UnicodeTranslateError(u"\u3042", 0, 1, "ouch")
         )
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=303935"):
-            return
         # Use the correct exception
-        self.assertEquals(
+        self.assertEqual(
             codecs.backslashreplace_errors(UnicodeEncodeError("ascii", u"\u3042", 0, 1, "ouch")),
             (u"\\u3042", 1)
         )
-        self.assertEquals(
+        self.assertEqual(
             codecs.backslashreplace_errors(UnicodeEncodeError("ascii", u"\x00", 0, 1, "ouch")),
             (u"\\x00", 1)
         )
-        self.assertEquals(
+        self.assertEqual(
             codecs.backslashreplace_errors(UnicodeEncodeError("ascii", u"\xff", 0, 1, "ouch")),
             (u"\\xff", 1)
         )
-        self.assertEquals(
+        self.assertEqual(
             codecs.backslashreplace_errors(UnicodeEncodeError("ascii", u"\u0100", 0, 1, "ouch")),
             (u"\\u0100", 1)
         )
-        self.assertEquals(
+        self.assertEqual(
             codecs.backslashreplace_errors(UnicodeEncodeError("ascii", u"\uffff", 0, 1, "ouch")),
             (u"\\uffff", 1)
         )
         if sys.maxunicode>0xffff:
-            self.assertEquals(
+            self.assertEqual(
                 codecs.backslashreplace_errors(UnicodeEncodeError("ascii", u"\U00010000", 0, 1, "ouch")),
                 (u"\\U00010000", 1)
             )
-            self.assertEquals(
+            self.assertEqual(
                 codecs.backslashreplace_errors(UnicodeEncodeError("ascii", u"\U0010ffff", 0, 1, "ouch")),
                 (u"\\U0010ffff", 1)
             )
 
     def test_badhandlerresults(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=304331"):
-            return
         results = ( 42, u"foo", (1,2,3), (u"foo", 1, 3), (u"foo", None), (u"foo",), ("foo", 1, 3), ("foo", None), ("foo",) )
         encs = ("ascii", "latin-1", "iso-8859-1", "iso-8859-15")
 
@@ -634,23 +603,19 @@ class CodecCallbackTest(unittest.TestCase):
                 )
 
     def test_lookup(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=148421"):
-            return
-        self.assertEquals(codecs.strict_errors, codecs.lookup_error("strict"))
-        self.assertEquals(codecs.ignore_errors, codecs.lookup_error("ignore"))
-        self.assertEquals(codecs.strict_errors, codecs.lookup_error("strict"))
-        self.assertEquals(
+        self.assertEqual(codecs.strict_errors, codecs.lookup_error("strict"))
+        self.assertEqual(codecs.ignore_errors, codecs.lookup_error("ignore"))
+        self.assertEqual(codecs.strict_errors, codecs.lookup_error("strict"))
+        self.assertEqual(
             codecs.xmlcharrefreplace_errors,
             codecs.lookup_error("xmlcharrefreplace")
         )
-        self.assertEquals(
+        self.assertEqual(
             codecs.backslashreplace_errors,
             codecs.lookup_error("backslashreplace")
         )
 
     def test_unencodablereplacement(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=304324"):
-            return
         def unencrepl(exc):
             if isinstance(exc, UnicodeEncodeError):
                 return (u"\u4242", exc.end)
@@ -683,8 +648,6 @@ class CodecCallbackTest(unittest.TestCase):
         self.assertRaises(LookupError, codecs.lookup_error, "test.unknown")
 
     def test_xmlcharrefvalues(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=304327"):
-            return
         # enhance coverage of:
         # Python/codecs.c::PyCodec_XMLCharRefReplaceErrors()
         # and inline implementations
@@ -707,12 +670,11 @@ class CodecCallbackTest(unittest.TestCase):
             return 42
         codecs.register_error("test.baddecodereturn1", baddecodereturn1)
         self.assertRaises(TypeError, "\xff".decode, "ascii", "test.baddecodereturn1")
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=323116"):
-            self.assertRaises(TypeError, "\\".decode, "unicode-escape", "test.baddecodereturn1")
-            self.assertRaises(TypeError, "\\x0".decode, "unicode-escape", "test.baddecodereturn1")
-            self.assertRaises(TypeError, "\\x0y".decode, "unicode-escape", "test.baddecodereturn1")
-            self.assertRaises(TypeError, "\\Uffffeeee".decode, "unicode-escape", "test.baddecodereturn1")
-            self.assertRaises(TypeError, "\\uyyyy".decode, "raw-unicode-escape", "test.baddecodereturn1")
+        self.assertRaises(TypeError, "\\".decode, "unicode-escape", "test.baddecodereturn1")
+        self.assertRaises(TypeError, "\\x0".decode, "unicode-escape", "test.baddecodereturn1")
+        self.assertRaises(TypeError, "\\x0y".decode, "unicode-escape", "test.baddecodereturn1")
+        self.assertRaises(TypeError, "\\Uffffeeee".decode, "unicode-escape", "test.baddecodereturn1")
+        self.assertRaises(TypeError, "\\uyyyy".decode, "raw-unicode-escape", "test.baddecodereturn1")
 
         def baddecodereturn2(exc):
             return (u"?", None)
@@ -722,15 +684,13 @@ class CodecCallbackTest(unittest.TestCase):
         handler = PosReturn()
         codecs.register_error("test.posreturn", handler.handle)
 
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=304331"):
-            return
         # Valid negative position
         handler.pos = -1
-        self.assertEquals("\xff0".decode("ascii", "test.posreturn"), u"<?>0")
+        self.assertEqual("\xff0".decode("ascii", "test.posreturn"), u"<?>0")
 
         # Valid negative position
         handler.pos = -2
-        self.assertEquals("\xff0".decode("ascii", "test.posreturn"), u"<?><?>")
+        self.assertEqual("\xff0".decode("ascii", "test.posreturn"), u"<?><?>")
 
         # Negative position out of bounds
         handler.pos = -3
@@ -738,11 +698,11 @@ class CodecCallbackTest(unittest.TestCase):
 
         # Valid positive position
         handler.pos = 1
-        self.assertEquals("\xff0".decode("ascii", "test.posreturn"), u"<?>0")
+        self.assertEqual("\xff0".decode("ascii", "test.posreturn"), u"<?>0")
 
         # Largest valid positive position (one beyond end of input)
         handler.pos = 2
-        self.assertEquals("\xff0".decode("ascii", "test.posreturn"), u"<?>")
+        self.assertEqual("\xff0".decode("ascii", "test.posreturn"), u"<?>")
 
         # Invalid positive position
         handler.pos = 3
@@ -750,7 +710,7 @@ class CodecCallbackTest(unittest.TestCase):
 
         # Restart at the "0"
         handler.pos = 6
-        self.assertEquals("\\uyyyy0".decode("raw-unicode-escape", "test.posreturn"), u"<?>0")
+        self.assertEqual("\\uyyyy0".decode("raw-unicode-escape", "test.posreturn"), u"<?>0")
 
         class D(dict):
             def __getitem__(self, key):
@@ -760,8 +720,6 @@ class CodecCallbackTest(unittest.TestCase):
         self.assertRaises(TypeError, codecs.charmap_decode, "\xff", "strict", {0xff: sys.maxunicode+1})
 
     def test_encodehelper(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=304331"):
-            return
         # enhance coverage of:
         # Objects/unicodeobject.c::unicode_encode_call_errorhandler()
         # and callers
@@ -782,11 +740,11 @@ class CodecCallbackTest(unittest.TestCase):
 
         # Valid negative position
         handler.pos = -1
-        self.assertEquals(u"\xff0".encode("ascii", "test.posreturn"), "<?>0")
+        self.assertEqual(u"\xff0".encode("ascii", "test.posreturn"), "<?>0")
 
         # Valid negative position
         handler.pos = -2
-        self.assertEquals(u"\xff0".encode("ascii", "test.posreturn"), "<?><?>")
+        self.assertEqual(u"\xff0".encode("ascii", "test.posreturn"), "<?><?>")
 
         # Negative position out of bounds
         handler.pos = -3
@@ -794,11 +752,11 @@ class CodecCallbackTest(unittest.TestCase):
 
         # Valid positive position
         handler.pos = 1
-        self.assertEquals(u"\xff0".encode("ascii", "test.posreturn"), "<?>0")
+        self.assertEqual(u"\xff0".encode("ascii", "test.posreturn"), "<?>0")
 
         # Largest valid positive position (one beyond end of input
         handler.pos = 2
-        self.assertEquals(u"\xff0".encode("ascii", "test.posreturn"), "<?>")
+        self.assertEqual(u"\xff0".encode("ascii", "test.posreturn"), "<?>")
 
         # Invalid positive position
         handler.pos = 3
@@ -815,8 +773,6 @@ class CodecCallbackTest(unittest.TestCase):
             self.assertRaises(TypeError, codecs.charmap_encode, u"\xff", err, {0xff: 300})
 
     def test_translatehelper(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=304331"):
-            return
         # enhance coverage of:
         # Objects/unicodeobject.c::unicode_encode_call_errorhandler()
         # and callers
@@ -842,7 +798,7 @@ class CodecCallbackTest(unittest.TestCase):
             text.translate(charmap)
 
 def test_main():
-    test_support.run_unittest(CodecCallbackTest)
+    test.test_support.run_unittest(CodecCallbackTest)
 
 if __name__ == "__main__":
     test_main()

@@ -112,8 +112,6 @@ class SeqTestCase(unittest.TestCase):
     def test_repeat(self):
         self.o.ind = 3
         self.n.ind = 2
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         self.assertEqual(self.seq * self.o, self.seq * 3)
         self.assertEqual(self.seq * self.n, self.seq * 2)
         self.assertEqual(self.o * self.seq, self.seq * 3)
@@ -122,8 +120,6 @@ class SeqTestCase(unittest.TestCase):
     def test_wrappers(self):
         self.o.ind = 4
         self.n.ind = 5
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         self.assertEqual(self.seq.__getitem__(self.o), self.seq[4])
         self.assertEqual(self.seq.__mul__(self.o), self.seq * 4)
         self.assertEqual(self.seq.__rmul__(self.o), self.seq * 4)
@@ -221,10 +217,7 @@ class StringTestCase(SeqTestCase):
     seq = "this is a test"
 
 class ByteArrayTestCase(SeqTestCase):
-    if test_support.due_to_ironpython_incompatibility("http://ironpython.codeplex.com/workitem/28171"):
-        seq = bytearray(b"this is a test")
-    else:
-        seq = bytearray("this is a test")
+    seq = bytearray("this is a test")
 
 class UnicodeTestCase(SeqTestCase):
     seq = u"this is a test"
@@ -233,22 +226,13 @@ class ClassicSeqTestCase(SeqTestCase):
     seq = ClassicSeq((0,10,20,30,40,50))
 
 class NewSeqTestCase(SeqTestCase):
-    if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-        seq = [0,10,20,30,40,50]
-    else:
-        seq = NewSeq((0,10,20,30,40,50))
+    seq = NewSeq((0,10,20,30,40,50))
 
 class ClassicSeqDeprecatedTestCase(SeqTestCase):
-    if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-        seq = [0,10,20,30,40,50]
-    else:
-        seq = ClassicSeqDeprecated((0,10,20,30,40,50))
+    seq = ClassicSeqDeprecated((0,10,20,30,40,50))
 
 class NewSeqDeprecatedTestCase(SeqTestCase):
-    if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-        seq = [0,10,20,30,40,50]
-    else:
-        seq = NewSeqDeprecated((0,10,20,30,40,50))
+    seq = NewSeqDeprecated((0,10,20,30,40,50))
 
 
 class XRangeTestCase(unittest.TestCase):

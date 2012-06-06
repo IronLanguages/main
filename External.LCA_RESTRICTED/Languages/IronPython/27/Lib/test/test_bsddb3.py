@@ -8,9 +8,6 @@ import tempfile
 import time
 import unittest
 from test.test_support import requires, run_unittest, import_module
-from test import test_support
-if test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=318143"):
-    sys.exit(0)
 
 # Skip test if _bsddb module was not built.
 import_module('_bsddb')
@@ -80,5 +77,5 @@ def test_main():
             pass
 
 
-if __name__ == '__main__' and not test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=318143"):
+if __name__ == '__main__':
     test_main()

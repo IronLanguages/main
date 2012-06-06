@@ -1,4 +1,4 @@
-from test.test_support import run_unittest, due_to_ironpython_bug
+from test.test_support import run_unittest
 import unittest
 import StringIO
 
@@ -13,8 +13,6 @@ class SoftspaceTests(unittest.TestCase):
 
         print >> f, C(), 'c ', 'd\t', 'e'
         print >> f, 'f', 'g'
-        if due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=323662"):
-            return
         # In 2.2 & earlier, this printed ' a\nbc  d\te\nf g\n'
         self.assertEqual(f.getvalue(), 'a\nb c  d\te\nf g\n')
 

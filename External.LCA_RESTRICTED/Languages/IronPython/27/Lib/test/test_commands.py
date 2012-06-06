@@ -24,8 +24,8 @@ if os.name != 'posix':
 class CommandTests(unittest.TestCase):
 
     def test_getoutput(self):
-        self.assertEquals(commands.getoutput('echo xyzzy'), 'xyzzy')
-        self.assertEquals(commands.getstatusoutput('echo xyzzy'), (0, 'xyzzy'))
+        self.assertEqual(commands.getoutput('echo xyzzy'), 'xyzzy')
+        self.assertEqual(commands.getstatusoutput('echo xyzzy'), (0, 'xyzzy'))
 
         # we use mkdtemp in the next line to create an empty directory
         # under our exclusive control; from that, we can invent a pathname
@@ -36,7 +36,7 @@ class CommandTests(unittest.TestCase):
             name = os.path.join(dir, "foo")
 
             status, output = commands.getstatusoutput('cat ' + name)
-            self.assertNotEquals(status, 0)
+            self.assertNotEqual(status, 0)
         finally:
             if dir is not None:
                 os.rmdir(dir)
@@ -49,8 +49,12 @@ class CommandTests(unittest.TestCase):
         #     drwxr-xr-x   15 Joe User My Group     4096 Aug 12 12:50 /
         # Note that the first case above has a space in the group name
         # while the second one has a space in both names.
+        # Special attributes supported:
+        #   + = has ACLs
+        #   @ = has Mac OS X extended attributes
+        #   . = has a SELinux security context
         pat = r'''d.........   # It is a directory.
-                  \+?          # It may have ACLs.
+                  [.+@]?       # It may have special attributes.
                   \s+\d+       # It has some number of links.
                   [^/]*        # Skip user, group, size, and date.
                   /\.          # and end with the name of the file.

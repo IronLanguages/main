@@ -12,7 +12,7 @@ import sys
 import unittest
 import popen2
 
-from test.test_support import run_unittest, reap_children, is_cli, due_to_ironpython_bug
+from test.test_support import run_unittest, reap_children
 
 if sys.platform[:4] == 'beos' or sys.platform[:6] == 'atheos':
     #  Locks get messed up or something.  Generally we're supposed
@@ -52,31 +52,28 @@ class Popen2Test(unittest.TestCase):
         popen2._cleanup()
         self.assertFalse(popen2._active, "popen2._active not empty")
         # The os.popen*() API delegates to the subprocess module (on Unix)
-        if not due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/15512"):
-            import subprocess
-            for inst in subprocess._active:
-                inst.wait()
-            subprocess._cleanup()
-            self.assertFalse(subprocess._active, "subprocess._active not empty")
+        import subprocess
+        for inst in subprocess._active:
+            inst.wait()
+        subprocess._cleanup()
+        self.assertFalse(subprocess._active, "subprocess._active not empty")
         reap_children()
 
     def validate_output(self, teststr, expected_out, r, w, e=None):
         w.write(teststr)
         w.close()
         got = r.read()
-        self.assertEquals(expected_out, got.strip(), "wrote %r read %r" %
-                          (teststr, got))
+        self.assertEqual(expected_out, got.strip(), "wrote %r read %r" %
+                         (teststr, got))
 
         if e is not None:
             got = e.read()
             self.assertFalse(got, "unexpected %r on stderr" % got)
 
-    @unittest.skipIf(is_cli, "http://ironpython.codeplex.com/workitem/17475")
     def test_popen2(self):
         r, w = popen2.popen2(self.cmd)
         self.validate_output(self.teststr, self.expected, r, w)
 
-    @unittest.skipIf(is_cli, "http://ironpython.codeplex.com/workitem/17475")
     def test_popen3(self):
         if os.name == 'posix':
             r, w, e = popen2.popen3([self.cmd])
@@ -93,7 +90,7 @@ class Popen2Test(unittest.TestCase):
 
             w, r = os.popen2(["echo", self.teststr])
             got = r.read()
-            self.assertEquals(got, self.teststr + "\n")
+            self.assertEqual(got, self.teststr + "\n")
 
         w, r = os.popen2(self.cmd)
         self.validate_output(self.teststr, self.expected, r, w)
@@ -106,14 +103,13 @@ class Popen2Test(unittest.TestCase):
 
             w, r, e = os.popen3(["echo", self.teststr])
             got = r.read()
-            self.assertEquals(got, self.teststr + "\n")
+            self.assertEqual(got, self.teststr + "\n")
             got = e.read()
             self.assertFalse(got, "unexpected %r on stderr" % got)
 
         w, r, e = os.popen3(self.cmd)
         self.validate_output(self.teststr, self.expected, r, w, e)
 
-    @unittest.skipIf(is_cli, "http://ironpython.codeplex.com/workitem/17475")
     def test_os_popen4(self):
         if os.name == 'posix':
             w, r = os.popen4([self.cmd])
@@ -121,7 +117,7 @@ class Popen2Test(unittest.TestCase):
 
             w, r = os.popen4(["echo", self.teststr])
             got = r.read()
-            self.assertEquals(got, self.teststr + "\n")
+            self.assertEqual(got, self.teststr + "\n")
 
         w, r = os.popen4(self.cmd)
         self.validate_output(self.teststr, self.expected, r, w)

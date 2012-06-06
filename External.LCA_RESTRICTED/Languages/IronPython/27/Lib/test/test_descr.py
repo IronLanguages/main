@@ -876,7 +876,7 @@ class ClassPropertiesAndMethods(unittest.TestCase):
     # see "A Monotonic Superclass Linearization for Dylan",
     # by Kim Barrett et al. (OOPSLA 1996)
     def test_consistency_with_epg(self):
-        # Testing consistentcy with EPG...
+        # Testing consistency with EPG...
         class Pane(object): pass
         class ScrollingMixin(object): pass
         class EditingMixin(object): pass
@@ -950,8 +950,6 @@ order (MRO) for bases """
         self.assertEqual(x.__dict__, {'foo': 1})
 
     def test_slots(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=319467"):
-            return
         # Testing __slots__...
         class C0(object):
             __slots__ = []
@@ -1199,8 +1197,6 @@ order (MRO) for bases """
         self.assertEqual(a.__dict__, {"foo": 42})
 
     def test_slots_descriptor(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         # Issue2115: slot descriptors did not correctly check
         # the type of the given object
         import abc
@@ -1219,8 +1215,6 @@ order (MRO) for bases """
         self.assertRaises(TypeError, MyABC.a.__set__, u, 3)
 
     def test_metaclass_cmp(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         # See bug 7491.
         class M(type):
             def __cmp__(self, other):
@@ -1398,8 +1392,6 @@ order (MRO) for bases """
         self.assertEqual(super(D,D).goo(), (D,))
         self.assertEqual(super(D,d).goo(), (D,))
 
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         # Verify that a non-callable will raise
         meth = classmethod(1).__get__(1)
         self.assertRaises(TypeError, meth)
@@ -1542,62 +1534,59 @@ order (MRO) for bases """
             def f(self): return "C"
         class D(B, C):
             pass
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertEqual(D.mro(), [D, B, C, A, object])
+        self.assertEqual(D.mro(), [D, B, C, A, object])
         self.assertEqual(D.__mro__, (D, B, C, A, object))
         self.assertEqual(D().f(), "C")
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            class PerverseMetaType(type):
-                def mro(cls):
-                    L = type.mro(cls)
-                    L.reverse()
-                    return L
-            class X(D,B,C,A):
-                __metaclass__ = PerverseMetaType
-            self.assertEqual(X.__mro__, (object, A, C, B, D, X))
-            self.assertEqual(X().f(), "A")
 
-            try:
-                class X(object):
-                    class __metaclass__(type):
-                        def mro(self):
-                            return [self, dict, object]
-                # In CPython, the class creation above already raises
-                # TypeError, as a protection against the fact that
-                # instances of X would segfault it.  In other Python
-                # implementations it would be ok to let the class X
-                # be created, but instead get a clean TypeError on the
-                # __setitem__ below.
-                x = object.__new__(X)
-                x[5] = 6
-            except TypeError:
-                pass
-            else:
-                self.fail("devious mro() return not caught")
+        class PerverseMetaType(type):
+            def mro(cls):
+                L = type.mro(cls)
+                L.reverse()
+                return L
+        class X(D,B,C,A):
+            __metaclass__ = PerverseMetaType
+        self.assertEqual(X.__mro__, (object, A, C, B, D, X))
+        self.assertEqual(X().f(), "A")
 
-            try:
-                class X(object):
-                    class __metaclass__(type):
-                        def mro(self):
-                            return [1]
-            except TypeError:
-                pass
-            else:
-                self.fail("non-class mro() return not caught")
+        try:
+            class X(object):
+                class __metaclass__(type):
+                    def mro(self):
+                        return [self, dict, object]
+            # In CPython, the class creation above already raises
+            # TypeError, as a protection against the fact that
+            # instances of X would segfault it.  In other Python
+            # implementations it would be ok to let the class X
+            # be created, but instead get a clean TypeError on the
+            # __setitem__ below.
+            x = object.__new__(X)
+            x[5] = 6
+        except TypeError:
+            pass
+        else:
+            self.fail("devious mro() return not caught")
 
-            try:
-                class X(object):
-                    class __metaclass__(type):
-                        def mro(self):
-                            return 1
-            except TypeError:
-                pass
-            else:
-                self.fail("non-sequence mro() return not caught")
+        try:
+            class X(object):
+                class __metaclass__(type):
+                    def mro(self):
+                        return [1]
+        except TypeError:
+            pass
+        else:
+            self.fail("non-class mro() return not caught")
+
+        try:
+            class X(object):
+                class __metaclass__(type):
+                    def mro(self):
+                        return 1
+        except TypeError:
+            pass
+        else:
+            self.fail("non-sequence mro() return not caught")
 
     def test_overloading(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=148613"):
-            return
         # Testing operator overloading...
 
         class B(object):
@@ -1765,8 +1754,7 @@ order (MRO) for bases """
                 setattr(X, attr, obj)
             setattr(X, name, SpecialDescr(meth_impl))
             runner(X())
-            if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                self.assertEqual(record, [1], name)
+            self.assertEqual(record, [1], name)
 
             class X(Checker):
                 pass
@@ -1778,8 +1766,6 @@ order (MRO) for bases """
             except MyException:
                 pass
             else:
-                if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                    return
                 self.fail("{0!r} didn't raise".format(name))
 
     def test_specials(self):
@@ -1929,19 +1915,15 @@ order (MRO) for bases """
                 self.fail("shouldn't allow %s.__cmp__(%r, %r)" % (
                     a.__class__, a, b))
 
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=148516"):
-            unsafecmp(u"123", "123")
-            unsafecmp("123", u"123")
-            unsafecmp(1, 1.0)
+        unsafecmp(u"123", "123")
+        unsafecmp("123", u"123")
+        unsafecmp(1, 1.0)
         unsafecmp(1.0, 1)
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=148516"):
-            unsafecmp(1, 1L)
-            unsafecmp(1L, 1)
+        unsafecmp(1, 1L)
+        unsafecmp(1L, 1)
 
     @test_support.impl_detail("custom logic for printing to real file objects")
     def test_recursions_1(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         # Testing recursion checks ...
         class Letter(str):
             def __new__(cls, letter):
@@ -1966,8 +1948,6 @@ order (MRO) for bases """
             sys.stdout = test_stdout
 
     def test_recursions_2(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         # Bug #1202533.
         class A(object):
             pass
@@ -1980,8 +1960,6 @@ order (MRO) for bases """
             self.fail("expected a RuntimeError")
 
     def test_weakrefs(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=148516"):
-            return
         # Testing weak references...
         import weakref
         class C(object):
@@ -2374,8 +2352,6 @@ order (MRO) for bases """
         dir(C()) # This used to segfault
 
     def test_supers(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=148444"):
-            return
         # Testing super...
 
         class A(object):
@@ -2658,15 +2634,13 @@ order (MRO) for bases """
             self.assertEqual(u, s)
         s = madstring("12345")
         self.assertEqual(str(s), "12345")
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=412227"):
-            self.assertTrue(str(s).__class__ is str)
+        self.assertTrue(str(s).__class__ is str)
 
         base = "\x00" * 5
         s = madstring(base)
         self.assertEqual(s, base)
         self.assertEqual(str(s), base)
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=412227"):
-            self.assertTrue(str(s).__class__ is str)
+        self.assertTrue(str(s).__class__ is str)
         self.assertEqual(hash(s), hash(base))
         self.assertEqual({s: 1}[base], 1)
         self.assertEqual({base: 1}[s], 1)
@@ -2723,8 +2697,7 @@ order (MRO) for bases """
         base = u"12345"
         u = madunicode(base)
         self.assertEqual(unicode(u), base)
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=412227"):
-            self.assertTrue(unicode(u).__class__ is unicode)
+        self.assertTrue(unicode(u).__class__ is unicode)
         self.assertEqual(hash(u), hash(base))
         self.assertEqual({u: 1}[base], 1)
         self.assertEqual({base: 1}[u], 1)
@@ -2855,8 +2828,6 @@ order (MRO) for bases """
                             % constructor)
 
     def test_str_subclass_as_dict_key(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314165"):
-            return
         # Testing a str subclass used as dict key ..
 
         class cistr(str):
@@ -2920,8 +2891,6 @@ order (MRO) for bases """
                     self.assertTrue(cmp(x, c[y]) == cmp(x, y), "x=%d, y=%d" % (x, y))
 
     def test_rich_comparisons(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314165"):
-            return
         # Testing rich comparisons...
         class Z(complex):
             pass
@@ -3000,8 +2969,6 @@ order (MRO) for bases """
                                "x=%d, y=%d" % (x, y))
 
     def test_coercions(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=147826"):
-            return
         # Testing coercions...
         class I(int): pass
         coerce(I(0), 0)
@@ -3029,8 +2996,6 @@ order (MRO) for bases """
         coerce(0j, C(0))
 
     def test_descrdoc(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=320127"):
-            return
         # Testing descriptor doc strings...
         def check(descr, what):
             self.assertEqual(descr.__doc__, what)
@@ -3083,19 +3048,14 @@ order (MRO) for bases """
             else:
                 self.fail("shouldn't allow del %r.__class__" % x)
         cant(C(), list)
-        if not test_support.due_to_ironpython_bug("http://vstfdevdiv:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=148573"):
-            cant(list(), C)
+        cant(list(), C)
         cant(C(), 1)
         cant(C(), object)
-        if not test_support.due_to_ironpython_bug("http://vstfdevdiv:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=148573"):
-            cant(object(), list)
-            cant(list(), object)
+        cant(object(), list)
+        cant(list(), object)
         class Int(int): __slots__ = []
-        if not test_support.due_to_ironpython_bug("http://vstfdevdiv:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=148573"):
-            cant(2, Int)
+        cant(2, Int)
         cant(Int(), int)
-        if test_support.due_to_ironpython_bug("http://vstfdevdiv:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=148573"):
-            return
         cant(True, int)
         cant(2, bool)
         o = object()
@@ -3216,8 +3176,6 @@ order (MRO) for bases """
             else:
                 self.fail("%r's __dict__ can be modified" % cls)
 
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         # Modules also disallow __dict__ assignment
         class Module1(types.ModuleType, Base):
             pass
@@ -3621,10 +3579,6 @@ order (MRO) for bases """
             pass
 
         A.__call__ = A()
-        if test_support.due_to_ironpython_incompatibility("IronPython does not set recursion level by default"):
-            import sys
-            orig_limit = sys.getrecursionlimit()
-            sys.setrecursionlimit(1001)
         try:
             A()()
         except RuntimeError:
@@ -3632,12 +3586,7 @@ order (MRO) for bases """
         else:
             self.fail("Recursion limit should have been reached for __call__()")
 
-        if test_support.due_to_ironpython_incompatibility("IronPython does not set recursion level by default"):
-            sys.setrecursionlimit(orig_limit)
-
     def test_delete_hook(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=147664"):
-            return
         # Testing __del__ hook...
         log = []
         class C(object):
@@ -3747,8 +3696,6 @@ order (MRO) for bases """
         self.assertEqual(m.__dict__, {"foo": 1})
 
     def test_funny_new(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=147664"):
-            return
         # Testing __new__ returning something unexpected...
         class C(object):
             def __new__(cls, arg):
@@ -3867,8 +3814,6 @@ order (MRO) for bases """
         self.assertEqual(a, [2,3,1])
 
     def test_subtype_resurrection(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=147664"):
-            return
         # Testing resurrection of new-style instance...
 
         class C(object):
@@ -3975,11 +3920,9 @@ order (MRO) for bases """
         D.__bases__ = (C,)
         D.__bases__ = (C2,)
         self.assertEqual(d.meth(), 1)
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertEqual(e.meth(), 1)
+        self.assertEqual(e.meth(), 1)
         self.assertEqual(d.a, 2)
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertEqual(e.a, 2)
+        self.assertEqual(e.a, 2)
         self.assertEqual(C2.__subclasses__(), [D])
 
         try:
@@ -3995,8 +3938,7 @@ order (MRO) for bases """
             if str(msg) == "a new-style class can't have only classic bases":
                 self.fail("wrong error message for .__bases__ = ()")
         else:
-            if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                self.fail("shouldn't be able to set .__bases__ to ()")
+            self.fail("shouldn't be able to set .__bases__ to ()")
 
         try:
             D.__bases__ = (D,)
@@ -4028,21 +3970,20 @@ order (MRO) for bases """
         D.__bases__ = (C, Classic)
 
         self.assertEqual(d.meth2(), 3)
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"): #BAD - this hangs
-            self.assertEqual(e.meth2(), 3)
-            try:
-                d.a
-            except AttributeError:
-                pass
-            else:
-                self.fail("attribute should have vanished")
+        self.assertEqual(e.meth2(), 3)
+        try:
+            d.a
+        except AttributeError:
+            pass
+        else:
+            self.fail("attribute should have vanished")
 
-            try:
-                D.__bases__ = (Classic,)
-            except TypeError:
-                pass
-            else:
-                self.fail("new-style class must have a new-style base")
+        try:
+            D.__bases__ = (Classic,)
+        except TypeError:
+            pass
+        else:
+            self.fail("new-style class must have a new-style base")
 
     def test_builtin_bases(self):
         # Make sure all the builtin types can have their base queried without
@@ -4087,8 +4028,6 @@ order (MRO) for bases """
 
     def test_mutable_bases_with_failing_mro(self):
         # Testing mutable bases with failing mro...
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         class WorkOnce(type):
             def __new__(self, name, bases, ns):
                 self.flag = 0
@@ -4158,13 +4097,12 @@ order (MRO) for bases """
         class E(C, D):
             pass
 
-        if not test_support.due_to_ironpython_bug("CodePlex 21116"):
-            try:
-                C.__bases__ = (B, A)
-            except TypeError:
-                pass
-            else:
-                self.fail("didn't catch MRO conflict")
+        try:
+            C.__bases__ = (B, A)
+        except TypeError:
+            pass
+        else:
+            self.fail("didn't catch MRO conflict")
 
     def test_mutable_names(self):
         # Testing mutable names...
@@ -4338,15 +4276,13 @@ order (MRO) for bases """
         self.assertEqual(C.__dict__["f"](p), "B.f->C.f")
 
     def test_carloverre(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=411329"):
-            return
         # Testing prohibition of Carlo Verre's hack...
         try:
             object.__setattr__(str, "foo", 42)
         except TypeError:
             pass
         else:
-            self.fail("Carlo Verre __setattr__ suceeded!")
+            self.fail("Carlo Verre __setattr__ succeeded!")
         try:
             object.__delattr__(str, "lower")
         except TypeError:
@@ -4396,8 +4332,6 @@ order (MRO) for bases """
             sys.stdout = test_stdout
 
     def test_vicious_descriptor_nonsense(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=148373"):
-            return
         # Testing vicious_descriptor_nonsense...
 
         # A potential segfault spotted by Thomas Wouters in mail to
@@ -4427,8 +4361,6 @@ order (MRO) for bases """
         self.assertEqual(hasattr(c, 'attr'), False)
 
     def test_init(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         # SF 1155938
         class Foo(object):
             def __init__(self):
@@ -4453,8 +4385,7 @@ order (MRO) for bases """
         if hasattr(l.__add__, '__self__'):
             # CPython
             self.assertTrue(l.__add__.__self__ is l)
-            if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                self.assertTrue(l.__add__.__objclass__ is list)
+            self.assertTrue(l.__add__.__objclass__ is list)
         else:
             # Python implementations where [].__add__ is a normal bound method
             self.assertTrue(l.__add__.im_self is l)
@@ -4568,8 +4499,6 @@ order (MRO) for bases """
         class X(object):
             a = descr
 
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         x = X()
         self.assertIs(x.a, descr)
         x.a = 42
@@ -4605,11 +4534,11 @@ order (MRO) for bases """
             __getattr__ = descr
 
         self.assertRaises(AttributeError, getattr, A(), "attr")
-        self.assertEquals(descr.counter, 1)
+        self.assertEqual(descr.counter, 1)
         self.assertRaises(AttributeError, getattr, B(), "attr")
-        self.assertEquals(descr.counter, 2)
+        self.assertEqual(descr.counter, 2)
         self.assertRaises(AttributeError, getattr, C(), "attr")
-        self.assertEquals(descr.counter, 4)
+        self.assertEqual(descr.counter, 4)
 
         import gc
         class EvilGetattribute(object):
@@ -4624,6 +4553,17 @@ order (MRO) for bases """
 
         self.assertRaises(AttributeError, getattr, EvilGetattribute(), "attr")
 
+    def test_abstractmethods(self):
+        # type pretends not to have __abstractmethods__.
+        self.assertRaises(AttributeError, getattr, type, "__abstractmethods__")
+        class meta(type):
+            pass
+        self.assertRaises(AttributeError, getattr, meta, "__abstractmethods__")
+        class X(object):
+            pass
+        with self.assertRaises(AttributeError):
+            del X.__abstractmethods__
+
 
 class DictProxyTests(unittest.TestCase):
     def setUp(self):
@@ -4636,7 +4576,7 @@ class DictProxyTests(unittest.TestCase):
         # Testing dict-proxy iterkeys...
         keys = [ key for key in self.C.__dict__.iterkeys() ]
         keys.sort()
-        self.assertEquals(keys, ['__dict__', '__doc__', '__module__',
+        self.assertEqual(keys, ['__dict__', '__doc__', '__module__',
             '__weakref__', 'meth'])
 
     def test_iter_values(self):
@@ -4682,10 +4622,7 @@ class PTypesLongInitTest(unittest.TestCase):
 
         # Another segfault only when run early
         # (before PyType_Ready(tuple) is called)
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            type.__mro__
-        else:
-            type.mro(tuple)
+        type.mro(tuple)
 
 
 def test_main():
@@ -4696,8 +4633,6 @@ def test_main():
             ("classic (int|long) division", DeprecationWarning),
             ("coerce.. not supported", DeprecationWarning),
             (".+__(get|set|del)slice__ has been removed", DeprecationWarning)]
-    if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-        deprecations += [("object.__init__\(\) takes no parameters for type", DeprecationWarning)]
     with test_support.check_warnings(*deprecations):
         # Run all local test cases, with PTypesLongInitTest first.
         test_support.run_unittest(PTypesLongInitTest, OperatorsTest,

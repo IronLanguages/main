@@ -32,8 +32,6 @@ class TestBasicOps(unittest.TestCase):
         state = self.gen.getstate()
         randseq = self.randomlist(N)
         self.gen.setstate(state)    # should regenerate the same sequence
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=319175"):
-            return
         self.assertEqual(randseq, self.randomlist(N))
 
     def test_seedargs(self):
@@ -41,11 +39,8 @@ class TestBasicOps(unittest.TestCase):
                     3.14, 1+2j, 'a', tuple('abc')]:
             self.gen.seed(arg)
         for arg in [range(3), dict(one=1)]:
-            if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=319689"):
-                self.assertRaises(TypeError, self.gen.seed, arg)
+            self.assertRaises(TypeError, self.gen.seed, arg)
         self.assertRaises(TypeError, self.gen.seed, 1, 2)
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=319689"):
-            return
         self.assertRaises(TypeError, type(self.gen), [])
 
     def test_jumpahead(self):
@@ -53,17 +48,13 @@ class TestBasicOps(unittest.TestCase):
         state1 = self.gen.getstate()
         self.gen.jumpahead(100)
         state2 = self.gen.getstate()    # s/b distinct from state1
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=319012"):
-            self.assertNotEqual(state1, state2)
+        self.assertNotEqual(state1, state2)
         self.gen.jumpahead(100)
         state3 = self.gen.getstate()    # s/b distinct from state2
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=319012"):
-            self.assertNotEqual(state2, state3)
+        self.assertNotEqual(state2, state3)
 
         with test_support.check_py3k_warnings(quiet=True):
             self.assertRaises(TypeError, self.gen.jumpahead)  # needs an arg
-            self.assertRaises(TypeError, self.gen.jumpahead, "ick")  # wrong type
-            self.assertRaises(TypeError, self.gen.jumpahead, 2.3)  # wrong type
             self.assertRaises(TypeError, self.gen.jumpahead, 2, 3)  # too many
 
     def test_sample(self):
@@ -143,8 +134,6 @@ class TestBasicOps(unittest.TestCase):
             self.assertEqual(y1, y2)
 
     def test_pickling(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=318525"):
-            return
         state = pickle.dumps(self.gen)
         origseq = [self.gen.random() for i in xrange(10)]
         newgen = pickle.loads(state)
@@ -152,8 +141,6 @@ class TestBasicOps(unittest.TestCase):
         self.assertEqual(origseq, restoredseq)
 
     def test_bug_1727780(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         # verify that version-2-pickles can be loaded
         # fine, whether they are created on 32-bit or 64-bit
         # platforms, and that version-3-pickles load fine.
@@ -203,9 +190,6 @@ class WichmannHill_TestBasicOps(TestBasicOps):
             self.assertEqual(y1, y2)
 
     def test_bigrand(self):
-        # bug in _warnings
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         # Verify warnings are raised when randrange is too large for random()
         with warnings.catch_warnings():
             warnings.filterwarnings("error", "Underlying random")
@@ -322,8 +306,7 @@ class MersenneTwister_TestBasicOps(TestBasicOps):
         # Wrong type, s/b tuple
         self.assertRaises(TypeError, self.gen.setstate, (2, None, None))
         # Wrong length, s/b 625
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=318533"):
-            self.assertRaises(ValueError, self.gen.setstate, (2, (1,2,3), None))
+        self.assertRaises(ValueError, self.gen.setstate, (2, (1,2,3), None))
         # Wrong type, s/b tuple of 625 ints
         self.assertRaises(TypeError, self.gen.setstate, (2, ('a',)*625, None))
         # Last element s/b an int also
@@ -358,8 +341,7 @@ class MersenneTwister_TestBasicOps(TestBasicOps):
         self.gen.seed(61731L + (24903L<<32) + (614L<<64) + (42143L<<96))
         actual = self.randomlist(2000)[-10:]
         for a, e in zip(actual, expected):
-            if not test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=318984"):
-                self.assertAlmostEqual(a,e,places=14)
+            self.assertAlmostEqual(a,e,places=14)
 
     def test_strong_reference_implementation(self):
         # Like test_referenceImplementation, but checks for exact bit-level
@@ -381,8 +363,7 @@ class MersenneTwister_TestBasicOps(TestBasicOps):
         self.gen.seed(61731L + (24903L<<32) + (614L<<64) + (42143L<<96))
         actual = self.randomlist(2000)[-10:]
         for a, e in zip(actual, expected):
-            if not test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=318984"):
-                self.assertEqual(long(ldexp(a, 53)), e) 
+            self.assertEqual(long(ldexp(a, 53)), e)
 
     def test_long_seed(self):
         # This is most interesting to run in debug mode, just to make sure
@@ -428,13 +409,11 @@ class MersenneTwister_TestBasicOps(TestBasicOps):
     def test_genrandbits(self):
         # Verify cross-platform repeatability
         self.gen.seed(1234567)
-        if not test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=318984"):
-            self.assertEqual(self.gen.getrandbits(100),
-                             97904845777343510404718956115L)
+        self.assertEqual(self.gen.getrandbits(100),
+                         97904845777343510404718956115L)
         # Verify ranges
         for k in xrange(1, 1000):
-            if not test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=318984"):
-                self.assertTrue(0 <= self.gen.getrandbits(k) < 2**k)
+            self.assertTrue(0 <= self.gen.getrandbits(k) < 2**k)
 
         # Verify all bits active
         getbits = self.gen.getrandbits
@@ -442,8 +421,7 @@ class MersenneTwister_TestBasicOps(TestBasicOps):
             cum = 0
             for i in xrange(100):
                 cum |= getbits(span)
-            if not test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=318984"):
-                self.assertEqual(cum, 2**span-1)
+            self.assertEqual(cum, 2**span-1)
 
         # Verify argument checking
         self.assertRaises(TypeError, self.gen.getrandbits)
@@ -559,8 +537,6 @@ class TestModule(unittest.TestCase):
         self.assertTrue(set(random.__all__) <= set(dir(random)))
 
     def test_random_subclass_with_kwargs(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         # SF bug #1486663 -- this used to erroneously raise a TypeError
         class Subclass(random.Random):
             def __init__(self, newarg=None):

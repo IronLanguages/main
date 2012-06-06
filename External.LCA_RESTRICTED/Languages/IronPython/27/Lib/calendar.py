@@ -95,7 +95,7 @@ month_abbr = _localized_month('%b')
 
 
 def isleap(year):
-    """Return 1 for leap years, 0 for non-leap years."""
+    """Return True for leap years, False for non-leap years."""
     return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
 
 
@@ -486,8 +486,8 @@ class TimeEncoding:
         self.locale = locale
 
     def __enter__(self):
-        self.oldlocale = _locale.setlocale(_locale.LC_TIME, self.locale)
-        return _locale.getlocale(_locale.LC_TIME)[1]
+        self.oldlocale = _locale.getlocale(_locale.LC_TIME)
+        _locale.setlocale(_locale.LC_TIME, self.locale)
 
     def __exit__(self, *args):
         _locale.setlocale(_locale.LC_TIME, self.oldlocale)

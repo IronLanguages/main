@@ -86,8 +86,6 @@ class StrftimeTest(unittest.TestCase):
         now = self.now
         # Make sure any characters that could be taken as regex syntax is
         # escaped in escapestr()
-        if  test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=306891"):
-            return
         expectations = (
             ('%a', calendar.day_abbr[now[6]], 'abbreviated weekday name'),
             ('%A', calendar.day_name[now[6]], 'full weekday name'),

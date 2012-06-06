@@ -568,10 +568,27 @@ class Test_touch_import(support.TestCase):
 
     def test_from_import(self):
         node = parse('bar()')
-        fixer_util.touch_import("cgi", "escape", node)
-        self.assertEqual(str(node), 'from cgi import escape\nbar()\n\n')
+        fixer_util.touch_import("html", "escape", node)
+        self.assertEqual(str(node), 'from html import escape\nbar()\n\n')
 
     def test_name_import(self):
         node = parse('bar()')
         fixer_util.touch_import(None, "cgi", node)
         self.assertEqual(str(node), 'import cgi\nbar()\n\n')
+
+class Test_find_indentation(support.TestCase):
+
+    def test_nothing(self):
+        fi = fixer_util.find_indentation
+        node = parse("node()")
+        self.assertEqual(fi(node), u"")
+        node = parse("")
+        self.assertEqual(fi(node), u"")
+
+    def test_simple(self):
+        fi = fixer_util.find_indentation
+        node = parse("def f():\n    x()")
+        self.assertEqual(fi(node), u"")
+        self.assertEqual(fi(node.children[0].children[4].children[2]), u"    ")
+        node = parse("def f():\n    x()\n    y()")
+        self.assertEqual(fi(node.children[0].children[4].children[4]), u"    ")

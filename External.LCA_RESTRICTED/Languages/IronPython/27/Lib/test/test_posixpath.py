@@ -312,20 +312,25 @@ class PosixPathTest(unittest.TestCase):
     def test_relpath(self):
         (real_getcwd, os.getcwd) = (os.getcwd, lambda: r"/home/user/bar")
         try:
-            if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                curdir = real_getcwd()
-            else:
-                curdir = os.path.split(os.getcwd())[-1]
+            curdir = os.path.split(os.getcwd())[-1]
             self.assertRaises(ValueError, posixpath.relpath, "")
             self.assertEqual(posixpath.relpath("a"), "a")
-            if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                self.assertEqual(posixpath.relpath(posixpath.abspath("a")), "a")
+            self.assertEqual(posixpath.relpath(posixpath.abspath("a")), "a")
             self.assertEqual(posixpath.relpath("a/b"), "a/b")
             self.assertEqual(posixpath.relpath("../a/b"), "../a/b")
             self.assertEqual(posixpath.relpath("a", "../b"), "../"+curdir+"/a")
             self.assertEqual(posixpath.relpath("a/b", "../c"), "../"+curdir+"/a/b")
             self.assertEqual(posixpath.relpath("a", "b/c"), "../../a")
             self.assertEqual(posixpath.relpath("a", "a"), ".")
+            self.assertEqual(posixpath.relpath("/foo/bar/bat", "/x/y/z"), '../../../foo/bar/bat')
+            self.assertEqual(posixpath.relpath("/foo/bar/bat", "/foo/bar"), 'bat')
+            self.assertEqual(posixpath.relpath("/foo/bar/bat", "/"), 'foo/bar/bat')
+            self.assertEqual(posixpath.relpath("/", "/foo/bar/bat"), '../../..')
+            self.assertEqual(posixpath.relpath("/foo/bar/bat", "/x"), '../foo/bar/bat')
+            self.assertEqual(posixpath.relpath("/x", "/foo/bar/bat"), '../../../x')
+            self.assertEqual(posixpath.relpath("/", "/"), '.')
+            self.assertEqual(posixpath.relpath("/a", "/a"), '.')
+            self.assertEqual(posixpath.relpath("/a/b", "/a/b"), '.')
         finally:
             os.getcwd = real_getcwd
 

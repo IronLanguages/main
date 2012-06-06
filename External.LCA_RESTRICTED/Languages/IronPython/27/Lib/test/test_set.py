@@ -235,8 +235,6 @@ class TestJointOps(unittest.TestCase):
                 self.s.x = 10
                 p = pickle.dumps(self.s)
                 dup = pickle.loads(p)
-                if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24093"):
-                    return
                 self.assertEqual(self.s.x, dup.x)
 
     def test_deepcopy(self):
@@ -280,8 +278,6 @@ class TestJointOps(unittest.TestCase):
         f.discard(s)
 
     def test_badcmp(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=149314"):
-            return
         s = self.thetype([BadCmp()])
         # Detect comparison errors during insertion and lookup
         self.assertRaises(RuntimeError, self.thetype, [BadCmp(), BadCmp()])
@@ -293,8 +289,6 @@ class TestJointOps(unittest.TestCase):
             self.assertRaises(RuntimeError, s.remove, BadCmp())
 
     def test_cyclical_repr(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=20909"):
-            return
         w = ReprWrapper()
         s = self.thetype([w])
         w.value = s
@@ -302,8 +296,6 @@ class TestJointOps(unittest.TestCase):
         self.assertEqual(repr(s), '%s([%s(...)])' % (name, name))
 
     def test_cyclical_print(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         w = ReprWrapper()
         s = self.thetype([w])
         w.value = s
@@ -321,8 +313,6 @@ class TestJointOps(unittest.TestCase):
         n = 10
         d = dict.fromkeys(map(HashCountingInt, xrange(n)))
         self.assertEqual(sum(elem.hash_count for elem in d), n)
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         s = self.thetype(d)
         self.assertEqual(sum(elem.hash_count for elem in d), n)
         s.difference(d)
@@ -340,16 +330,13 @@ class TestJointOps(unittest.TestCase):
 
     def test_container_iterator(self):
         # Bug #3680: tp_traverse was not implemented for set iterator object
-        def f():
-            class C(object):
-                pass
-            obj = C()
-            ref = weakref.ref(obj)
-            container = set([obj, 1])
-            obj.x = iter(container)
-            del obj, container
-            return ref
-        ref = f()
+        class C(object):
+            pass
+        obj = C()
+        ref = weakref.ref(obj)
+        container = set([obj, 1])
+        obj.x = iter(container)
+        del obj, container
         gc.collect()
         self.assertTrue(ref() is None, "Cycle was not collected")
 
@@ -568,8 +555,6 @@ class TestSet(TestJointOps):
         self.assertEqual(t, self.thetype())
 
     def test_weakref(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24093"):
-            return
         s = self.thetype('gallahad')
         p = weakref.proxy(s)
         self.assertEqual(str(p), str(s))
@@ -765,7 +750,7 @@ class TestBasicOps(unittest.TestCase):
         result = self.set ^ self.set
         self.assertEqual(result, empty_set)
 
-    def checkempty_symmetric_difference(self):
+    def test_empty_symmetric_difference(self):
         result = self.set ^ empty_set
         self.assertEqual(result, self.set)
 
@@ -787,8 +772,6 @@ class TestBasicOps(unittest.TestCase):
         setiter = iter(self.set)
         # note: __length_hint__ is an internal undocumented API,
         # don't rely on it in your own programs
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24093"):
-            return
         self.assertEqual(setiter.__length_hint__(), len(self.set))
 
     def test_pickling(self):
@@ -1605,6 +1588,39 @@ class TestVariousIteratorArgs(unittest.TestCase):
                 self.assertRaises(TypeError, getattr(set('january'), methname), N(data))
                 self.assertRaises(ZeroDivisionError, getattr(set('january'), methname), E(data))
 
+class bad_eq:
+    def __eq__(self, other):
+        if be_bad:
+            set2.clear()
+            raise ZeroDivisionError
+        return self is other
+    def __hash__(self):
+        return 0
+
+class bad_dict_clear:
+    def __eq__(self, other):
+        if be_bad:
+            dict2.clear()
+        return self is other
+    def __hash__(self):
+        return 0
+
+class TestWeirdBugs(unittest.TestCase):
+    def test_8420_set_merge(self):
+        # This used to segfault
+        global be_bad, set2, dict2
+        be_bad = False
+        set1 = {bad_eq()}
+        set2 = {bad_eq() for i in range(75)}
+        be_bad = True
+        self.assertRaises(ZeroDivisionError, set1.update, set2)
+
+        be_bad = False
+        set1 = {bad_dict_clear()}
+        dict2 = {bad_dict_clear(): None}
+        be_bad = True
+        set1.symmetric_difference_update(dict2)
+
 # Application tests (based on David Eppstein's graph recipes ====================================
 
 def powerset(U):
@@ -1746,6 +1762,7 @@ def test_main(verbose=None):
         TestIdentities,
         TestVariousIteratorArgs,
         TestGraphs,
+        TestWeirdBugs,
         )
 
     test_support.run_unittest(*test_classes)

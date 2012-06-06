@@ -29,7 +29,7 @@ class AutoFileTests(unittest.TestCase):
         # verify weak references
         p = proxy(self.f)
         p.write('teststring')
-        self.assertEquals(self.f.tell(), p.tell())
+        self.assertEqual(self.f.tell(), p.tell())
         self.f.close()
         self.f = None
         self.assertRaises(ReferenceError, getattr, p, 'tell')
@@ -58,7 +58,7 @@ class AutoFileTests(unittest.TestCase):
         a = array('c', 'x'*10)
         self.f = open(TESTFN, 'rb')
         n = self.f.readinto(a)
-        self.assertEquals('12', a.tostring()[:n])
+        self.assertEqual('12', a.tostring()[:n])
 
     def testWritelinesUserList(self):
         # verify writelines with instance sequence
@@ -67,7 +67,7 @@ class AutoFileTests(unittest.TestCase):
         self.f.close()
         self.f = open(TESTFN, 'rb')
         buf = self.f.read()
-        self.assertEquals(buf, '12')
+        self.assertEqual(buf, '12')
 
     def testWritelinesIntegers(self):
         # verify writelines with integers
@@ -94,7 +94,7 @@ class AutoFileTests(unittest.TestCase):
         self.f.close()
         self.f = open(TESTFN, 'rb')
         f = self.f
-        self.assertEquals(f.name, TESTFN)
+        self.assertEqual(f.name, TESTFN)
         self.assertTrue(not f.isatty())
         self.assertTrue(not f.closed)
 
@@ -125,15 +125,23 @@ class AutoFileTests(unittest.TestCase):
         self.assertRaises(ValueError, self.f.writelines, [])
 
         # file is closed, __exit__ shouldn't do anything
-        self.assertEquals(self.f.__exit__(None, None, None), None)
+        self.assertEqual(self.f.__exit__(None, None, None), None)
         # it must also return None if an exception was given
         try:
             1 // 0
         except:
-            self.assertEquals(self.f.__exit__(*sys.exc_info()), None)
+            self.assertEqual(self.f.__exit__(*sys.exc_info()), None)
 
     def testReadWhenWriting(self):
         self.assertRaises(IOError, self.f.read)
+
+    def testNastyWritelinesGenerator(self):
+        def nasty():
+            for i in range(5):
+                if i == 3:
+                    self.f.close()
+                yield str(i)
+        self.assertRaises(ValueError, self.f.writelines, nasty())
 
     def testIssue5677(self):
         # Remark: Do not perform more than one test per open file,
@@ -172,7 +180,7 @@ class AutoFileTests(unittest.TestCase):
 class OtherFileTests(unittest.TestCase):
 
     def testOpenDir(self):
-        this_dir = os.path.dirname(__file__)
+        this_dir = os.path.dirname(__file__) or os.curdir
         for mode in (None, "w"):
             try:
                 if mode:
@@ -253,7 +261,7 @@ class OtherFileTests(unittest.TestCase):
                 f.close()
             except IOError, msg:
                 self.fail('error setting buffer size %d: %s' % (s, str(msg)))
-            self.assertEquals(d, s)
+            self.assertEqual(d, s)
 
     def testTruncateOnWindows(self):
         os.unlink(TESTFN)
@@ -613,11 +621,49 @@ class StdoutTests(unittest.TestCase):
         try:
             print
         except RuntimeError as e:
-            self.assertEquals(str(e), "lost sys.stdout")
+            self.assertEqual(str(e), "lost sys.stdout")
         else:
             self.fail("Expected RuntimeError")
         finally:
             sys.stdout = save_stdout
+
+    def test_unicode(self):
+        import subprocess
+
+        def get_message(encoding, *code):
+            code = '\n'.join(code)
+            env = os.environ.copy()
+            env['PYTHONIOENCODING'] = encoding
+            process = subprocess.Popen([sys.executable, "-c", code],
+                                       stdout=subprocess.PIPE, env=env)
+            stdout, stderr = process.communicate()
+            self.assertEqual(process.returncode, 0)
+            return stdout
+
+        def check_message(text, encoding, expected):
+            stdout = get_message(encoding,
+                "import sys",
+                "sys.stdout.write(%r)" % text,
+                "sys.stdout.flush()")
+            self.assertEqual(stdout, expected)
+
+        # test the encoding
+        check_message(u'15\u20ac', "iso-8859-15", "15\xa4")
+        check_message(u'15\u20ac', "utf-8", '15\xe2\x82\xac')
+        check_message(u'15\u20ac', "utf-16-le", '1\x005\x00\xac\x20')
+
+        # test the error handler
+        check_message(u'15\u20ac', "iso-8859-1:ignore", "15")
+        check_message(u'15\u20ac', "iso-8859-1:replace", "15?")
+        check_message(u'15\u20ac', "iso-8859-1:backslashreplace", "15\\u20ac")
+
+        # test the buffer API
+        for objtype in ('buffer', 'bytearray'):
+            stdout = get_message('ascii',
+                'import sys',
+                r'sys.stdout.write(%s("\xe9"))' % objtype,
+                'sys.stdout.flush()')
+            self.assertEqual(stdout, "\xe9")
 
 
 def test_main():

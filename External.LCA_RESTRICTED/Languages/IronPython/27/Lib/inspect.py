@@ -157,7 +157,7 @@ def isgeneratorfunction(object):
 
     Generator function objects provides same attributes as functions.
 
-    See isfunction.__doc__ for attributes listing."""
+    See help(isfunction) for attributes listing."""
     return bool((isfunction(object) or ismethod(object)) and
                 object.func_code.co_flags & CO_GENERATOR)
 
@@ -943,8 +943,14 @@ def getcallargs(func, *positional, **named):
             f_name, 'at most' if defaults else 'exactly', num_args,
             'arguments' if num_args > 1 else 'argument', num_total))
     elif num_args == 0 and num_total:
-        raise TypeError('%s() takes no arguments (%d given)' %
-                        (f_name, num_total))
+        if varkw:
+            if num_pos:
+                # XXX: We should use num_pos, but Python also uses num_total:
+                raise TypeError('%s() takes exactly 0 arguments '
+                                '(%d given)' % (f_name, num_total))
+        else:
+            raise TypeError('%s() takes no arguments (%d given)' %
+                            (f_name, num_total))
     for arg in args:
         if isinstance(arg, str) and arg in named:
             if is_assigned(arg):

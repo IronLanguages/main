@@ -1,9 +1,7 @@
 from test import test_support
 import unittest
 
-import sys, cStringIO
-if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=301267"):
-    import subprocess  # fcntl is neeed in mould subprocess
+import sys, cStringIO, subprocess
 import quopri
 
 
@@ -132,65 +130,55 @@ zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz''')
     @withpythonimplementation
     def test_encodestring(self):
         for p, e in self.STRINGS:
-            if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=305368"):
-                self.assertTrue(quopri.encodestring(p) == e)
+            self.assertTrue(quopri.encodestring(p) == e)
 
     @withpythonimplementation
     def test_decodestring(self):
         for p, e in self.STRINGS:
-            if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317834"):
-                self.assertTrue(quopri.decodestring(e) == p)#binascii.a2b_qp() not implemented which is needed in function decodestring() 
+            self.assertTrue(quopri.decodestring(e) == p)
 
     @withpythonimplementation
     def test_idempotent_string(self):
         for p, e in self.STRINGS:
-            if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=305368"):
-                self.assertTrue(quopri.decodestring(quopri.encodestring(e)) == e)
+            self.assertTrue(quopri.decodestring(quopri.encodestring(e)) == e)
 
     @withpythonimplementation
     def test_encode(self):
         for p, e in self.STRINGS:
             infp = cStringIO.StringIO(p)
             outfp = cStringIO.StringIO()
-            if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=305368"):
-                quopri.encode(infp, outfp, quotetabs=False)
-                self.assertTrue(outfp.getvalue() == e)
+            quopri.encode(infp, outfp, quotetabs=False)
+            self.assertTrue(outfp.getvalue() == e)
 
     @withpythonimplementation
     def test_decode(self):
         for p, e in self.STRINGS:
             infp = cStringIO.StringIO(e)
             outfp = cStringIO.StringIO()
-            if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317834"):
-                quopri.decode(infp, outfp) #binascii.a2b_qp() not implemented which is needed in function decode() 
-                self.assertTrue(outfp.getvalue() == p)
+            quopri.decode(infp, outfp)
+            self.assertTrue(outfp.getvalue() == p)
 
     @withpythonimplementation
     def test_embedded_ws(self):
         for p, e in self.ESTRINGS:
-            if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=305368"):
-                self.assertTrue(quopri.encodestring(p, quotetabs=True) == e)
-                self.assertTrue(quopri.decodestring(e) == p)
+            self.assertTrue(quopri.encodestring(p, quotetabs=True) == e)
+            self.assertTrue(quopri.decodestring(e) == p)
 
     @withpythonimplementation
     def test_encode_header(self):
         for p, e in self.HSTRINGS:
-            if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=305368"):
-                self.assertTrue(quopri.encodestring(p, header=True) == e)
+            self.assertTrue(quopri.encodestring(p, header=True) == e)
 
     @withpythonimplementation
     def test_decode_header(self):
         for p, e in self.HSTRINGS:
-            if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317834"):
-                self.assertTrue(quopri.decodestring(e, header=True) == p)
+            self.assertTrue(quopri.decodestring(e, header=True) == p)
 
     def test_scriptencode(self):
         (p, e) = self.STRINGS[-1]
-        # fcntl is needed in subprocess module
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=301267"):
-            return
         process = subprocess.Popen([sys.executable, "-mquopri"],
                                    stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        self.addCleanup(process.stdout.close)
         cout, cerr = process.communicate(p)
         # On Windows, Python will output the result to stdout using
         # CRLF, as the mode of stdout is text mode. To compare this
@@ -199,11 +187,9 @@ zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz''')
 
     def test_scriptdecode(self):
         (p, e) = self.STRINGS[-1]
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=301267"):
-            return
-        #fcntl which is needed in module subprocess is available on Unix 
         process = subprocess.Popen([sys.executable, "-mquopri", "-d"],
                                    stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        self.addCleanup(process.stdout.close)
         cout, cerr = process.communicate(e)
         self.assertEqual(cout.splitlines(), p.splitlines())
 

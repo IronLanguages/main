@@ -7,8 +7,6 @@ from test import test_support
 class EOFTestCase(unittest.TestCase):
     def test_EOFC(self):
         expect = "EOL while scanning string literal (<string>, line 1)"
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=148614"):
-            expect = "EOL while scanning single-quoted string"
         try:
             eval("""'this is a test\
             """)
@@ -20,8 +18,6 @@ class EOFTestCase(unittest.TestCase):
     def test_EOFS(self):
         expect = ("EOF while scanning triple-quoted string literal "
                   "(<string>, line 1)")
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=148614"):
-            expect = "EOF while scanning triple-quoted string"
         try:
             eval("""'''this is a test""")
         except SyntaxError, msg:

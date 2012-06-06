@@ -231,6 +231,13 @@ class TestTimeDelta(HarmlessMixedComparison, unittest.TestCase):
         eq(a//10, td(0, 7*24*360))
         eq(a//3600000, td(0, 0, 7*24*1000))
 
+        # Issue #11576
+        eq(td(999999999, 86399, 999999) - td(999999999, 86399, 999998),
+           td(0, 0, 1))
+        eq(td(999999999, 1, 1) - td(999999999, 1, 0),
+           td(0, 0, 1))
+
+
     def test_disallowed_computations(self):
         a = timedelta(42)
 
@@ -243,19 +250,18 @@ class TestTimeDelta(HarmlessMixedComparison, unittest.TestCase):
 
         # Mul/div by float isn't supported.
         x = 2.3
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=306478"):
-            self.assertRaises(TypeError, lambda: a*x)
-            self.assertRaises(TypeError, lambda: x*a)
-            self.assertRaises(TypeError, lambda: a/x)
-            self.assertRaises(TypeError, lambda: x/a)
-            self.assertRaises(TypeError, lambda: a // x)
-            self.assertRaises(TypeError, lambda: x // a)
+        self.assertRaises(TypeError, lambda: a*x)
+        self.assertRaises(TypeError, lambda: x*a)
+        self.assertRaises(TypeError, lambda: a/x)
+        self.assertRaises(TypeError, lambda: x/a)
+        self.assertRaises(TypeError, lambda: a // x)
+        self.assertRaises(TypeError, lambda: x // a)
 
-            # Division of int by timedelta doesn't make sense.
-            # Division by zero doesn't make sense.
-            for zero in 0, 0L:
-                self.assertRaises(TypeError, lambda: zero // a)
-                self.assertRaises(ZeroDivisionError, lambda: a // zero)
+        # Division of int by timedelta doesn't make sense.
+        # Division by zero doesn't make sense.
+        for zero in 0, 0L:
+            self.assertRaises(TypeError, lambda: zero // a)
+            self.assertRaises(ZeroDivisionError, lambda: a // zero)
 
     def test_basic_attributes(self):
         days, seconds, us = 1, 7, 31
@@ -265,8 +271,6 @@ class TestTimeDelta(HarmlessMixedComparison, unittest.TestCase):
         self.assertEqual(td.microseconds, us)
 
     def test_total_seconds(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         td = timedelta(days=365)
         self.assertEqual(td.total_seconds(), 31536000.0)
         for total_seconds in [123456.789012, -123456.789012, 0.123456, 0, 1e6]:
@@ -721,8 +725,6 @@ class TestDate(HarmlessMixedComparison, unittest.TestCase):
         self.assertRaises(TypeError, lambda: a + a)
 
     def test_overflow(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=305776"):
-            return
         tiny = self.theclass.resolution
 
         for delta in [tiny, timedelta(1), timedelta(2)]:
@@ -854,8 +856,6 @@ class TestDate(HarmlessMixedComparison, unittest.TestCase):
         self.assertEqual(t.isoformat(), "0002-03-02")
 
     def test_ctime(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=306481"):
-            return
         t = self.theclass(2002, 3, 2)
         self.assertEqual(t.ctime(), "Sat Mar  2 00:00:00 2002")
 
@@ -911,8 +911,6 @@ class TestDate(HarmlessMixedComparison, unittest.TestCase):
         b = B(2007, 9, 10)
         self.assertEqual(b.__format__(''), str(dt))
 
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=306891"):
-            return
         for fmt in ["m:%m d:%d y:%y",
                     "m:%m d:%d y:%y H:%H M:%M S:%S",
                     "%z %Z",
@@ -932,9 +930,8 @@ class TestDate(HarmlessMixedComparison, unittest.TestCase):
         # 3652058 days, 23 hours, 59 minutes, 59 seconds, 999999 microseconds
         n = (big.days*24*3600 + big.seconds)*1000000 + big.microseconds
         # n == 315537897599999999 ~= 2**58.13
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=306866"):
-            justasbig = timedelta(0, 0, n)
-            self.assertEqual(big, justasbig)
+        justasbig = timedelta(0, 0, n)
+        self.assertEqual(big, justasbig)
         self.assertEqual(self.theclass.min + big, self.theclass.max)
         self.assertEqual(self.theclass.max - big, self.theclass.min)
 
@@ -1059,8 +1056,6 @@ class TestDate(HarmlessMixedComparison, unittest.TestCase):
         self.assertTrue(self.theclass.max)
 
     def test_strftime_out_of_range(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=306878"):
-            return
         # For nasty technical reasons, we can't handle years before 1900.
         cls = self.theclass
         self.assertEqual(cls(1900, 1, 1).strftime("%Y"), "1900")
@@ -1116,8 +1111,6 @@ class TestDate(HarmlessMixedComparison, unittest.TestCase):
 
     def test_pickling_subclass_date(self):
 
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=10041"):
-            return
         args = 6, 7, 23
         orig = SubclassDate(*args)
         for pickler, unpickler, proto in pickle_choices:
@@ -1140,12 +1133,11 @@ class TestDate(HarmlessMixedComparison, unittest.TestCase):
         for month_byte in '9', chr(0), chr(13), '\xff':
             self.assertRaises(TypeError, self.theclass,
                                          base[:2] + month_byte + base[3:])
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=305769"):
-            for ord_byte in range(1, 13):
-                # This shouldn't blow up because of the month byte alone.  If
-                # the implementation changes to do more-careful checking, it may
-                # blow up because other fields are insane.
-                self.theclass(base[:2] + chr(ord_byte) + base[3:])
+        for ord_byte in range(1, 13):
+            # This shouldn't blow up because of the month byte alone.  If
+            # the implementation changes to do more-careful checking, it may
+            # blow up because other fields are insane.
+            self.theclass(base[:2] + chr(ord_byte) + base[3:])
 
 #############################################################################
 # datetime tests
@@ -1229,8 +1221,6 @@ class TestDateTime(TestDate):
         b = B(2007, 9, 10, 4, 5, 1, 123)
         self.assertEqual(b.__format__(''), str(dt))
 
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=306891"):
-            return
         for fmt in ["m:%m d:%d y:%y",
                     "m:%m d:%d y:%y H:%H M:%M S:%S",
                     "%z %Z",
@@ -1240,8 +1230,6 @@ class TestDateTime(TestDate):
             self.assertEqual(b.__format__(fmt), 'B')
 
     def test_more_ctime(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=306481"):
-            return
         # Test fields that TestDate doesn't touch.
         import time
 
@@ -1276,8 +1264,6 @@ class TestDateTime(TestDate):
         self.assertTrue(dt1 < dt2)
 
     def test_strftime_with_bad_tzname_replace(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=306900"):
-            return
         # verify ok if tzinfo.tzname().replace() returns a non-string
         class MyTzInfo(FixedOffset):
             def tzname(self, dt):
@@ -1425,8 +1411,6 @@ class TestDateTime(TestDate):
         self.assertRaises(TypeError, lambda: a + a)
 
     def test_pickling(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=306871"):
-            return
         args = 6, 7, 23, 20, 59, 1, 64**2
         orig = self.theclass(*args)
         for pickler, unpickler, proto in pickle_choices:
@@ -1443,8 +1427,6 @@ class TestDateTime(TestDate):
         self.assertEqual(b.day, 7)
 
     def test_pickling_subclass_datetime(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=10041"):
-            return
         args = 6, 7, 23, 20, 59, 1, 64**2
         orig = SubclassDatetime(*args)
         for pickler, unpickler, proto in pickle_choices:
@@ -1514,12 +1496,10 @@ class TestDateTime(TestDate):
         self.verify_field_equality(expected, got)
 
     def test_microsecond_rounding(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=306871"):
-            return
         # Test whether fromtimestamp "rounds up" floats that are less
         # than one microsecond smaller than an integer.
-        self.assertEquals(self.theclass.fromtimestamp(0.9999999),
-                          self.theclass.fromtimestamp(1))
+        self.assertEqual(self.theclass.fromtimestamp(0.9999999),
+                         self.theclass.fromtimestamp(1))
 
     def test_insane_fromtimestamp(self):
         # It's possible that some platform maps time_t to double,
@@ -1547,7 +1527,7 @@ class TestDateTime(TestDate):
     @unittest.skipIf(sys.platform == "win32", "Windows doesn't accept negative timestamps")
     def test_negative_float_utcfromtimestamp(self):
         d = self.theclass.utcfromtimestamp(-1.05)
-        self.assertEquals(d, self.theclass(1969, 12, 31, 23, 59, 58, 950000))
+        self.assertEqual(d, self.theclass(1969, 12, 31, 23, 59, 58, 950000))
 
     def test_utcnow(self):
         import time
@@ -1564,8 +1544,6 @@ class TestDateTime(TestDate):
         self.assertTrue(abs(from_timestamp - from_now) <= tolerance)
 
     def test_strptime(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=148476"):
-            return
         import _strptime
 
         string = '2004-12-01 13:02:47.197'
@@ -1874,10 +1852,7 @@ class TestTime(HarmlessMixedComparison, unittest.TestCase):
 
     def test_strftime(self):
         t = self.theclass(1, 2, 3, 4)
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=306891"):
-            self.assertEqual(t.strftime('%H %M %S'), "01 02 03")
-        else:
-            self.assertEqual(t.strftime('%H %M %S %f'), "01 02 03 000004")
+        self.assertEqual(t.strftime('%H %M %S %f'), "01 02 03 000004")
         # A naive object replaces %z and %Z with empty strings.
         self.assertEqual(t.strftime("'%z' '%Z'"), "'' ''")
 
@@ -1899,8 +1874,6 @@ class TestTime(HarmlessMixedComparison, unittest.TestCase):
         b = B(1, 2, 3, 4)
         self.assertEqual(b.__format__(''), str(t))
 
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=306891"):
-            return
         for fmt in ['%H %M %S',
                     ]:
             self.assertEqual(t.__format__(fmt), t.strftime(fmt))
@@ -1934,8 +1907,6 @@ class TestTime(HarmlessMixedComparison, unittest.TestCase):
         self.assertTrue(self.theclass.max > self.theclass.min)
 
     def test_pickling(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=10041"):
-            return
         args = 20, 59, 16, 64**2
         orig = self.theclass(*args)
         for pickler, unpickler, proto in pickle_choices:
@@ -1944,8 +1915,6 @@ class TestTime(HarmlessMixedComparison, unittest.TestCase):
             self.assertEqual(orig, derived)
 
     def test_pickling_subclass_time(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=10041"):
-            return
         args = 20, 59, 16, 64**2
         orig = SubclassTime(*args)
         for pickler, unpickler, proto in pickle_choices:
@@ -2258,24 +2227,22 @@ class TestTimeTZ(TestTime, TZInfoBase, unittest.TestCase):
         self.assertEqual(repr(t4), d + "(0, 0, 0, 40)")
         self.assertEqual(repr(t5), d + "(0, 0, 0, 40, tzinfo=utc)")
 
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=306891"):
-            self.assertEqual(t1.strftime("%H:%M:%S %%Z=%Z %%z=%z"),
-                                         "07:47:00 %Z=EST %z=-0500")
-            self.assertEqual(t2.strftime("%H:%M:%S %Z %z"), "12:47:00 UTC +0000")
-            self.assertEqual(t3.strftime("%H:%M:%S %Z %z"), "13:47:00 MET +0100")
+        self.assertEqual(t1.strftime("%H:%M:%S %%Z=%Z %%z=%z"),
+                                     "07:47:00 %Z=EST %z=-0500")
+        self.assertEqual(t2.strftime("%H:%M:%S %Z %z"), "12:47:00 UTC +0000")
+        self.assertEqual(t3.strftime("%H:%M:%S %Z %z"), "13:47:00 MET +0100")
 
-            yuck = FixedOffset(-1439, "%z %Z %%z%%Z")
-            t1 = time(23, 59, tzinfo=yuck)
-            self.assertEqual(t1.strftime("%H:%M %%Z='%Z' %%z='%z'"),
-                                         "23:59 %Z='%z %Z %%z%%Z' %z='-2359'")
+        yuck = FixedOffset(-1439, "%z %Z %%z%%Z")
+        t1 = time(23, 59, tzinfo=yuck)
+        self.assertEqual(t1.strftime("%H:%M %%Z='%Z' %%z='%z'"),
+                                     "23:59 %Z='%z %Z %%z%%Z' %z='-2359'")
 
         # Check that an invalid tzname result raises an exception.
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=306900"):
-            class Badtzname(tzinfo):
-                def tzname(self, dt): return 42
-            t = time(2, 3, 4, tzinfo=Badtzname())
-            self.assertEqual(t.strftime("%H:%M:%S"), "02:03:04")
-            self.assertRaises(TypeError, t.strftime, "%Z")
+        class Badtzname(tzinfo):
+            def tzname(self, dt): return 42
+        t = time(2, 3, 4, tzinfo=Badtzname())
+        self.assertEqual(t.strftime("%H:%M:%S"), "02:03:04")
+        self.assertRaises(TypeError, t.strftime, "%Z")
 
     def test_hash_edge_cases(self):
         # Offsets that overflow a basic time.
@@ -2288,8 +2255,6 @@ class TestTimeTZ(TestTime, TZInfoBase, unittest.TestCase):
         self.assertEqual(hash(t1), hash(t2))
 
     def test_pickling(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=10041"):
-            return
         # Try one without a tzinfo.
         args = 20, 59, 16, 64**2
         orig = self.theclass(*args)
@@ -2516,8 +2481,6 @@ class TestDateTimeTZ(TestDateTime, TZInfoBase, unittest.TestCase):
         self.assertRaises(ValueError, lambda: t1 == t2)
 
     def test_pickling(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=306871"):
-            return
         # Try one without a tzinfo.
         args = 6, 7, 23, 20, 59, 1, 64**2
         orig = self.theclass(*args)
@@ -2539,8 +2502,6 @@ class TestDateTimeTZ(TestDateTime, TZInfoBase, unittest.TestCase):
             self.assertEqual(derived.tzname(), 'cookie')
 
     def test_extreme_hashes(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=305776"):
-            return
         # If an attempt is made to hash these via subtracting the offset
         # then hashing a datetime object, OverflowError results.  The
         # Python implementation used to blow up here.
@@ -2657,10 +2618,9 @@ class TestDateTimeTZ(TestDateTime, TZInfoBase, unittest.TestCase):
         min = self.theclass(1, 1, 1, tzinfo=FixedOffset(1439, "min"))
         max = self.theclass(MAXYEAR, 12, 31, 23, 59, 59, 999999,
                             tzinfo=FixedOffset(-1439, "max"))
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=305776"):
-            maxdiff = max - min
-            self.assertEqual(maxdiff, self.theclass.max - self.theclass.min +
-                                      timedelta(minutes=2*1439))
+        maxdiff = max - min
+        self.assertEqual(maxdiff, self.theclass.max - self.theclass.min +
+                                  timedelta(minutes=2*1439))
 
     def test_tzinfo_now(self):
         meth = self.theclass.now
@@ -2831,30 +2791,29 @@ class TestDateTimeTZ(TestDateTime, TZInfoBase, unittest.TestCase):
         # At the edges, UTC adjustment can normalize into years out-of-range
         # for a datetime object.  Ensure that a correct timetuple is
         # created anyway.
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=305776"):
-            tiny = cls(MINYEAR, 1, 1, 0, 0, 37, tzinfo=UOFS(1439))
-            # That goes back 1 minute less than a full day.
-            t = tiny.utctimetuple()
-            self.assertEqual(t.tm_year, MINYEAR-1)
-            self.assertEqual(t.tm_mon, 12)
-            self.assertEqual(t.tm_mday, 31)
-            self.assertEqual(t.tm_hour, 0)
-            self.assertEqual(t.tm_min, 1)
-            self.assertEqual(t.tm_sec, 37)
-            self.assertEqual(t.tm_yday, 366)    # "year 0" is a leap year
-            self.assertEqual(t.tm_isdst, 0)
+        tiny = cls(MINYEAR, 1, 1, 0, 0, 37, tzinfo=UOFS(1439))
+        # That goes back 1 minute less than a full day.
+        t = tiny.utctimetuple()
+        self.assertEqual(t.tm_year, MINYEAR-1)
+        self.assertEqual(t.tm_mon, 12)
+        self.assertEqual(t.tm_mday, 31)
+        self.assertEqual(t.tm_hour, 0)
+        self.assertEqual(t.tm_min, 1)
+        self.assertEqual(t.tm_sec, 37)
+        self.assertEqual(t.tm_yday, 366)    # "year 0" is a leap year
+        self.assertEqual(t.tm_isdst, 0)
 
-            huge = cls(MAXYEAR, 12, 31, 23, 59, 37, 999999, tzinfo=UOFS(-1439))
-            # That goes forward 1 minute less than a full day.
-            t = huge.utctimetuple()
-            self.assertEqual(t.tm_year, MAXYEAR+1)
-            self.assertEqual(t.tm_mon, 1)
-            self.assertEqual(t.tm_mday, 1)
-            self.assertEqual(t.tm_hour, 23)
-            self.assertEqual(t.tm_min, 58)
-            self.assertEqual(t.tm_sec, 37)
-            self.assertEqual(t.tm_yday, 1)
-            self.assertEqual(t.tm_isdst, 0)
+        huge = cls(MAXYEAR, 12, 31, 23, 59, 37, 999999, tzinfo=UOFS(-1439))
+        # That goes forward 1 minute less than a full day.
+        t = huge.utctimetuple()
+        self.assertEqual(t.tm_year, MAXYEAR+1)
+        self.assertEqual(t.tm_mon, 1)
+        self.assertEqual(t.tm_mday, 1)
+        self.assertEqual(t.tm_hour, 23)
+        self.assertEqual(t.tm_min, 58)
+        self.assertEqual(t.tm_sec, 37)
+        self.assertEqual(t.tm_yday, 1)
+        self.assertEqual(t.tm_isdst, 0)
 
     def test_tzinfo_isoformat(self):
         zero = FixedOffset(0, "+00:00")
@@ -3156,7 +3115,7 @@ class TestTimezoneConversions(unittest.TestCase):
             self.assertEqual(dt, there_and_back)
 
         # Because we have a redundant spelling when DST begins, there is
-        # (unforunately) an hour when DST ends that can't be spelled at all in
+        # (unfortunately) an hour when DST ends that can't be spelled at all in
         # local time.  When DST ends, the clock jumps from 1:59 back to 1:00
         # again.  The hour 1:MM DST has no spelling then:  1:MM is taken to be
         # standard time.  1:MM DST == 0:MM EST, but 0:MM is taken to be
@@ -3299,15 +3258,14 @@ class TestTimezoneConversions(unittest.TestCase):
         self.assertRaises(ValueError, now.astimezone, notok())
 
     def test_fromutc(self):
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=306915"):
-            self.assertRaises(TypeError, Eastern.fromutc)   # not enough args
-            now = datetime.utcnow().replace(tzinfo=utc_real)
-            self.assertRaises(ValueError, Eastern.fromutc, now) # wrong tzinfo
-            now = now.replace(tzinfo=Eastern)   # insert correct tzinfo
-            enow = Eastern.fromutc(now)         # doesn't blow up
-            self.assertEqual(enow.tzinfo, Eastern) # has right tzinfo member
-            self.assertRaises(TypeError, Eastern.fromutc, now, now) # too many args
-            self.assertRaises(TypeError, Eastern.fromutc, date.today()) # wrong type
+        self.assertRaises(TypeError, Eastern.fromutc)   # not enough args
+        now = datetime.utcnow().replace(tzinfo=utc_real)
+        self.assertRaises(ValueError, Eastern.fromutc, now) # wrong tzinfo
+        now = now.replace(tzinfo=Eastern)   # insert correct tzinfo
+        enow = Eastern.fromutc(now)         # doesn't blow up
+        self.assertEqual(enow.tzinfo, Eastern) # has right tzinfo member
+        self.assertRaises(TypeError, Eastern.fromutc, now, now) # too many args
+        self.assertRaises(TypeError, Eastern.fromutc, date.today()) # wrong type
 
         # Always converts UTC to standard time.
         class FauxUSTimeZone(USTimeZone):
@@ -3385,23 +3343,22 @@ class Oddballs(unittest.TestCase):
 
         # Neverthelss, comparison should work with the base-class (date)
         # projection if use of a date method is forced.
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=306910"):
-            self.assertTrue(as_date.__eq__(as_datetime))
-            different_day = (as_date.day + 1) % 20 + 1
-            self.assertTrue(not as_date.__eq__(as_datetime.replace(day=
-                                                         different_day)))
+        self.assertTrue(as_date.__eq__(as_datetime))
+        different_day = (as_date.day + 1) % 20 + 1
+        self.assertTrue(not as_date.__eq__(as_datetime.replace(day=
+                                                     different_day)))
 
-            # And date should compare with other subclasses of date.  If a
-            # subclass wants to stop this, it's up to the subclass to do so.
-            date_sc = SubclassDate(as_date.year, as_date.month, as_date.day)
-            self.assertEqual(as_date, date_sc)
-            self.assertEqual(date_sc, as_date)
+        # And date should compare with other subclasses of date.  If a
+        # subclass wants to stop this, it's up to the subclass to do so.
+        date_sc = SubclassDate(as_date.year, as_date.month, as_date.day)
+        self.assertEqual(as_date, date_sc)
+        self.assertEqual(date_sc, as_date)
 
-            # Ditto for datetimes.
-            datetime_sc = SubclassDatetime(as_datetime.year, as_datetime.month,
-                                           as_date.day, 0, 0, 0)
-            self.assertEqual(as_datetime, datetime_sc)
-            self.assertEqual(datetime_sc, as_datetime)
+        # Ditto for datetimes.
+        datetime_sc = SubclassDatetime(as_datetime.year, as_datetime.month,
+                                       as_date.day, 0, 0, 0)
+        self.assertEqual(as_datetime, datetime_sc)
+        self.assertEqual(datetime_sc, as_datetime)
 
 def test_main():
     test_support.run_unittest(__name__)

@@ -6,8 +6,7 @@ import cStringIO
 import pickletools
 import copy_reg
 
-from test.test_support import TestFailed, have_unicode, TESTFN, \
-                              due_to_ironpython_bug
+from test.test_support import TestFailed, have_unicode, TESTFN
 
 # Tests that try a number of pickle protocols should have a
 #     for proto in protocols:
@@ -576,11 +575,7 @@ class AbstractPickleTests(unittest.TestCase):
         # Try a monster.  This is quadratic-time in protos 0 & 1, so don't
         # bother with those.
         nbase = long("deadbeeffeedface", 16)
-        if due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            # Massively inefficient in IronPython
-            nbase += nbase << 10000
-        else:
-            nbase += nbase << 1000000
+        nbase += nbase << 1000000
         for n in nbase, -nbase:
             p = self.dumps(n, 2)
             got = self.loads(p)
@@ -909,9 +904,7 @@ class AbstractPickleTests(unittest.TestCase):
             self.assertEqual(y._proto, proto)
 
     def test_reduce_calls_base(self):
-        if due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
-        for proto in 0, 1, 2:
+        for proto in protocols:
             x = REX_five()
             self.assertEqual(x._reduce_called, 0)
             s = self.dumps(x, proto)
@@ -957,8 +950,6 @@ class AbstractPickleTests(unittest.TestCase):
                              % (proto, obj, loaded))
 
     def test_attribute_name_interning(self):
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         # Test that attribute names of pickled objects are interned when
         # unpickling.
         for proto in protocols:
@@ -1029,10 +1020,7 @@ class MyStr(str):
     sample = "hello"
 
 class MyUnicode(unicode):
-    if due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=15372"):
-        sample = u"hello \x80"
-    else:
-        sample = u"hello \u1234"
+    sample = u"hello \u1234"
 
 class MyTuple(tuple):
     sample = (1, 2, 3)
@@ -1113,8 +1101,6 @@ class AbstractPickleModuleTests(unittest.TestCase):
         d['f']()
 
     def test_bad_input(self):
-        if due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         # Test issue4298
         s = '\x58\0\0\0\x54'
         self.assertRaises(EOFError, self.module.loads, s)

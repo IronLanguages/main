@@ -12,8 +12,26 @@ import Queue
 import sys
 import os
 import array
+import contextlib
 from weakref import proxy
 import signal
+import math
+
+def try_address(host, port=0, family=socket.AF_INET):
+    """Try to bind a socket on the given host:port and return True
+    if that has been possible."""
+    try:
+        sock = socket.socket(family, socket.SOCK_STREAM)
+        sock.bind((host, port))
+    except (socket.error, socket.gaierror):
+        return False
+    else:
+        sock.close()
+        return True
+
+HOST = test_support.HOST
+MSG = b'Michael Gilfix was here\n'
+SUPPORTS_IPV6 = socket.has_ipv6 and try_address('::1', family=socket.AF_INET6)
 
 try:
     import thread
@@ -168,6 +186,11 @@ class ThreadedUDPSocketTest(SocketUDPTest, ThreadableTest):
     def clientSetUp(self):
         self.cli = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
+    def clientTearDown(self):
+        self.cli.close()
+        self.cli = None
+        ThreadableTest.clientTearDown(self)
+
 class SocketConnectedTest(ThreadedTCPSocketTest):
 
     def __init__(self, methodName='runTest'):
@@ -224,8 +247,6 @@ class SocketPairTest(unittest.TestCase, ThreadableTest):
 class GeneralModuleTests(unittest.TestCase):
 
     def test_weakref(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=243506"):
-            return
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         p = proxy(s)
         self.assertEqual(p.fileno(), s.fileno())
@@ -288,17 +309,13 @@ class GeneralModuleTests(unittest.TestCase):
         if hasattr(sys, "getrefcount"):
             try:
                 # On some versions, this loses a reference
-                if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=149371"):
-                    orig = sys.getrefcount(__name__)
-                if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=305731"):
-                    socket.getnameinfo(__name__,0)
+                orig = sys.getrefcount(__name__)
+                socket.getnameinfo(__name__,0)
             except TypeError:
                 self.assertEqual(sys.getrefcount(__name__), orig,
                                  "socket.getnameinfo loses a reference")
 
     def testInterpreterCrash(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=304374"):
-            return
         # Making sure getnameinfo doesn't crash the interpreter
         try:
             # On some versions, this crashes the interpreter.
@@ -335,14 +352,14 @@ class GeneralModuleTests(unittest.TestCase):
             self.assertRaises(OverflowError, socket.htons, k)
 
     def testGetServBy(self):
-        if test_support.due_to_ironpython_incompatibility(".NET provides no getservbyname() equivalent"):
-            return
         eq = self.assertEqual
         # Find one service that exists, then check all the related interfaces.
         # I've ordered this by protocols that have both a tcp and udp
         # protocol, at least for modern Linuxes.
-        if sys.platform in ('linux2', 'freebsd4', 'freebsd5', 'freebsd6',
-                            'freebsd7', 'freebsd8', 'darwin'):
+        if (sys.platform.startswith('linux') or
+            sys.platform.startswith('freebsd') or
+            sys.platform.startswith('netbsd') or
+            sys.platform == 'darwin'):
             # avoid the 'echo' service on this platform, as there is an
             # assumption breaking non-standard port/protocol entry
             services = ('daytime', 'qotd', 'domain')
@@ -408,8 +425,8 @@ class GeneralModuleTests(unittest.TestCase):
             return  # No inet_aton, nothing to check
         # Test that issue1008086 and issue767150 are fixed.
         # It must return 4 bytes.
-        self.assertEquals('\x00'*4, socket.inet_aton('0.0.0.0'))
-        self.assertEquals('\xff'*4, socket.inet_aton('255.255.255.255'))
+        self.assertEqual('\x00'*4, socket.inet_aton('0.0.0.0'))
+        self.assertEqual('\xff'*4, socket.inet_aton('255.255.255.255'))
 
     def testIPv4toString(self):
         if not hasattr(socket, 'inet_pton'):
@@ -417,16 +434,16 @@ class GeneralModuleTests(unittest.TestCase):
         from socket import inet_aton as f, inet_pton, AF_INET
         g = lambda a: inet_pton(AF_INET, a)
 
-        self.assertEquals('\x00\x00\x00\x00', f('0.0.0.0'))
-        self.assertEquals('\xff\x00\xff\x00', f('255.0.255.0'))
-        self.assertEquals('\xaa\xaa\xaa\xaa', f('170.170.170.170'))
-        self.assertEquals('\x01\x02\x03\x04', f('1.2.3.4'))
-        self.assertEquals('\xff\xff\xff\xff', f('255.255.255.255'))
+        self.assertEqual('\x00\x00\x00\x00', f('0.0.0.0'))
+        self.assertEqual('\xff\x00\xff\x00', f('255.0.255.0'))
+        self.assertEqual('\xaa\xaa\xaa\xaa', f('170.170.170.170'))
+        self.assertEqual('\x01\x02\x03\x04', f('1.2.3.4'))
+        self.assertEqual('\xff\xff\xff\xff', f('255.255.255.255'))
 
-        self.assertEquals('\x00\x00\x00\x00', g('0.0.0.0'))
-        self.assertEquals('\xff\x00\xff\x00', g('255.0.255.0'))
-        self.assertEquals('\xaa\xaa\xaa\xaa', g('170.170.170.170'))
-        self.assertEquals('\xff\xff\xff\xff', g('255.255.255.255'))
+        self.assertEqual('\x00\x00\x00\x00', g('0.0.0.0'))
+        self.assertEqual('\xff\x00\xff\x00', g('255.0.255.0'))
+        self.assertEqual('\xaa\xaa\xaa\xaa', g('170.170.170.170'))
+        self.assertEqual('\xff\xff\xff\xff', g('255.255.255.255'))
 
     def testIPv6toString(self):
         if not hasattr(socket, 'inet_pton'):
@@ -439,10 +456,10 @@ class GeneralModuleTests(unittest.TestCase):
             return
         f = lambda a: inet_pton(AF_INET6, a)
 
-        self.assertEquals('\x00' * 16, f('::'))
-        self.assertEquals('\x00' * 16, f('0::0'))
-        self.assertEquals('\x00\x01' + '\x00' * 14, f('1::'))
-        self.assertEquals(
+        self.assertEqual('\x00' * 16, f('::'))
+        self.assertEqual('\x00' * 16, f('0::0'))
+        self.assertEqual('\x00\x01' + '\x00' * 14, f('1::'))
+        self.assertEqual(
             '\x45\xef\x76\xcb\x00\x1a\x56\xef\xaf\xeb\x0b\xac\x19\x24\xae\xae',
             f('45ef:76cb:1a:56ef:afeb:bac:1924:aeae')
         )
@@ -453,14 +470,14 @@ class GeneralModuleTests(unittest.TestCase):
         from socket import inet_ntoa as f, inet_ntop, AF_INET
         g = lambda a: inet_ntop(AF_INET, a)
 
-        self.assertEquals('1.0.1.0', f('\x01\x00\x01\x00'))
-        self.assertEquals('170.85.170.85', f('\xaa\x55\xaa\x55'))
-        self.assertEquals('255.255.255.255', f('\xff\xff\xff\xff'))
-        self.assertEquals('1.2.3.4', f('\x01\x02\x03\x04'))
+        self.assertEqual('1.0.1.0', f('\x01\x00\x01\x00'))
+        self.assertEqual('170.85.170.85', f('\xaa\x55\xaa\x55'))
+        self.assertEqual('255.255.255.255', f('\xff\xff\xff\xff'))
+        self.assertEqual('1.2.3.4', f('\x01\x02\x03\x04'))
 
-        self.assertEquals('1.0.1.0', g('\x01\x00\x01\x00'))
-        self.assertEquals('170.85.170.85', g('\xaa\x55\xaa\x55'))
-        self.assertEquals('255.255.255.255', g('\xff\xff\xff\xff'))
+        self.assertEqual('1.0.1.0', g('\x01\x00\x01\x00'))
+        self.assertEqual('170.85.170.85', g('\xaa\x55\xaa\x55'))
+        self.assertEqual('255.255.255.255', g('\xff\xff\xff\xff'))
 
     def testStringToIPv6(self):
         if not hasattr(socket, 'inet_ntop'):
@@ -473,9 +490,9 @@ class GeneralModuleTests(unittest.TestCase):
             return
         f = lambda a: inet_ntop(AF_INET6, a)
 
-        self.assertEquals('::', f('\x00' * 16))
-        self.assertEquals('::1', f('\x00' * 15 + '\x01'))
-        self.assertEquals(
+        self.assertEqual('::', f('\x00' * 16))
+        self.assertEqual('::1', f('\x00' * 15 + '\x01'))
+        self.assertEqual(
             'aef:b01:506:1001:ffff:9997:55:170',
             f('\x0a\xef\x0b\x01\x05\x06\x10\x01\xff\xff\x99\x97\x00\x55\x01\x70')
         )
@@ -500,12 +517,17 @@ class GeneralModuleTests(unittest.TestCase):
         # Testing getsockname()
         port = self._get_unused_port()
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.addCleanup(sock.close)
         sock.bind(("0.0.0.0", port))
         name = sock.getsockname()
         # XXX(nnorwitz): http://tinyurl.com/os5jz seems to indicate
         # it reasonable to get the host's addr in addition to 0.0.0.0.
         # At least for eCos.  This is required for the S/390 to pass.
-        my_ip_addr = socket.gethostbyname(socket.gethostname())
+        try:
+            my_ip_addr = socket.gethostbyname(socket.gethostname())
+        except socket.error:
+            # Probably name lookup wasn't set up right; skip this test
+            return
         self.assertIn(name[0], ("0.0.0.0", my_ip_addr), '%s invalid' % name[0])
         self.assertEqual(name[1], port)
 
@@ -513,12 +535,14 @@ class GeneralModuleTests(unittest.TestCase):
         # Testing getsockopt()
         # We know a socket should start without reuse==0
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.addCleanup(sock.close)
         reuse = sock.getsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR)
         self.assertFalse(reuse != 0, "initial mode is reuse")
 
     def testSetSockOpt(self):
         # Testing setsockopt()
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.addCleanup(sock.close)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         reuse = sock.getsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR)
         self.assertFalse(reuse == 0, "failed to set reuse mode")
@@ -551,19 +575,91 @@ class GeneralModuleTests(unittest.TestCase):
         finally:
             sock.close()
 
+    @unittest.skipUnless(os.name == "nt", "Windows specific")
     def test_sock_ioctl(self):
-        if os.name != "nt":
-            return
         self.assertTrue(hasattr(socket.socket, 'ioctl'))
         self.assertTrue(hasattr(socket, 'SIO_RCVALL'))
         self.assertTrue(hasattr(socket, 'RCVALL_ON'))
         self.assertTrue(hasattr(socket, 'RCVALL_OFF'))
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/17477"):
-            return
         self.assertTrue(hasattr(socket, 'SIO_KEEPALIVE_VALS'))
         s = socket.socket()
+        self.addCleanup(s.close)
         self.assertRaises(ValueError, s.ioctl, -1, None)
         s.ioctl(socket.SIO_KEEPALIVE_VALS, (1, 100, 100))
+
+    def testGetaddrinfo(self):
+        try:
+            socket.getaddrinfo('localhost', 80)
+        except socket.gaierror as err:
+            if err.errno == socket.EAI_SERVICE:
+                # see http://bugs.python.org/issue1282647
+                self.skipTest("buggy libc version")
+            raise
+        # len of every sequence is supposed to be == 5
+        for info in socket.getaddrinfo(HOST, None):
+            self.assertEqual(len(info), 5)
+        # host can be a domain name, a string representation of an
+        # IPv4/v6 address or None
+        socket.getaddrinfo('localhost', 80)
+        socket.getaddrinfo('127.0.0.1', 80)
+        socket.getaddrinfo(None, 80)
+        if SUPPORTS_IPV6:
+            socket.getaddrinfo('::1', 80)
+        # port can be a string service name such as "http", a numeric
+        # port number or None
+        socket.getaddrinfo(HOST, "http")
+        socket.getaddrinfo(HOST, 80)
+        socket.getaddrinfo(HOST, None)
+        # test family and socktype filters
+        infos = socket.getaddrinfo(HOST, None, socket.AF_INET)
+        for family, _, _, _, _ in infos:
+            self.assertEqual(family, socket.AF_INET)
+        infos = socket.getaddrinfo(HOST, None, 0, socket.SOCK_STREAM)
+        for _, socktype, _, _, _ in infos:
+            self.assertEqual(socktype, socket.SOCK_STREAM)
+        # test proto and flags arguments
+        socket.getaddrinfo(HOST, None, 0, 0, socket.SOL_TCP)
+        socket.getaddrinfo(HOST, None, 0, 0, 0, socket.AI_PASSIVE)
+        # a server willing to support both IPv4 and IPv6 will
+        # usually do this
+        socket.getaddrinfo(None, 0, socket.AF_UNSPEC, socket.SOCK_STREAM, 0,
+                           socket.AI_PASSIVE)
+
+
+    def check_sendall_interrupted(self, with_timeout):
+        # socketpair() is not stricly required, but it makes things easier.
+        if not hasattr(signal, 'alarm') or not hasattr(socket, 'socketpair'):
+            self.skipTest("signal.alarm and socket.socketpair required for this test")
+        # Our signal handlers clobber the C errno by calling a math function
+        # with an invalid domain value.
+        def ok_handler(*args):
+            self.assertRaises(ValueError, math.acosh, 0)
+        def raising_handler(*args):
+            self.assertRaises(ValueError, math.acosh, 0)
+            1 // 0
+        c, s = socket.socketpair()
+        old_alarm = signal.signal(signal.SIGALRM, raising_handler)
+        try:
+            if with_timeout:
+                # Just above the one second minimum for signal.alarm
+                c.settimeout(1.5)
+            with self.assertRaises(ZeroDivisionError):
+                signal.alarm(1)
+                c.sendall(b"x" * (1024**2))
+            if with_timeout:
+                signal.signal(signal.SIGALRM, ok_handler)
+                signal.alarm(1)
+                self.assertRaises(socket.timeout, c.sendall, b"x" * (1024**2))
+        finally:
+            signal.signal(signal.SIGALRM, old_alarm)
+            c.close()
+            s.close()
+
+    def test_sendall_interrupted(self):
+        self.check_sendall_interrupted(False)
+
+    def test_sendall_interrupted_with_timeout(self):
+        self.check_sendall_interrupted(True)
 
 
 @unittest.skipUnless(thread, 'Threading required for this test.')
@@ -628,10 +724,21 @@ class BasicTCPTest(SocketConnectedTest):
             return # On Windows, this doesn't exist
         fd = self.cli_conn.fileno()
         sock = socket.fromfd(fd, socket.AF_INET, socket.SOCK_STREAM)
+        self.addCleanup(sock.close)
         msg = sock.recv(1024)
         self.assertEqual(msg, MSG)
 
     def _testFromFd(self):
+        self.serv_conn.send(MSG)
+
+    def testDup(self):
+        # Testing dup()
+        sock = self.cli_conn.dup()
+        self.addCleanup(sock.close)
+        msg = sock.recv(1024)
+        self.assertEqual(msg, MSG)
+
+    def _testDup(self):
         self.serv_conn.send(MSG)
 
     def testShutdown(self):
@@ -685,11 +792,8 @@ class TCPCloserTest(ThreadedTCPSocketTest):
 
         sd = self.cli
         read, write, err = select.select([sd], [], [], 1.0)
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            # IronPython: timeout? (read == [])
-            self.assertEqual(read, [sd])
-            # IronPython: bad file descriptor (intermittent)
-            self.assertEqual(sd.recv(1), '')
+        self.assertEqual(read, [sd])
+        self.assertEqual(sd.recv(1), '')
 
     def _testClose(self):
         self.cli.connect((HOST, self.port))
@@ -747,6 +851,7 @@ class NonBlockingTCPTests(ThreadedTCPSocketTest):
         read, write, err = select.select([self.serv], [], [])
         if self.serv in read:
             conn, addr = self.serv.accept()
+            conn.close()
         else:
             self.fail("Error trying to do accept after select.")
 
@@ -757,6 +862,7 @@ class NonBlockingTCPTests(ThreadedTCPSocketTest):
     def testConnect(self):
         # Testing non-blocking connect
         conn, addr = self.serv.accept()
+        conn.close()
 
     def _testConnect(self):
         self.cli.settimeout(10)
@@ -775,6 +881,7 @@ class NonBlockingTCPTests(ThreadedTCPSocketTest):
         read, write, err = select.select([conn], [], [])
         if conn in read:
             msg = conn.recv(len(MSG))
+            conn.close()
             self.assertEqual(msg, MSG)
         else:
             self.fail("Error during select call to non-blocking socket.")
@@ -913,8 +1020,8 @@ class FileObjectInterruptedTestCase(unittest.TestCase):
                 lambda : "",
             ])
         fo = socket._fileobject(mock_sock, **kwargs)
-        self.assertEquals(fo.readline(size), "This is the first line\n")
-        self.assertEquals(fo.readline(size), "And the second line is here\n")
+        self.assertEqual(fo.readline(size), "This is the first line\n")
+        self.assertEqual(fo.readline(size), "And the second line is here\n")
 
     def _test_read(self, size=-1, **kwargs):
         mock_sock = self.MockSocket(recv_funcs=[
@@ -924,17 +1031,15 @@ class FileObjectInterruptedTestCase(unittest.TestCase):
                 lambda : "",
             ])
         fo = socket._fileobject(mock_sock, **kwargs)
-        self.assertEquals(fo.read(size), "This is the first line\n"
+        self.assertEqual(fo.read(size), "This is the first line\n"
                           "And the second line is here\n")
 
-    @unittest.skipIf(test_support.is_cli, "http://ironpython.codeplex.com/workitem/16367")
     def test_default(self):
         self._test_readline()
         self._test_readline(size=100)
         self._test_read()
         self._test_read(size=100)
 
-    @unittest.skipIf(test_support.is_cli, "http://ironpython.codeplex.com/workitem/16367")
     def test_with_1k_buffer(self):
         self._test_readline(bufsize=1024)
         self._test_readline(size=100, bufsize=1024)
@@ -951,10 +1056,9 @@ class FileObjectInterruptedTestCase(unittest.TestCase):
                 lambda : "",
             ])
         fo = socket._fileobject(mock_sock, bufsize=0)
-        self.assertEquals(fo.readline(size), "aa\n")
-        self.assertEquals(fo.readline(size), "BBbb")
+        self.assertEqual(fo.readline(size), "aa\n")
+        self.assertEqual(fo.readline(size), "BBbb")
 
-    @unittest.skipIf(test_support.is_cli, "http://ironpython.codeplex.com/workitem/16367")
     def test_no_buffer(self):
         self._test_readline_no_buffer()
         self._test_readline_no_buffer(size=4)
@@ -1010,15 +1114,45 @@ class BasicTCPTest2(NetworkConnectionTest, BasicTCPTest):
     """
 
 class NetworkConnectionNoServer(unittest.TestCase):
-    def testWithoutServer(self):
+    class MockSocket(socket.socket):
+        def connect(self, *args):
+            raise socket.timeout('timed out')
+
+    @contextlib.contextmanager
+    def mocked_socket_module(self):
+        """Return a socket which times out on connect"""
+        old_socket = socket.socket
+        socket.socket = self.MockSocket
+        try:
+            yield
+        finally:
+            socket.socket = old_socket
+
+    def test_connect(self):
         port = test_support.find_unused_port()
-        self.assertRaises(
-            socket.error,
-            lambda: socket.create_connection((HOST, port))
-        )
+        cli = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.addCleanup(cli.close)
+        with self.assertRaises(socket.error) as cm:
+            cli.connect((HOST, port))
+        self.assertEqual(cm.exception.errno, errno.ECONNREFUSED)
+
+    def test_create_connection(self):
+        # Issue #9792: errors raised by create_connection() should have
+        # a proper errno attribute.
+        port = test_support.find_unused_port()
+        with self.assertRaises(socket.error) as cm:
+            socket.create_connection((HOST, port))
+        self.assertEqual(cm.exception.errno, errno.ECONNREFUSED)
+
+    def test_create_connection_timeout(self):
+        # Issue #9792: create_connection() should not recast timeout errors
+        # as generic socket errors.
+        with self.mocked_socket_module():
+            with self.assertRaises(socket.timeout):
+                socket.create_connection((HOST, 1234))
+
 
 @unittest.skipUnless(thread, 'Threading required for this test.')
-@unittest.skipIf(test_support.is_cli, "hangs in IronPython: http://ironpython.codeplex.com/workitem/16367")
 class NetworkConnectionAttributesTest(SocketTCPTest, ThreadableTest):
 
     def __init__(self, methodName='runTest'):
@@ -1035,16 +1169,19 @@ class NetworkConnectionAttributesTest(SocketTCPTest, ThreadableTest):
 
     def _justAccept(self):
         conn, addr = self.serv.accept()
+        conn.close()
 
     testFamily = _justAccept
     def _testFamily(self):
         self.cli = socket.create_connection((HOST, self.port), timeout=30)
+        self.addCleanup(self.cli.close)
         self.assertEqual(self.cli.family, 2)
 
     testSourceAddress = _justAccept
     def _testSourceAddress(self):
         self.cli = socket.create_connection((HOST, self.port), timeout=30,
                 source_address=('', self.source_port))
+        self.addCleanup(self.cli.close)
         self.assertEqual(self.cli.getsockname()[1], self.source_port)
         # The port number being used is sufficient to show that the bind()
         # call happened.
@@ -1056,9 +1193,10 @@ class NetworkConnectionAttributesTest(SocketTCPTest, ThreadableTest):
         socket.setdefaulttimeout(42)
         try:
             self.cli = socket.create_connection((HOST, self.port))
+            self.addCleanup(self.cli.close)
         finally:
             socket.setdefaulttimeout(None)
-        self.assertEquals(self.cli.gettimeout(), 42)
+        self.assertEqual(self.cli.gettimeout(), 42)
 
     testTimeoutNone = _justAccept
     def _testTimeoutNone(self):
@@ -1067,6 +1205,7 @@ class NetworkConnectionAttributesTest(SocketTCPTest, ThreadableTest):
         socket.setdefaulttimeout(30)
         try:
             self.cli = socket.create_connection((HOST, self.port), timeout=None)
+            self.addCleanup(self.cli.close)
         finally:
             socket.setdefaulttimeout(None)
         self.assertEqual(self.cli.gettimeout(), None)
@@ -1079,6 +1218,7 @@ class NetworkConnectionAttributesTest(SocketTCPTest, ThreadableTest):
     testTimeoutValueNonamed = _justAccept
     def _testTimeoutValueNonamed(self):
         self.cli = socket.create_connection((HOST, self.port), 30)
+        self.addCleanup(self.cli.close)
         self.assertEqual(self.cli.gettimeout(), 30)
 
 @unittest.skipUnless(thread, 'Threading required for this test.')
@@ -1098,6 +1238,7 @@ class NetworkConnectionBehaviourTest(SocketTCPTest, ThreadableTest):
 
     def testInsideTimeout(self):
         conn, addr = self.serv.accept()
+        self.addCleanup(conn.close)
         time.sleep(3)
         conn.send("done!")
     testOutsideTimeout = testInsideTimeout
@@ -1134,15 +1275,11 @@ class Urllib2FileobjectTest(unittest.TestCase):
         s = MockSocket()
         f = socket._fileobject(s, close=True)
         f.close()
-        # IronPython does not look for close() if first c'tor arg isn't a socket
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertTrue(s.closed)
+        self.assertTrue(s.closed)
 
 class TCPTimeoutTest(SocketTCPTest):
 
     def testTCPTimeout(self):
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         def raise_timeout(*args, **kwargs):
             self.serv.settimeout(1.0)
             self.serv.accept()
@@ -1200,8 +1337,6 @@ class TCPTimeoutTest(SocketTCPTest):
 class UDPTimeoutTest(SocketTCPTest):
 
     def testUDPTimeout(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=305771"):
-            return
         def raise_timeout(*args, **kwargs):
             self.serv.settimeout(1.0)
             self.serv.recv(1024)
@@ -1209,8 +1344,6 @@ class UDPTimeoutTest(SocketTCPTest):
                               "Error generating a timeout exception (UDP)")
 
     def testTimeoutZero(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=325395"):
-            return
         ok = False
         try:
             self.serv.settimeout(0.0)
@@ -1284,14 +1417,10 @@ class BufferIOTest(SocketConnectedTest):
         nbytes = self.cli_conn.recv_into(buf)
         self.assertEqual(nbytes, len(MSG))
         msg = buf[:len(MSG)]
-        if test_support.due_to_ironpython_incompatibility("unicode/str/bytes"):
-            self.assertEqual(msg, bytes(MSG))
-        else:
-            self.assertEqual(msg, MSG)
+        self.assertEqual(msg, MSG)
 
     _testRecvIntoBytearray = _testRecvIntoArray
 
-    @unittest.skipIf(test_support.is_cli, "memoryview not implemented: http://ironpython.codeplex.com/workitem/28311")
     def testRecvIntoMemoryview(self):
         buf = bytearray(1024)
         nbytes = self.cli_conn.recv_into(memoryview(buf))
@@ -1318,14 +1447,10 @@ class BufferIOTest(SocketConnectedTest):
         nbytes, addr = self.cli_conn.recvfrom_into(buf)
         self.assertEqual(nbytes, len(MSG))
         msg = buf[:len(MSG)]
-        if test_support.due_to_ironpython_incompatibility("unicode/str/bytes"):
-            self.assertEqual(msg, bytes(MSG))
-        else:
-            self.assertEqual(msg, MSG)
+        self.assertEqual(msg, MSG)
 
     _testRecvFromIntoBytearray = _testRecvFromIntoArray
 
-    @unittest.skipIf(test_support.is_cli, "memoryview not implemented: http://ironpython.codeplex.com/workitem/28311")
     def testRecvFromIntoMemoryview(self):
         buf = bytearray(1024)
         nbytes, addr = self.cli_conn.recvfrom_into(memoryview(buf))

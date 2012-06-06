@@ -62,6 +62,24 @@ class CookieTests(unittest.TestCase):
         </script>
         """)
 
+        # loading 'expires'
+        C = Cookie.SimpleCookie()
+        C.load('Customer="W"; expires=Wed, 01-Jan-2010 00:00:00 GMT')
+        self.assertEqual(C['Customer']['expires'],
+                         'Wed, 01-Jan-2010 00:00:00 GMT')
+        C = Cookie.SimpleCookie()
+        C.load('Customer="W"; expires=Wed, 01-Jan-98 00:00:00 GMT')
+        self.assertEqual(C['Customer']['expires'],
+                         'Wed, 01-Jan-98 00:00:00 GMT')
+
+    def test_extended_encode(self):
+        # Issue 9824: some browsers don't follow the standard; we now
+        # encode , and ; to keep them from tripping up.
+        C = Cookie.SimpleCookie()
+        C['val'] = "some,funky;stuff"
+        self.assertEqual(C.output(['val']),
+            'Set-Cookie: val="some\\054funky\\073stuff"')
+
     def test_quoted_meta(self):
         # Try cookie with quoted meta-data
         C = Cookie.SimpleCookie()

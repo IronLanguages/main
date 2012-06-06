@@ -14,8 +14,6 @@ class CodingTest(unittest.TestCase):
     def verify_bad_module(self, module_name):
         self.assertRaises(SyntaxError, __import__, 'test.' + module_name)
 
-        if test.test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=15508"):
-            return
         path = os.path.dirname(__file__)
         filename = os.path.join(path, module_name + '.py')
         with open(filename) as fp:
@@ -24,8 +22,6 @@ class CodingTest(unittest.TestCase):
 
     def test_error_from_string(self):
         # See http://bugs.python.org/issue6289
-        if test.test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         input = u"# coding: ascii\n\N{SNOWMAN}".encode('utf-8')
         with self.assertRaises(SyntaxError) as c:
             compile(input, "<string>", "exec")

@@ -9,13 +9,27 @@ import os
 import re
 import sys
 import copy
+import functools
 import pickle
 import tempfile
 import unittest
-import warnings
 import test.test_support
 import test.string_tests
 import test.buffer_tests
+
+
+if sys.flags.bytes_warning:
+    def check_bytes_warnings(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kw):
+            with test.test_support.check_warnings(('', BytesWarning)):
+                return func(*args, **kw)
+        return wrapper
+else:
+    # no-op
+    def check_bytes_warnings(func):
+        return func
+
 
 class Indexable:
     def __init__(self, value=0):
@@ -25,12 +39,6 @@ class Indexable:
 
 
 class BaseBytesTest(unittest.TestCase):
-
-    def setUp(self):
-        self.warning_filters = warnings.filters[:]
-
-    def tearDown(self):
-        warnings.filters = self.warning_filters
 
     def test_basics(self):
         b = self.type2test()
@@ -120,8 +128,8 @@ class BaseBytesTest(unittest.TestCase):
         self.assertFalse(b3 <  b2)
         self.assertFalse(b3 <= b2)
 
+    @check_bytes_warnings
     def test_compare_to_str(self):
-        warnings.simplefilter('ignore', BytesWarning)
         # Byte comparisons with unicode should always fail!
         # Test this for all expected byte orders and Unicode character sizes
         self.assertEqual(self.type2test(b"\0a\0b\0c") == u"abc", False)
@@ -171,8 +179,6 @@ class BaseBytesTest(unittest.TestCase):
 
     def test_encoding(self):
         sample = u"Hello world\n\u1234\u5678\u9abc\udef0"
-        if test.test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21336"):
-            return
         for enc in ("utf8", "utf16"):
             b = self.type2test(sample, enc)
             self.assertEqual(b, self.type2test(sample.encode(enc)))
@@ -249,11 +255,11 @@ class BaseBytesTest(unittest.TestCase):
     def test_fromhex(self):
         self.assertRaises(TypeError, self.type2test.fromhex)
         self.assertRaises(TypeError, self.type2test.fromhex, 1)
-        self.assertEquals(self.type2test.fromhex(u''), self.type2test())
+        self.assertEqual(self.type2test.fromhex(u''), self.type2test())
         b = bytearray([0x1a, 0x2b, 0x30])
-        self.assertEquals(self.type2test.fromhex(u'1a2B30'), b)
-        self.assertEquals(self.type2test.fromhex(u'  1A 2B  30   '), b)
-        self.assertEquals(self.type2test.fromhex(u'0000'), b'\0\0')
+        self.assertEqual(self.type2test.fromhex(u'1a2B30'), b)
+        self.assertEqual(self.type2test.fromhex(u'  1A 2B  30   '), b)
+        self.assertEqual(self.type2test.fromhex(u'0000'), b'\0\0')
         self.assertRaises(ValueError, self.type2test.fromhex, u'a')
         self.assertRaises(ValueError, self.type2test.fromhex, u'rt')
         self.assertRaises(ValueError, self.type2test.fromhex, u'1a b cd')
@@ -436,8 +442,6 @@ class BaseBytesTest(unittest.TestCase):
         self.assertEqual(b.rstrip(), b' \t\n\r\f\vabc')
 
     def test_strip_bytearray(self):
-        if test.test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28311"):
-            return
         self.assertEqual(self.type2test(b'abc').strip(memoryview(b'ac')), b'b')
         self.assertEqual(self.type2test(b'abc').lstrip(memoryview(b'ac')), b'bc')
         self.assertEqual(self.type2test(b'abc').rstrip(memoryview(b'ac')), b'ab')
@@ -470,8 +474,6 @@ class ByteArrayTest(BaseBytesTest):
             # Test readinto
             with open(tfn, "rb") as f:
                 b = bytearray(20)
-                if test.test_support.due_to_ironpython_bug("CodePlex 23356"):
-                    return
                 n = f.readinto(b)
             self.assertEqual(n, len(short_sample))
             # Python 2.x
@@ -503,8 +505,6 @@ class ByteArrayTest(BaseBytesTest):
     def test_regexps(self):
         def by(s):
             return bytearray(map(ord, s))
-        if test.test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21362"):
-            return
         b = by("Hello, world")
         self.assertEqual(re.findall(r"\w+", b), [by("Hello"), by("world")])
 
@@ -521,15 +521,11 @@ class ByteArrayTest(BaseBytesTest):
             self.fail("Didn't raise IndexError")
         except IndexError:
             pass
-        except ValueError, e:
-            raise e
         try:
             b[-10] = 0
             self.fail("Didn't raise IndexError")
         except IndexError:
             pass
-        except ValueError, e:
-            raise e
         try:
             b[0] = 256
             self.fail("Didn't raise ValueError")
@@ -589,15 +585,13 @@ class ByteArrayTest(BaseBytesTest):
                     # but with different data.
                     data = L[start:stop:step]
                     data.reverse()
-                    if step > sys.maxint and test.test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                        continue
                     L[start:stop:step] = data
                     b[start:stop:step] = data
-                    self.assertEquals(b, bytearray(L))
+                    self.assertEqual(b, bytearray(L))
 
                     del L[start:stop:step]
                     del b[start:stop:step]
-                    self.assertEquals(b, bytearray(L))
+                    self.assertEqual(b, bytearray(L))
 
     def test_setslice_trap(self):
         # This test verifies that we correctly handle assigning self
@@ -701,7 +695,7 @@ class ByteArrayTest(BaseBytesTest):
         self.assertEqual(b.pop(0), ord('w'))
         self.assertEqual(b.pop(-2), ord('r'))
         self.assertRaises(IndexError, lambda: b.pop(10))
-        self.assertRaises(OverflowError, lambda: bytearray().pop())
+        self.assertRaises(IndexError, lambda: bytearray().pop())
         # test for issue #6846
         self.assertEqual(bytearray(b'\xff').pop(), 0xff)
 
@@ -766,8 +760,6 @@ class ByteArrayTest(BaseBytesTest):
         self.assertEqual(c, b"")
 
     def test_resize_forbidden(self):
-        if test.test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28311"):
-            return
         # #4509: can't resize a bytearray when there are buffer exports, even
         # if it wouldn't reallocate the underlying buffer.
         # Furthermore, no destructive changes to the buffer may be applied
@@ -779,25 +771,25 @@ class ByteArrayTest(BaseBytesTest):
         resize(10)
         orig = b[:]
         self.assertRaises(BufferError, resize, 11)
-        self.assertEquals(b, orig)
+        self.assertEqual(b, orig)
         self.assertRaises(BufferError, resize, 9)
-        self.assertEquals(b, orig)
+        self.assertEqual(b, orig)
         self.assertRaises(BufferError, resize, 0)
-        self.assertEquals(b, orig)
+        self.assertEqual(b, orig)
         # Other operations implying resize
         self.assertRaises(BufferError, b.pop, 0)
-        self.assertEquals(b, orig)
+        self.assertEqual(b, orig)
         self.assertRaises(BufferError, b.remove, b[1])
-        self.assertEquals(b, orig)
+        self.assertEqual(b, orig)
         def delitem():
             del b[1]
         self.assertRaises(BufferError, delitem)
-        self.assertEquals(b, orig)
+        self.assertEqual(b, orig)
         # deleting a non-contiguous slice
         def delslice():
             b[1:-1:2] = b""
         self.assertRaises(BufferError, delslice)
-        self.assertEquals(b, orig)
+        self.assertEqual(b, orig)
 
     def test_empty_bytearray(self):
         # Issue #7561: operations on empty bytearrays could crash in many
@@ -811,14 +803,8 @@ class AssortedBytesTest(unittest.TestCase):
     # Test various combinations of bytes and bytearray
     #
 
-    def setUp(self):
-        self.warning_filters = warnings.filters[:]
-
-    def tearDown(self):
-        warnings.filters = self.warning_filters
-
+    @check_bytes_warnings
     def test_repr_str(self):
-        warnings.simplefilter('ignore', BytesWarning)
         for f in str, repr:
             self.assertEqual(f(bytearray()), "bytearray(b'')")
             self.assertEqual(f(bytearray([0])), "bytearray(b'\\x00')")
@@ -869,8 +855,8 @@ class AssortedBytesTest(unittest.TestCase):
         b = bytearray(buf)
         self.assertEqual(b, bytearray(sample))
 
+    @check_bytes_warnings
     def test_to_str(self):
-        warnings.simplefilter('ignore', BytesWarning)
         self.assertEqual(str(b''), "b''")
         self.assertEqual(str(b'x'), "b'x'")
         self.assertEqual(str(b'\x80'), "b'\\x80'")
@@ -947,10 +933,7 @@ class BytearrayPEP3137Test(unittest.TestCase,
                             methname+' returned self on a mutable object')
         for expr in ('val.split()[0]', 'val.rsplit()[0]',
                      'val.partition(".")[0]', 'val.rpartition(".")[2]',
-                     'val.splitlines()[0]', 
-                     'val.replace("", "")'):
-            if 'partition' in expr and test.test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                continue
+                     'val.splitlines()[0]', 'val.replace("", "")'):
             newval = eval(expr)
             self.assertEqual(val, newval)
             self.assertTrue(val is not newval,

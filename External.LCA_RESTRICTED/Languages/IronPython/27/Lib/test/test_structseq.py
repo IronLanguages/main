@@ -30,8 +30,6 @@ class StructSeqTest(unittest.TestCase):
         t = time.gmtime()
         self.assertTrue(repr(t))
         t = time.gmtime(0)
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         self.assertEqual(repr(t),
             "time.struct_time(tm_year=1970, tm_mon=1, tm_mday=1, tm_hour=0, "
             "tm_min=0, tm_sec=0, tm_wday=3, tm_yday=1, tm_isdst=0)")
@@ -70,10 +68,9 @@ class StructSeqTest(unittest.TestCase):
         self.assertTrue(not (t1 != t2))
 
     def test_fields(self):
-        if  not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=360151"):
-            t = time.gmtime()
-            self.assertEqual(len(t), t.n_fields)
-            self.assertEqual(t.n_fields, t.n_sequence_fields+t.n_unnamed_fields)
+        t = time.gmtime()
+        self.assertEqual(len(t), t.n_fields)
+        self.assertEqual(t.n_fields, t.n_sequence_fields+t.n_unnamed_fields)
 
     def test_constructor(self):
         t = time.struct_time

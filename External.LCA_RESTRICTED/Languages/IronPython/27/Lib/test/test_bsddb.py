@@ -5,11 +5,6 @@
 import os, sys
 import unittest
 from test import test_support
-if test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=318143"):
-    sys.exit(0)
-
-import bsddb
-import dbhash # Just so we know it's imported
 
 # Skip test if _bsddb wasn't built.
 test_support.import_module('_bsddb')

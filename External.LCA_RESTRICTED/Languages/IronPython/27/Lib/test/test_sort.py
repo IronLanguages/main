@@ -227,8 +227,7 @@ class TestDecorateSortUndecorate(unittest.TestCase):
             def __del__(self):
                 del data[:]
                 data[:] = range(20)
-        if not test_support.due_to_ironpython_incompatibility('__del__ related behavior'):
-            self.assertRaises(ValueError, data.sort, key=SortKiller)
+        self.assertRaises(ValueError, data.sort, key=SortKiller)
 
     def test_key_with_mutating_del_and_exception(self):
         data = range(10)

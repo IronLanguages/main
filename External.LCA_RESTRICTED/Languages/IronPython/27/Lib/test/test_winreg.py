@@ -41,9 +41,6 @@ test_data = [
     ("Big String",    "x"*(2**14-1),                           REG_SZ),
     ("Big Binary",    "x"*(2**14),                             REG_BINARY),
 ]
-if test_support.due_to_ironpython_bug("http://vstfdevdiv:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=425168"):
-    # remove ("StringExpand", ...)
-    del test_data[2]
 
 if test_support.have_unicode:
     test_data += [
@@ -54,9 +51,6 @@ if test_support.have_unicode:
         ("Multi-mixed",   [unicode("Unicode"), unicode("and"), "string",
                            "values"], REG_MULTI_SZ),
     ]
-    if test_support.due_to_ironpython_bug("http://vstfdevdiv:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=425168"):
-        # remove ("UnicodeExpand", ...)
-        del test_data[7]
 
 class BaseWinregTests(unittest.TestCase):
 
@@ -94,11 +88,11 @@ class BaseWinregTests(unittest.TestCase):
 
         # Check we wrote as many items as we thought.
         nkeys, nvalues, since_mod = QueryInfoKey(key)
-        self.assertEquals(nkeys, 1, "Not the correct number of sub keys")
-        self.assertEquals(nvalues, 1, "Not the correct number of values")
+        self.assertEqual(nkeys, 1, "Not the correct number of sub keys")
+        self.assertEqual(nvalues, 1, "Not the correct number of values")
         nkeys, nvalues, since_mod = QueryInfoKey(sub_key)
-        self.assertEquals(nkeys, 0, "Not the correct number of sub keys")
-        self.assertEquals(nvalues, len(test_data),
+        self.assertEqual(nkeys, 0, "Not the correct number of sub keys")
+        self.assertEqual(nvalues, len(test_data),
                           "Not the correct number of values")
         # Close this key this way...
         # (but before we do, copy the key as an integer - this allows
@@ -124,8 +118,8 @@ class BaseWinregTests(unittest.TestCase):
     def _read_test_data(self, root_key, OpenKey=OpenKey):
         # Check we can get default value for this key.
         val = QueryValue(root_key, test_key_name)
-        self.assertEquals(val, "Default value",
-                          "Registry didn't give back the correct value")
+        self.assertEqual(val, "Default value",
+                         "Registry didn't give back the correct value")
 
         key = OpenKey(root_key, test_key_name)
         # Read the sub-keys
@@ -140,19 +134,19 @@ class BaseWinregTests(unittest.TestCase):
                 self.assertIn(data, test_data,
                               "Didn't read back the correct test data")
                 index = index + 1
-            self.assertEquals(index, len(test_data),
-                              "Didn't read the correct number of items")
+            self.assertEqual(index, len(test_data),
+                             "Didn't read the correct number of items")
             # Check I can directly access each item
             for value_name, value_data, value_type in test_data:
                 read_val, read_typ = QueryValueEx(sub_key, value_name)
-                self.assertEquals(read_val, value_data,
-                                  "Could not directly read the value")
-                self.assertEquals(read_typ, value_type,
-                                  "Could not directly read the value")
+                self.assertEqual(read_val, value_data,
+                                 "Could not directly read the value")
+                self.assertEqual(read_typ, value_type,
+                                 "Could not directly read the value")
         sub_key.Close()
         # Enumerate our main key.
         read_val = EnumKey(key, 0)
-        self.assertEquals(read_val, "sub_key", "Read subkey value wrong")
+        self.assertEqual(read_val, "sub_key", "Read subkey value wrong")
         try:
             EnumKey(key, 1)
             self.fail("Was able to get a second key when I only have one!")
@@ -171,8 +165,8 @@ class BaseWinregTests(unittest.TestCase):
             DeleteValue(sub_key, value_name)
 
         nkeys, nvalues, since_mod = QueryInfoKey(sub_key)
-        self.assertEquals(nkeys, 0, "subkey not empty before delete")
-        self.assertEquals(nvalues, 0, "subkey not empty before delete")
+        self.assertEqual(nkeys, 0, "subkey not empty before delete")
+        self.assertEqual(nvalues, 0, "subkey not empty before delete")
         sub_key.Close()
         DeleteKey(key, "sub_key")
 
@@ -191,30 +185,7 @@ class BaseWinregTests(unittest.TestCase):
         except WindowsError: # Use this error name this time
             pass
 
-    # Ensure that the registry is un-tainted by previous invocations of this
-    # test or some variant thereof (possibly with different test_data)
-    def _clean_test_data(self, root_key):
-        def delete_subkeys(key):
-            nkeys = QueryInfoKey(key)[0]
-            if nkeys == 0:
-                return
-            for i in xrange(nkeys-1, -1, -1):
-                subname = EnumKey(key, i)
-                sub = OpenKey(key, subname)
-                delete_subkeys(sub)
-                sub.Close()
-                DeleteKey(key, subname)
-        
-        try:
-            test_key = OpenKey(root_key, test_key_name, 0, KEY_ALL_ACCESS)
-        except WindowsError:
-            return
-        delete_subkeys(test_key)
-        test_key.Close()
-        DeleteKey(root_key, test_key_name)
-
     def _test_all(self, root_key):
-        self._clean_test_data(root_key)
         self._write_test_data(root_key)
         self._read_test_data(root_key)
         self._delete_test_data(root_key)
@@ -248,20 +219,9 @@ class LocalWinregTests(BaseWinregTests):
         self.assertRaises(WindowsError, connect)
 
     def test_expand_environment_strings(self):
-        # _winreg lacks ExpandEnvironmentStrings
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         r = ExpandEnvironmentStrings(u"%windir%\\test")
         self.assertEqual(type(r), unicode)
         self.assertEqual(r, os.environ["windir"] + "\\test")
-
-    # IronPython added test case
-    def testExceptionNumbers(self):
-        try:
-            QueryValue(HKEY_CLASSES_ROOT, 'some_value_that_does_not_exist')
-            self.fail('should throw')
-        except WindowsError, err:
-            self.assertEqual(err.errno, 2)
 
     def test_context_manager(self):
         # ensure that the handle is closed if an exception occurs
@@ -301,12 +261,11 @@ class LocalWinregTests(BaseWinregTests):
         finally:
             done = True
             thread.join()
-            DeleteKey(HKEY_CURRENT_USER, test_key_name+'\\changing_value')
+            with OpenKey(HKEY_CURRENT_USER, test_key_name, 0, KEY_ALL_ACCESS) as key:
+                DeleteKey(key, 'changing_value')
             DeleteKey(HKEY_CURRENT_USER, test_key_name)
 
     def test_long_key(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=28743"):
-            return
         # Issue2810, in 2.6 and 3.1 when the key name was exactly 256
         # characters, EnumKey threw "WindowsError: More data is
         # available"
@@ -317,7 +276,8 @@ class LocalWinregTests(BaseWinregTests):
                 num_subkeys, num_values, t = QueryInfoKey(key)
                 EnumKey(key, 0)
         finally:
-            DeleteKey(HKEY_CURRENT_USER, '\\'.join((test_key_name, name)))
+            with OpenKey(HKEY_CURRENT_USER, test_key_name, 0, KEY_ALL_ACCESS) as key:
+                DeleteKey(key, name)
             DeleteKey(HKEY_CURRENT_USER, test_key_name)
 
     def test_dynamic_key(self):
@@ -366,8 +326,8 @@ class Win64WinregTests(BaseWinregTests):
         with OpenKey(HKEY_LOCAL_MACHINE, "Software") as key:
             # HKLM\Software is redirected but not reflected in all OSes
             self.assertTrue(QueryReflectionKey(key))
-            self.assertEquals(None, EnableReflectionKey(key))
-            self.assertEquals(None, DisableReflectionKey(key))
+            self.assertEqual(None, EnableReflectionKey(key))
+            self.assertEqual(None, DisableReflectionKey(key))
             self.assertTrue(QueryReflectionKey(key))
 
     @unittest.skipUnless(HAS_REFLECTION, "OS doesn't support reflection")

@@ -35,7 +35,6 @@ class MaildirTestCase(unittest.TestCase):
         self._msgfiles = []
 
     def tearDown(self):
-        test_support.force_gc_collect("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321793")
         map(os.unlink, self._msgfiles)
         os.rmdir(os.path.join(self._dir, "cur"))
         os.rmdir(os.path.join(self._dir, "tmp"))
@@ -49,18 +48,16 @@ class MaildirTestCase(unittest.TestCase):
         filename = os.extsep.join((str(t), str(pid), "myhostname", "mydomain"))
         tmpname = os.path.join(self._dir, "tmp", filename)
         newname = os.path.join(self._dir, dir, filename)
-        fp = open(tmpname, "w")
-        self._msgfiles.append(tmpname)
-        if mbox:
-            fp.write(FROM_)
-        fp.write(DUMMY_MESSAGE)
-        fp.close()
+        with open(tmpname, "w") as fp:
+            self._msgfiles.append(tmpname)
+            if mbox:
+                fp.write(FROM_)
+            fp.write(DUMMY_MESSAGE)
         if hasattr(os, "link"):
             os.link(tmpname, newname)
         else:
-            fp = open(newname, "w")
-            fp.write(DUMMY_MESSAGE)
-            fp.close()
+            with open(newname, "w") as fp:
+                fp.write(DUMMY_MESSAGE)
         self._msgfiles.append(newname)
         return tmpname
 
@@ -103,11 +100,12 @@ class MaildirTestCase(unittest.TestCase):
         import email.parser
         fname = self.createMessage("cur", True)
         n = 0
-        for msg in mailbox.PortableUnixMailbox(open(fname),
+        with open(fname) as f:
+            for msg in mailbox.PortableUnixMailbox(f,
                                                email.parser.Parser().parse):
-            n += 1
-            self.assertEqual(msg["subject"], "Simple Test")
-            self.assertEqual(len(str(msg)), len(FROM_)+len(DUMMY_MESSAGE))
+                n += 1
+                self.assertEqual(msg["subject"], "Simple Test")
+                self.assertEqual(len(str(msg)), len(FROM_)+len(DUMMY_MESSAGE))
         self.assertEqual(n, 1)
 
 class MboxTestCase(unittest.TestCase):
@@ -120,8 +118,8 @@ class MboxTestCase(unittest.TestCase):
 
     def test_from_regex (self):
         # Testing new regex from bug #1633678
-        f = open(self._path, 'w')
-        f.write("""From fred@example.com Mon May 31 13:24:50 2004 +0200
+        with open(self._path, 'w') as f:
+            f.write("""From fred@example.com Mon May 31 13:24:50 2004 +0200
 Subject: message 1
 
 body1
@@ -138,14 +136,8 @@ Subject: message 4
 
 body4
 """)
-        f.close()
-
-        if test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=321793"):
-            with open(self._path, 'r') as f:
-                box = mailbox.UnixMailbox(f)
-                self.assert_(len(list(iter(box))) == 4)
-        else:
-            box = mailbox.UnixMailbox(open(self._path, 'r'))
+        with open(self._path, 'r') as f:
+            box = mailbox.UnixMailbox(f)
             self.assertTrue(len(list(iter(box))) == 4)
 
 

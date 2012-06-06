@@ -41,12 +41,6 @@ class TestBase(unittest.TestCase):
     def callback(self, ref):
         self.cbcalled += 1
 
-def keepalive(*x):
-    '''
-    A helper function to keep objects alive. This is necessary due to an
-    IronPython incompatibility.
-    '''
-    pass
 
 class ReferencesTestCase(TestBase):
 
@@ -76,7 +70,6 @@ class ReferencesTestCase(TestBase):
         ref1 = weakref.ref(o, self.callback)
         ref2 = weakref.ref(o, self.callback)
         del o
-        test_support.force_gc_collect()
         self.assertTrue(ref1() is None,
                      "expected reference to be invalidated")
         self.assertTrue(ref2() is None,
@@ -103,37 +96,18 @@ class ReferencesTestCase(TestBase):
         del c
 
     def test_proxy_ref(self):
-        def inner1():
-            o = C()
-            o.bar = 1
-            ref1 = weakref.proxy(o, self.callback)
-            ref2 = weakref.proxy(o, self.callback)
+        o = C()
+        o.bar = 1
+        ref1 = weakref.proxy(o, self.callback)
+        ref2 = weakref.proxy(o, self.callback)
+        del o
 
-            del o
-
-            return ref1, ref2
-
-        ref1, ref2 = inner1()
-        test_support.force_gc_collect()
-        
         def check(proxy):
             proxy.bar
 
         self.assertRaises(weakref.ReferenceError, check, ref1)
         self.assertRaises(weakref.ReferenceError, check, ref2)
-        
-        #http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=325860
-        def inner2():
-            o = C()
-            ref = weakref.proxy(o)
-            del o
-            
-            return ref
-
-        ref = inner2()
-
-        test_support.force_gc_collect()
-        self.assertRaises(weakref.ReferenceError, bool, ref)
+        self.assertRaises(weakref.ReferenceError, bool, weakref.proxy(C()))
         self.assertTrue(self.cbcalled == 2)
 
     def check_basic_ref(self, factory):
@@ -150,36 +124,30 @@ class ReferencesTestCase(TestBase):
         o = factory()
         ref = weakref.ref(o, self.callback)
         del o
-        test_support.force_gc_collect()
         self.assertTrue(self.cbcalled == 1,
                      "callback did not properly set 'cbcalled'")
         self.assertTrue(ref() is None,
                      "ref2 should be dead after deleting object reference")
 
     def test_ref_reuse(self):
-        def runTest():
-            o = C()
-            ref1 = weakref.ref(o)
-            # create a proxy to make sure that there's an intervening creation
-            # between these two; it should make no difference
-            proxy = weakref.proxy(o)
-            ref2 = weakref.ref(o)
-            self.assertTrue(ref1 is ref2,
-                         "reference object w/out callback should be re-used")
+        o = C()
+        ref1 = weakref.ref(o)
+        # create a proxy to make sure that there's an intervening creation
+        # between these two; it should make no difference
+        proxy = weakref.proxy(o)
+        ref2 = weakref.ref(o)
+        self.assertTrue(ref1 is ref2,
+                     "reference object w/out callback should be re-used")
 
-            o = C()
-            proxy = weakref.proxy(o)
-            ref1 = weakref.ref(o)
-            ref2 = weakref.ref(o)
-            self.assertTrue(ref1 is ref2,
-                         "reference object w/out callback should be re-used")
-            self.assertTrue(weakref.getweakrefcount(o) == 2,
-                         "wrong weak ref count for object")
-            del proxy
-            return o, ref1
-
-        o, ref1 = runTest()
-        test_support.force_gc_collect()
+        o = C()
+        proxy = weakref.proxy(o)
+        ref1 = weakref.ref(o)
+        ref2 = weakref.ref(o)
+        self.assertTrue(ref1 is ref2,
+                     "reference object w/out callback should be re-used")
+        self.assertTrue(weakref.getweakrefcount(o) == 2,
+                     "wrong weak ref count for object")
+        del proxy
         self.assertTrue(weakref.getweakrefcount(o) == 1,
                      "wrong weak ref count for object after deleting proxy")
 
@@ -220,8 +188,6 @@ class ReferencesTestCase(TestBase):
             self.assertEqual(L3[5:], p3[5:])
             self.assertEqual(L3[:5], p3[:5])
             self.assertEqual(L3[2:5], p3[2:5])
-        if test_support.due_to_ironpython_incompatibility():
-            keepalive(L, L2, L3)
 
     def test_proxy_unicode(self):
         # See bug 5037
@@ -232,8 +198,6 @@ class ReferencesTestCase(TestBase):
                 return u"unicode"
         instance = C()
         self.assertIn("__unicode__", dir(weakref.proxy(instance)))
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         self.assertEqual(unicode(weakref.proxy(instance)), u"unicode")
 
     def test_proxy_index(self):
@@ -276,17 +240,14 @@ class ReferencesTestCase(TestBase):
         p2 = makeref(o, None)
         self.assertTrue(p1 is p2, "both callbacks were None in the C API")
         del p1, p2
-        test_support.force_gc_collect()
         p1 = makeref(o)
         p2 = makeref(o, None)
         self.assertTrue(p1 is p2, "callbacks were NULL, None in the C API")
         del p1, p2
-        test_support.force_gc_collect()
         p1 = makeref(o)
         p2 = makeref(o)
         self.assertTrue(p1 is p2, "both callbacks were NULL in the C API")
         del p1, p2
-        test_support.force_gc_collect()
         p1 = makeref(o, None)
         p2 = makeref(o)
         self.assertTrue(p1 is p2, "callbacks were None, NULL in the C API")
@@ -311,8 +272,6 @@ class ReferencesTestCase(TestBase):
 
         # expect due to too many args
         self.assertRaises(TypeError, ref1, 1, 2, 3)
-        if test_support.due_to_ironpython_incompatibility():
-            keepalive(o)
 
     def check_proxy(self, o, proxy):
         o.foo = 1
@@ -345,7 +304,6 @@ class ReferencesTestCase(TestBase):
         g = Foo()
         f = weakref.proxy(g)
         del f[0]
-        test_support.force_gc_collect()
         self.assertEqual(f.result, 0)
 
     def test_proxy_bool(self):
@@ -356,22 +314,17 @@ class ReferencesTestCase(TestBase):
 
     def test_getweakrefcount(self):
         o = C()
-        
-        def runTest():
-            ref1 = weakref.ref(o)
-            ref2 = weakref.ref(o, self.callback)
-            self.assertTrue(weakref.getweakrefcount(o) == 2,
-                         "got wrong number of weak reference objects")
+        ref1 = weakref.ref(o)
+        ref2 = weakref.ref(o, self.callback)
+        self.assertTrue(weakref.getweakrefcount(o) == 2,
+                     "got wrong number of weak reference objects")
 
-            proxy1 = weakref.proxy(o)
-            proxy2 = weakref.proxy(o, self.callback)
-            self.assertTrue(weakref.getweakrefcount(o) == 4,
-                         "got wrong number of weak reference objects")
+        proxy1 = weakref.proxy(o)
+        proxy2 = weakref.proxy(o, self.callback)
+        self.assertTrue(weakref.getweakrefcount(o) == 4,
+                     "got wrong number of weak reference objects")
 
-            del ref1, ref2, proxy1, proxy2
-
-        runTest()
-        test_support.force_gc_collect()
+        del ref1, ref2, proxy1, proxy2
         self.assertTrue(weakref.getweakrefcount(o) == 0,
                      "weak reference objects not unlinked from"
                      " referent when discarded.")
@@ -381,36 +334,21 @@ class ReferencesTestCase(TestBase):
                      "got wrong number of weak reference objects for int")
 
     def test_getweakrefs(self):
-        def runTest():
-            o = C()
-            ref1 = weakref.ref(o, self.callback)
-            ref2 = weakref.ref(o, self.callback)
-            del ref1
-            return o, ref2
-
-        o, ref2 = runTest()
-        test_support.force_gc_collect()
+        o = C()
+        ref1 = weakref.ref(o, self.callback)
+        ref2 = weakref.ref(o, self.callback)
+        del ref1
         self.assertTrue(weakref.getweakrefs(o) == [ref2],
                      "list of refs does not match")
 
-        def runTest():
-            def runInnerTest():
-                o = C()
-                ref1 = weakref.ref(o, self.callback)
-                ref2 = weakref.ref(o, self.callback)
-                del ref2
-                return o, ref1
+        o = C()
+        ref1 = weakref.ref(o, self.callback)
+        ref2 = weakref.ref(o, self.callback)
+        del ref2
+        self.assertTrue(weakref.getweakrefs(o) == [ref1],
+                     "list of refs does not match")
 
-            o, ref1 = runInnerTest()
-            test_support.force_gc_collect()
-            self.assertTrue(weakref.getweakrefs(o) == [ref1],
-                         "list of refs does not match")
-
-            del ref1
-            return o
-
-        o = runTest()
-        test_support.force_gc_collect()
+        del ref1
         self.assertTrue(weakref.getweakrefs(o) == [],
                      "list of refs not cleared")
 
@@ -425,8 +363,6 @@ class ReferencesTestCase(TestBase):
         p = weakref.proxy(f)
         self.assertTrue(p + 1.0 == 3.0)
         self.assertTrue(1.0 + p == 3.0)  # this used to SEGV
-        if test_support.due_to_ironpython_incompatibility():
-            keepalive(f)
 
     def test_callbacks_protected(self):
         # Callbacks protected from already-set exceptions?
@@ -436,12 +372,9 @@ class ReferencesTestCase(TestBase):
         data = {}
         def remove(k):
             del data[k]
-            test_support.force_gc_collect()
         def encapsulate():
             f = lambda : ()
             data[weakref.ref(f, remove)] = None
-            if test_support.due_to_ironpython_incompatibility():
-                keepalive(f)
             raise BogusError
         try:
             encapsulate()
@@ -475,11 +408,9 @@ class ReferencesTestCase(TestBase):
         c = C()
         wr = weakref.ref(c, lambda ignore: gc.collect())
         del c
-        test_support.force_gc_collect()
 
         # There endeth the first part.  It gets worse.
         del wr
-        test_support.force_gc_collect()
 
         c1 = C()
         c1.i = C()
@@ -488,7 +419,6 @@ class ReferencesTestCase(TestBase):
         c2 = C()
         c2.c1 = c1
         del c1  # still alive because c2 points to it
-        test_support.force_gc_collect()
 
         # Now when subtype_dealloc gets called on c2, it's not enough just
         # that c2 is immune from gc while the weakref callbacks associated
@@ -498,7 +428,6 @@ class ReferencesTestCase(TestBase):
         # torn down by a base class dealloc can also trigger double
         # deallocation of c2.
         del c2
-        test_support.force_gc_collect()
 
     def test_callback_in_cycle_1(self):
         import gc
@@ -633,35 +562,28 @@ class ReferencesTestCase(TestBase):
         # disables the callbacks, so the callbacks shouldn't get called
         # at all (and so nothing actually gets resurrected).
 
-        def runTest():
-            alist = []
-            class C(object):
-                def __init__(self, value):
-                    self.attribute = value
+        alist = []
+        class C(object):
+            def __init__(self, value):
+                self.attribute = value
 
-                def acallback(self, ignore):
-                    alist.append(self.c)
+            def acallback(self, ignore):
+                alist.append(self.c)
 
-            c1, c2 = C(1), C(2)
-            c1.c = c2
-            c2.c = c1
-            c1.wr = weakref.ref(c2, c1.acallback)
-            c2.wr = weakref.ref(c1, c2.acallback)
+        c1, c2 = C(1), C(2)
+        c1.c = c2
+        c2.c = c1
+        c1.wr = weakref.ref(c2, c1.acallback)
+        c2.wr = weakref.ref(c1, c2.acallback)
 
-            def C_went_away(ignore):
-                alist.append("C went away")
-            wr = weakref.ref(C, C_went_away)
+        def C_went_away(ignore):
+            alist.append("C went away")
+        wr = weakref.ref(C, C_went_away)
 
-            del c1, c2, C   # make them all trash
-            self.assertEqual(alist, [])  # del isn't enough to reclaim anything
+        del c1, c2, C   # make them all trash
+        self.assertEqual(alist, [])  # del isn't enough to reclaim anything
 
-            return alist, wr
-
-        alist, wr = runTest()
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=25221"):
-            gc.collect()
-        else:
-            return
+        gc.collect()
         # c1.wr and c2.wr were part of the cyclic trash, so should have
         # been cleared without their callbacks executing.  OTOH, the weakref
         # to C is bound to a function local (wr), and wasn't trash, so that
@@ -677,49 +599,39 @@ class ReferencesTestCase(TestBase):
     def test_callbacks_on_callback(self):
         import gc
 
-        def runTest():
-            # Set up weakref callbacks *on* weakref callbacks.
-            def runInnerTest():
-                global external_wr
-                alist = []
-                def safe_callback(ignore):
-                    alist.append("safe_callback called")
+        # Set up weakref callbacks *on* weakref callbacks.
+        alist = []
+        def safe_callback(ignore):
+            alist.append("safe_callback called")
 
-                class C(object):
-                    def cb(self, ignore):
-                        alist.append("cb called")
+        class C(object):
+            def cb(self, ignore):
+                alist.append("cb called")
 
-                c, d = C(), C()
-                c.other = d
-                d.other = c
-                callback = c.cb
-                c.wr = weakref.ref(d, callback)     # this won't trigger
-                d.wr = weakref.ref(callback, d.cb)  # ditto
-                external_wr = weakref.ref(callback, safe_callback)  # but this will
-                self.assertTrue(external_wr() is callback)
+        c, d = C(), C()
+        c.other = d
+        d.other = c
+        callback = c.cb
+        c.wr = weakref.ref(d, callback)     # this won't trigger
+        d.wr = weakref.ref(callback, d.cb)  # ditto
+        external_wr = weakref.ref(callback, safe_callback)  # but this will
+        self.assertTrue(external_wr() is callback)
 
-                # The weakrefs attached to c and d should get cleared, so that
-                # C.cb is never called.  But external_wr isn't part of the cyclic
-                # trash, and no cyclic trash is reachable from it, so safe_callback
-                # should get invoked when the bound method object callback (c.cb)
-                # -- which is itself a callback, and also part of the cyclic trash --
-                # gets reclaimed at the end of gc.
+        # The weakrefs attached to c and d should get cleared, so that
+        # C.cb is never called.  But external_wr isn't part of the cyclic
+        # trash, and no cyclic trash is reachable from it, so safe_callback
+        # should get invoked when the bound method object callback (c.cb)
+        # -- which is itself a callback, and also part of the cyclic trash --
+        # gets reclaimed at the end of gc.
 
-                del callback, c, d, C
-                self.assertEqual(alist, [])  # del isn't enough to clean up cycles
-                return alist
+        del callback, c, d, C
+        self.assertEqual(alist, [])  # del isn't enough to clean up cycles
+        gc.collect()
+        self.assertEqual(alist, ["safe_callback called"])
+        self.assertEqual(external_wr(), None)
 
-            alist = runInnerTest()
-            gc.collect()
-            self.assertEqual(alist, ["safe_callback called"])
-            self.assertEqual(external_wr(), None)
-
-            del alist[:]
-            gc.collect()
-
-            return alist
-
-        alist = runTest()
+        del alist[:]
+        gc.collect()
         self.assertEqual(alist, [])
 
     def test_gc_during_ref_creation(self):
@@ -749,8 +661,6 @@ class ReferencesTestCase(TestBase):
             # cyclic trash:
             a = A()
             weakref.ref(referenced, callback)
-            if test_support.due_to_ironpython_incompatibility():
-                keepalive(referenced)
 
         finally:
             gc.set_threshold(*thresholds)
@@ -771,8 +681,7 @@ class ReferencesTestCase(TestBase):
         # Issue 3634
         # <weakref to class>.__init__() doesn't check errors correctly
         r = weakref.ref(Exception)
-        if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            self.assertRaises(TypeError, r.__init__, 0, 0, 0, 0, 0)
+        self.assertRaises(TypeError, r.__init__, 0, 0, 0, 0, 0)
         # No exception should be raised here
         gc.collect()
 
@@ -790,8 +699,6 @@ class ReferencesTestCase(TestBase):
         gc.collect()
         self.assertEqual(a(), None)
         self.assertEqual(l, [a])
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         b = weakref.ref(B, l.append)
         B = None
         gc.collect()
@@ -802,8 +709,6 @@ class ReferencesTestCase(TestBase):
 class SubclassableWeakrefTestCase(TestBase):
 
     def test_subclass_refs(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         class MyRef(weakref.ref):
             def __init__(self, ob, callback=None, value=42):
                 self.value = value
@@ -821,8 +726,6 @@ class SubclassableWeakrefTestCase(TestBase):
         self.assertTrue(mr.called)
 
     def test_subclass_refs_dont_replace_standard_refs(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         class MyRef(weakref.ref):
             pass
         o = Object(42)
@@ -927,8 +830,6 @@ class MappingTestCase(TestBase):
                          "wrong number of weak references to %r!" % o)
             self.assertTrue(o is dict[o.arg],
                          "wrong object returned by weak dict!")
-        if test_support.due_to_ironpython_incompatibility():
-            del o
         items1 = dict.items()
         items2 = dict.copy().items()
         items1.sort()
@@ -936,61 +837,42 @@ class MappingTestCase(TestBase):
         self.assertTrue(items1 == items2,
                      "cloning of weak-valued dictionary did not work!")
         del items1, items2
-        test_support.force_gc_collect()
         self.assertTrue(len(dict) == self.COUNT)
         del objects[0]
-        if test_support.due_to_ironpython_incompatibility():
-            gc.collect()
-            del objects
-        else:
-            self.assertTrue(len(dict) == (self.COUNT - 1),
-                        "deleting object did not cause dictionary update")
-            del objects, o
-        test_support.force_gc_collect()
-        if not test_support.due_to_ironpython_incompatibility():
-            # we currently fail because of some garbage alive on the stack
-            self.assertTrue(len(dict) == 0,
-                         "deleting the values did not clear the dictionary")
-            # regression on SF bug #447152:
-            dict = weakref.WeakValueDictionary()
-            self.assertRaises(KeyError, dict.__getitem__, 1)
-            dict[2] = C()
-            self.assertRaises(KeyError, dict.__getitem__, 2)
+        self.assertTrue(len(dict) == (self.COUNT - 1),
+                     "deleting object did not cause dictionary update")
+        del objects, o
+        self.assertTrue(len(dict) == 0,
+                     "deleting the values did not clear the dictionary")
+        # regression on SF bug #447152:
+        dict = weakref.WeakValueDictionary()
+        self.assertRaises(KeyError, dict.__getitem__, 1)
+        dict[2] = C()
+        self.assertRaises(KeyError, dict.__getitem__, 2)
 
     def test_weak_keys(self):
         #
         #  This exercises d.copy(), d.items(), d[] = v, d[], del d[],
         #  len(d), in d.
         #
-        
-        def runTest():
-            dict, objects = self.make_weak_keyed_dict()
-            for o in objects:
-                self.assertTrue(weakref.getweakrefcount(o) == 1,
-                             "wrong number of weak references to %r!" % o)
-                self.assertTrue(o.arg is dict[o],
-                             "wrong object returned by weak dict!")
-            items1 = dict.items()
-            items2 = dict.copy().items()
-            del o
-            self.assertTrue(set(items1) == set(items2),
-                         "cloning of weak-keyed dictionary did not work!")
-            del items1, items2
-            self.assertTrue(len(dict) == self.COUNT)
-            del objects[0]
-            
-            return dict, objects
-
-        dict, objects = runTest()
-        test_support.force_gc_collect()
-
+        dict, objects = self.make_weak_keyed_dict()
+        for o in objects:
+            self.assertTrue(weakref.getweakrefcount(o) == 1,
+                         "wrong number of weak references to %r!" % o)
+            self.assertTrue(o.arg is dict[o],
+                         "wrong object returned by weak dict!")
+        items1 = dict.items()
+        items2 = dict.copy().items()
+        self.assertTrue(set(items1) == set(items2),
+                     "cloning of weak-keyed dictionary did not work!")
+        del items1, items2
+        self.assertTrue(len(dict) == self.COUNT)
+        del objects[0]
         self.assertTrue(len(dict) == (self.COUNT - 1),
                      "deleting object did not cause dictionary update")
-        del objects
-        if not test_support.due_to_ironpython_incompatibility():
-            # IronPython currently fails because of some garbage alive on the stack
-            self.assertTrue(len(dict) == 0,
-                         "deleting the keys did not clear the dictionary")
+        del objects, o
+        self.assertTrue(len(dict) == 0,
+                     "deleting the keys did not clear the dictionary")
         o = Object(42)
         dict[o] = "What is the meaning of the universe?"
         self.assertIn(o, dict)
@@ -1021,9 +903,6 @@ class MappingTestCase(TestBase):
             objects2.remove(ob)
         self.assertEqual(len(objects2), 0)
 
-        if test_support.due_to_ironpython_incompatibility():
-            keepalive(objects)
-
     def test_weak_valued_iters(self):
         dict, objects = self.make_weak_valued_dict()
         self.check_iters(dict)
@@ -1048,9 +927,6 @@ class MappingTestCase(TestBase):
             self.assertEqual(ob.arg, dict[ob.arg].arg)
             objects2.remove(ob)
         self.assertEqual(len(objects2), 0)
-
-        if test_support.due_to_ironpython_incompatibility():
-            keepalive(objects)
 
     def check_iters(self, dict):
         # item iterator:
@@ -1082,8 +958,6 @@ class MappingTestCase(TestBase):
         o = Object(3)
         dict = weakref.WeakKeyDictionary({o:364})
         self.assertTrue(dict[o] == 364)
-        if test_support.due_to_ironpython_incompatibility():
-            keepalive(o)
 
     def test_make_weak_keyed_dict_from_weak_keyed_dict(self):
         o = Object(3)
@@ -1263,9 +1137,7 @@ class MappingTestCase(TestBase):
         for o in objs:
             count += 1
             del d[o]
-        if not test_support.due_to_ironpython_incompatibility():
-            # we currently fail because of some garbage alive on the stack        
-            self.assertEqual(len(d), 0)
+        self.assertEqual(len(d), 0)
         self.assertEqual(count, 2)
 
 from test import mapping_tests
@@ -1377,8 +1249,7 @@ def test_main():
         WeakKeyDictionaryTestCase,
         SubclassableWeakrefTestCase,
         )
-    if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-        test_support.run_doctest(sys.modules[__name__])
+    test_support.run_doctest(sys.modules[__name__])
 
 
 if __name__ == "__main__":

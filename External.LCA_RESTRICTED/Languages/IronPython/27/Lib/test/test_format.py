@@ -1,5 +1,5 @@
 import sys
-from test.test_support import verbose, have_unicode, TestFailed, due_to_ironpython_bug
+from test.test_support import verbose, have_unicode, TestFailed
 import test.test_support as test_support
 import unittest
 
@@ -77,8 +77,7 @@ class FormatTest(unittest.TestCase):
         testboth("%#.*g", (110, -1.e+100/3.))
 
         # test some ridiculously large precision, expect overflow
-        if not due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            testboth('%12.*f', (123456, 1.0))
+        testboth('%12.*f', (123456, 1.0))
 
         # check for internal overflow validation on length of precision
         # these tests should no longer cause overflow in Python
@@ -233,8 +232,7 @@ class FormatTest(unittest.TestCase):
 
         # alternate float formatting
         testformat('%g', 1.1, '1.1')
-        if not due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            testformat('%#g', 1.1, '1.10000')
+        testformat('%#g', 1.1, '1.10000')
 
         # Test exception for unknown format characters
         if verbose:
@@ -274,14 +272,13 @@ class FormatTest(unittest.TestCase):
         test_exc(u'no format', u'1', TypeError,
                  "not all arguments converted during string formatting")
 
-        if not due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=148957"):
-            class Foobar(long):
-                def __oct__(self):
-                    # Returning a non-string should not blow up.
-                    return self + 1
+        class Foobar(long):
+            def __oct__(self):
+                # Returning a non-string should not blow up.
+                return self + 1
 
-            test_exc('%o', Foobar(), TypeError,
-                     "expected string or Unicode object, long found")
+        test_exc('%o', Foobar(), TypeError,
+                 "expected string or Unicode object, long found")
 
         if maxsize == 2**31-1:
             # crashes 2.2.1 and earlier:

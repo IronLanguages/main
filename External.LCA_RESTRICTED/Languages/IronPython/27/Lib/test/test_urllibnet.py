@@ -194,8 +194,7 @@ class urlretrieveNetworkTests(unittest.TestCase):
 
 
 def test_main():
-    if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=303467"): 
-        test_support.requires('network')
+    test_support.requires('network')
     with test_support.check_py3k_warnings(
             ("urllib.urlopen.. has been removed", DeprecationWarning)):
         test_support.run_unittest(URLTimeoutTest,

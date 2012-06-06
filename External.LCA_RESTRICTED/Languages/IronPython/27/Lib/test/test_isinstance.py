@@ -247,26 +247,14 @@ class TestIsInstanceIsSubclass(unittest.TestCase):
             self.assertEqual(True, issubclass(str, (unicode, (Child, NewChild, basestring))))
 
     def test_subclass_recursion_limit(self):
-        # IronPython's recursion limit is way higher
-        if test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317855"):
-            reclimit = sys.getrecursionlimit()
-            sys.setrecursionlimit(1000)
         # make sure that issubclass raises RuntimeError before the C stack is
         # blown
         self.assertRaises(RuntimeError, blowstack, issubclass, str, str)
-        if test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317855"):
-            sys.setrecursionlimit(reclimit)
 
     def test_isinstance_recursion_limit(self):
-        # IronPython's recursion limit is way higher
-        if test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317855"):
-            reclimit = sys.getrecursionlimit()
-            sys.setrecursionlimit(1000)
         # make sure that issubclass raises RuntimeError before the C stack is
         # blown
         self.assertRaises(RuntimeError, blowstack, isinstance, '', str)
-        if test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317855"):
-            sys.setrecursionlimit(reclimit)
 
 def blowstack(fxn, arg, compare_to):
     # Make sure that calling isinstance with a deeply nested tuple for its

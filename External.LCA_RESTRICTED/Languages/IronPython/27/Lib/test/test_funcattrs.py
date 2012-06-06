@@ -58,8 +58,6 @@ class FunctionPropertiesTest(FuncAttrsTest):
         def test(): pass
         self.assertEqual(test(), None)
         test.func_code = self.b.func_code
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=20553"):
-            return
         self.assertEqual(test(), 3) # self.b always returns 3, arbitrarily
 
     def test_func_globals(self):
@@ -74,10 +72,7 @@ class FunctionPropertiesTest(FuncAttrsTest):
         self.assertEqual(len(c), 1)
         # don't have a type object handy
         self.assertEqual(c[0].__class__.__name__, "cell")
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            self.cannot_set_attr(f, "func_closure", c, (TypeError, AttributeError))
-        else:
-            self.cannot_set_attr(f, "func_closure", c, TypeError)
+        self.cannot_set_attr(f, "func_closure", c, TypeError)
 
     def test_empty_cell(self):
         def f(): print a
@@ -99,9 +94,8 @@ class FunctionPropertiesTest(FuncAttrsTest):
         self.assertEqual(self.b.__name__, 'd')
         self.assertEqual(self.b.func_name, 'd')
         # __name__ and func_name must be a string
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            self.cannot_set_attr(self.b, '__name__', 7, TypeError)
-            self.cannot_set_attr(self.b, 'func_name', 7, TypeError)
+        self.cannot_set_attr(self.b, '__name__', 7, TypeError)
+        self.cannot_set_attr(self.b, 'func_name', 7, TypeError)
         # __name__ must be available when in restricted mode. Exec will raise
         # AttributeError if __name__ is not available on f.
         s = """def f(): pass\nf.__name__"""
@@ -113,8 +107,6 @@ class FunctionPropertiesTest(FuncAttrsTest):
         self.cannot_set_attr(self.fi.a, "__name__", 'a', AttributeError)
 
     def test_func_code(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=316518"):
-            return
         num_one, num_two = 7, 8
         def a(): pass
         def b(): return 12
@@ -176,33 +168,21 @@ class InstancemethodAttrTest(FuncAttrsTest):
     def test_im_class(self):
         self.assertEqual(self.f.a.im_class, self.f)
         self.assertEqual(self.fi.a.im_class, self.f)
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            self.cannot_set_attr(self.f.a, "im_class", self.f, AttributeError)
-            self.cannot_set_attr(self.fi.a, "im_class", self.f, AttributeError)
-        else:
-            self.cannot_set_attr(self.f.a, "im_class", self.f, TypeError)
-            self.cannot_set_attr(self.fi.a, "im_class", self.f, TypeError)
+        self.cannot_set_attr(self.f.a, "im_class", self.f, TypeError)
+        self.cannot_set_attr(self.fi.a, "im_class", self.f, TypeError)
 
     def test_im_func(self):
         self.f.b = self.b
         self.assertEqual(self.f.b.im_func, self.b)
         self.assertEqual(self.fi.b.im_func, self.b)
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            self.cannot_set_attr(self.f.b, "im_func", self.b, AttributeError)
-            self.cannot_set_attr(self.fi.b, "im_func", self.b, AttributeError)
-        else:
-            self.cannot_set_attr(self.f.b, "im_func", self.b, TypeError)
-            self.cannot_set_attr(self.fi.b, "im_func", self.b, TypeError)
+        self.cannot_set_attr(self.f.b, "im_func", self.b, TypeError)
+        self.cannot_set_attr(self.fi.b, "im_func", self.b, TypeError)
 
     def test_im_self(self):
         self.assertEqual(self.f.a.im_self, None)
         self.assertEqual(self.fi.a.im_self, self.fi)
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            self.cannot_set_attr(self.f.a, "im_self", None, AttributeError)
-            self.cannot_set_attr(self.fi.a, "im_self", self.fi, AttributeError)
-        else:
-            self.cannot_set_attr(self.f.a, "im_self", None, TypeError)
-            self.cannot_set_attr(self.fi.a, "im_self", self.fi, TypeError)
+        self.cannot_set_attr(self.f.a, "im_self", None, TypeError)
+        self.cannot_set_attr(self.fi.a, "im_self", self.fi, TypeError)
 
     def test_im_func_non_method(self):
         # Behavior should be the same when a method is added via an attr

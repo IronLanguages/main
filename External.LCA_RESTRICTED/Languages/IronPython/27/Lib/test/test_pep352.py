@@ -6,7 +6,6 @@ from test.test_support import run_unittest, check_warnings
 import os
 import sys
 from platform import system as platform_system
-from test import test_support
 
 DEPRECATION_WARNINGS = ["BaseException.message has been deprecated"]
 
@@ -105,8 +104,6 @@ class ExceptionClassTests(unittest.TestCase):
     @ignore_deprecation_warnings
     def test_interface_single_arg(self):
         # Make sure interface works properly when given a single argument
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=363657"):
-            return
         arg = "spam"
         exc = Exception(arg)
         results = ([len(exc.args), 1], [exc.args[0], arg], [exc.message, arg],
@@ -118,8 +115,6 @@ class ExceptionClassTests(unittest.TestCase):
     @ignore_deprecation_warnings
     def test_interface_multi_arg(self):
         # Make sure interface correct when multiple arguments given
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=363657"):
-            return
         arg_count = 3
         args = tuple(range(arg_count))
         exc = Exception(*args)
@@ -133,8 +128,6 @@ class ExceptionClassTests(unittest.TestCase):
     @ignore_deprecation_warnings
     def test_interface_no_arg(self):
         # Make sure that with no args that interface is correct
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=363657"):
-            return 
         exc = Exception()
         results = ([len(exc.args), 0], [exc.args, tuple()],
                    [exc.message, ''],
@@ -144,8 +137,6 @@ class ExceptionClassTests(unittest.TestCase):
 
 
     def test_message_deprecation(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         # As of Python 2.6, BaseException.message is deprecated.
         with check_warnings(("", DeprecationWarning)):
             BaseException().message
@@ -215,14 +206,10 @@ class UsageTests(unittest.TestCase):
         self.raise_fails(NewStyleClass())
 
     def test_raise_string(self):
-        if test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=147843"):
-            return
         # Raising a string raises TypeError.
         self.raise_fails("spam")
 
     def test_catch_string(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         # Catching a string should trigger a DeprecationWarning.
         with warnings.catch_warnings():
             warnings.resetwarnings()

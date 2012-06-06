@@ -54,7 +54,7 @@ class Test(unittest.TestCase):
         if self.root: # Only clean if the test was actually run
             cleanout(self.root)
 
-        # delete all modules concerning the tested hiearchy
+        # delete all modules concerning the tested hierarchy
         if self.pkgname:
             modules = [name for name in sys.modules
                        if self.pkgname in name.split('.')]
@@ -218,8 +218,6 @@ class Test(unittest.TestCase):
         self.assertEqual(fixdir(dir(t6)),
                          ['__all__', '__doc__', '__file__',
                           '__name__', '__package__', '__path__'])
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         s = """
             import t6
             from t6 import *

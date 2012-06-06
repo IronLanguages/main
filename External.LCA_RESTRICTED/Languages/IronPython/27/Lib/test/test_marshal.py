@@ -16,16 +16,8 @@ class IntTestCase(unittest.TestCase):
                 s = marshal.dumps(expected)
                 got = marshal.loads(s)
                 self.assertEqual(expected, got)
-                if not test_support.due_to_ironpython_incompatibility("file operation"):
-                    marshal.dump(expected, file(test_support.TESTFN, "wb"))
-                    got = marshal.load(file(test_support.TESTFN, "rb"))
-                else: 
-                    fl = file(test_support.TESTFN, "wb")
-                    marshal.dump(expected, fl)
-                    fl.close()
-                    fl = file(test_support.TESTFN, "rb")
-                    new = marshal.load(fl)
-                    fl.close()
+                marshal.dump(expected, file(test_support.TESTFN, "wb"))
+                got = marshal.load(file(test_support.TESTFN, "rb"))
                 self.assertEqual(expected, got)
             n = n >> 1
         os.unlink(test_support.TESTFN)
@@ -59,16 +51,8 @@ class IntTestCase(unittest.TestCase):
             new = marshal.loads(marshal.dumps(b))
             self.assertEqual(b, new)
             self.assertEqual(type(b), type(new))
-            if not test_support.due_to_ironpython_incompatibility("file operation"):
-                marshal.dump(b, file(test_support.TESTFN, "wb"))
-                new = marshal.load(file(test_support.TESTFN, "rb"))
-            else:
-                fl = file(test_support.TESTFN, "wb")
-                marshal.dump(b, fl)
-                fl.close()
-                fl = file(test_support.TESTFN, "rb")
-                new = marshal.load(fl)
-                fl.close()                
+            marshal.dump(b, file(test_support.TESTFN, "wb"))
+            new = marshal.load(file(test_support.TESTFN, "rb"))
             self.assertEqual(b, new)
             self.assertEqual(type(b), type(new))
 
@@ -83,16 +67,8 @@ class FloatTestCase(unittest.TestCase):
                 s = marshal.dumps(f)
                 got = marshal.loads(s)
                 self.assertEqual(f, got)
-                if not test_support.due_to_ironpython_incompatibility("file operation"):
-                    marshal.dump(f, file(test_support.TESTFN, "wb"))
-                    got = marshal.load(file(test_support.TESTFN, "rb"))
-                else: 
-                    fl = file(test_support.TESTFN, "wb")
-                    marshal.dump(f, fl)
-                    fl.close()
-                    fl = file(test_support.TESTFN, "rb")
-                    got = marshal.load(fl)
-                    fl.close()
+                marshal.dump(f, file(test_support.TESTFN, "wb"))
+                got = marshal.load(file(test_support.TESTFN, "rb"))
                 self.assertEqual(f, got)
             n /= 123.4567
 
@@ -118,28 +94,12 @@ class FloatTestCase(unittest.TestCase):
                 got = marshal.loads(s)
                 self.assertEqual(f, got)
 
-                if not test_support.due_to_ironpython_incompatibility("file operation"):
-                    marshal.dump(f, file(test_support.TESTFN, "wb"))
-                    got = marshal.load(file(test_support.TESTFN, "rb"))
-                else: 
-                    fl = file(test_support.TESTFN, "wb")
-                    marshal.dump(f, fl)
-                    fl.close()
-                    fl = file(test_support.TESTFN, "rb")
-                    got = marshal.load(fl)
-                    fl.close()
+                marshal.dump(f, file(test_support.TESTFN, "wb"))
+                got = marshal.load(file(test_support.TESTFN, "rb"))
                 self.assertEqual(f, got)
 
-                if not test_support.due_to_ironpython_incompatibility("file operation"):
-                    marshal.dump(f, file(test_support.TESTFN, "wb"), 1)
-                    got = marshal.load(file(test_support.TESTFN, "rb"))
-                else: 
-                    fl = file(test_support.TESTFN, "wb")
-                    marshal.dump(f, fl, 1)
-                    fl.close()
-                    fl = file(test_support.TESTFN, "rb")
-                    got = marshal.load(fl)
-                    fl.close()
+                marshal.dump(f, file(test_support.TESTFN, "wb"), 1)
+                got = marshal.load(file(test_support.TESTFN, "rb"))
                 self.assertEqual(f, got)
             n *= 123.4567
         os.unlink(test_support.TESTFN)
@@ -150,16 +110,8 @@ class StringTestCase(unittest.TestCase):
             new = marshal.loads(marshal.dumps(s))
             self.assertEqual(s, new)
             self.assertEqual(type(s), type(new))
-            if not test_support.due_to_ironpython_incompatibility("file operation"):
-                marshal.dump(s, file(test_support.TESTFN, "wb"))
-                new = marshal.load(file(test_support.TESTFN, "rb"))
-            else: 
-                fl = file(test_support.TESTFN, "wb")
-                marshal.dump(s, fl)
-                fl.close()
-                fl = file(test_support.TESTFN, "rb")
-                new = marshal.load(fl)
-                fl.close()
+            marshal.dump(s, file(test_support.TESTFN, "wb"))
+            new = marshal.load(file(test_support.TESTFN, "rb"))
             self.assertEqual(s, new)
             self.assertEqual(type(s), type(new))
         os.unlink(test_support.TESTFN)
@@ -169,16 +121,8 @@ class StringTestCase(unittest.TestCase):
             new = marshal.loads(marshal.dumps(s))
             self.assertEqual(s, new)
             self.assertEqual(type(s), type(new))
-            if not test_support.due_to_ironpython_incompatibility("file operation"):
-                marshal.dump(s, file(test_support.TESTFN, "wb"))
-                new = marshal.load(file(test_support.TESTFN, "rb"))
-            else: 
-                fl = file(test_support.TESTFN, "wb")
-                marshal.dump(s, fl)
-                fl.close()
-                fl = file(test_support.TESTFN, "rb")
-                new = marshal.load(fl)
-                fl.close()
+            marshal.dump(s, file(test_support.TESTFN, "wb"))
+            new = marshal.load(file(test_support.TESTFN, "rb"))
             self.assertEqual(s, new)
             self.assertEqual(type(s), type(new))
         os.unlink(test_support.TESTFN)
@@ -190,16 +134,8 @@ class StringTestCase(unittest.TestCase):
                 b = buffer(s)
             new = marshal.loads(marshal.dumps(b))
             self.assertEqual(s, new)
-            if not test_support.due_to_ironpython_incompatibility("file operation"):
-                marshal.dump(b, file(test_support.TESTFN, "wb"))
-                new = marshal.load(file(test_support.TESTFN, "rb"))
-            else: 
-                fl = file(test_support.TESTFN, "wb")
-                marshal.dump(b, fl)
-                fl.close()
-                fl = file(test_support.TESTFN, "rb")
-                new = marshal.load(fl)
-                fl.close()
+            marshal.dump(b, file(test_support.TESTFN, "wb"))
+            new = marshal.load(file(test_support.TESTFN, "rb"))
             self.assertEqual(s, new)
         os.unlink(test_support.TESTFN)
 
@@ -209,11 +145,10 @@ class ExceptionTestCase(unittest.TestCase):
         self.assertEqual(StopIteration, new)
 
 class CodeTestCase(unittest.TestCase):
-    if not test_support.due_to_ironpython_incompatibility("do we really want to fully support func_code?"):
-        def test_code(self):
-            co = ExceptionTestCase.test_exceptions.func_code
-            new = marshal.loads(marshal.dumps(co))
-            self.assertEqual(co, new)
+    def test_code(self):
+        co = ExceptionTestCase.test_exceptions.func_code
+        new = marshal.loads(marshal.dumps(co))
+        self.assertEqual(co, new)
 
 class ContainerTestCase(unittest.TestCase):
     d = {'astring': 'foo@bar.baz.spam',
@@ -228,16 +163,8 @@ class ContainerTestCase(unittest.TestCase):
     def test_dict(self):
         new = marshal.loads(marshal.dumps(self.d))
         self.assertEqual(self.d, new)
-        if not test_support.due_to_ironpython_incompatibility("file operation"):
-            marshal.dump(self.d, file(test_support.TESTFN, "wb"))
-            new = marshal.load(file(test_support.TESTFN, "rb"))
-        else: 
-            fl = file(test_support.TESTFN, "wb")
-            marshal.dump(self.d, fl)
-            fl.close()
-            fl = file(test_support.TESTFN, "rb")
-            marshal.load(fl)
-            fl.close()
+        marshal.dump(self.d, file(test_support.TESTFN, "wb"))
+        new = marshal.load(file(test_support.TESTFN, "rb"))
         self.assertEqual(self.d, new)
         os.unlink(test_support.TESTFN)
 
@@ -245,16 +172,8 @@ class ContainerTestCase(unittest.TestCase):
         lst = self.d.items()
         new = marshal.loads(marshal.dumps(lst))
         self.assertEqual(lst, new)
-        if not test_support.due_to_ironpython_incompatibility("file operation"):
-            marshal.dump(lst, file(test_support.TESTFN, "wb"))
-            new = marshal.load(file(test_support.TESTFN, "rb"))
-        else:
-            fl = file(test_support.TESTFN, "wb")
-            marshal.dump(lst, fl)
-            fl.close()
-            fl = file(test_support.TESTFN, "rb")
-            marshal.load(fl)
-            fl.close()
+        marshal.dump(lst, file(test_support.TESTFN, "wb"))
+        new = marshal.load(file(test_support.TESTFN, "rb"))
         self.assertEqual(lst, new)
         os.unlink(test_support.TESTFN)
 
@@ -262,39 +181,22 @@ class ContainerTestCase(unittest.TestCase):
         t = tuple(self.d.keys())
         new = marshal.loads(marshal.dumps(t))
         self.assertEqual(t, new)
-        if not test_support.due_to_ironpython_incompatibility("file operation"):
-            marshal.dump(t, file(test_support.TESTFN, "wb"))
-            new = marshal.load(file(test_support.TESTFN, "rb"))
-        else:
-            fl = file(test_support.TESTFN, "wb")
-            marshal.dump(t, fl)
-            fl.close()
-            fl = file(test_support.TESTFN, "rb")
-            marshal.load(fl)
-            fl.close()
+        marshal.dump(t, file(test_support.TESTFN, "wb"))
+        new = marshal.load(file(test_support.TESTFN, "rb"))
         self.assertEqual(t, new)
         os.unlink(test_support.TESTFN)
 
-    if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=149249"):
-        def test_sets(self):
-            for constructor in (set, frozenset):
-                t = constructor(self.d.keys())
-                new = marshal.loads(marshal.dumps(t))
-                self.assertEqual(t, new)
-                self.assertTrue(isinstance(new, constructor))
-                self.assertNotEqual(id(t), id(new))
-                if not test_support.due_to_ironpython_incompatibility("file operation"):
-                    marshal.dump(t, file(test_support.TESTFN, "wb"))
-                    new = marshal.load(file(test_support.TESTFN, "rb"))
-                else: 
-                    fl = file(test_support.TESTFN, "wb")
-                    marshal.dump(t, fl)
-                    fl.close()
-                    fl = file(test_support.TESTFN, "rb")
-                    marshal.load(fl)
-                    fl.close()
-                self.assertEqual(t, new)
-                os.unlink(test_support.TESTFN)
+    def test_sets(self):
+        for constructor in (set, frozenset):
+            t = constructor(self.d.keys())
+            new = marshal.loads(marshal.dumps(t))
+            self.assertEqual(t, new)
+            self.assertTrue(isinstance(new, constructor))
+            self.assertNotEqual(id(t), id(new))
+            marshal.dump(t, file(test_support.TESTFN, "wb"))
+            new = marshal.load(file(test_support.TESTFN, "rb"))
+            self.assertEqual(t, new)
+            os.unlink(test_support.TESTFN)
 
 class BugsTestCase(unittest.TestCase):
     def test_bug_5888452(self):
@@ -308,8 +210,8 @@ class BugsTestCase(unittest.TestCase):
 
     def test_version_argument(self):
         # Python 2.4.0 crashes for any call to marshal.dumps(x, y)
-        self.assertEquals(marshal.loads(marshal.dumps(5, 0)), 5)
-        self.assertEquals(marshal.loads(marshal.dumps(5, 1)), 5)
+        self.assertEqual(marshal.loads(marshal.dumps(5, 0)), 5)
+        self.assertEqual(marshal.loads(marshal.dumps(5, 1)), 5)
 
     def test_fuzz(self):
         # simple test that it's at least not *totally* trivial to
@@ -342,8 +244,7 @@ class BugsTestCase(unittest.TestCase):
         self.assertEqual(len(new_head[-1]), len(head[-1]))
 
         last.append([0])
-        if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/21116"):
-            self.assertRaises(ValueError, marshal.dumps, head)
+        self.assertRaises(ValueError, marshal.dumps, head)
 
     def test_exact_type_match(self):
         # Former bug:
@@ -351,7 +252,7 @@ class BugsTestCase(unittest.TestCase):
         #   >>> type(loads(dumps(Int())))
         #   <type 'int'>
         for typ in (int, long, float, complex, tuple, list, dict, set, frozenset):
-            # Note: str and unicode sublclasses are not tested because they get handled
+            # Note: str and unicode subclasses are not tested because they get handled
             # by marshal's routines for objects supporting the buffer API.
             subtyp = type('subtyp', (typ,), {})
             self.assertRaises(ValueError, marshal.dumps, subtyp())
@@ -363,7 +264,6 @@ class BugsTestCase(unittest.TestCase):
         testString = 'abc' * size
         marshal.dumps(testString)
 
-    @unittest.skipIf(test_support.is_cli, "http://ironpython.codeplex.com/workitem/28171")
     def test_invalid_longs(self):
         # Issue #7019: marshal.loads shouldn't produce unnormalized PyLongs
         invalid_string = 'l\x02\x00\x00\x00\x00\x00\x00\x00'

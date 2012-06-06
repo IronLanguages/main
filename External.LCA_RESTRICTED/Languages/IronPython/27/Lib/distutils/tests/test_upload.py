@@ -1,14 +1,13 @@
-"""Tests for distutils.command.upload."""
 # -*- encoding: utf8 -*-
-import sys
+"""Tests for distutils.command.upload."""
 import os
 import unittest
+from test.test_support import run_unittest
 
 from distutils.command import upload as upload_mod
 from distutils.command.upload import upload
 from distutils.core import Distribution
 
-from distutils.tests import support
 from distutils.tests.test_config import PYPIRC, PyPIRCCommandTestCase
 
 PYPIRC_LONG_PASSWORD = """\
@@ -80,7 +79,7 @@ class uploadTestCase(PyPIRCCommandTestCase):
         for attr, waited in (('username', 'me'), ('password', 'secret'),
                              ('realm', 'pypi'),
                              ('repository', 'http://pypi.python.org/pypi')):
-            self.assertEquals(getattr(cmd, attr), waited)
+            self.assertEqual(getattr(cmd, attr), waited)
 
     def test_saved_password(self):
         # file with no password
@@ -90,14 +89,14 @@ class uploadTestCase(PyPIRCCommandTestCase):
         dist = Distribution()
         cmd = upload(dist)
         cmd.finalize_options()
-        self.assertEquals(cmd.password, None)
+        self.assertEqual(cmd.password, None)
 
         # make sure we get it as well, if another command
         # initialized it at the dist level
         dist.password = 'xxx'
         cmd = upload(dist)
         cmd.finalize_options()
-        self.assertEquals(cmd.password, 'xxx')
+        self.assertEqual(cmd.password, 'xxx')
 
     def test_upload(self):
         tmp = self.mkdtemp()
@@ -116,11 +115,11 @@ class uploadTestCase(PyPIRCCommandTestCase):
         # what did we send ?
         self.assertIn('dédé', self.last_open.req.data)
         headers = dict(self.last_open.req.headers)
-        self.assertEquals(headers['Content-length'], '2085')
+        self.assertEqual(headers['Content-length'], '2085')
         self.assertTrue(headers['Content-type'].startswith('multipart/form-data'))
-        self.assertEquals(self.last_open.req.get_method(), 'POST')
-        self.assertEquals(self.last_open.req.get_full_url(),
-                          'http://pypi.python.org/pypi')
+        self.assertEqual(self.last_open.req.get_method(), 'POST')
+        self.assertEqual(self.last_open.req.get_full_url(),
+                         'http://pypi.python.org/pypi')
         self.assertTrue('xxx' in self.last_open.req.data)
         auth = self.last_open.req.headers['Authorization']
         self.assertFalse('\n' in auth)
@@ -129,4 +128,4 @@ def test_suite():
     return unittest.makeSuite(uploadTestCase)
 
 if __name__ == "__main__":
-    unittest.main(defaultTest="test_suite")
+    run_unittest(test_suite())

@@ -1,6 +1,6 @@
 #
 # XML-RPC CLIENT LIBRARY
-# $Id: xmlrpclib.py 74543 2009-08-24 11:39:31Z kristjan.jonsson $
+# $Id$
 #
 # an XML-RPC client interface for Python.
 #
@@ -1263,7 +1263,7 @@ class Transport:
             try:
                 return self.single_request(host, handler, request_body, verbose)
             except socket.error, e:
-                if i or e.errno not in (errno.ECONNRESET, errno.ECONNABORTED):
+                if i or e.errno not in (errno.ECONNRESET, errno.ECONNABORTED, errno.EPIPE):
                     raise
             except httplib.BadStatusLine: #close after we sent request
                 if i:
@@ -1446,8 +1446,13 @@ class Transport:
 
     def parse_response(self, response):
         # read response data from httpresponse, and parse it
-        if response.getheader("Content-Encoding", "") == "gzip":
-            stream = GzipDecodedResponse(response)
+
+        # Check for new http response object, else it is a file object
+        if hasattr(response,'getheader'):
+            if response.getheader("Content-Encoding", "") == "gzip":
+                stream = GzipDecodedResponse(response)
+            else:
+                stream = response
         else:
             stream = response
 

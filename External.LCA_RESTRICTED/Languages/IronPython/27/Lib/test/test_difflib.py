@@ -1,11 +1,50 @@
 import difflib
-from test.test_support import run_unittest, findfile, due_to_ironpython_bug
+from test.test_support import run_unittest, findfile
 import unittest
 import doctest
 import sys
 
-class TestSFbugs(unittest.TestCase):
 
+class TestWithAscii(unittest.TestCase):
+    def test_one_insert(self):
+        sm = difflib.SequenceMatcher(None, 'b' * 100, 'a' + 'b' * 100)
+        self.assertAlmostEqual(sm.ratio(), 0.995, places=3)
+        self.assertEqual(list(sm.get_opcodes()),
+            [   ('insert', 0, 0, 0, 1),
+                ('equal', 0, 100, 1, 101)])
+        sm = difflib.SequenceMatcher(None, 'b' * 100, 'b' * 50 + 'a' + 'b' * 50)
+        self.assertAlmostEqual(sm.ratio(), 0.995, places=3)
+        self.assertEqual(list(sm.get_opcodes()),
+            [   ('equal', 0, 50, 0, 50),
+                ('insert', 50, 50, 50, 51),
+                ('equal', 50, 100, 51, 101)])
+
+    def test_one_delete(self):
+        sm = difflib.SequenceMatcher(None, 'a' * 40 + 'c' + 'b' * 40, 'a' * 40 + 'b' * 40)
+        self.assertAlmostEqual(sm.ratio(), 0.994, places=3)
+        self.assertEqual(list(sm.get_opcodes()),
+            [   ('equal', 0, 40, 0, 40),
+                ('delete', 40, 41, 40, 40),
+                ('equal', 41, 81, 40, 80)])
+
+
+class TestAutojunk(unittest.TestCase):
+    """Tests for the autojunk parameter added in 2.7"""
+    def test_one_insert_homogenous_sequence(self):
+        # By default autojunk=True and the heuristic kicks in for a sequence
+        # of length 200+
+        seq1 = 'b' * 200
+        seq2 = 'a' + 'b' * 200
+
+        sm = difflib.SequenceMatcher(None, seq1, seq2)
+        self.assertAlmostEqual(sm.ratio(), 0, places=3)
+
+        # Now turn the heuristic off
+        sm = difflib.SequenceMatcher(None, seq1, seq2, autojunk=False)
+        self.assertAlmostEqual(sm.ratio(), 0.9975, places=3)
+
+
+class TestSFbugs(unittest.TestCase):
     def test_ratio_for_null_seqn(self):
         # Check clearing of SF bug 763023
         s = difflib.SequenceMatcher(None, [], [])
@@ -153,8 +192,6 @@ class TestSFpatches(unittest.TestCase):
 
     def test_recursion_limit(self):
         # Check if the problem described in patch #1413711 exists.
-        if due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317855"):
-            return
         limit = sys.getrecursionlimit()
         old = [(i%2 and "K:%d" or "V:A:%d") % i for i in range(limit*2)]
         new = [(i%2 and "K:%d" or "V:B:%d") % i for i in range(limit*2)]
@@ -182,11 +219,54 @@ class TestOutputFormat(unittest.TestCase):
         cd = difflib.context_diff(*args, lineterm='')
         self.assertEqual(list(cd)[0:2], ["*** Original", "--- Current"])
 
+    def test_range_format_unified(self):
+        # Per the diff spec at http://www.unix.org/single_unix_specification/
+        spec = '''\
+           Each <range> field shall be of the form:
+             %1d", <beginning line number>  if the range contains exactly one line,
+           and:
+            "%1d,%1d", <beginning line number>, <number of lines> otherwise.
+           If a range is empty, its beginning line number shall be the number of
+           the line just before the range, or 0 if the empty range starts the file.
+        '''
+        fmt = difflib._format_range_unified
+        self.assertEqual(fmt(3,3), '3,0')
+        self.assertEqual(fmt(3,4), '4')
+        self.assertEqual(fmt(3,5), '4,2')
+        self.assertEqual(fmt(3,6), '4,3')
+        self.assertEqual(fmt(0,0), '0,0')
+
+    def test_range_format_context(self):
+        # Per the diff spec at http://www.unix.org/single_unix_specification/
+        spec = '''\
+           The range of lines in file1 shall be written in the following format
+           if the range contains two or more lines:
+               "*** %d,%d ****\n", <beginning line number>, <ending line number>
+           and the following format otherwise:
+               "*** %d ****\n", <ending line number>
+           The ending line number of an empty range shall be the number of the preceding line,
+           or 0 if the range is at the start of the file.
+
+           Next, the range of lines in file2 shall be written in the following format
+           if the range contains two or more lines:
+               "--- %d,%d ----\n", <beginning line number>, <ending line number>
+           and the following format otherwise:
+               "--- %d ----\n", <ending line number>
+        '''
+        fmt = difflib._format_range_context
+        self.assertEqual(fmt(3,3), '3')
+        self.assertEqual(fmt(3,4), '4')
+        self.assertEqual(fmt(3,5), '4,5')
+        self.assertEqual(fmt(3,6), '4,6')
+        self.assertEqual(fmt(0,0), '0')
+
 
 def test_main():
     difflib.HtmlDiff._default_prefix = 0
     Doctests = doctest.DocTestSuite(difflib)
-    run_unittest(TestSFpatches, TestSFbugs, TestOutputFormat, Doctests)
+    run_unittest(
+        TestWithAscii, TestAutojunk, TestSFpatches, TestSFbugs,
+        TestOutputFormat, Doctests)
 
 if __name__ == '__main__':
     test_main()

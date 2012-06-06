@@ -133,8 +133,7 @@ class TestBufferStringIO(TestStringIO):
     constructor = buffer
 
 class TestBuffercStringIO(TestcStringIO):
-    if test_support.due_to_ironpython_bug("CodePlex 23702"):
-        constructor = str       
+    constructor = buffer
 
 
 def test_main():

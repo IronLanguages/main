@@ -47,8 +47,6 @@ class TestGenericUnivNewlines(unittest.TestCase):
         data = self.DATA
         if "b" in self.WRITEMODE:
             data = data.encode("ascii")
-            if support.due_to_ironpython_incompatibility("unicode/str/bytes"):
-                data = bytes(data)
         with self.open(support.TESTFN, self.WRITEMODE) as fp:
             fp.write(data)
 
@@ -124,11 +122,9 @@ def test_main():
     # Test the C and Python implementations.
     for test in base_tests:
         class CTest(test):
-            #maxDiff = None
             open = io.open
         CTest.__name__ = str("C" + test.__name__)
         class PyTest(test):
-            #maxDiff = None
             open = staticmethod(pyio.open)
         PyTest.__name__ = str("Py" + test.__name__)
         tests.append(CTest)

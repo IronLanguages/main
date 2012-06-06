@@ -21,8 +21,6 @@ class BinASCIITest(unittest.TestCase):
     # Be slow so we don't depend on other modules
     rawdata += "".join(map(chr, xrange(256)))
     rawdata += "\r\nHello world.\n"
-    if test_support.due_to_ironpython_incompatibility("bytes/str/unicode"):
-        rawdata = bytes(rawdata)
 
     def setUp(self):
         self.data = self.type2test(self.rawdata)
@@ -40,17 +38,12 @@ class BinASCIITest(unittest.TestCase):
 
     def test_returned_value(self):
         # Limit to the minimum of all limits (b2a_uu)
-        if self.type2test is not str and test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         MAX_ALL = 45
         raw = self.rawdata[:MAX_ALL]
         for fa, fb in zip(a2b_functions, b2a_functions):
             a2b = getattr(binascii, fa)
             b2a = getattr(binascii, fb)
             try:
-                if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-                    if 'hqx' in fa or 'qp' in fa:
-                        continue
                 a = b2a(self.type2test(raw))
                 res = a2b(self.type2test(a))
             except Exception, err:
@@ -63,16 +56,11 @@ class BinASCIITest(unittest.TestCase):
             self.assertIsInstance(res, str)
             self.assertIsInstance(a, str)
             self.assertLess(max(ord(c) for c in a), 128)
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            raw = str(raw)
-        else:
-            self.assertIsInstance(binascii.crc_hqx(raw, 0), int)
+        self.assertIsInstance(binascii.crc_hqx(raw, 0), int)
         self.assertIsInstance(binascii.crc32(raw), int)
 
     def test_base64valid(self):
         # Test base64 with valid data
-        if self.type2test is not str and test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         MAX_BASE64 = 57
         lines = []
         for i in range(0, len(self.rawdata), MAX_BASE64):
@@ -89,8 +77,6 @@ class BinASCIITest(unittest.TestCase):
     def test_base64invalid(self):
         # Test base64 with random invalid characters sprinkled throughout
         # (This requires a new version of binascii.)
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         MAX_BASE64 = 57
         lines = []
         for i in range(0, len(self.data), MAX_BASE64):
@@ -127,8 +113,6 @@ class BinASCIITest(unittest.TestCase):
         self.assertEqual(binascii.a2b_base64(self.type2test(fillers)), '')
 
     def test_uu(self):
-        if self.type2test is not str and test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         MAX_UU = 45
         lines = []
         for i in range(0, len(self.data), MAX_UU):
@@ -154,8 +138,6 @@ class BinASCIITest(unittest.TestCase):
         self.assertEqual(binascii.b2a_uu('x'), '!>   \n')
 
     def test_crc32(self):
-        if self.type2test is not str and test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         crc = binascii.crc32(self.type2test("Test the CRC-32 of"))
         crc = binascii.crc32(self.type2test(" this string."), crc)
         self.assertEqual(crc, 1571220330)
@@ -165,8 +147,6 @@ class BinASCIITest(unittest.TestCase):
     def test_hqx(self):
         # Perform binhex4 style RLE-compression
         # Then calculate the hexbin4 binary-to-ASCII translation
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
         rle = binascii.rlecode_hqx(self.data)
         a = binascii.b2a_hqx(self.type2test(rle))
         b, _ = binascii.a2b_hqx(self.type2test(a))
@@ -175,8 +155,6 @@ class BinASCIITest(unittest.TestCase):
         self.assertEqual(res, self.rawdata)
 
     def test_hex(self):
-        if  test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=307374"):
-            return
         # test hexlification
         s = '{s\005\000\000\000worldi\002\000\000\000s\005\000\000\000helloi\001\000\000\0000'
         t = binascii.b2a_hex(self.type2test(s))
@@ -190,8 +168,6 @@ class BinASCIITest(unittest.TestCase):
             self.assertEqual(binascii.hexlify(unicode('a', 'ascii')), '61')
 
     def test_qp(self):
-        if  test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317834"):
-            return
         # A test for SF bug 534347 (segfaults without the proper fix)
         try:
             binascii.a2b_qp("", **{1:1})
@@ -223,8 +199,6 @@ class BinASCIITest(unittest.TestCase):
         self.assertEqual(binascii.b2a_qp('a.\n'), 'a.\n')
 
     def test_empty_string(self):
-        if  test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=317834"):
-            return
         # A test for SF bug #1022953.  Make sure SystemError is not raised.
         empty = self.type2test('')
         for func in all_functions:
@@ -249,15 +223,14 @@ class BytearrayBinASCIITest(BinASCIITest):
 
 
 class MemoryviewBinASCIITest(BinASCIITest):
-    if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28311"):
-        type2test = memoryview
+    type2test = memoryview
 
 
 def test_main():
-    tests = (BinASCIITest, ArrayBinASCIITest, BytearrayBinASCIITest)
-    if not test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28311"):
-        tests += (MemoryviewBinASCIITest,)
-    test_support.run_unittest(*tests)
+    test_support.run_unittest(BinASCIITest,
+                              ArrayBinASCIITest,
+                              BytearrayBinASCIITest,
+                              MemoryviewBinASCIITest)
 
 if __name__ == "__main__":
     test_main()

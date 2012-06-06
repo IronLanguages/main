@@ -64,7 +64,7 @@ class Test(unittest.TestCase):
         del a; gc.collect(); gc.collect(); gc.collect()
         self.assertEqual(x[:], range(16))
 
-        x = (c_char * 16).from_buffer_copy(b"a" * 16)
+        x = (c_char * 16).from_buffer_copy("a" * 16)
         self.assertEqual(x[:], "a" * 16)
 
     def test_fom_buffer_copy_with_offset(self):

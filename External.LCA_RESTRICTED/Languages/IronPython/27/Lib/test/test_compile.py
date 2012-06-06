@@ -1,14 +1,8 @@
 import unittest
 import sys
+import _ast
 from test import test_support
 import textwrap
-
-if not test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21088"):
-    import _ast
-
-if test_support.is_cli64:
-    test_support.due_to_ironpython_bug("Dev10 bug 409568")
-    sys.exit(0)
 
 class TestSpecifics(unittest.TestCase):
 
@@ -27,9 +21,7 @@ class TestSpecifics(unittest.TestCase):
 
     def test_debug_assignment(self):
         # catch assignments to __debug__
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314864"):
-            self.assertRaises(SyntaxError, compile, '__debug__ = 1', '?', 'single')
-    
+        self.assertRaises(SyntaxError, compile, '__debug__ = 1', '?', 'single')
         import __builtin__
         prev = __builtin__.__debug__
         setattr(__builtin__, '__debug__', 'sure')
@@ -127,11 +119,6 @@ class TestSpecifics(unittest.TestCase):
         self.assertEqual(d['z'], 12)
 
     def test_extended_arg(self):
-        if 'debug' in sys.version.lower() and test_support.due_to_ironpython_incompatibility("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=320062"):
-            # this test fails on debug builds of IronPython because
-            # we use too much stack space but passes on release builds
-            return
-
         longexpr = 'x = x or ' + '-x' * 2500
         code = '''
 def f(x):
@@ -207,10 +194,8 @@ if 1:
     def test_leading_newlines(self):
         s256 = "".join(["\n"] * 256 + ["spam"])
         co = compile(s256, 'fn', 'exec')
-        if not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314895"):
-            self.assertEqual(co.co_firstlineno, 257)
-        if  not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314898"):
-            self.assertEqual(co.co_lnotab, '')
+        self.assertEqual(co.co_firstlineno, 257)
+        self.assertEqual(co.co_lnotab, '')
 
     def test_literals_with_leading_zeroes(self):
         for arg in ["077787", "0xj", "0x.", "0e",  "090000000000000",
@@ -267,7 +252,7 @@ if 1:
             self.assertEqual(eval("-" + all_one_bits), -18446744073709551615L)
         else:
             self.fail("How many bits *does* this machine have???")
-        # Verify treatment of contant folding on -(sys.maxint+1)
+        # Verify treatment of constant folding on -(sys.maxint+1)
         # i.e. -2147483648 on 32 bit platforms.  Should return int, not long.
         self.assertIsInstance(eval("%s" % (-sys.maxint - 1)), int)
         self.assertIsInstance(eval("%s" % (-sys.maxint - 2)), long)
@@ -310,11 +295,8 @@ if 1:
         ]
         for stmt in stmts:
             stmt += "\n"
-            if  not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314864"):
-                self.assertRaises(SyntaxError, compile, stmt, 'tmp', 'single')
-                self.assertRaises(SyntaxError, compile, stmt, 'tmp', 'exec')
-        if test_support.due_to_ironpython_bug("http://ironpython.codeplex.com/workitem/28171"):
-            return
+            self.assertRaises(SyntaxError, compile, stmt, 'tmp', 'single')
+            self.assertRaises(SyntaxError, compile, stmt, 'tmp', 'exec')
         # This is ok.
         compile("from None import x", "tmp", "exec")
         compile("from x import None as y", "tmp", "exec")
@@ -382,8 +364,7 @@ if 1:
 
     def test_unicode_encoding(self):
         code = u"# -*- coding: utf-8 -*-\npass\n"
-        if  not test_support.due_to_ironpython_bug("http://tkbgitvstfat01:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=314864"):
-            self.assertRaises(SyntaxError, compile, code, "tmp", "exec")
+        self.assertRaises(SyntaxError, compile, code, "tmp", "exec")
 
     def test_subscripts(self):
         # SF bug 1448804
@@ -465,16 +446,12 @@ if 1:
                 import __mangled_mod
                 import __package__.module
 
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116"):
-            return
         self.assertIn("_A__mangled", A.f.func_code.co_varnames)
         self.assertIn("__not_mangled__", A.f.func_code.co_varnames)
         self.assertIn("_A__mangled_mod", A.f.func_code.co_varnames)
         self.assertIn("__package__", A.f.func_code.co_varnames)
 
     def test_compile_ast(self):
-        if test_support.due_to_ironpython_bug("http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21088"):
-            return
         fname = __file__
         if fname.lower().endswith(('pyc', 'pyo')):
             fname = fname[:-1]
