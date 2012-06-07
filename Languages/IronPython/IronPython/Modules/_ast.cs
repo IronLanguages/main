@@ -32,6 +32,7 @@ using Microsoft.Scripting.Utils;
 using PyOperator = IronPython.Compiler.PythonOperator;
 using PythonList = IronPython.Runtime.List;
 using System.Runtime.InteropServices;
+using AstExpression = IronPython.Compiler.Ast.Expression;
 
 #if FEATURE_NUMERICS
 using System.Numerics;
@@ -64,6 +65,571 @@ namespace IronPython.Modules
             }
         }
 
+        // Someone with more internal knowledge of IronPthon must review all ConvertToPythonAst
+
+        internal static PythonAst ConvertToPythonAst(CodeContext codeContext, Interactive interactive) {
+            Statement stmt = RevertStmts(interactive.body);
+            int[] lineNo = {};
+            PythonContext pythonContext = codeContext.LanguageContext;
+            PythonCompilerOptions options = new PythonCompilerOptions(ModuleOptions.ExecOrEvalCode);
+            SourceUnit unit = new SourceUnit(pythonContext, NullTextContentProvider.Null, "", SourceCodeKind.AutoDetect);
+            CompilerContext compilerContext = new CompilerContext(unit, options, ErrorSink.Default);
+            PythonAst ast = new PythonAst(stmt, false, ModuleOptions.ExecOrEvalCode, false, compilerContext, lineNo);
+            return ast;
+        }
+
+        internal static PythonAst ConvertToPythonAst(CodeContext codeContext, Expression exp) {
+            Statement returnStatement = new ReturnStatement(Revert(exp.body));
+            int[] lineNo = {};
+            PythonContext pythonContext = codeContext.LanguageContext;
+            PythonCompilerOptions options = new PythonCompilerOptions(ModuleOptions.ExecOrEvalCode);
+            SourceUnit unit = new SourceUnit(pythonContext, NullTextContentProvider.Null, "", SourceCodeKind.AutoDetect);
+            CompilerContext compilerContext = new CompilerContext(unit, options, ErrorSink.Default);
+            PythonAst ast = new PythonAst(returnStatement, false, ModuleOptions.ExecOrEvalCode, false, compilerContext, lineNo);
+            return ast;
+        }
+
+        internal static PythonAst ConvertToPythonAst(CodeContext codeContext, Module mod) {
+            Statement stmt = RevertStmts(mod.body);
+            int[] lineNo = {};
+            PythonContext pythonContext = codeContext.LanguageContext;
+            PythonCompilerOptions options = new PythonCompilerOptions(ModuleOptions.ExecOrEvalCode);
+            SourceUnit unit = new SourceUnit(pythonContext, NullTextContentProvider.Null, "", SourceCodeKind.AutoDetect);
+            CompilerContext compilerContext = new CompilerContext(unit, options, ErrorSink.Default);
+            PythonAst ast = new PythonAst(stmt, false, ModuleOptions.ExecOrEvalCode, false, compilerContext, lineNo);
+            return ast;
+        }
+
+        static Statement[] Revert(Module mod) {
+            List<Statement> statements = new List<Statement>(mod.body.Count);
+            foreach (stmt statement in mod.body)
+                statements.Add(Revert(statement));
+            return statements.ToArray();
+        }
+
+        static Statement Revert(stmt statement)  {
+            if (statement is Pass)
+                return new EmptyStatement();
+            if (statement is Break)
+                return new BreakStatement();
+            if (statement is Continue)
+                return new ContinueStatement();
+            if (statement is Print)
+                return Revert((Print)statement);
+            if (statement is Assign) 
+                return Revert((Assign)statement);
+            if (statement is AugAssign)
+                return Revert((AugAssign)statement);
+            if (statement is Assert)
+                return Revert((Assert)statement);
+            if (statement is Delete)
+                return Revert((Delete)statement);
+            if (statement is FunctionDef)
+                return Revert((FunctionDef)statement);
+            if (statement is Return)
+                return Revert((Return)statement);
+            if (statement is Expr)
+                return Revert((Expr)statement);
+            if (statement is Raise)
+                return Revert((Raise)statement);
+            if (statement is While)
+                return Revert((While)statement);
+            if (statement is Import)
+                return Revert((Import)statement);
+            if (statement is ImportFrom)
+                return Revert((ImportFrom)statement);
+            if (statement is Global)
+                return Revert((Global)statement);
+            if (statement is Exec)
+                return Revert((Exec)statement);
+            if (statement is If)
+                return Revert((If)statement);
+            if (statement is For)
+                return Revert((For)statement);
+            if (statement is TryExcept)
+                return Revert((TryExcept)statement);
+
+            throw new ArgumentTypeException("Unexpected statement type: " + statement.GetType());
+        }
+
+        static TryStatement Revert(TryExcept te) {
+            TryStatementHandler[] tshs = new TryStatementHandler[te.handlers.Count];
+            for (int i = 0; i < te.handlers.Count; i++) {
+                tshs[i] = Revert((ExceptHandler)te.handlers[i]);
+            }
+            return new TryStatement(RevertStmts(te.body),tshs, RevertStmts(te.orelse), null); // TODO: find out more about finally - TryFinally
+        }
+
+        static TryStatementHandler Revert(ExceptHandler eh) {
+            return new TryStatementHandler(Revert(eh.type),Revert(eh.name),RevertStmts(eh.body));        
+        }
+
+        static ForStatement Revert(For f) {
+            return new ForStatement(Revert(f.target), Revert(f.iter), RevertStmts(f.body), RevertStmts(f.orelse));
+        }
+
+        static IfStatement Revert(If i) {
+            List<IfStatementTest> tests = new List<IfStatementTest>();
+            tests.Add(new IfStatementTest(Revert(i.test), RevertStmts(i.body)));
+            If currIf = i;
+            while( currIf.orelse != null && currIf.orelse.Count==1 && currIf.orelse[0] is If ) {
+                If orelse = (If)currIf.orelse[0];
+                tests.Add(new IfStatementTest(Revert(orelse.test), RevertStmts(orelse.body)));
+                currIf = orelse;
+            }          
+            return new IfStatement(tests.ToArray(), RevertStmts(currIf.orelse));
+        }
+
+        static ExecStatement Revert(Exec e) {
+            return new ExecStatement(Revert(e.body), Revert(e.locals), Revert(e.globals));
+        }
+
+        static GlobalStatement Revert(Global g) {
+            string[] names = new string[g.names.Count];
+            for (int i = 0; i < g.names.Count; i++)
+                names[i] = (string)g.names[i];
+            return new GlobalStatement(names);
+        }
+
+        static FromImportStatement Revert(ImportFrom import) {
+            ModuleName root = null;
+            bool absolute = false; // TODO: absolute import appears in ModuleOptions, not sure how it should work together
+            if (import.module != null)
+                if (import.module[0] == '.') // relative module
+                    root = new RelativeModuleName(import.module.Split(MODULE_NAME_SPLITTER), import.level);
+                else {
+                    root = new ModuleName(import.module.Split(MODULE_NAME_SPLITTER));
+                    absolute = true;
+                }
+
+            if (import.names.Count == 1 && ((alias)import.names[0]).name == "*")
+                return new FromImportStatement(root, (string[])FromImportStatement.Star, null, false, absolute);
+
+            String[] names = new String[import.names.Count];
+            String[] asNames = new String[import.names.Count];
+            for (int i = 0; i < import.names.Count; i++) {
+                alias alias = (alias)import.names[i];
+                names[i] = alias.name;
+                asNames[i] = alias.asname;
+            }
+            return new FromImportStatement(root, names, asNames, false, absolute);
+
+        }
+
+        private static char[] MODULE_NAME_SPLITTER = new char[1] { '.' };
+
+        static ImportStatement Revert(Import import) {
+            ModuleName[] moduleNames = new ModuleName[import.names.Count];
+            String[] asNames = new String[import.names.Count];
+            for (int i=0;i<import.names.Count;i++) {
+                alias alias = (alias)import.names[i];
+                moduleNames[i] = new ModuleName(alias.name.Split(MODULE_NAME_SPLITTER));
+                asNames[i]=alias.asname;
+            }
+            return new ImportStatement(moduleNames, asNames, false);  // TODO: not so sure about the relative/absolute argument here
+        }
+
+        static WhileStatement Revert(While w) {
+            return new WhileStatement(Revert(w.test), RevertStmts(w.body), RevertStmts(w.orelse));
+        }
+
+        static RaiseStatement Revert(Raise r) {
+            return new RaiseStatement(Revert(r.type), Revert(r.inst), Revert(r.tback));
+        }
+
+        static YieldExpression Revert(Yield y) {
+            return new YieldExpression(Revert(y.value));
+        }
+
+        static ExpressionStatement Revert(Expr expr) {
+            return new ExpressionStatement(Revert(expr.value));
+        }
+
+        static ReturnStatement Revert(Return ret) {
+            return new ReturnStatement(Revert(ret.value));
+        }
+
+        static Statement RevertStmts(PythonList stmts) {
+            if (stmts.Count == 1)
+                return Revert((stmt)stmts[0]);
+            Statement[] statements = new Statement[stmts.Count];
+            for (int i = 0; i < stmts.Count; i++)
+                statements[i] = Revert((stmt)stmts[i]);
+            return new SuiteStatement(statements);
+        }
+
+        static FunctionDefinition Revert(FunctionDef def) {
+            IList<AstExpression> decorators = null;
+            if (def.decorators.Count != 0)
+                decorators = Revert(def.decorators);
+            //SourceUnit su = new SourceUnit();
+            FunctionDefinition fd = new FunctionDefinition(def.name, Revert(def.args), RevertStmts(def.body));
+            fd.Decorators = decorators;
+            return fd;
+        }
+
+        static AstExpression[] Revert( PythonList exprs ) {
+            // it is assumed that list elements are expr
+            AstExpression[] ret = new AstExpression[exprs.Count];
+            for (int i = 0; i < exprs.Count; i++)
+                ret[i] = Revert((expr)exprs[i]);
+            return ret;
+        }
+
+        static DelStatement Revert(Delete d) {
+            return new DelStatement(Revert(d.targets));
+        }
+
+        static AssertStatement Revert(Assert a) {
+            return new AssertStatement(Revert(a.test), Revert(a.msg));
+        }
+
+        static AugmentedAssignStatement Revert(AugAssign aa) {
+            return new AugmentedAssignStatement(Revert(aa.op), Revert(aa.target), Revert(aa.value));
+        }
+
+        static AssignmentStatement Revert(Assign assign) {
+            return new AssignmentStatement(Revert(assign.targets), Revert(assign.value));
+        }
+
+        static PrintStatement Revert(Print p) {
+            return new PrintStatement(Revert(p.dest), Revert(p.values), !p.nl);
+        }
+
+        static AstExpression Revert(BoolOp bo) {
+            if (bo.op == And.Instance) {
+                AndExpression ae = new AndExpression(
+                    Revert((expr)bo.values[0]), 
+                    Revert((expr)bo.values[1]));
+                return ae;
+            } else if (bo.op == Or.Instance) {
+                OrExpression oe = new OrExpression(
+                    Revert((expr)bo.values[0]), 
+                    Revert((expr)bo.values[1]));
+                return oe;
+            }
+            throw new ArgumentTypeException("Unexpected boolean operator: " + bo.op);
+        }
+
+        static PyOperator Revert(unaryop op) {
+            if (op == Invert.Instance)
+                return PyOperator.Invert;
+            if (op == USub.Instance)
+                return PythonOperator.Negate;
+            if (op == Not.Instance)
+                return PythonOperator.Not;
+            if (op == UAdd.Instance)
+                return PythonOperator.Pos;
+
+            throw new ArgumentTypeException("Unexpected unary operator: " + op.GetType());
+        }
+
+        static AstExpression Revert(expr ex) {
+            if (ex == null)
+                return null;
+            if (ex is UnaryOp) {
+                UnaryOp uo = (UnaryOp)ex;
+                return new UnaryExpression(Revert(uo.op), Revert(uo.operand));
+            }
+            if (ex is BinOp) {
+                BinOp bo = (BinOp)ex;
+                return new BinaryExpression(Revert(bo.op), Revert(bo.left), Revert(bo.right));
+            }
+            if (ex is BoolOp)
+                return Revert((BoolOp)ex);
+            if (ex is Num)
+                return new ConstantExpression(((Num)ex).n);
+            if (ex is Name)
+                // TODO: name has context which I don't fully grock at the moment
+                return new NameExpression(((Name)ex).id);
+            if (ex is Str)
+                return new ConstantExpression(((Str)ex).s);
+            if (ex is Num)
+                return new ConstantExpression(((Num)ex).n);
+            if (ex is List)
+                return Revert((List)ex);
+            if (ex is Set)
+                return Revert((Set)ex);
+            if (ex is Dict)
+                return Revert((Dict)ex);
+            if (ex is Tuple)
+                return Revert((Tuple)ex);
+            if (ex is Call)
+                return Revert((Call)ex);
+            if (ex is ListComp)
+                return Revert((ListComp)ex);
+            if (ex is SetComp)
+                return Revert((SetComp)ex);
+            if (ex is DictComp)
+                return Revert((DictComp)ex);
+            if (ex is Compare)
+                return Revert((Compare)ex);
+            if (ex is Attribute) {
+                Attribute attr = (Attribute)ex;
+                return new MemberExpression(Revert(attr.value), attr.attr);
+            }
+            if (ex is Lambda)
+                return Revert((Lambda)ex);
+            if (ex is IfExp) {
+                IfExp exp = (IfExp)ex;
+                return new ConditionalExpression(Revert(exp.test), Revert(exp.body), Revert(exp.orelse));
+            }
+            if (ex is GeneratorExp)
+                return Revert((GeneratorExp)ex);
+            if (ex is Repr)
+                return new BackQuoteExpression(Revert(((Repr)ex).value));
+            if (ex is Subscript)
+                return Revert((Subscript)ex);
+            if (ex is Yield)
+                return Revert((Yield)ex);
+
+            throw new ArgumentTypeException("Unexpected expression type: " + ex.GetType());
+        }
+
+        static IndexExpression Revert(Subscript sub) {
+
+            AstExpression index=null;
+            if (sub.slice is Index)
+                index = Revert(((Index)sub.slice).value);
+            else if (sub.slice is Slice) {
+                Slice slice = (Slice)sub.slice;
+                AstExpression start = null;
+                if (slice.lower != null)
+                    start = Revert(slice.lower);
+                AstExpression stop = null;
+                if (slice.upper != null)
+                    stop = Revert(slice.upper);
+                AstExpression step = null;
+                bool stepProvided = false;
+                if (slice.step != null) {
+                    stepProvided = true;
+                    if (slice.step is Name && ((Name)slice.step).id == "None") {
+                        // pass
+                    } else {
+                        step = Revert(slice.step);
+                    }
+                }
+                index = new SliceExpression(start, stop, step, stepProvided);
+            } else if (sub.slice is Ellipsis) {
+                index = new ConstantExpression(PythonOps.Ellipsis);
+            } else if (sub.slice is ExtSlice) {
+                ExtSlice extSlice = (ExtSlice)sub.slice;
+                index = new TupleExpression(true, Revert((ExtSlice)sub.slice));
+            } else {
+                Debug.Assert(false, "Unexpected type when converting Subscript: " + sub.slice.GetType());
+            }
+
+            return new IndexExpression(Revert(sub.value),index);
+        }
+
+        static AstExpression[] Revert(ExtSlice extSlice) {
+            List<AstExpression> ret = new List<AstExpression>(extSlice.dims.Count);
+            foreach (expr ex in extSlice.dims) 
+                ret.Add(Revert((expr)ex));
+            return ret.ToArray();
+        }
+
+        static GeneratorExpression Revert(GeneratorExp exp) {
+            throw new System.NotImplementedException("Generator expression is not jet implemented");
+            
+            // FunctionDefinition funcitonDefinition = new FunctionDefinition(name, parameters);
+            // AstExpression iterable = Revert();
+            // return new GeneratorExpression(function, iterable);
+        }
+
+        static LambdaExpression Revert(Lambda l) {
+            Statement body = new ReturnStatement(Revert(l.body));
+            Parameter[] para = Revert(l.args);
+            FunctionDefinition fd = new FunctionDefinition(null, para,body);
+            return new LambdaExpression(fd);
+        }
+
+        static Parameter[] Revert(arguments arguments) {
+            List<Parameter> parameters = new List<Parameter>();
+            int argIdx=arguments.args.Count-1;
+            for (int defIdx = arguments.defaults.Count - 1; defIdx >= 0; defIdx--, argIdx--) { 
+                Name name = (Name)arguments.args[argIdx];
+                Parameter p = new Parameter(name.id);
+                p.DefaultValue = Revert((expr)arguments.defaults[defIdx]);
+                parameters.Add(p);
+            }
+            while (argIdx >= 0) {
+                Name name = (Name)arguments.args[argIdx--];
+                parameters.Add(new Parameter(name.id));
+            }
+            parameters.Reverse();
+            if (arguments.vararg!=null)
+                parameters.Add(new Parameter(arguments.vararg, ParameterKind.List));
+            if (arguments.kwarg != null)
+                parameters.Add(new Parameter(arguments.kwarg, ParameterKind.Dictionary));
+            return parameters.ToArray();
+        }
+
+        static BinaryExpression Revert(Compare compare) {
+            // the most likely case first
+            if (compare.ops.Count == 1) {
+                return new BinaryExpression(
+                    Revert((cmpop)(compare.ops[0])),
+                    Revert(compare.left),
+                    Revert((expr)(compare.comparators[0])));
+            }
+
+            // chaining of comparators is processed here (a>b>c> ...)
+            Debug.Assert(compare.ops.Count > 1, "expected 2 or more ops in chained comparator");
+            int i = compare.ops.Count-1;
+            BinaryExpression right = new BinaryExpression(
+                    Revert((cmpop)(compare.ops[i])),
+                    Revert((expr)(compare.comparators[i-1])),
+                    Revert((expr)(compare.comparators[i])));
+            i--;
+            while (i > 0) {
+                right = new BinaryExpression(
+                    Revert((cmpop)(compare.ops[i])),
+                    Revert((expr)(compare.comparators[i-1])),
+                    right);
+                i--;
+            }
+            return new BinaryExpression(
+                    Revert((cmpop)(compare.ops[0])),
+                    Revert(compare.left),
+                    right);
+        }
+
+        static DictionaryComprehension Revert(DictComp dc) {
+            AstExpression key = Revert(dc.key);
+            AstExpression value = Revert(dc.value);
+            ComprehensionIterator[] iters = RevertIterators(dc.generators);
+            return new DictionaryComprehension(key, value, iters);
+        }
+
+        static SetComprehension Revert(SetComp sc) {
+            AstExpression item = Revert(sc.elt);
+            ComprehensionIterator[] iters = RevertIterators(sc.generators);
+            return new SetComprehension(item, iters);
+        }
+ 
+        static ListComprehension Revert(ListComp lc) {
+            AstExpression item = Revert(lc.elt);
+            ComprehensionIterator[] iters = RevertIterators(lc.generators);
+            return new ListComprehension(item, iters);
+        }
+
+        static ComprehensionIterator[] RevertIterators(PythonList generators) {
+            System.Collections.Generic.List<ComprehensionIterator> comprehensionIterators = 
+                new System.Collections.Generic.List<ComprehensionIterator>();
+            foreach (comprehension generator in generators) {
+                ComprehensionFor cf = new ComprehensionFor(Revert(generator.target), Revert(generator.iter));
+                comprehensionIterators.Add(cf);
+                foreach (expr ifs in generator.ifs) {
+                    comprehensionIterators.Add(new ComprehensionIf(Revert(ifs)));
+                }
+            }
+            return comprehensionIterators.ToArray();
+        }
+
+        static CallExpression Revert(Call call) {
+            AstExpression target = Revert(call.func);
+            Arg[] args = new Arg[call.args.Count];
+            int i=0;
+            foreach(expr ex in call.args) 
+                args[i++]=new Arg(Revert(ex));
+            if (null!=call.starargs)
+                args[i++] = new Arg("*", Revert(call.starargs));
+            if (null!=call.kwargs)
+                args[i++] = new Arg("**", Revert(call.kwargs));
+            foreach(keyword kw in call.keywords)
+                args[i++] = new Arg(kw.arg, Revert(kw.value));
+            return new CallExpression(target,args);
+        }
+
+        static TupleExpression Revert(Tuple tpl) {
+            AstExpression[] e = new AstExpression[tpl.elts.Count];
+            int i = 0;
+            foreach (expr el in tpl.elts)
+                e[i++] = Revert(el);
+            return new TupleExpression(false,e);
+        }
+
+        static DictionaryExpression Revert(Dict dict) {
+            SliceExpression[] e = new SliceExpression[dict.values.Count];
+            for (int i = 0; i < dict.values.Count; i++) {
+                e[i] = new SliceExpression( 
+                    Revert((expr)dict.keys[i]), 
+                    Revert((expr)dict.values[i]), 
+                    null, 
+                    false);
+            }
+            return new DictionaryExpression(e);
+        }
+
+        static SetExpression Revert(Set st) {
+            AstExpression[] e = new AstExpression[st.elts.Count];
+            int i = 0;
+            foreach (expr el in st.elts)
+                e[i++] = Revert(el);
+            return new SetExpression(e);
+        }
+
+        static ListExpression Revert(List lst) {
+            AstExpression[] e = new AstExpression[lst.elts.Count];
+            int i = 0;
+            foreach (expr el in lst.elts)
+                e[i++] = Revert(el);
+            return new ListExpression(e);
+        }
+
+        static PythonOperator Revert(cmpop op) {
+            if (op == Eq.Instance)
+                return PyOperator.Equal;
+            if (op == Gt.Instance)
+                return PyOperator.GreaterThan;
+            if (op == GtE.Instance)
+                return PyOperator.GreaterThanOrEqual;
+            if (op == In.Instance)
+                return PyOperator.In;
+            if (op == Is.Instance)
+                return PyOperator.Is;
+            if (op == IsNot.Instance)
+                return PyOperator.IsNot;
+            if (op == Lt.Instance)
+                return PyOperator.LessThan;
+            if (op == LtE.Instance)
+                return PyOperator.LessThanOrEqual;
+            if (op == NotEq.Instance)
+                return PythonOperator.NotEqual;
+            if (op == NotIn.Instance)
+                return PythonOperator.NotIn;
+            throw new ArgumentTypeException("Unexpected compare operator type: " + op.GetType());
+        }
+
+        static PythonOperator Revert( @operator op ) {
+            if ( op == Add.Instance )
+                return PythonOperator.Add;
+            if ( op == BitAnd.Instance )
+                return PyOperator.BitwiseAnd;
+            if ( op == BitOr.Instance )
+                return PyOperator.BitwiseOr;
+            if ( op == Div.Instance )
+                return PyOperator.Divide;
+            if ( op == FloorDiv.Instance )
+                return PyOperator.FloorDivide;
+            if ( op == LShift.Instance )
+                return PyOperator.LeftShift;
+            if ( op == Mod.Instance)
+                return PythonOperator.Mod;
+            if ( op == Mult.Instance)
+                return PythonOperator.Multiply;
+            if ( op == Pow.Instance)
+                return PythonOperator.Power;
+            if ( op == RShift.Instance )
+                return PyOperator.RightShift;
+            if ( op == Sub.Instance )
+                return PythonOperator.Subtract;
+            if ( op == BitXor.Instance )
+                return PythonOperator.Xor;
+            throw new ArgumentTypeException("Unexpected operator type: " + op.GetType());
+        }
+
         internal static AST BuildAst(CodeContext context, SourceUnit sourceUnit, PythonCompilerOptions opts, string mode) {
             Parser parser = Parser.CreateParser(
                 new CompilerContext(sourceUnit, opts, ThrowingErrorSink.Default),
@@ -92,16 +658,6 @@ namespace IronPython.Modules
                 default:
                     throw new ArgumentException("kind must be 'exec' or 'eval' or 'single'");
             }
-        }
-
-        private static stmt ConvertToAST(Statement stmt) {
-            ContractUtils.RequiresNotNull(stmt, "stmt");
-            return AST.Convert(stmt);
-        }
-
-        private static expr ConvertToAST(Compiler.Ast.Expression expr) {
-            ContractUtils.RequiresNotNull(expr, "expr");
-            return AST.Convert(expr);
         }
 
         [PythonType]
@@ -207,9 +763,13 @@ namespace IronPython.Modules
                 if (stmt is SuiteStatement) {
                     SuiteStatement suite = (SuiteStatement)stmt;
                     PythonList l = PythonOps.MakeEmptyList(suite.Statements.Count);
-                    foreach (Statement s in suite.Statements)
-                        l.Add(Convert(s));
-
+                    foreach (Statement s in suite.Statements) 
+                        if (s is SuiteStatement)  // multiple stmt in a line
+                            foreach (Statement s2 in ((SuiteStatement)s).Statements)
+                                l.Add(Convert(s2));
+                        else 
+                            l.Add(Convert(s));
+                    
                     return l;
                 }
 
@@ -287,7 +847,7 @@ namespace IronPython.Modules
             internal static PythonList ConvertAliases(IList<DottedName> names, IList<string> asnames) {
                 PythonList l = PythonOps.MakeEmptyList(names.Count);
 
-                if (names == FromImportStatement.Star)
+                if (names == FromImportStatement.Star) // does it ever happen?
                     l.Add(new alias("*", null));
                 else
                     for (int i = 0; i < names.Count; i++)
@@ -308,7 +868,7 @@ namespace IronPython.Modules
                 return l;
             }
 
-            internal static slice TrySliceConvert(Compiler.Ast.Expression expr) {
+            internal static slice TrySliceConvert(AstExpression expr) {
                 if (expr is SliceExpression)
                     return new Slice((SliceExpression)expr);
                 if (expr is ConstantExpression && ((ConstantExpression)expr).Value == PythonOps.Ellipsis)
@@ -318,11 +878,11 @@ namespace IronPython.Modules
                 return null;
             }
 
-            internal static expr Convert(Compiler.Ast.Expression expr) {
+            internal static expr Convert(AstExpression expr) {
                 return Convert(expr, Load.Instance);
             }
 
-            internal static expr Convert(Compiler.Ast.Expression expr, expr_context ctx) {
+            internal static expr Convert(AstExpression expr, expr_context ctx) {
                 expr ast;
 
                 if (expr is ConstantExpression)
@@ -427,6 +987,10 @@ namespace IronPython.Modules
             }
 
             internal static PythonList Convert(ComprehensionIterator[] iters) {
+                // dump to stdout 
+                foreach (ComprehensionIterator ci in iters ) {
+                    // Console.WriteLine("ci: " + ci.GetType() + ":" + ci);
+                }
                 PythonList comps = new PythonList();
                 int start = 1;
                 for (int i = 0; i < iters.Length; i++) {
@@ -802,7 +1366,7 @@ namespace IronPython.Modules
             internal Assign(AssignmentStatement stmt)
                 : this() {
                 _targets = PythonOps.MakeEmptyList(stmt.Left.Count);
-                foreach (Compiler.Ast.Expression expr in stmt.Left)
+                foreach (AstExpression expr in stmt.Left)
                     _targets.Add(Convert(expr, Store.Instance));
 
                 _value = Convert(stmt.Right);
@@ -1137,7 +1701,7 @@ namespace IronPython.Modules
                 : this() {
                 _name = def.Name;
                 _bases = PythonOps.MakeEmptyList(def.Bases.Count);
-                foreach (Compiler.Ast.Expression expr in def.Bases)
+                foreach (AstExpression expr in def.Bases)
                     _bases.Add(Convert(expr));
                 _body = ConvertStatements(def.Body);
                 _decorator_list = new PythonList(); // TODO Actually fill in the decorators here
@@ -1256,7 +1820,7 @@ namespace IronPython.Modules
             internal Delete(DelStatement stmt)
                 : this() {
                 _targets = PythonOps.MakeEmptyList(stmt.Expressions.Count);
-                foreach (Compiler.Ast.Expression expr in stmt.Expressions)
+                foreach (AstExpression expr in stmt.Expressions)
                     _targets.Add(Convert(expr, Del.Instance));
             }
 
@@ -1629,7 +2193,7 @@ namespace IronPython.Modules
 
                 if (def.Decorators != null) {
                     _decorators = PythonOps.MakeEmptyList(def.Decorators.Count);
-                    foreach (Compiler.Ast.Expression expr in def.Decorators)
+                    foreach (AstExpression expr in def.Decorators)
                         _decorators.Add(Convert(expr));
                 } else
                     _decorators = PythonOps.MakeEmptyList(0);
@@ -2070,7 +2634,7 @@ namespace IronPython.Modules
             internal List(ListExpression list, expr_context ctx)
                 : this() {
                 _elts = PythonOps.MakeEmptyList(list.Items.Count);
-                foreach (Compiler.Ast.Expression expr in list.Items)
+                foreach (AstExpression expr in list.Items)
                     _elts.Add(Convert(expr, ctx));
 
                 _ctx = ctx;
@@ -2325,7 +2889,7 @@ namespace IronPython.Modules
                     _dest = Convert(stmt.Destination);
 
                 _values = PythonOps.MakeEmptyList(stmt.Expressions.Count);
-                foreach (Compiler.Ast.Expression expr in stmt.Expressions)
+                foreach (AstExpression expr in stmt.Expressions)
                     _values.Add(Convert(expr));
 
                 _nl = !stmt.TrailingComma;
@@ -2477,7 +3041,7 @@ namespace IronPython.Modules
             internal Set(SetExpression setExpression)
                 : this() {
                 _elts = new PythonList(setExpression.Items.Count);
-                foreach (Compiler.Ast.Expression item in setExpression.Items) {
+                foreach (AstExpression item in setExpression.Items) {
                     _elts.Add(Convert(item));
                 }
             }
@@ -2552,7 +3116,7 @@ namespace IronPython.Modules
                     _upper = Convert(expr.SliceStop);
                 if (expr.StepProvided)
                     if (expr.SliceStep != null)
-                        _step = Convert(expr.SliceStep); // [x:y]
+                        _step = Convert(expr.SliceStep); // [x:y:z]
                     else
                         _step = new Name("None", Load.Instance); // [x:y:]
             }
@@ -2793,7 +3357,7 @@ namespace IronPython.Modules
             internal Tuple(TupleExpression list, expr_context ctx)
                 : this() {
                 _elts = PythonOps.MakeEmptyList(list.Items.Count);
-                foreach (Compiler.Ast.Expression expr in list.Items)
+                foreach (AstExpression expr in list.Items)
                     _elts.Add(Convert(expr, ctx));
 
                 _ctx = ctx;
