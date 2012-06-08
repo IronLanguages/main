@@ -78,16 +78,32 @@ namespace IronPython.Modules {
         /// Handles output of the expression statement.
         /// Prints the value and sets the __builtin__._
         /// </summary>
-        public static void displayhook(CodeContext/*!*/ context, object value) {
+        [PythonHidden]
+        [Documentation(@"displayhook(object) -> None
+
+Print an object to sys.stdout and also save it in __builtin__._")]
+        public static void displayhookImpl(CodeContext/*!*/ context, object value) {
             if (value != null) {
                 PythonOps.Print(context, PythonOps.Repr(context, value));
                 PythonContext.GetContext(context).BuiltinModuleDict["_"] = value;
             }
         }
 
+        public static BuiltinFunction displayhook = BuiltinFunction.MakeFunction(
+            "displayhook",
+            ArrayUtils.ConvertAll(typeof(SysModule).GetMember("displayhookImpl"), (x) => (MethodBase)x),
+            typeof(SysModule)
+        );
+
+        public static readonly BuiltinFunction __displayhook__ = displayhook;
+
         public const int dllhandle = 0;
 
-        public static void excepthook(CodeContext/*!*/ context, object exctype, object value, object traceback) {
+        [PythonHidden]
+        [Documentation(@"excepthook(exctype, value, traceback) -> None
+
+Handle an exception by displaying it with a traceback on sys.stderr._")]
+        public static void excepthookImpl(CodeContext/*!*/ context, object exctype, object value, object traceback) {
             PythonContext pc = PythonContext.GetContext(context);
 
             PythonOps.PrintWithDest(
@@ -96,6 +112,14 @@ namespace IronPython.Modules {
                 pc.FormatException(PythonExceptions.ToClr(value))
             );
         }
+
+        public static readonly BuiltinFunction excepthook = BuiltinFunction.MakeFunction(
+            "excepthook",
+            ArrayUtils.ConvertAll(typeof(SysModule).GetMember("excepthookImpl"), (x) => (MethodBase)x),
+            typeof(SysModule)
+        );
+
+        public static readonly BuiltinFunction __excepthook__ = excepthook;
 
         public static int getcheckinterval() {
             throw PythonOps.NotImplementedError("IronPython does not support sys.getcheckinterval");
