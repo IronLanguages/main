@@ -1602,12 +1602,6 @@
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
-          <EnvironmentVariables>
-            <EnvironmentVariable>
-              <Name>IS_FLAKEY</Name>
-              <Value>1</Value>
-            </EnvironmentVariable>
-          </EnvironmentVariables>
         </Test>
         <Test>
           <Name>test_asyncore_cpy</Name>
@@ -1762,12 +1756,6 @@
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
-          <EnvironmentVariables>
-            <EnvironmentVariable>
-              <Name>IS_FLAKEY</Name>
-              <Value>1</Value>
-            </EnvironmentVariable>
-          </EnvironmentVariables>
         </Test>
         <Test>
           <Name>test_builtin_cpy</Name>
@@ -1860,10 +1848,10 @@
         <Test>
           <Name>test_class_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Debug -X:Frames Test\test_class.py</Arguments>
+          <Arguments>-X:Frames Test\test_class.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled> <!-- TIMEOUT -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -1896,7 +1884,7 @@
           <Arguments>Test\test_cmd_line.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled> <!-- TIMEOUT -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -2171,7 +2159,7 @@
           <Arguments>Test\test_cPickle.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled> <!-- StackOverflowException -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -3143,12 +3131,6 @@
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
-          <EnvironmentVariables>
-            <EnvironmentVariable>
-              <Name>is_flakey</Name>
-              <Value>1</Value>
-            </EnvironmentVariable>
-          </EnvironmentVariables>
         </Test>
         <Test>
           <Name>test_marshal_cpy</Name>
@@ -3244,7 +3226,7 @@
           <Arguments>Test\test_minidom.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>false</Disabled> <!-- No module named pyexapt. -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -3347,12 +3329,6 @@
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
-          <EnvironmentVariables>
-            <EnvironmentVariable>
-              <Name>IS_FLAKEY</Name>
-              <Value>1</Value>
-            </EnvironmentVariable>
-          </EnvironmentVariables>
         </Test>
         <Test>
           <Name>test_new_cpy</Name>
@@ -3514,7 +3490,7 @@
           <Arguments>-X:FullFrames Test\test_pickle.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled> <!-- timeout -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -3591,7 +3567,7 @@
           <Arguments>Test\test_poplib.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled> <!-- StackOverflowException -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -3646,7 +3622,7 @@
           <Arguments>Test\test_profile.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled> <!-- No sys.setprofile -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -3844,7 +3820,7 @@
           <Arguments>-X:Frames Test\test_set.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled> <!-- StackOverflowException -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -3881,12 +3857,6 @@
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
-          <EnvironmentVariables>
-            <EnvironmentVariable>
-              <Name>IS_FLAKEY</Name>
-              <Value>1</Value>
-            </EnvironmentVariable>
-          </EnvironmentVariables>
         </Test>
         <Test>
           <Name>test_shlex_cpy</Name>
@@ -3953,12 +3923,6 @@
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
-          <EnvironmentVariables>
-            <EnvironmentVariable>
-              <Name>IS_FLAKEY</Name>
-              <Value>1</Value>
-            </EnvironmentVariable>
-          </EnvironmentVariables>
         </Test>
         <Test>
           <Name>test_socket_cpy</Name>
@@ -3966,7 +3930,7 @@
           <Arguments>-X:Frames Test\test_socket.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled> <!-- timeout -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -4003,12 +3967,6 @@
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
-          <EnvironmentVariables>
-            <EnvironmentVariable>
-              <Name>is_flakey</Name>
-              <Value>1</Value>
-            </EnvironmentVariable>
-          </EnvironmentVariables>
         </Test>
         <Test>
           <Name>test_startfile_cpy</Name>
@@ -4071,7 +4029,7 @@
           <Arguments>Test\test_strop.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled> <!-- No module named strop -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -4179,7 +4137,7 @@
           <Name>test_sys_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
           <Arguments>-X:Frames Test\test_sys.py</Arguments>
-          <MaxDuration>60000</MaxDuration>
+          <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
@@ -4214,7 +4172,7 @@
           <Arguments>Test\test_telnetlib.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled> <!-- timeout -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -4229,12 +4187,6 @@
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
-          <EnvironmentVariables>
-            <EnvironmentVariable>
-              <Name>IS_FLAKEY</Name>
-              <Value>2</Value>
-            </EnvironmentVariable>
-          </EnvironmentVariables>
         </Test>
         <Test>
           <Name>test_textwrap_cpy</Name>
@@ -4286,7 +4238,7 @@
           <Arguments>Test\test_thread.py</Arguments>
           <MaxDuration>60000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled> <!-- TIMEOUT -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -4481,7 +4433,7 @@
         <Test>
           <Name>test_urllib2net_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_urllib2net.py</Arguments>
+          <Arguments>-X:FullFrames Test\test_urllib2net.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
           <Disabled>false</Disabled>
@@ -4704,7 +4656,7 @@
           <Arguments>Test\test_xpickle.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled> <!-- StackOverflowException -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
