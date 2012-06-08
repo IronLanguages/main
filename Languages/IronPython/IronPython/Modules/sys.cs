@@ -130,6 +130,10 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             throw PythonOps.NotImplementedError("IronPython does not support sys.setcheckinterval");
         }
 
+        public static void getrefcount() {
+            throw PythonOps.NotImplementedError("IronPython does not support sys.getrefcount");
+        }
+
         // warnoptions is set by PythonContext and updated on each reload        
 
         [Python3Warning("'sys.exc_clear() not supported in 3.x; use except clauses'")]
