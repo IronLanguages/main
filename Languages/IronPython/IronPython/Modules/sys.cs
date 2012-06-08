@@ -221,15 +221,45 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
         public static PythonTuple getwindowsversion() {
             var osVer = Environment.OSVersion;
-            return PythonTuple.MakeTuple(
+            return new windows_version(
                 osVer.Version.Major,
                 osVer.Version.Minor,
                 osVer.Version.Build,
                 (int)osVer.Platform
 #if FEATURE_OS_SERVICEPACK
                 , osVer.ServicePack
+#else
+                , ""
 #endif      
                 );
+        }
+
+        [PythonType("sys.getwindowsversion"), PythonHidden]
+        public class windows_version : PythonTuple {
+            internal windows_version(int major, int minor, int build, int platform, string service_pack)
+                : base(new object[] { major, minor, build, platform, service_pack }) {
+
+                this.major = major;
+                this.minor = minor;
+                this.build = build;
+                this.platform = platform;
+                this.service_pack = service_pack;
+            }
+
+            public readonly int major;
+            public readonly int minor;
+            public readonly int build;
+            public readonly int platform;
+            public readonly string service_pack;
+
+            public const int n_fields = 5;
+            public const int n_sequence_fields = 5;
+            public const int n_unnamed_fields = 0;
+
+            public override string __repr__(CodeContext context) {
+                return string.Format("sys.getwindowsversion(major={0}, minor={1}, build={2}, platform={3}, service_pack='{4}')",
+                    this.major, this.minor, this.build, this.platform, this.service_pack);
+            }
         }
 
         // hex_version is set by PythonContext
