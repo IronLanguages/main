@@ -1950,44 +1950,17 @@ namespace IronPython.Runtime {
 
         internal void SetHostVariables(PythonDictionary dict) {
             dict["executable"] = _initialExecutable;
-            SystemState.__dict__["prefix"] =  _initialPrefix;
+            dict["prefix"] =  _initialPrefix;
             dict["exec_prefix"] = _initialPrefix;
             SetVersionVariables(dict);
         }
 
-        [PythonType("sys.version_info")]
-        public class VersionInfo : PythonTuple {
-            internal VersionInfo(int major, int minor, int micro, string releaselevel, int serial)
-                    : base(new object[] { major, minor, micro, releaselevel, serial }) {
-                this.major = major;
-                this.minor = minor;
-                this.micro = micro;
-                this.releaselevel = releaselevel;
-                this.serial = serial;
-            }
-
-            public readonly int major;
-            public readonly int minor;
-            public readonly int micro;
-            public readonly string releaselevel;
-            public readonly int serial;
-
-            public override string __repr__(CodeContext context) {
-                return string.Format("sys.version_info(major={0}, minor={1}, micro={2}, releaselevel='{3}', serial={4})",
-                    major, minor, micro, releaselevel, serial);
-            }
-        }
-
         private void SetVersionVariables(PythonDictionary dict) {
-            dict["hexversion"] = (CurrentVersion.Major << 24) + (CurrentVersion.Minor << 16) + (CurrentVersion.Micro << 8);
-            dict["version_info"] = new VersionInfo(CurrentVersion.Major, CurrentVersion.Minor, CurrentVersion.Micro, CurrentVersion.ReleaseLevel, CurrentVersion.ReleaseSerial);
-            dict["version"] = String.Format("{0}.{1}.{2}{4}{5} ({3})",
-                CurrentVersion.Major,
-                CurrentVersion.Minor,
-                CurrentVersion.Micro,
-                _initialVersionString, 
-                CurrentVersion.ReleaseLevel != "final" ? CurrentVersion.ShortReleaseLevel : "",
-                CurrentVersion.ReleaseLevel != "final" ? CurrentVersion.ReleaseSerial.ToString() : "");
+            var implementation = new Implementation();
+            dict["implementation"] = implementation;
+            dict["version_info"] = implementation.version;
+            dict["hexversion"] = implementation.hexversion;
+            dict["version"] = implementation.version.GetVersionString(_initialVersionString);
         }
 
         internal static string GetVersionString() {
