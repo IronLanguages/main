@@ -273,8 +273,6 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
         public const string platform = "cli";
 
-        // TODO Add a cli_platform attribute
-
         public static readonly string prefix = GetPrefix();
 
         // ps1 and ps2 are set by PythonContext and only on the initial load
