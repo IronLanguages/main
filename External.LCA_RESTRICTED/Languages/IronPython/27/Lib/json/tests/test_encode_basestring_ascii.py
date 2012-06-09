@@ -1,3 +1,5 @@
+import sys
+import unittest
 from unittest import TestCase
 
 import json.encoder
@@ -24,6 +26,7 @@ CASES = [
 ]
 
 class TestEncodeBaseStringAscii(TestCase):
+    @unittest.skipIf(sys.platform == 'cli', 'http://ironpython.codeplex.com/workitem/32802')
     def test_py_encode_basestring_ascii(self):
         self._test_encode_basestring_ascii(json.encoder.py_encode_basestring_ascii)
 

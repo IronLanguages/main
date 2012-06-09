@@ -1,6 +1,7 @@
 """
 Test the API of the symtable module.
 """
+from test import test_support
 import symtable
 import unittest
 
