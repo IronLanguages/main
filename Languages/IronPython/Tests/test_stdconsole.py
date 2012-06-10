@@ -96,7 +96,7 @@ def TestCommandLine(args, expected_output, expected_exitcode = 0):
 # Runs the console with the given argument string with the expectation that it should enter interactive mode.
 # Meaning, for one, no -c parameter.  This is useful for catching certain argument parsing errors.
 def TestInteractive(args, expected_exitcode = 0):
-    ipi = IronPythonInstance(sys.executable, sys.exec_prefix, args)
+    ipi = IronPythonInstance(sys.executable, sys.exec_prefix, args, '-X:BasicConsole')
     AreEqual(ipi.Start(), True)
     
     #Verify basic behavior
@@ -147,7 +147,7 @@ def test_c():
     TestCommandLine(("-c", "raise Exception('foo')"), ("lastline", "Exception: foo"), 1)
     TestCommandLine(("-c", "import sys; sys.exit(123)"), "", 123)
     TestCommandLine(("-c", "import sys; print sys.argv", "foo", "bar", "baz"), "['-c', 'foo', 'bar', 'baz']\n")
-    TestCommandLine(("-c",), "Argument expected for the -c option.\n", -1)
+    TestCommandLine(("-c",), "Argument expected for the -c option.\n", 1)
 
 ############################################################
 # Test the -S (suppress site initialization) option.
@@ -261,7 +261,7 @@ def test_W():
     TestCommandLine(("-c", "import sys; print sys.warnoptions"), "[]\n")
     TestCommandLine(("-W", "foo", "-c", "import sys; print sys.warnoptions"), "['foo']\n")
     TestCommandLine(("-W", "foo", "-W", "bar", "-c", "import sys; print sys.warnoptions"), "['foo', 'bar']\n")
-    TestCommandLine(("-W",), "Argument expected for the -W option.\n", -1)
+    TestCommandLine(("-W",), "Argument expected for the -W option.\n", 1)
 
 # Test -?
 # regexp for the output of PrintUsage    
@@ -287,9 +287,9 @@ def test_u():
 # Test -X:MaxRecursion
 def test_X_MaxRecursion():
     TestCommandLine(("-X:MaxRecursion", "10", "-c", "2+2"), "")
-    TestCommandLine(("-X:MaxRecursion", "3.14159265", "-c", "2+2"), "The argument for the -X:MaxRecursion option must be an integer >= 10.\n", -1)
-    TestCommandLine(("-X:MaxRecursion",), "Argument expected for the -X:MaxRecursion option.\n", -1)
-    TestCommandLine(("-X:MaxRecursion", "2"), "The argument for the -X:MaxRecursion option must be an integer >= 10.\n", -1)
+    TestCommandLine(("-X:MaxRecursion", "3.14159265", "-c", "2+2"), "The argument for the -X:MaxRecursion option must be an integer >= 10.\n", 1)
+    TestCommandLine(("-X:MaxRecursion",), "Argument expected for the -X:MaxRecursion option.\n", 1)
+    TestCommandLine(("-X:MaxRecursion", "2"), "The argument for the -X:MaxRecursion option must be an integer >= 10.\n", 1)
 
 # Test -x (ignore first line)
 def test_x():
