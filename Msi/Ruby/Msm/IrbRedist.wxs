@@ -50,8 +50,8 @@
 
             <Component Id="C32IrbYaml" DiskId="1" Guid="1EA2194E-83AD-4124-8288-962CA767A508">
               <Condition>NOT VersionNT64</Condition>
-              <File Id="NGENFile_IronRuby.Libraries.Yaml.dll" Name="IronRuby.Libraries.Yaml.dll" Assembly=".net" KeyPath="yes" Source="IronRuby.Libraries.Yaml.dll">
-                <netfx:NativeImage Id="NGEN_File_IronRuby.Libraries.Yaml.dll" Priority="1"/>
+              <File Id="NGENFile_IR.Libraries.Yaml" Name="IronRuby.Libraries.Yaml.dll" Assembly=".net" KeyPath="yes" Source="IronRuby.Libraries.Yaml.dll">
+                <netfx:NativeImage Id="NGENFile_IR.Libraries.Yaml" Priority="1"/>
               </File>
             </Component>
 
@@ -83,8 +83,8 @@
 
             <Component Id="C64IrbYaml" DiskId="1" Guid="2BF6571B-A914-4CE7-8127-C03DEB5C8D12">
               <Condition>VersionNT64</Condition>
-              <File Id="NGEN64File_IronRuby.Libraries.Yaml.dll" Name="IronRuby.Libraries.Yaml.dll" Assembly=".net" KeyPath="yes">
-                <netfx:NativeImage Id="NGEN64_File_IronRuby.Libraries.Yaml.dll" Priority="1" Platform="all" />
+              <File Id="NGEN64File_IR.Libraries.Yaml.dll" Name="IronRuby.Libraries.Yaml.dll" Assembly=".net" KeyPath="yes">
+                <netfx:NativeImage Id="NGEN64_File_IR.Libraries.Yaml.dll" Priority="1" Platform="all" />
               </File>
             </Component>
 

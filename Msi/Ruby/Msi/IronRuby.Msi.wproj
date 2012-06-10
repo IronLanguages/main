@@ -9,6 +9,8 @@
     <OutputName Condition="$(OutputName)==''">IronRuby</OutputName>
     <OutputType Condition="$(OutputType)==''">Package</OutputType>
 
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+
     <!-- Paths -->
     <DlrRoot>$(SolutionDir)..\</DlrRoot>
     <VsToolsDir>$(DlrRoot)Tools\IronStudio\IronRubyTools</VsToolsDir>
@@ -27,6 +29,7 @@
       VsToolsPrivateBinDir=$(VsToolsDir)\obj\$(Configuration)\;
       SilverlightScriptDir=$(DlrRoot)Hosts\SilverLight\Public\script;
       SilverlightDir=$(DlrRoot)Bin\Silverlight4$(Configuration);
+      OutputPath=$(OutputPath);
       $(DefineConstants)
     </DefineConstants>
   </PropertyGroup>
