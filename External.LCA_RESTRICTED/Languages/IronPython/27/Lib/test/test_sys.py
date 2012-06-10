@@ -482,6 +482,29 @@ class SysModuleTest(unittest.TestCase):
         executable = p.communicate()[0].strip()
         p.wait()
         self.assertIn(executable, ["''", repr(sys.executable)])
+    
+    def test_implementation(self):
+        # This test applies to all implementations equally.
+
+        levels = {'alpha': 0xA, 'beta': 0xB, 'candidate': 0xC, 'release': 0xF}
+
+        self.assertTrue(hasattr(sys.implementation, 'name'))
+        self.assertTrue(hasattr(sys.implementation, 'version'))
+        self.assertTrue(hasattr(sys.implementation, 'hexversion'))
+        self.assertTrue(hasattr(sys.implementation, 'cache_tag'))
+
+        version = sys.implementation.version
+        self.assertEqual(version[:2], (version.major, version.minor))
+
+        hexversion = (version.major << 24 | version.minor << 16 |
+                      version.micro << 8 | levels[version.releaselevel] << 4 |
+                      version.serial << 0)
+        self.assertEqual(sys.implementation.hexversion, hexversion)
+
+        # PEP 421 requires that .name be lower case.
+        self.assertEqual(sys.implementation.name,
+                         sys.implementation.name.lower())
+
 
 @unittest.skipIf(sys.platform == 'cli', 'No module _testcapi.')
 class SizeofTest(unittest.TestCase):
