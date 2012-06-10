@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using IronRuby.Builtins;
@@ -27,9 +28,9 @@ using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
 #if !CLR2
 using BigInt = System.Numerics.BigInteger;
-using System.Reflection.Emit;
 #endif
 
 namespace IronRuby.Tests {
