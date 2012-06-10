@@ -231,6 +231,7 @@ class ImportHooksTestCase(ImportHooksBaseTestCase):
         sys.meta_path.append(ImportBlocker(mname))
         self.assertRaises(ImportError, __import__, mname)
 
+    @unittest.skipIf(sys.platform == 'cli', 'No module named parser.')
     def testImpWrapper(self):
         i = ImpWrapper()
         sys.meta_path.append(i)

@@ -1959,24 +1959,24 @@ namespace IronPython.Runtime {
 
         [PythonType("sys.version_info")]
         public class VersionInfo : PythonTuple {
-            internal VersionInfo(int major, int minor, int build, string releaselevel, int serial)
-                    : base(new object[] { major, minor, build, releaselevel, serial }) {
+            internal VersionInfo(int major, int minor, int micro, string releaselevel, int serial)
+                    : base(new object[] { major, minor, micro, releaselevel, serial }) {
                 this.major = major;
                 this.minor = minor;
-                this.build = build;
+                this.micro = micro;
                 this.releaselevel = releaselevel;
                 this.serial = serial;
             }
 
             public readonly int major;
             public readonly int minor;
-            public readonly int build;
+            public readonly int micro;
             public readonly string releaselevel;
             public readonly int serial;
 
             public override string __repr__(CodeContext context) {
-                return string.Format("sys.version_info(major={0}, minor={1}, build={2}, releaselevel='{3}', serial={4})",
-                    major, minor, build, releaselevel, serial);
+                return string.Format("sys.version_info(major={0}, minor={1}, micro={2}, releaselevel='{3}', serial={4})",
+                    major, minor, micro, releaselevel, serial);
             }
         }
 

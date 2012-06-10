@@ -208,6 +208,7 @@ class SysModuleTest(unittest.TestCase):
     # testing sys.settrace() is done in test_sys_settrace.py
     # testing sys.setprofile() is done in test_sys_setprofile.py
 
+    @unittest.skipIf(sys.platform == 'cli', 'Not supported on IronPython.')
     def test_setcheckinterval(self):
         self.assertRaises(TypeError, sys.setcheckinterval)
         orig = sys.getcheckinterval()
@@ -240,10 +241,12 @@ class SysModuleTest(unittest.TestCase):
         self.assertIsInstance(v.build, int)
         self.assertIsInstance(v.platform, int)
         self.assertIsInstance(v.service_pack, str)
-        self.assertIsInstance(v.service_pack_minor, int)
-        self.assertIsInstance(v.service_pack_major, int)
-        self.assertIsInstance(v.suite_mask, int)
-        self.assertIsInstance(v.product_type, int)
+        if sys.platform != 'cli':
+            # These are not available on .NET
+            self.assertIsInstance(v.service_pack_minor, int)
+            self.assertIsInstance(v.service_pack_major, int)
+            self.assertIsInstance(v.suite_mask, int)
+            self.assertIsInstance(v.product_type, int)
         self.assertEqual(v[0], v.major)
         self.assertEqual(v[1], v.minor)
         self.assertEqual(v[2], v.build)
@@ -264,6 +267,7 @@ class SysModuleTest(unittest.TestCase):
             self.assertEqual(sys.getdlopenflags(), oldflags+1)
             sys.setdlopenflags(oldflags)
 
+    @unittest.skipIf(sys.platform == 'cli', 'Not supported on IronPython.')
     def test_refcount(self):
         # n here must be a global in order for this test to pass while
         # tracing with a python function.  Tracing calls PyFrame_FastToLocals
@@ -288,6 +292,7 @@ class SysModuleTest(unittest.TestCase):
         )
 
     # sys._current_frames() is a CPython-only gimmick.
+    @unittest.skipIf(sys.platform == 'cli', 'Not supported on IronPython.')
     def test_current_frames(self):
         have_threads = True
         try:
@@ -383,7 +388,10 @@ class SysModuleTest(unittest.TestCase):
         self.assertEqual(len(sys.float_info), 11)
         self.assertEqual(sys.float_info.radix, 2)
         self.assertEqual(len(sys.long_info), 2)
-        self.assertTrue(sys.long_info.bits_per_digit % 5 == 0)
+        if sys.platform != 'cli':
+            self.assertTrue(sys.long_info.bits_per_digit % 5 == 0)
+        else:
+            self.assertTrue(sys.long_info.bits_per_digit % 8 == 0)
         self.assertTrue(sys.long_info.sizeof_digit >= 1)
         self.assertEqual(type(sys.long_info.bits_per_digit), int)
         self.assertEqual(type(sys.long_info.sizeof_digit), int)
@@ -432,9 +440,11 @@ class SysModuleTest(unittest.TestCase):
             self.assertEqual(type(getattr(sys.flags, attr)), int, attr)
         self.assertTrue(repr(sys.flags))
 
+    @unittest.skipIf(sys.platform == 'cli', 'Not supported on IronPython.')
     def test_clear_type_cache(self):
         sys._clear_type_cache()
 
+    @unittest.skipIf(sys.platform == 'cli', 'PYTHONIOENCODING not supported on IronPython.')
     def test_ioencoding(self):
         import subprocess
         env = dict(os.environ)
@@ -473,6 +483,7 @@ class SysModuleTest(unittest.TestCase):
         p.wait()
         self.assertIn(executable, ["''", repr(sys.executable)])
 
+@unittest.skipIf(sys.platform == 'cli', 'No module _testcapi.')
 class SizeofTest(unittest.TestCase):
 
     TPFLAGS_HAVE_GC = 1<<14

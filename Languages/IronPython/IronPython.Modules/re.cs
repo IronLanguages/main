@@ -430,7 +430,9 @@ namespace IronPython.Modules {
                 string replacement = repl as string;
                 if (replacement == null) {
                     if (repl is ExtensibleString) {
-                        replacement = (repl as ExtensibleString).Value;
+                        replacement = ((ExtensibleString)repl).Value;
+                    } else if (repl is Bytes) {
+                        replacement = ((Bytes)repl).ToString();
                     }
                 }
 
@@ -468,7 +470,9 @@ namespace IronPython.Modules {
 
                 if (replacement == null) {
                     if (repl is ExtensibleString) {
-                        replacement = (repl as ExtensibleString).Value;
+                        replacement = ((ExtensibleString)repl).Value;
+                    } else if (repl is Bytes) {
+                        replacement = ((Bytes)repl).ToString();
                     }
                 }
 
@@ -1236,6 +1240,11 @@ namespace IronPython.Modules {
             ExtensibleString es = pattern as ExtensibleString;
             if (es != null) return es.Value;
 
+            Bytes bytes = pattern as Bytes;
+            if (bytes != null) {
+                return bytes.ToString();
+            }
+
             RE_Pattern rep = pattern as RE_Pattern;
             if (rep != null) return rep;
 
@@ -1247,6 +1256,11 @@ namespace IronPython.Modules {
 
             ExtensibleString es = pattern as ExtensibleString;
             if (es != null) return es.Value;
+
+            Bytes bytes = pattern as Bytes;
+            if (bytes != null) {
+                return bytes.ToString();
+            }
 
             RE_Pattern rep = pattern as RE_Pattern;
             if (rep != null) return rep._pre.UserPattern;

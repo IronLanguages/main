@@ -22,13 +22,6 @@ using IronPython.Runtime;
 namespace IronPython.Modules {
     public static partial class PythonSignal {
         internal class NtSignalState : PythonSignalState {
-            //Windows signals
-            internal const uint CTRL_C_EVENT = 0;
-            internal const uint CTRL_BREAK_EVENT = 1;
-            internal const uint CTRL_CLOSE_EVENT = 2;
-            internal const uint CTRL_LOGOFF_EVENT = 5;
-            internal const uint CTRL_SHUTDOWN_EVENT = 6;
-
             //We use a single Windows event handler to process all signals. This handler simply
             //delegates the work out to PySignalToPyHandler.
             public NativeSignal.WinSignalsHandler WinAllSignalsHandlerDelegate;
