@@ -169,6 +169,7 @@ WHEN PERFORMING MAJOR IR UPGRADES (e.g., 1.0 => 1.1):
       <Feature Id="Feature_SL" AllowAdvertise="no" Level="1" Title="Silverlight Support" Description="IronRuby for Silverlight.">
         <Feature Id="Feature_SL_Binaries" AllowAdvertise="no" Level="1" Title="Binaries" Description="IronRuby binaries targeting Silverlight.">
           <ComponentRef Id="Comp_SL" />
+          <ComponentRef Id="Comp_Chiron" />
         </Feature>
 
         <Feature Id="Feature_SLTemplates" AllowAdvertise="no" Level="1" Title="Templates" Description="Templates supporting IronRuby Silverlight development.">

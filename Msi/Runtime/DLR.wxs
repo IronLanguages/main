@@ -14,8 +14,8 @@
           </Component>
           <Component Id="Comp_32_MSScriptingMetadata" DiskId="1" Guid="4C993FD7-4AE7-4D0D-94E2-6708D7E9F596">
             <Condition>NOT VersionNT64</Condition>
-            <File Id="NGENFile_Microsoft.Scripting.Metadata.dll" Name="Microsoft.Scripting.Metadata.dll" Assembly=".net" KeyPath="yes" Source="Microsoft.Scripting.Metadata.dll">
-              <netfx:NativeImage Id="NGEN_File_Microsoft.Scripting.Metadata.dll" Priority="1"/>
+            <File Id="NGENFile_MS.Scripting.Metadata.dll" Name="Microsoft.Scripting.Metadata.dll" Assembly=".net" KeyPath="yes" Source="Microsoft.Scripting.Metadata.dll">
+              <netfx:NativeImage Id="NGENFile_MS.Scripting.Metadata.dll" Priority="1"/>
             </File>
           </Component>
           <Component Id="Comp_32_MSDynamic" DiskId="1" Guid="77E05B31-C89B-4C1F-AA4A-05373809067A">
@@ -34,8 +34,8 @@
           </Component>
           <Component Id="Comp_64_MSScriptingMetadata" DiskId="1" Guid="DCF89765-2F2F-4D8B-B8EA-32E888FAC975">
             <Condition>VersionNT64</Condition>
-            <File Id="NGEN64File_Microsoft.Scripting.Metadata.dll" Name="Microsoft.Scripting.Metadata.dll" Assembly=".net" KeyPath="yes">
-              <netfx:NativeImage Id="NGEN64_File_Microsoft.Scripting.Metadata.dll" Priority="1" Platform="all" />
+            <File Id="NGEN64File_MSScriptingMetadata" Name="Microsoft.Scripting.Metadata.dll" Assembly=".net" KeyPath="yes">
+              <netfx:NativeImage Id="NGEN64File_MSScriptingMetadata" Priority="1" Platform="all" />
             </File>
           </Component>
           <Component Id="Comp_64_MSDynamic" DiskId="1" Guid="7636A16F-44F3-463F-8DBB-9BD1207D49BB">

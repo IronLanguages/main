@@ -10,11 +10,9 @@
       <File Name="IronRuby.Libraries.Yaml.dll" />
       <File Name="System.Numerics.dll" />
     </Component>
-  </Directory>
-  <Directory Id="Dir_Silverlight_bin" Name="bin" FileSource="$(var.OutputPath)">
     <Component Id="Comp_Chiron" DiskId="1" Guid="504F28C5-1607-42FD-8425-4309699017C4">
-      <File Name="Chiron.exe" />
-      <File Name="Chiron.exe.Config" />
+      <File Name="Chiron.exe" Source="$(var.OutputPath)" />
+      <File Name="Chiron.exe.Config" Source="$(var.OutputPath)" />
     </Component>
   </Directory>
   <Directory Id="Dir_Silverlight_script" Name="script" FileSource="$(var.SilverlightScriptDir)">
