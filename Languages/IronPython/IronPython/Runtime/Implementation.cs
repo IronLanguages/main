@@ -48,7 +48,7 @@ namespace IronPython.Runtime {
 
         internal VersionInfo() 
             : this(CurrentVersion.Major, 
-                   CurrentVersion.Micro, 
+                   CurrentVersion.Minor, 
                    CurrentVersion.Micro,
                    CurrentVersion.ReleaseLevel,
                    CurrentVersion.ReleaseSerial) {}
