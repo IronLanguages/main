@@ -72,9 +72,9 @@ namespace IronPython.Modules
             int[] lineNo = {};
             PythonContext pythonContext = codeContext.LanguageContext;
             PythonCompilerOptions options = new PythonCompilerOptions(ModuleOptions.ExecOrEvalCode);
-            SourceUnit unit = new SourceUnit(pythonContext, NullTextContentProvider.Null, "", SourceCodeKind.AutoDetect);
+            SourceUnit unit = new SourceUnit(pythonContext, NullTextContentProvider.Null, "", SourceCodeKind.InteractiveCode);
             CompilerContext compilerContext = new CompilerContext(unit, options, ErrorSink.Default);
-            PythonAst ast = new PythonAst(stmt, false, ModuleOptions.ExecOrEvalCode, false, compilerContext, lineNo);
+            PythonAst ast = new PythonAst(stmt, false, ModuleOptions.ExecOrEvalCode, true, compilerContext, lineNo);
             return ast;
         }
 
@@ -148,8 +148,35 @@ namespace IronPython.Modules
                 return Revert((For)statement);
             if (statement is TryExcept)
                 return Revert((TryExcept)statement);
+            if (statement is TryFinally)
+                return Revert((TryFinally)statement);
+            if (statement is With)
+                return Revert((With)statement);
+            if (statement is ClassDef)
+                return Revert((ClassDef)statement);
 
             throw new ArgumentTypeException("Unexpected statement type: " + statement.GetType());
+        }
+
+        static ClassDefinition Revert(ClassDef cd) {
+            // TODO: once decorators are fixed in compile, fix it here as well
+            return new ClassDefinition(cd.name, Revert(cd.bases), RevertStmts(cd.body));
+        }
+
+        static WithStatement Revert(With w) {
+            return new WithStatement(Revert(w.context_expr), Revert(w.optional_vars), RevertStmts(w.body));
+        }
+
+        static TryStatement Revert(TryFinally tf) {
+            if (tf.body.Count == 1 && tf.body[0] is TryExcept) {
+                TryExcept te = (TryExcept)tf.body[0];
+                TryStatementHandler[] tshs = new TryStatementHandler[te.handlers.Count];
+                for (int i = 0; i < te.handlers.Count; i++) {
+                    tshs[i] = Revert((ExceptHandler)te.handlers[i]);
+                }
+                return new TryStatement(RevertStmts(te.body), tshs, RevertStmts(te.orelse), RevertStmts(tf.finalbody));
+            } 
+            return new TryStatement(RevertStmts(tf.body), null, null, RevertStmts(tf.finalbody));
         }
 
         static TryStatement Revert(TryExcept te) {
@@ -157,7 +184,7 @@ namespace IronPython.Modules
             for (int i = 0; i < te.handlers.Count; i++) {
                 tshs[i] = Revert((ExceptHandler)te.handlers[i]);
             }
-            return new TryStatement(RevertStmts(te.body),tshs, RevertStmts(te.orelse), null); // TODO: find out more about finally - TryFinally
+            return new TryStatement(RevertStmts(te.body),tshs, RevertStmts(te.orelse), null); 
         }
 
         static TryStatementHandler Revert(ExceptHandler eh) {
@@ -428,12 +455,27 @@ namespace IronPython.Modules
             return ret.ToArray();
         }
 
+
         static GeneratorExpression Revert(GeneratorExp exp) {
-            throw new System.NotImplementedException("Generator expression is not implemented");
-            
-            // FunctionDefinition funcitonDefinition = new FunctionDefinition(name, parameters);
-            // AstExpression iterable = Revert();
-            // return new GeneratorExpression(function, iterable);
+            // TODO: test it once parse is fixed
+            Statement stmt = new ExpressionStatement(new YieldExpression(Revert(exp.elt)));
+            int comprehensionIdx = exp.generators.Count-1;
+            do {
+                comprehension c = (comprehension)exp.generators[comprehensionIdx];
+                Statement body;
+                if (c.ifs != null && c.ifs.Count != 0) {
+                    IfStatementTest ist = new IfStatementTest(Revert((expr)c.ifs[0]), stmt);
+                    body = new IfStatement(new IfStatementTest[] { ist }, null);
+                } else {
+                    body = stmt;
+                }
+                stmt = new ForStatement(Revert(c.target), Revert(c.iter), body, null);
+                comprehensionIdx--;
+            } while (comprehensionIdx >= 0);
+            Parameter parameter = new Parameter("__gen_$_parm__", 0);
+            FunctionDefinition functionDefinition = new FunctionDefinition("<genexpr>", new Parameter[] { parameter }, stmt);
+            functionDefinition.IsGenerator = true;
+            return new GeneratorExpression(functionDefinition, new ListExpression(new AstExpression[] {}));
         }
 
         static LambdaExpression Revert(Lambda l) {
@@ -986,10 +1028,6 @@ namespace IronPython.Modules
             }
 
             internal static PythonList Convert(ComprehensionIterator[] iters) {
-                // dump to stdout 
-                foreach (ComprehensionIterator ci in iters ) {
-                    // Console.WriteLine("ci: " + ci.GetType() + ":" + ci);
-                }
                 PythonList comps = new PythonList();
                 int start = 1;
                 for (int i = 0; i < iters.Length; i++) {
@@ -2257,7 +2295,6 @@ namespace IronPython.Modules
                 get { return _generators; }
                 set { _generators = value; }
             }
-
 
             internal class ExtractListComprehensionIterators : PythonWalker
             {

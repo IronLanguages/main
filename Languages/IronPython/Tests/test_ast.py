@@ -1,5 +1,7 @@
 import sys, itertools, unittest
 from test import test_support
+from StringIO import StringIO
+
 import ast
 import types
 
@@ -98,6 +100,7 @@ eval_tests = [
   "[a for b in c if d]",
   # GeneratorExp
   "(a for b in c if d)",
+  # "(a for b in c for c in d)", this one is failing
   # Yield - yield expressions can't work outside a function
   #
   # Compare
@@ -136,15 +139,6 @@ eval_tests = [
 
 # TODO: expr_context, slice, boolop, operator, unaryop, cmpop, comprehension
 # excepthandler, arguments, keywords, alias
-
-class Capture:
-    def __init__(self):
-        self.__capture=""
-    def write(self,x):
-        self.__capture+=x
-    def retrieve(self):
-        return self.__capture
-
 
 class AST_Tests(unittest.TestCase):
 
@@ -265,9 +259,12 @@ class AST_Tests(unittest.TestCase):
 
 
     def test_compile_from_ast_020(self):
-        p = ast.parse("[(x, y, z) for x in [1,2,3] if x!=2 for y in [3,1,4] for z in [7,8,9] if x != y]", mode="eval") # list comprehension
+        # list comprehension
+        p = ast.parse("[(x, y, z) for x in [1,2,3] if x!=2 for y in [3,1,4] for z in [7,8,9] if x != y]", mode="eval")
         c = compile(p,"<unknown>", mode="eval")
-        self.assertEqual( eval(c), [(1, 3, 7), (1, 3, 8), (1, 3, 9), (1, 4, 7), (1, 4, 8), (1, 4, 9), (3, 1, 7), (3, 1, 8), (3, 1, 9), (3, 4, 7), (3, 4, 8), (3, 4, 9)] )
+        self.assertEqual( eval(c), [(1, 3, 7), (1, 3, 8), (1, 3, 9), (1, 4, 7), 
+                                    (1, 4, 8), (1, 4, 9), (3, 1, 7), (3, 1, 8), 
+                                    (3, 1, 9), (3, 4, 7), (3, 4, 8), (3, 4, 9)] )
 
     def test_compile_from_ast_021(self):
         p = ast.parse("2>1", mode="eval") # Compare
@@ -327,11 +324,13 @@ class AST_Tests(unittest.TestCase):
         c = compile(p,"<unknown>", mode="eval")
         self.assertEqual( eval(c), 2 )
 
-    # on hold until I have statements and function definitions
-    #def test_compile_from_ast_29(self):
-    #    p = ast.parse("(x for x in [1,2])", mode="eval") # attribute
-    #    c = compile(p,"<unknown>", mode="eval")
-    #    self.assertEqual( eval(c), "(1,2)" )
+    def test_compile_from_ast_029(self):
+        p = ast.parse("(x for x in [1,2,3] if x!=1)", mode="eval") # generator
+        c = compile(p,"<unknown>", mode="eval")
+        g = eval(c)
+        self.assertEqual( g.next(), 2 )
+        self.assertEqual( g.next(), 3 )
+        self.assertRaises( StopIteration, g.next )
 
     def test_compile_from_ast_030(self):
         p = ast.parse("`101`", mode="eval") # repr
@@ -353,6 +352,27 @@ class AST_Tests(unittest.TestCase):
         c = compile(p,"<unknown>", mode="eval")
         self.assertEqual( eval(c), [1,3])
 
+    # TODO: fix parse first
+    #def test_compile_from_ast_034(self):
+    #    page = [ "line1 aaaaa bbb cccccc ddddddddd", "line2 xxxxxxxx yyyyyyy zzzzzz", "line3 ssssss ttttttttttt uuuu" ]
+    #    p = ast.parse("(word  for line in page  for word in line.split())", mode="eval") # generator
+    #    c = compile(p,"<unknown>", mode="eval")
+    #    g = eval(c)
+    #    self.assertEqual( g.next(), 'line1' )
+    #    self.assertEqual( g.next(), 'aaaaa' )
+    #    self.assertEqual( g.next(), 'bbb')
+    #    self.assertEqual( g.next(), 'cccccc' )
+    #    self.assertEqual( g.next(), 'ddddddddd' )
+    #    self.assertEqual( g.next(), 'line2' )
+    #    self.assertEqual( g.next(), 'xxxxxxxx' )
+    #    self.assertEqual( g.next(), 'yyyyyyy' )
+    #    self.assertEqual( g.next(), 'zzzzzz' )
+    #    self.assertEqual( g.next(), 'line3' )
+    #    self.assertEqual( g.next(), 'ssssss' )
+    #    self.assertEqual( g.next(), 'ttttttttttt' )
+    #    self.assertEqual( g.next(), 'uuuu' )
+    #    self.assertRaises( StopIteration, g.next )
+
     # TODO: more testing for extended slices [1:2, 5:10], [1:2, ...] etc
     # inspiration at: http://ilan.schnell-web.net/prog/slicing/
 
@@ -363,11 +383,11 @@ class AST_Tests(unittest.TestCase):
         self.assertEqual( eval(c), None)
 
     def test_compile_from_ast_101(self):
-        cap = Capture()
+        cap = StringIO()
         p = ast.parse("print >> cap, 1, 2,", mode="exec")  # print
         c = compile(p,"<unknown>", mode="exec")
         exec c
-        self.assertEqual( cap.retrieve(), "1 2")
+        self.assertEqual( cap.getvalue(), "1 2")
     
     def test_compile_from_ast_102(self):
         p = ast.parse("a=b=42", mode="exec") # assignment 
@@ -418,15 +438,15 @@ class AST_Tests(unittest.TestCase):
         exec c
 
     def test_compile_from_ast_108(self):
-        cap = Capture()
+        cap = StringIO()
         p = ast.parse("def f(): return 42\nprint >> cap, f(),", mode="exec") # return statement 
         c = compile(p,"<unknown>", mode="exec")
         exec c
-        self.assertEqual(cap.retrieve(),'42')
+        self.assertEqual(cap.getvalue(),'42')
 
 # TODO: yield raises non implemented on exec. The one compiled wihtout intermediary AST is ok
 #    def test_compile_from_ast_109(self):
-#        cap = Capture()
+#        cap = StringIO()
 #        code = """
 #def f(): 
 #    yield 42
@@ -441,7 +461,7 @@ class AST_Tests(unittest.TestCase):
 #        import dis
 #        print dis.dis(c)
 #        exec c
-#        self.assertEqual(cap.retrieve(),'42')
+#        self.assertEqual(cap.getvalue(),'42')
 
     def test_compile_from_ast_110(self):
         p = ast.parse("raise Exception('expected')", mode="exec") # raise
@@ -503,11 +523,11 @@ class AST_Tests(unittest.TestCase):
         self.assertEqual(v['i'],42)
 
     def test_compile_from_ast_117(self):
-        cap = Capture()
+        cap = StringIO()
         p = ast.parse("exec 'print >> cap, 42,'", mode="exec") # exec
         c = compile(p,"<unknown>", mode="exec")
         exec c
-        self.assertEqual(cap.retrieve(), '42')
+        self.assertEqual(cap.getvalue(), '42')
 
     def test_compile_from_ast_118(self):
         p = ast.parse("if a:\n x=1\nelif b:\n x=2\nelse:\n x=3", mode="exec") # if elif else
@@ -541,32 +561,82 @@ class AST_Tests(unittest.TestCase):
         self.assertEqual(n,42) 
              
     def test_compile_from_ast_121(self):
-        cap = Capture()
+        cap = StringIO()
         p = ast.parse("for i in [0,1,2]:\n print>> cap, i,\nelse:\n print>>cap, 'else',", mode="exec") # for with else
         exec compile(p,"<unknown>", mode="exec")
-        self.assertEqual(cap.retrieve(),"0 1 2 else") 
+        self.assertEqual(cap.getvalue(),"0 1 2 else") 
 
     def test_compile_from_ast_122(self):
-        cap = Capture()
+        cap = StringIO()
         tc = """
-caught = False
 try:
+    print >> cap, 1,
     raise Exception("test")
+    print >> cap, 2,
 except Exception as e:
-    caught = True
+    print >> cap, 3,
+else:
+    print >> cap, 4,
+finally:
+    print >> cap, 5,
             """ 
         p = ast.parse( tc, mode="exec") # try except
         exec compile(p,"<unknown>", mode="exec")
-        self.assertTrue(caught) 
+        self.assertEquals(cap.getvalue(), "1 3 5") 
 
     def test_compile_from_ast_123(self):
-        p = ast.parse("a=1; b=2", mode="single") # switch mode to single
+        cap = StringIO()
+        tc = """
+try:
+    print >> cap, 1,
+    # raise Exception("test")
+    print >> cap, 2,
+except Exception as e:
+    print >> cap, 3
+else:
+    print >> cap, 4,
+finally:
+    print >> cap, 5,
+            """ 
+        p = ast.parse( tc, mode="exec") # try except
+        exec compile(p,"<unknown>", mode="exec")
+        self.assertEqual(cap.getvalue(),"1 2 4 5") 
+
+    def test_compile_from_ast_124(self):
+        tc = """
+with open("dummy_module.py") as dm:
+    l = len(dm.read())
+            """ 
+        p = ast.parse( tc, mode="exec") # try except
+        exec compile(p,"<unknown>", mode="exec")
+        self.assertEqual(l,20) 
+
+    def test_compile_from_ast_125(self):
+        tc = """
+class Foo(object):
+    pass
+foo=Foo()
+            """ 
+        p = ast.parse( tc, mode="exec") # try except
+        exec compile(p,"<unknown>", mode="exec")
+        self.assertIsInstance(foo,Foo) 
+
+    def test_compile_from_ast_200(self):
+        p = ast.parse("a=1; b=2", mode="single") # somthing with single
         c = compile(p,"<unknown>", mode="single")
         exec c
         self.assertEqual(a,1)
         self.assertEqual(b,2)
 
-       
+    def test_compile_from_ast_201(self):
+        p = ast.parse("1+1", mode="single") # expression in single should find its way into stdout
+        c = compile(p,"<unknown>", mode="single")
+        saveStdout = sys.stdout
+        sys.stdout = cap = StringIO()
+        exec c
+        sys.stdout = saveStdout
+        self.assertEqual(cap.getvalue(), "2\n")
+
 
     def test_snippets(self):
         # Things which diverted from cpython:
@@ -1079,6 +1149,7 @@ eval_results = [
 ('Expression', ('Dict', (1, 0), [('Num', (1, 2), 1)], [('Num', (1, 4), 2)])),
 ('Expression', ('ListComp', (1, 0), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), [('Name', (1, 17), 'd', ('Load',))])])),
 ('Expression', ('GeneratorExp', (1, 0), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), [('Name', (1, 17), 'd', ('Load',))])])),
+#('Expression', ('GeneratorExp', (1, 1), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []), ('comprehension', ('Name', (1, 18), 'c', ('Store',)), ('Name', (1, 23), 'd', ('Load',)), [])])),
 ('Expression', ('Compare', (1, 0), ('Num', (1, 0), 1), [('Lt',), ('Lt',)], [('Num', (1, 4), 2), ('Num', (1, 8), 3)])),
 ('Expression', ('Call', (1, 0), ('Name', (1, 0), 'f', ('Load',)), [('Num', (1, 2), 1), ('Num', (1, 4), 2)], [('keyword', 'c', ('Num', (1, 8), 3))], ('Name', (1, 11), 'd', ('Load',)), ('Name', (1, 15), 'e', ('Load',)))),
 ('Expression', ('Repr', (1, 0), ('Name', (1, 1), 'v', ('Load',)))),
