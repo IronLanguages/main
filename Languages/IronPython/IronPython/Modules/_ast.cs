@@ -340,7 +340,6 @@ namespace IronPython.Modules
             if (ex is Num)
                 return new ConstantExpression(((Num)ex).n);
             if (ex is Name)
-                // TODO: name has context which I don't fully grock at the moment
                 return new NameExpression(((Name)ex).id);
             if (ex is Str)
                 return new ConstantExpression(((Str)ex).s);
@@ -430,7 +429,7 @@ namespace IronPython.Modules
         }
 
         static GeneratorExpression Revert(GeneratorExp exp) {
-            throw new System.NotImplementedException("Generator expression is not jet implemented");
+            throw new System.NotImplementedException("Generator expression is not implemented");
             
             // FunctionDefinition funcitonDefinition = new FunctionDefinition(name, parameters);
             // AstExpression iterable = Revert();
