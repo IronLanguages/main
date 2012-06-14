@@ -99,8 +99,9 @@ eval_tests = [
   # ListComp
   "[a for b in c if d]",
   # GeneratorExp
+  "(a for b in c for d in e for f in g)",
   "(a for b in c if d)",
-  # "(a for b in c for c in d)", this one is failing
+  "(a for b in c for c in d)",
   # Yield - yield expressions can't work outside a function
   #
   # Compare
@@ -352,26 +353,48 @@ class AST_Tests(unittest.TestCase):
         c = compile(p,"<unknown>", mode="eval")
         self.assertEqual( eval(c), [1,3])
 
-    # TODO: fix parse first
-    #def test_compile_from_ast_034(self):
-    #    page = [ "line1 aaaaa bbb cccccc ddddddddd", "line2 xxxxxxxx yyyyyyy zzzzzz", "line3 ssssss ttttttttttt uuuu" ]
-    #    p = ast.parse("(word  for line in page  for word in line.split())", mode="eval") # generator
-    #    c = compile(p,"<unknown>", mode="eval")
-    #    g = eval(c)
-    #    self.assertEqual( g.next(), 'line1' )
-    #    self.assertEqual( g.next(), 'aaaaa' )
-    #    self.assertEqual( g.next(), 'bbb')
-    #    self.assertEqual( g.next(), 'cccccc' )
-    #    self.assertEqual( g.next(), 'ddddddddd' )
-    #    self.assertEqual( g.next(), 'line2' )
-    #    self.assertEqual( g.next(), 'xxxxxxxx' )
-    #    self.assertEqual( g.next(), 'yyyyyyy' )
-    #    self.assertEqual( g.next(), 'zzzzzz' )
-    #    self.assertEqual( g.next(), 'line3' )
-    #    self.assertEqual( g.next(), 'ssssss' )
-    #    self.assertEqual( g.next(), 'ttttttttttt' )
-    #    self.assertEqual( g.next(), 'uuuu' )
-    #    self.assertRaises( StopIteration, g.next )
+    def test_compile_from_ast_034(self):
+        # plain generator
+        page = [ "line1 aaaaa bbb cccccc ddddddddd", "line2 xxxxxxxx yyyyyyy zzzzzz", "line3 ssssss ttttttttttt uuuu" ]
+        p = ast.parse("(word  for line in page  for word in line.split())", mode="eval") 
+        c = compile(p,"<unknown>", mode="eval")
+        g = eval(c)
+        self.assertEqual( g.next(), 'line1' )
+        self.assertEqual( g.next(), 'aaaaa' )
+        self.assertEqual( g.next(), 'bbb')
+        self.assertEqual( g.next(), 'cccccc' )
+        self.assertEqual( g.next(), 'ddddddddd' )
+        self.assertEqual( g.next(), 'line2' )
+        self.assertEqual( g.next(), 'xxxxxxxx' )
+        self.assertEqual( g.next(), 'yyyyyyy' )
+        self.assertEqual( g.next(), 'zzzzzz' )
+        self.assertEqual( g.next(), 'line3' )
+        self.assertEqual( g.next(), 'ssssss' )
+        self.assertEqual( g.next(), 'ttttttttttt' )
+        self.assertEqual( g.next(), 'uuuu' )
+        self.assertRaises( StopIteration, g.next )
+
+
+    def test_compile_from_ast_035(self):
+        # generator with multiple ifs
+        page = [ "line1 aaaaa bbb cccccc ddddddddd", "short line", "line2 xxxxxxxx yyyyyyy zzzzzz", "line3 ssssss ttttttttttt uuuu" ]
+        p = ast.parse("(word  for line in page if len(line)>10 for word in line.split() if word!='ssssss' if word!='zzzzzz')",
+                      mode="eval")
+        c = compile(p,"<unknown>", mode="eval")
+        g = eval(c)
+        self.assertEqual( g.next(), 'line1' )
+        self.assertEqual( g.next(), 'aaaaa' )
+        self.assertEqual( g.next(), 'bbb')
+        self.assertEqual( g.next(), 'cccccc' )
+        self.assertEqual( g.next(), 'ddddddddd' )
+        self.assertEqual( g.next(), 'line2' )
+        self.assertEqual( g.next(), 'xxxxxxxx' )
+        self.assertEqual( g.next(), 'yyyyyyy' )
+        self.assertEqual( g.next(), 'line3' )
+        self.assertEqual( g.next(), 'ttttttttttt' )
+        self.assertEqual( g.next(), 'uuuu' )
+        self.assertRaises( StopIteration, g.next )
+
 
     # TODO: more testing for extended slices [1:2, 5:10], [1:2, ...] etc
     # inspiration at: http://ilan.schnell-web.net/prog/slicing/
@@ -620,6 +643,8 @@ foo=Foo()
         p = ast.parse( tc, mode="exec") # try except
         exec compile(p,"<unknown>", mode="exec")
         self.assertIsInstance(foo,Foo) 
+
+
 
     def test_compile_from_ast_200(self):
         p = ast.parse("a=1; b=2", mode="single") # somthing with single
@@ -1148,8 +1173,9 @@ eval_results = [
 ('Expression', ('Lambda', (1, 0), ('arguments', [], None, None, []), ('Name', (1, 7), 'None', ('Load',)))),
 ('Expression', ('Dict', (1, 0), [('Num', (1, 2), 1)], [('Num', (1, 4), 2)])),
 ('Expression', ('ListComp', (1, 0), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), [('Name', (1, 17), 'd', ('Load',))])])),
+('Expression', ('GeneratorExp', (1, 0), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []), ('comprehension', ('Name', (1, 18), 'd', ('Store',)), ('Name', (1, 23), 'e', ('Load',)), []), ('comprehension', ('Name', (1, 29), 'f', ('Store',)), ('Name', (1, 34), 'g', ('Load',)), [])])),
 ('Expression', ('GeneratorExp', (1, 0), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), [('Name', (1, 17), 'd', ('Load',))])])),
-#('Expression', ('GeneratorExp', (1, 1), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []), ('comprehension', ('Name', (1, 18), 'c', ('Store',)), ('Name', (1, 23), 'd', ('Load',)), [])])),
+('Expression', ('GeneratorExp', (1, 0), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []), ('comprehension', ('Name', (1, 18), 'c', ('Store',)), ('Name', (1, 23), 'd', ('Load',)), [])])),
 ('Expression', ('Compare', (1, 0), ('Num', (1, 0), 1), [('Lt',), ('Lt',)], [('Num', (1, 4), 2), ('Num', (1, 8), 3)])),
 ('Expression', ('Call', (1, 0), ('Name', (1, 0), 'f', ('Load',)), [('Num', (1, 2), 1), ('Num', (1, 4), 2)], [('keyword', 'c', ('Num', (1, 8), 3))], ('Name', (1, 11), 'd', ('Load',)), ('Name', (1, 15), 'e', ('Load',)))),
 ('Expression', ('Repr', (1, 0), ('Name', (1, 1), 'v', ('Load',)))),

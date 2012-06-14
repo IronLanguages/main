@@ -17,6 +17,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Generic = System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using IronPython.Compiler;
@@ -455,27 +456,33 @@ namespace IronPython.Modules
             return ret.ToArray();
         }
 
-
+        // TODO: following 2 names are copy paste from Parser.cs
+        //       it would be better to have them in one place
+        private const string generatorFnName = "<genexpr>";
+        private const string generatorFnArgName = "__gen_$_parm__";
         static GeneratorExpression Revert(GeneratorExp exp) {
-            // TODO: test it once parse is fixed
             Statement stmt = new ExpressionStatement(new YieldExpression(Revert(exp.elt)));
             int comprehensionIdx = exp.generators.Count-1;
+            AstExpression lst;
             do {
                 comprehension c = (comprehension)exp.generators[comprehensionIdx];
-                Statement body;
                 if (c.ifs != null && c.ifs.Count != 0) {
-                    IfStatementTest ist = new IfStatementTest(Revert((expr)c.ifs[0]), stmt);
-                    body = new IfStatement(new IfStatementTest[] { ist }, null);
-                } else {
-                    body = stmt;
+                    int ifIdx = c.ifs.Count - 1;
+                    while (ifIdx >= 0) {
+                        IfStatementTest ist = new IfStatementTest(Revert((expr)c.ifs[ifIdx]), stmt);
+                        stmt = new IfStatement(new IfStatementTest[] { ist }, null);
+                        ifIdx--;
+                    }
                 }
-                stmt = new ForStatement(Revert(c.target), Revert(c.iter), body, null);
+                lst = Revert(c.iter);
+                stmt = new ForStatement(Revert(c.target), lst, stmt, null);
                 comprehensionIdx--;
             } while (comprehensionIdx >= 0);
-            Parameter parameter = new Parameter("__gen_$_parm__", 0);
-            FunctionDefinition functionDefinition = new FunctionDefinition("<genexpr>", new Parameter[] { parameter }, stmt);
+            ((ForStatement)stmt).List = new NameExpression(generatorFnArgName);
+            Parameter parameter = new Parameter(generatorFnArgName, 0);
+            FunctionDefinition functionDefinition = new FunctionDefinition(generatorFnName, new Parameter[] { parameter }, stmt);
             functionDefinition.IsGenerator = true;
-            return new GeneratorExpression(functionDefinition, new ListExpression(new AstExpression[] {}));
+            return new GeneratorExpression(functionDefinition, lst);
         }
 
         static LambdaExpression Revert(Lambda l) {
@@ -556,8 +563,8 @@ namespace IronPython.Modules
         }
 
         static ComprehensionIterator[] RevertIterators(PythonList generators) {
-            System.Collections.Generic.List<ComprehensionIterator> comprehensionIterators = 
-                new System.Collections.Generic.List<ComprehensionIterator>();
+            Generic.List<ComprehensionIterator> comprehensionIterators = 
+                new Generic.List<ComprehensionIterator>();
             foreach (comprehension generator in generators) {
                 ComprehensionFor cf = new ComprehensionFor(Revert(generator.target), Revert(generator.iter));
                 comprehensionIterators.Add(cf);
@@ -746,7 +753,7 @@ namespace IronPython.Modules
                         try {
                             string key = (string)name;
                             this.GetType().GetProperty(key).SetValue(this, source[key], null);
-                        } catch (System.Collections.Generic.KeyNotFoundException) {
+                        } catch (Generic.KeyNotFoundException) {
                             // ignore missing
                         }
                     }
@@ -2257,6 +2264,32 @@ namespace IronPython.Modules
             }
         }
 
+
+        internal static PythonList AltConvert(ComprehensionIterator[] iters) {
+            Generic.List<ComprehensionFor> comprehensionFors = 
+                new Generic.List<ComprehensionFor>();
+            Generic.List<Generic.List<ComprehensionIf>> ifsForComprehensions =
+                new Generic.List<Generic.List<ComprehensionIf>>();
+            Generic.List<ComprehensionIf> cifs = null;
+            for (int i = 0; i < iters.Length; i++) {
+                if (iters[i] is ComprehensionFor) {
+                    ComprehensionFor cf = (ComprehensionFor)iters[i];
+                    comprehensionFors.Add(cf);
+                    cifs = new Generic.List<ComprehensionIf>();
+                    ifsForComprehensions.Add(cifs);
+                } else {
+                    ComprehensionIf ci = (ComprehensionIf)iters[i];
+                    cifs.Add(ci);
+                }
+            }
+
+            PythonList comps = new PythonList();
+            for (int i = 0; i < comprehensionFors.Count; i++)
+                comps.Add(new comprehension(comprehensionFors[i], ifsForComprehensions[i].ToArray()));
+            return comps;
+        }
+
+
         [PythonType]
         public class GeneratorExp : expr
         {
@@ -2274,6 +2307,36 @@ namespace IronPython.Modules
                 _lineno = lineno;
                 _col_offset = col_offset;
             }
+           
+            // given following generator: (a for b in c for d in e for f in g)
+            // PythonAST (Iron) Representation looks like this:
+            //             
+            // Iterable
+            //  NameExpression c
+            //
+            // Function
+            //  FunctionDefinition<genexpr>
+            //    Parameter__gen_$_parm__
+            //    ForStatement
+            //      NameExpression b
+            //      NameExpression __gen_$_parm__
+            //      ForStatement
+            //        NameExpression d
+            //        NameExpression e
+            //        ForStatement
+            //          NameExpression f
+            //          NameExpression g
+            //          ExpressionStatement
+            //            YieldExpression
+            //            NameExpression a
+            //
+            // and corresponding ast (implementation agnostic) looks like this:
+            //        ('Expression', ('GeneratorExp', (1, 1), 
+            //            ('Name', (1, 1), 'a', ('Load',)), 
+            //            [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []),
+            //             ('comprehension', ('Name', (1, 18), 'd', ('Store',)), ('Name', (1, 23), 'e', ('Load',)), []),
+            //             ('comprehension', ('Name', (1, 29), 'f', ('Store',)), ('Name', (1, 34), 'g', ('Load',)), [])
+            //            ]))
 
             internal GeneratorExp(GeneratorExpression expr)
                 : this() {
@@ -2282,8 +2345,8 @@ namespace IronPython.Modules
                 ComprehensionIterator[] iters = walker.Iterators;
                 Debug.Assert(iters.Length != 0, "A generator expression cannot have zero iterators.");
                 iters[0] = new ComprehensionFor(((ComprehensionFor)iters[0]).Left, expr.Iterable);
+                _generators = AltConvert(iters);
                 _elt = Convert(walker.Yield.Expression);
-                _generators = Convert(iters);
             }
 
             public expr elt {
