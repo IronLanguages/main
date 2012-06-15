@@ -469,7 +469,7 @@ namespace IronPython.Modules
         static GeneratorExpression Revert(GeneratorExp exp) {
             Statement stmt = new ExpressionStatement(new YieldExpression(Revert(exp.elt)));
             int comprehensionIdx = exp.generators.Count-1;
-            AstExpression lst;
+            AstExpression list;
             do {
                 comprehension c = (comprehension)exp.generators[comprehensionIdx];
                 if (c.ifs != null && c.ifs.Count != 0) {
@@ -480,25 +480,25 @@ namespace IronPython.Modules
                         ifIdx--;
                     }
                 }
-                lst = Revert(c.iter);
-                stmt = new ForStatement(Revert(c.target), lst, stmt, null);
+                list = Revert(c.iter);
+                stmt = new ForStatement(Revert(c.target), list, stmt, null);
                 comprehensionIdx--;
             } while (comprehensionIdx >= 0);
             ((ForStatement)stmt).List = new NameExpression(generatorFnArgName);
             Parameter parameter = new Parameter(generatorFnArgName, 0);
             FunctionDefinition functionDefinition = new FunctionDefinition(generatorFnName, new Parameter[] { parameter }, stmt);
             functionDefinition.IsGenerator = true;
-            return new GeneratorExpression(functionDefinition, lst);
+            return new GeneratorExpression(functionDefinition, list);
         }
 
-        static LambdaExpression Revert(Lambda l) {
+        static LambdaExpression Revert(Lambda lambda) {
             Statement body;
-            AstExpression exp = Revert(l.body);
+            AstExpression exp = Revert(lambda.body);
             if (!_containsYield)
                 body = new ReturnStatement(exp);
             else
                 body = new ExpressionStatement(exp);
-            Parameter[] para = Revert(l.args);
+            Parameter[] para = Revert(lambda.args);
             FunctionDefinition fd = new FunctionDefinition(null, para, body);
             fd.IsGenerator = _containsYield;
             _containsYield = false;
@@ -631,10 +631,10 @@ namespace IronPython.Modules
             return new SetExpression(e);
         }
 
-        static ListExpression Revert(List lst) {
-            AstExpression[] e = new AstExpression[lst.elts.Count];
+        static ListExpression Revert(List list) {
+            AstExpression[] e = new AstExpression[list.elts.Count];
             int i = 0;
-            foreach (expr el in lst.elts)
+            foreach (expr el in list.elts)
                 e[i++] = Revert(el);
             return new ListExpression(e);
         }
@@ -823,15 +823,15 @@ namespace IronPython.Modules
 
                 if (stmt is SuiteStatement) {
                     SuiteStatement suite = (SuiteStatement)stmt;
-                    PythonList l = PythonOps.MakeEmptyList(suite.Statements.Count);
+                    PythonList list = PythonOps.MakeEmptyList(suite.Statements.Count);
                     foreach (Statement s in suite.Statements) 
                         if (s is SuiteStatement)  // multiple stmt in a line
                             foreach (Statement s2 in ((SuiteStatement)s).Statements)
-                                l.Add(Convert(s2));
+                                list.Add(Convert(s2));
                         else 
-                            l.Add(Convert(s));
+                            list.Add(Convert(s));
                     
-                    return l;
+                    return list;
                 }
 
                 return PythonOps.MakeListNoCopy(Convert(stmt));
@@ -906,27 +906,27 @@ namespace IronPython.Modules
             }
 
             internal static PythonList ConvertAliases(IList<DottedName> names, IList<string> asnames) {
-                PythonList l = PythonOps.MakeEmptyList(names.Count);
+                PythonList list = PythonOps.MakeEmptyList(names.Count);
 
                 if (names == FromImportStatement.Star) // does it ever happen?
-                    l.Add(new alias("*", null));
+                    list.Add(new alias("*", null));
                 else
                     for (int i = 0; i < names.Count; i++)
-                        l.Add(new alias(names[i].MakeString(), asnames[i]));
+                        list.Add(new alias(names[i].MakeString(), asnames[i]));
 
-                return l;
+                return list;
             }
 
             internal static PythonList ConvertAliases(IList<string> names, IList<string> asnames) {
-                PythonList l = PythonOps.MakeEmptyList(names.Count);
+                PythonList list = PythonOps.MakeEmptyList(names.Count);
 
                 if (names == FromImportStatement.Star)
-                    l.Add(new alias("*", null));
+                    list.Add(new alias("*", null));
                 else
                     for (int i = 0; i < names.Count; i++)
-                        l.Add(new alias(names[i], asnames[i]));
+                        list.Add(new alias(names[i], asnames[i]));
 
-                return l;
+                return list;
             }
 
             internal static slice TrySliceConvert(AstExpression expr) {
@@ -2279,26 +2279,26 @@ namespace IronPython.Modules
 
 
         internal static PythonList AltConvert(ComprehensionIterator[] iters) {
-            Generic.List<ComprehensionFor> comprehensionFors = 
+            Generic.List<ComprehensionFor> cfCollector = 
                 new Generic.List<ComprehensionFor>();
-            Generic.List<Generic.List<ComprehensionIf>> ifsForComprehensions =
+            Generic.List<Generic.List<ComprehensionIf>> cifCollector =
                 new Generic.List<Generic.List<ComprehensionIf>>();
-            Generic.List<ComprehensionIf> cifs = null;
+            Generic.List<ComprehensionIf> cif = null;
             for (int i = 0; i < iters.Length; i++) {
                 if (iters[i] is ComprehensionFor) {
                     ComprehensionFor cf = (ComprehensionFor)iters[i];
-                    comprehensionFors.Add(cf);
-                    cifs = new Generic.List<ComprehensionIf>();
-                    ifsForComprehensions.Add(cifs);
+                    cfCollector.Add(cf);
+                    cif = new Generic.List<ComprehensionIf>();
+                    cifCollector.Add(cif);
                 } else {
                     ComprehensionIf ci = (ComprehensionIf)iters[i];
-                    cifs.Add(ci);
+                    cif.Add(ci);
                 }
             }
 
             PythonList comps = new PythonList();
-            for (int i = 0; i < comprehensionFors.Count; i++)
-                comps.Add(new comprehension(comprehensionFors[i], ifsForComprehensions[i].ToArray()));
+            for (int i = 0; i < cfCollector.Count; i++)
+                comps.Add(new comprehension(cfCollector[i], cifCollector[i].ToArray()));
             return comps;
         }
 
