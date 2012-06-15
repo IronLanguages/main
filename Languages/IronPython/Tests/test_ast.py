@@ -25,6 +25,9 @@ def to_tuple(t):
 exec_tests = [
     # FunctionDef
     "def f(): pass",
+    "def f(a): pass",
+    "def f(a=1): pass",
+    "def f(*args, **kwargs): pass",
     # ClassDef
     "class C:pass",
     # Return
@@ -94,6 +97,8 @@ eval_tests = [
   "not v",
   # Lambda
   "lambda:None",
+  "lambda x: x",
+  "lambda x: (yield x)",
   # Dict
   "{ 1:2 }",
   # ListComp
@@ -102,8 +107,8 @@ eval_tests = [
   "(a for b in c for d in e for f in g)",
   "(a for b in c if d)",
   "(a for b in c for c in d)",
-  # Yield - yield expressions can't work outside a function
-  #
+  # Yield
+  "((yield i) for i in range(5))",
   # Compare
   "1 < 2 < 3",
   # Call
@@ -395,9 +400,30 @@ class AST_Tests(unittest.TestCase):
         self.assertEqual( g.next(), 'uuuu' )
         self.assertRaises( StopIteration, g.next )
 
+    def test_compile_from_ast_036(self):
+        # the results comply 1:1 with cpython 2.7.3 on Linux
+        p = ast.parse("((yield i) for i in range(3))", mode="eval") # yield inside generator 
+        c = compile(p,"<unknown>", mode="eval")
+        g = eval(c)
+        self.assertEqual(g.next(),0)
+        self.assertIsNone(g.next())
+        self.assertEqual(g.next(),1)
+        self.assertIsNone(g.next())
+        self.assertEqual(g.next(),2)
+        self.assertIsNone(g.next())
+        self.assertRaises(StopIteration, g.next )
 
     # TODO: more testing for extended slices [1:2, 5:10], [1:2, ...] etc
     # inspiration at: http://ilan.schnell-web.net/prog/slicing/
+
+    def test_compile_from_ast_038(self):
+        p = ast.parse("lambda x: (yield x)", mode="eval") # yield inside lambda
+        c = compile(p,"<unknown>", mode="eval")
+        eval(c)
+        f = eval(c)
+        g = f(1)
+        self.assertEqual(g.next(),1)
+        self.assertRaises(StopIteration, g.next )
 
 
     def test_compile_from_ast_100(self):
@@ -650,6 +676,7 @@ foo=Foo()
         exec c
         sys.stdout = saveStdout
         self.assertEqual(cap.getvalue(), "2\n")
+
 
 
     def test_snippets(self):
@@ -1131,6 +1158,9 @@ def main():
 #### GENERATED FOR IRONPYTHON ####
 exec_results = [
 ('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, None, []), [('Pass', (1, 9))], [])]),
+('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [('Name', (1, 6), 'a', ('Param',))], None, None, []), [('Pass', (1, 10))], [])]),
+('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [('Name', (1, 6), 'a', ('Param',))], None, None, [('Num', (1, 8), 1)]), [('Pass', (1, 12))], [])]),
+('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], 'args', 'kwargs', []), [('Pass', (1, 24))], [])]),
 ('Module', [('ClassDef', (1, 0), 'C', [], [('Pass', (1, 8))], [])]),
 ('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, None, []), [('Return', (1, 8), ('Num', (1, 15), 1))], [])]),
 ('Module', [('Delete', (1, 0), [('Name', (1, 4), 'v', ('Del',))])]),
@@ -1164,11 +1194,14 @@ eval_results = [
 ('Expression', ('BinOp', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Add',), ('Name', (1, 4), 'b', ('Load',)))),
 ('Expression', ('UnaryOp', (1, 0), ('Not',), ('Name', (1, 4), 'v', ('Load',)))),
 ('Expression', ('Lambda', (1, 0), ('arguments', [], None, None, []), ('Name', (1, 7), 'None', ('Load',)))),
+('Expression', ('Lambda', (1, 0), ('arguments', [('Name', (1, 7), 'x', ('Param',))], None, None, []), ('Name', (1, 10), 'x', ('Load',)))),
+('Expression', ('Lambda', (1, 0), ('arguments', [('Name', (1, 7), 'x', ('Param',))], None, None, []), ('Yield', (1, 10), ('Name', (1, 17), 'x', ('Load',))))),
 ('Expression', ('Dict', (1, 0), [('Num', (1, 2), 1)], [('Num', (1, 4), 2)])),
 ('Expression', ('ListComp', (1, 0), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), [('Name', (1, 17), 'd', ('Load',))])])),
 ('Expression', ('GeneratorExp', (1, 0), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []), ('comprehension', ('Name', (1, 18), 'd', ('Store',)), ('Name', (1, 23), 'e', ('Load',)), []), ('comprehension', ('Name', (1, 29), 'f', ('Store',)), ('Name', (1, 34), 'g', ('Load',)), [])])),
 ('Expression', ('GeneratorExp', (1, 0), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), [('Name', (1, 17), 'd', ('Load',))])])),
 ('Expression', ('GeneratorExp', (1, 0), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []), ('comprehension', ('Name', (1, 18), 'c', ('Store',)), ('Name', (1, 23), 'd', ('Load',)), [])])),
+('Expression', ('GeneratorExp', (1, 0), ('Yield', (1, 1), ('Name', (1, 8), 'i', ('Load',))), [('comprehension', ('Name', (1, 15), 'i', ('Store',)), ('Call', (1, 20), ('Name', (1, 20), 'range', ('Load',)), [('Num', (1, 26), 5)], [], None, None), [])])),
 ('Expression', ('Compare', (1, 0), ('Num', (1, 0), 1), [('Lt',), ('Lt',)], [('Num', (1, 4), 2), ('Num', (1, 8), 3)])),
 ('Expression', ('Call', (1, 0), ('Name', (1, 0), 'f', ('Load',)), [('Num', (1, 2), 1), ('Num', (1, 4), 2)], [('keyword', 'c', ('Num', (1, 8), 3))], ('Name', (1, 11), 'd', ('Load',)), ('Name', (1, 15), 'e', ('Load',)))),
 ('Expression', ('Repr', (1, 0), ('Name', (1, 1), 'v', ('Load',)))),

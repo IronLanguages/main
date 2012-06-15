@@ -492,9 +492,16 @@ namespace IronPython.Modules
         }
 
         static LambdaExpression Revert(Lambda l) {
-            Statement body = new ReturnStatement(Revert(l.body));
+            Statement body;
+            AstExpression exp = Revert(l.body);
+            if (!_containsYield)
+                body = new ReturnStatement(exp);
+            else
+                body = new ExpressionStatement(exp);
             Parameter[] para = Revert(l.args);
-            FunctionDefinition fd = new FunctionDefinition(null, para,body);
+            FunctionDefinition fd = new FunctionDefinition(null, para, body);
+            fd.IsGenerator = _containsYield;
+            _containsYield = false;
             return new LambdaExpression(fd);
         }
 
@@ -1178,7 +1185,7 @@ namespace IronPython.Modules
                     else if (param.IsDictionary)
                         _kwarg = param.Name;
                     else {
-                        args.Add(new Name(param.Name, Param.Instance));
+                        args.Add(new Name(param));
                         if (param.DefaultValue != null)
                             defaults.Add(Convert(param.DefaultValue));
                     }
@@ -2703,8 +2710,29 @@ namespace IronPython.Modules
                 : this() {
                 FunctionDef def = (FunctionDef)Convert(lambda.Function);
                 _args = def.args;
-                Debug.Assert(def.body.Count == 1, "LambdaExpression body should be one Return statement.");
-                _body = ((Return)def.body[0]).value;
+                Debug.Assert(def.body.Count == 1, "LambdaExpression body should be one statement.");
+                stmt statement = (stmt)def.body[0];
+                if (statement is Return)
+                    _body = ((Return)statement).value;
+                else if (statement is Expr) {
+                    // What should be sufficient is:
+                    // _body = ((Expr)statement).value;
+                    // but, AST comes with trees containing twice YieldExpression.
+                    // For: 
+                    //   lamba x: (yield x) 
+                    // it comes back with:
+                    //
+                    //IronPython.Compiler.Ast.LambdaExpression
+                    //IronPython.Compiler.Ast.FunctionDefinition<lambda$334>generator
+                    //  IronPython.Compiler.Ast.Parameter  x
+                    //  IronPython.Compiler.Ast.ExpressionStatement
+                    //    IronPython.Compiler.Ast.YieldExpression     <<<<<<<<
+                    //      IronPython.Compiler.Ast.YieldExpression   <<<<<<<< why twice?
+                    //        IronPython.Compiler.Ast.NameExpression x
+
+                    _body = ((Yield)((Expr)statement).value).value;
+                }  else
+                    throw new ArgumentTypeException("Unexpected statement type: " + statement.GetType());
             }
 
             public arguments args {
@@ -2877,8 +2905,14 @@ namespace IronPython.Modules
             public Name(String id, expr_context ctx)
                 : this(id, ctx, null, null) { }
 
+            internal Name(Parameter para)
+                : this(para.Name, Param.Instance) {
+                GetSourceLocation(para);
+            }
+
             internal Name(NameExpression expr, expr_context ctx)
                 : this(expr.Name, ctx) {
+                GetSourceLocation(expr);
             }
 
             public expr_context ctx {
