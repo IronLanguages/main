@@ -467,24 +467,13 @@ class AST_Tests(unittest.TestCase):
         exec c
         self.assertEqual(cap.getvalue(),'42')
 
-# TODO: yield raises non implemented on exec. The one compiled wihtout intermediary AST is ok
-#    def test_compile_from_ast_109(self):
-#        cap = StringIO()
-#        code = """
-#def f(): 
-#    yield 42
-
-#print >> cap, f().next(),
-#"""
-#        p = ast.parse(code, mode="exec") # yield statement 
-#        print ast.dump(p, annotate_fields=True, include_attributes=True)
-#        c = compile(p,"<unknown>", mode="exec")
-#        c = compile(code,"<unknown>", mode="exec")
-#        print dir(c)
-#        import dis
-#        print dis.dis(c)
-#        exec c
-#        self.assertEqual(cap.getvalue(),'42')
+    def test_compile_from_ast_109(self):
+        p = ast.parse("def f(): yield 42", mode="exec") # yield statement 
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+        g = f()
+        self.assertEqual(g.next(),42)
+        self.assertRaises(StopIteration, g.next )
 
     def test_compile_from_ast_110(self):
         p = ast.parse("raise Exception('expected')", mode="exec") # raise
@@ -1123,6 +1112,10 @@ def test_main():
 def main():
     if __name__ != '__main__':
         return
+    if sys.argv[1:] == ['-x']:
+        # place for a quick individual test
+        sys.exit()
+
     if sys.argv[1:] == ['-g']:
         for statements, kind in ((exec_tests, "exec"), (single_tests, "single"),
                                  (eval_tests, "eval")):

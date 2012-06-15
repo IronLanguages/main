@@ -265,7 +265,11 @@ namespace IronPython.Modules
             return new RaiseStatement(Revert(r.type), Revert(r.inst), Revert(r.tback));
         }
 
+        // if yield is detected, the containing function has to be marked as generator
+        private static bool _containsYield = false;
+
         static YieldExpression Revert(Yield y) {
+            _containsYield = true;
             return new YieldExpression(Revert(y.value));
         }
 
@@ -292,6 +296,8 @@ namespace IronPython.Modules
                 decorators = Revert(def.decorators);
             //SourceUnit su = new SourceUnit();
             FunctionDefinition fd = new FunctionDefinition(def.name, Revert(def.args), RevertStmts(def.body));
+            fd.IsGenerator = _containsYield;
+            _containsYield = false;
             fd.Decorators = decorators;
             return fd;
         }
