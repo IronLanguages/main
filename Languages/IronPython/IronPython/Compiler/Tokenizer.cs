@@ -1497,8 +1497,15 @@ namespace IronPython.Compiler {
             // PEP 0263 defines the following regex for the encoding line
             // coding[:=]\s*([-\w.]+)
             encName = null;
+            int startIndex = 0;
             if (line.Length < 10) return false;
-            if (line[0] != '#') return false;
+            while (startIndex < line.Length) {
+                if (!Char.IsWhiteSpace (line[startIndex])) break;
+                
+                startIndex++;
+            }
+
+            if (startIndex == line.Length || line[startIndex] != '#') return false;
 
             // we have magic comment line
             int codingIndex;
