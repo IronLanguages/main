@@ -237,6 +237,8 @@ namespace IronPython.Runtime {
             _systemState = new PythonModule(sysDict);
             _systemState.__dict__["__name__"] = "sys";
             _systemState.__dict__["__package__"] = null;
+            _systemState.__dict__["excepthook"] = _systemState.__dict__["__excepthook__"];
+            _systemState.__dict__["displayhook"] = _systemState.__dict__["__displayhook__"];
 
             PythonBinder binder = new PythonBinder(this, _defaultContext);
             _sharedOverloadResolverFactory = new PythonOverloadResolverFactory(binder, Expression.Constant(_defaultContext));

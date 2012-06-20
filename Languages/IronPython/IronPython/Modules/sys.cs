@@ -78,7 +78,7 @@ namespace IronPython.Modules {
         /// Handles output of the expression statement.
         /// Prints the value and sets the __builtin__._
         /// </summary>
-        public static void displayhook(CodeContext/*!*/ context, object value) {
+        public static void __displayhook__(CodeContext/*!*/ context, object value) {
             if (value != null) {
                 PythonOps.Print(context, PythonOps.Repr(context, value));
                 PythonContext.GetContext(context).BuiltinModuleDict["_"] = value;
@@ -87,7 +87,7 @@ namespace IronPython.Modules {
 
         public const int dllhandle = 0;
 
-        public static void excepthook(CodeContext/*!*/ context, object exctype, object value, object traceback) {
+        public static void __excepthook__(CodeContext/*!*/ context, object exctype, object value, object traceback) {
             PythonContext pc = PythonContext.GetContext(context);
 
             PythonOps.PrintWithDest(
