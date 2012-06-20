@@ -82,6 +82,7 @@ class UnicodeFunctionsTest(UnicodeDatabaseTest):
     # update this, if the database changes
     expectedchecksum = '6ccf1b1a36460d2694f9b0b0f0324942fe70ede6'
 
+    @unittest.skipIf(sys.platform == 'cli', 'Too slow')
     def test_function_checksum(self):
         data = []
         h = hashlib.sha1()

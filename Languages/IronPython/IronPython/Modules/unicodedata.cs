@@ -25,6 +25,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using IronPython.Runtime;
+using IronPython.Runtime.Operations;
 
 [assembly: PythonModule("unicodedata", typeof(IronPython.Modules.unicodedata))]
 
@@ -33,6 +34,7 @@ namespace IronPython.Modules
     public static class unicodedata
     {
         private const string UnicodedataResourceName = "IronPython.Modules.unicodedata.IPyUnicodeData.txt.gz";
+        private const string OtherNotAssigned = "Cn";
 
         private static Dictionary<int, CharInfo> database;
         private static List<RangeInfo> ranges;
@@ -66,33 +68,67 @@ namespace IronPython.Modules
             }
         }
 
-        public static int @decimal(char unichr, int? @default = null)
+        public static int @decimal(char unichr, int @default) 
         {
-            try
+            try 
             {
                 int? d = GetInfo(unichr).Numeric_Value_Decimal;
-                if(d.HasValue)
+                if (d.HasValue) 
                 {
                     return d.Value;
-                }
-                else
+                } 
+                else 
                 {
-                    if(@default.HasValue)
-                        return @default.Value;
-                    else
-                        throw new Exception();
+                    return @default;
                 }
-            }
-            catch(KeyNotFoundException)
+            } 
+            catch (KeyNotFoundException) 
             {
-                if(@default.HasValue)
-                    return @default.Value;
-                else
-                    throw new Exception();
+                return @default;
             }
         }
 
-        public static int digit(char unichr, int? @default = null)
+        public static int @decimal(char unichr) 
+        {
+            try 
+            {
+                int? d = GetInfo(unichr).Numeric_Value_Decimal;
+                if (d.HasValue) 
+                {
+                    return d.Value;
+                }
+                else 
+                {
+                    throw PythonOps.ValueError("not a decimal");
+                }
+            } 
+            catch (KeyNotFoundException) 
+            {
+                throw PythonOps.ValueError("not a decimal");
+            }
+        }
+
+        public static object @decimal(char unichr, object @default) 
+        {
+            try 
+            {
+                int? d = GetInfo(unichr).Numeric_Value_Decimal;
+                if (d.HasValue)
+                {
+                    return d.Value;
+                } 
+                else 
+                {
+                    return @default;
+                }
+            } 
+            catch (KeyNotFoundException) 
+            {
+                return @default;
+            }
+        }
+
+        public static int digit(char unichr, int @default)
         {
             try
             {
@@ -103,74 +139,154 @@ namespace IronPython.Modules
                 }
                 else
                 {
-                    if(@default.HasValue)
-                        return @default.Value;
-                    else
-                        throw new Exception();
+                    return @default;
                 }
             }
             catch(KeyNotFoundException)
             {
-                if(@default.HasValue)
-                    return @default.Value;
-                else
-                    throw new Exception();
+                return @default;
             }
         }
 
-        public static double numeric(char unichr, double? @default = null)
+        public static object digit(char unichr, object @default) 
         {
-            try
+            try 
             {
-                double? d = GetInfo(unichr).Numeric_Value_Numeric;
-                if(d.HasValue)
+                int? d = GetInfo(unichr).Numeric_Value_Digit;
+                if (d.HasValue) 
                 {
                     return d.Value;
                 }
-                else
+                else 
                 {
-                    if(@default.HasValue)
-                        return @default.Value;
-                    else
-                        throw new Exception();
+                    return @default;
                 }
             }
-            catch(KeyNotFoundException)
+            catch (KeyNotFoundException) 
             {
-                if(@default.HasValue)
-                    return @default.Value;
-                else
-                    throw new Exception();
+                return @default;
+            }
+        }
+
+        public static int digit(char unichr) 
+        {
+            try 
+            {
+                int? d = GetInfo(unichr).Numeric_Value_Digit;
+                if (d.HasValue) 
+                {
+                    return d.Value;
+                } 
+                else 
+                {
+                    throw PythonOps.ValueError("not a digit");
+                }
+            } 
+            catch (KeyNotFoundException) 
+            {
+                throw PythonOps.ValueError("not a digit");
+            }
+        }
+
+        public static double numeric(char unichr, double @default) 
+        {
+            try 
+            {
+                double? d = GetInfo(unichr).Numeric_Value_Numeric;
+                if (d.HasValue) 
+                {
+                    return d.Value;
+                } 
+                else 
+                {
+                    return @default;
+                }
+            } 
+            catch (KeyNotFoundException) 
+            {
+                return @default;
+            }
+        }
+
+        public static double numeric(char unichr) 
+        {
+            try 
+            {
+                double? d = GetInfo(unichr).Numeric_Value_Numeric;
+                if (d.HasValue) 
+                {
+                    return d.Value;
+                } 
+                else 
+                {
+                    throw PythonOps.ValueError("not a numeric character");
+                }
+            } 
+            catch (KeyNotFoundException) 
+            {
+                throw PythonOps.ValueError("not a numeric character");
+            }
+        }
+
+        public static object numeric(char unichr, object @default) 
+        {
+            try 
+            {
+                double? d = GetInfo(unichr).Numeric_Value_Numeric;
+                if (d.HasValue) 
+                {
+                    return d.Value;
+                } 
+                else 
+                {
+                    return @default;
+                }
+            } 
+            catch (KeyNotFoundException) 
+            {
+                return @default;
             }
         }
 
         public static string category(char unichr)
         {
+            if (!database.ContainsKey(unichr))
+                return OtherNotAssigned;
             return GetInfo(unichr).General_Category;
         }
 
         public static string bidirectional(char unichr)
         {
+            if (!database.ContainsKey(unichr))
+                return string.Empty;
             return GetInfo(unichr).Bidi_Class;
         }
 
         public static int combining(char unichr)
         {
+            if (!database.ContainsKey(unichr))
+                return 0;
             return GetInfo(unichr).Canonical_Combining_Class;
         }
 
         public static string east_asian_width(char unichr)
         {
+            if (!database.ContainsKey(unichr))
+                return string.Empty;
             return GetInfo(unichr).East_Asian_Width;
         }
 
         public static int mirrored(char unichr)
         {
+            if (!database.ContainsKey(unichr))
+                return 0;
             return GetInfo(unichr).Bidi_Mirrored;
         }
 
         public static string decomposition(char unichr)
         {
+            if (!database.ContainsKey(unichr))
+                return string.Empty;
             return GetInfo(unichr).Decomposition_Type;
         }
 
@@ -243,7 +359,7 @@ namespace IronPython.Modules
         private static CharInfo GetInfo(char unichr)
         {
             EnsureLoaded();
-
+            
             return database[(int)unichr];
         }
 
