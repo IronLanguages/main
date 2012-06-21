@@ -87,6 +87,13 @@ the first is the signal number, the second is the interrupted stack frame.";
         public const int SIG_DFL = 0;
         public const int SIG_IGN = 1;
 
+        //Windows signals
+        public const int CTRL_C_EVENT = 0;
+        public const int CTRL_BREAK_EVENT = 1;
+        public const int CTRL_CLOSE_EVENT = 2;
+        public const int CTRL_LOGOFF_EVENT = 5;
+        public const int CTRL_SHUTDOWN_EVENT = 6;
+
         public static BuiltinFunction default_int_handler = BuiltinFunction.MakeFunction("default_int_handler",
                     ArrayUtils.ConvertAll(typeof(PythonSignal).GetMember("default_int_handlerImpl"), (x) => (MethodBase)x),
                     typeof(PythonSignal)

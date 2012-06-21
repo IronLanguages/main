@@ -967,12 +967,18 @@ def test_bytes_to_numeric():
         
         v = substring(b"123")        
         
-        AreEqual(long(v), 1L)
-        
         AreEqual(float(v), 1.0)
         AreEqual(myfloat(v), 1.0)
         AreEqual(type(myfloat(v)), myfloat)
 
+        AreEqual(long(v), 1L)
+        AreEqual(mylong(v), 1L)
+        AreEqual(type(mylong(v)), mylong)
+        
+        AreEqual(int(v), 1)
+        AreEqual(myint(v), 1)
+        AreEqual(type(myint(v)), myint)
+        
         # str in 2.6 still supports this, but not in 3.0, we have the 3.0 behavior.
         if not is_cli and testType == bytes:
             AreEqual(complex(v), 123 + 0j)
@@ -1443,12 +1449,8 @@ def test_bytes_hashing():
         x = hashLib(b'abc')
         x.update(b'abc')
         
-        if is_ironpython: #http://ironpython.codeplex.com/workitem/27903
-            AssertError(TypeError, hashLib, bytearray(b'abc'))
-            AssertError(TypeError, x.update, bytearray(b'abc'))
-        else:
-            #For now just make sure this doesn't throw
-            temp = hashLib(bytearray(b'abc'))
-            x.update(bytearray(b'abc'))
+        #For now just make sure this doesn't throw
+        temp = hashLib(bytearray(b'abc'))
+        x.update(bytearray(b'abc'))
 
 run_test(__name__)

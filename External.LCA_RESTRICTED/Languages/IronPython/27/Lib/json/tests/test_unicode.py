@@ -1,3 +1,5 @@
+import sys
+import unittest
 from unittest import TestCase
 
 import json
@@ -39,11 +41,13 @@ class TestUnicode(TestCase):
         j = json.dumps([u], ensure_ascii=False)
         self.assertEqual(j, u'["{0}"]'.format(u))
 
+    @unittest.skipIf(sys.platform == 'cli', 'http://ironpython.codeplex.com/workitem/32802')
     def test_big_unicode_encode(self):
         u = u'\U0001d120'
         self.assertEqual(json.dumps(u), '"\\ud834\\udd20"')
         self.assertEqual(json.dumps(u, ensure_ascii=False), u'"\U0001d120"')
 
+    @unittest.skipIf(sys.platform == 'cli', 'http://ironpython.codeplex.com/workitem/32802')
     def test_big_unicode_decode(self):
         u = u'z\U0001d120x'
         self.assertEqual(json.loads('"' + u + '"'), u)
@@ -70,6 +74,7 @@ class TestUnicode(TestCase):
                                     object_hook = lambda x: None),
                          OrderedDict(p))
 
+    @unittest.skipIf(sys.platform == 'cli', 'http://ironpython.codeplex.com/workitem/32802')
     def test_default_encoding(self):
         self.assertEqual(json.loads(u'{"a": "\xe9"}'.encode('utf-8')),
             {'a': u'\xe9'})

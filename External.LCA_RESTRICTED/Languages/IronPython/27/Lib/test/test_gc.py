@@ -35,6 +35,7 @@ class GC_Detector(object):
 ### Tests
 ###############################################################################
 
+@unittest.skipIf(sys.platform == 'cli', 'IronPython does not fully support the gc module.')
 class GCTests(unittest.TestCase):
     def test_list(self):
         l = []
@@ -470,6 +471,7 @@ class GCTests(unittest.TestCase):
             # would be damaged, with an empty __dict__.
             self.assertEqual(x, None)
 
+@unittest.skipIf(sys.platform == 'cli', 'IronPython does not fully support the gc module.')
 class GCTogglingTests(unittest.TestCase):
     def setUp(self):
         gc.enable()

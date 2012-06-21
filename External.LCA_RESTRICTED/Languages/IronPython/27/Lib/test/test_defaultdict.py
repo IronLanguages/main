@@ -150,7 +150,7 @@ class TestDefaultDict(unittest.TestCase):
         else:
             self.fail("expected KeyError")
 
-    @unittest.skipIf(sys.platform == 'cli', 'Broken on ipy')
+    @unittest.skipIf(sys.platform == 'cli', 'StackOverflowException on ipy.')
     def test_recursive_repr(self):
         # Issue2045: stack overflow when default_factory is a bound method
         class sub(defaultdict):

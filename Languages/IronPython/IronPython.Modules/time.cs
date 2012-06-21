@@ -649,6 +649,14 @@ namespace IronPython.Modules {
                 get { return _data.Length; }
             }
 
+            public int n_sequence_fields {
+                get { return _data.Length; }
+            }
+
+            public int n_unnamed_fields {
+                get { return 0; }
+            }
+
             internal struct_time(int year, int month, int day, int hour, int minute, int second, int dayOfWeek, int dayOfYear, int isDst)
                 : base(new object[] { year, month, day, hour, minute, second, dayOfWeek, dayOfYear, isDst }) {
             }
@@ -693,6 +701,17 @@ namespace IronPython.Modules {
 
             public static object __getnewargs__(CodeContext context, int year, int month, int day, int hour, int minute, int second, int dayOfWeek, int dayOfYear, int isDst) {
                 return PythonTuple.MakeTuple(struct_time.__new__(context, _StructTimeType, year, month, day, hour, minute, second, dayOfWeek, dayOfYear, isDst));
+            }
+
+            public override string ToString() {
+                return string.Format(
+                    "time.struct_time(tm_year={0}, tm_mon={1}, tm_mday={2}, tm_hour={3}, tm_min={4}, tm_sec={5}, tm_wday={6}, tm_yday={7}, tm_isdst={8})",
+                    //this.tm_year, this.tm_mon, this.tm_mday, this.tm_hour, this.tm_min, this.tm_sec, this.tm_wday, this.tm_yday, this.tm_isdst
+                    _data);
+            }
+
+            public override string __repr__(CodeContext context) {
+                return this.ToString();
             }
         }
     }

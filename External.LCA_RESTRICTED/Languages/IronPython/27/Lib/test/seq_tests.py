@@ -310,9 +310,9 @@ class CommonTest(unittest.TestCase):
         if sys.maxint <= 2147483647:
             x = self.type2test([0])
             x *= 2**16
-            self.assertRaises(MemoryError, x.__mul__, 2**16)
+            self.assertRaises((MemoryError, OverflowError), x.__mul__, 2**16)
             if hasattr(x, '__imul__'):
-                self.assertRaises(MemoryError, x.__imul__, 2**16)
+                self.assertRaises((MemoryError, OverflowError), x.__imul__, 2**16)
 
     def test_subscript(self):
         a = self.type2test([10, 11])

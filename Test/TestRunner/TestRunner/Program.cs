@@ -12,7 +12,7 @@ using System.ComponentModel;
 namespace TestRunner {
     class Program {
         private bool _verbose, _runLongRunning, _admin, _quiet;
-        private int _threadCount = 6;
+        private int _threadCount = 1;
         private List<TestResult> _results = new List<TestResult>();
 
         static int Main(string[] args) {

@@ -1675,7 +1675,7 @@ def test_weird_compare():
     AreEqual(cmp(a, b), cmp(id(a), id(b)))
     Assert('__cmp__' not in WithCompare.__dict__)
 
-@skip("silverlight")
+@disabled("No guarantee IronRuby is available.")
 def test_load_ruby():
     sys.path.append(path_combine(testpath.public_testdir, r'XLang'))
     rubyfile = clr.Use('some_ruby_file')

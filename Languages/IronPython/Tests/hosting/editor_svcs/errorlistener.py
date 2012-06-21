@@ -126,15 +126,15 @@ break"""
     
 def test_assignment_to_none():
     expected = [   
-        ("assignment to None", "None", 80, FatalError),        
+        ("cannot assign to None", "None", 80, FatalError),        
     ]
     actual = compile_file("None = 42")        
     AreEqual(expected, actual)
 
 def test_multiple_erroneous_statements():
     expected = [
-        ("assignment to None", "None", 80, FatalError),
-        ("assignment to None", "None", 80, FatalError),
+        ("cannot assign to None", "None", 80, FatalError),
+        ("cannot assign to None", "None", 80, FatalError),
     ]
     code = """\
 None = 2
@@ -170,7 +170,7 @@ def bar():
 def test_should_report_both_errors_and_warnings_negative():    
     "Bug #17541, http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=17541"
     expected = [   
-        ("assignment to None", "None", -1, Error),
+        ("cannot assign to None", "None", -1, Error),
         ("Variable a assigned before global declaration", "global a", -1, Warning),
     ]    
     code = """\
@@ -182,7 +182,7 @@ def foo():
     
 def test_all_together():        
     expected = [   
-        ('assignment to None', 'None', 80,FatalError),
+        ('cannot assign to None', 'None', 80,FatalError),
     ]        
     code = """\
 None = 2

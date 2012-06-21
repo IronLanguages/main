@@ -1,3 +1,6 @@
+import sys
+import decimal
+import unittest
 from unittest import TestCase, skipUnless
 
 from json import decoder, encoder, scanner
@@ -18,6 +21,7 @@ class TestSpeedups(TestCase):
         self.assertIs(encoder.encode_basestring_ascii,
                       encoder.c_encode_basestring_ascii)
 
+@unittest.skipIf(sys.platform == 'cli', 'No json speedups for IronPython.')
 class TestDecode(TestCase):
     def test_make_scanner(self):
         self.assertRaises(AttributeError, scanner.c_make_scanner, 1)

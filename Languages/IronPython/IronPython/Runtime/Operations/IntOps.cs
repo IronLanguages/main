@@ -178,21 +178,20 @@ namespace IronPython.Runtime.Operations {
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s) {
-            if (cls == TypeCache.Int32) {
-                object value;
-                IPythonObject po = s as IPythonObject;
-                if (po != null &&
-                    PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__int__", out value)) {
-                    return value;
-                }
-
-                return FastNew(context, s.MakeString());
+            object value;
+            IPythonObject po = s as IPythonObject;
+            if (po == null ||
+                !PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__int__", out value)) {
+                value = FastNew(context, s.MakeString());
             }
 
-            ValidateType(cls);
-
-            // derived int creation...
-            return cls.CreateInstance(context, FastNew(context, s.MakeString()));
+            if (cls == TypeCache.Int32) {
+                return value;
+            } else {
+                ValidateType(cls);
+                // derived int creation...
+                return cls.CreateInstance(context, value);
+            }
         }
 
         internal static string TrimRadix(string s, int radix) {

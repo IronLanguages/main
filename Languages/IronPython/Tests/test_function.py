@@ -555,9 +555,9 @@ if is_cli and not is_silverlight:
     wkdir = testpath.public_testdir
     
     if "-X:LightweightScopes" in Environment.GetCommandLineArgs():
-	    ipi = IronPythonInstance(executable, wkdir, "-X:LightweightScopes")
+        ipi = IronPythonInstance(executable, wkdir, "-X:LightweightScopes", "-X:BasicConsole")
     else:
-	    ipi = IronPythonInstance(executable, wkdir, "")
+        ipi = IronPythonInstance(executable, wkdir, "-X:BasicConsole")
 
     if (ipi.Start()):
         result = ipi.ExecuteLine("from iptest.assert_util import *")
@@ -789,7 +789,7 @@ def test_big_calls():
         # w/ defaults
         exec 'def g(' + ','.join(['a' + str(i) + '=' + str(i) for i in range(size)]) + '): return ' + ','.join(['a' + str(i) for i in range(size)])
         if size <= 255 or is_cli:
-			# CPython allows function definitions > 255, but not calls w/ > 255 params.
+            # CPython allows function definitions > 255, but not calls w/ > 255 params.
             exec 'a = f(' + ', '.join([str(x) for x in xrange(size)]) + ')'
             AreEqual(a, tuple(xrange(size)))
             exec 'a = g()'

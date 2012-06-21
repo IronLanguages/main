@@ -100,6 +100,12 @@ namespace Microsoft.Scripting.Interpreter {
             return Data[--StackIndex];
         }
 
+        public object Pop(int n) {
+            int si = StackIndex - n;
+            StackIndex = si;
+            return Data[si];
+        }
+
         internal void SetStackDepth(int depth) {
             StackIndex = Interpreter.LocalCount + depth;
         }

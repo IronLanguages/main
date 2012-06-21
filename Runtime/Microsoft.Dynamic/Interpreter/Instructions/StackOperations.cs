@@ -77,6 +77,26 @@ namespace Microsoft.Scripting.Interpreter {
         }
     }
 
+    // NOTE: Consider caching if used frequently
+    internal sealed class PopNInstruction : Instruction {
+        private readonly int _n;
+
+        internal PopNInstruction(int n) {
+            _n = n;
+        }
+
+        public override int ConsumedStack { get { return _n; } }
+
+        public override int Run(InterpretedFrame frame) {
+            frame.Pop(_n);
+            return +1;
+        }
+
+        public override string ToString() {
+            return "Pop(" + _n + ")";
+        }
+    }
+
     internal sealed class DupInstruction : Instruction {
         internal readonly static DupInstruction Instance = new DupInstruction();
 

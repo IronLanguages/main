@@ -208,7 +208,7 @@ def test_hidden_base():
     a = DerivedFromHiddenBase()
     AreEqual(a.Accessible(), 42)
     AssertError(AttributeError, lambda: a.Inaccessible)
-	
+
 def test_cp27150():
 	from IronPythonTest import GenericProperty
 	from System import DateTime

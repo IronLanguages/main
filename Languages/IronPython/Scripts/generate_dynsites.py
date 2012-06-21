@@ -112,7 +112,7 @@ def generate_one_func_type(cw, n, varianceAnnotated):
     cw.write('public delegate TResult Func<%(gsig)s>(%(gparms)s);', gsig = gsig_1_result(n, varianceAnnotated), gparms = gparams_1(n))
 
 def gen_func_action(cw, lo, med, hi, func):
-    cw.write("#if CLR2 || SILVERLIGHT")
+    cw.write("#if !FEATURE_VARIANCE")
     for i in range(lo, hi):
         func(cw, i, False)
     cw.write("#else")

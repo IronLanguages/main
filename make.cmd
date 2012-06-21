@@ -57,7 +57,7 @@ echo No target 'package'. Try 'package-release'.
 goto :exit
 
 :test
-echo Not Ready
+Test\test-ipy-tc.cmd /category:Languages\IronPython\IronPython\2.X
 goto :exit
 
 :distclean

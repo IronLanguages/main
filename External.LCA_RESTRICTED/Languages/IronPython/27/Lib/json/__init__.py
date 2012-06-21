@@ -32,7 +32,7 @@ Compact encoding::
 
     >>> import json
     >>> json.dumps([1,2,3,{'4': 5, '6': 7}], separators=(',',':'))
-    '[1,2,3,{"4":5,"6":7}]'
+    '[1,2,3,{"6":7,"4":5}]'
 
 Pretty printing::
 

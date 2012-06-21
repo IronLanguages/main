@@ -212,6 +212,7 @@ def touch(path, text=''):
     fp.write(text)
     fp.close()
 
+@unittest.skipIf(sys.platform == 'cli', 'Does not properly clean up temp files.')
 class LongReprTest(unittest.TestCase):
     def setUp(self):
         longname = 'areallylongpackageandmodulenametotestreprtruncation'

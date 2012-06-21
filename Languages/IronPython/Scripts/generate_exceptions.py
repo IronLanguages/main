@@ -39,7 +39,7 @@ excs = collect_excs()
 pythonExcs = ['ImportError', 'RuntimeError', 'UnicodeTranslateError', 'PendingDeprecationWarning', 'EnvironmentError',
               'LookupError', 'OSError', 'DeprecationWarning', 'UnicodeError', 'FloatingPointError', 'ReferenceError',
               'FutureWarning', 'AssertionError', 'RuntimeWarning', 'ImportWarning', 'UserWarning', 'SyntaxWarning', 
-	          'UnicodeWarning', 'StopIteration', 'BytesWarning', 'BufferError']
+              'UnicodeWarning', 'StopIteration', 'BytesWarning', 'BufferError']
 
 
 class ExceptionInfo(object):
@@ -230,7 +230,7 @@ def get_type(name):
     if name.startswith('Microsoft.Scripting'):   
         res = ms.GetType(name)
         return res if res is not None else md.GetType(name)
-	
+    
     if name.startswith('System.ComponentModel'): return sysdll.GetType(name)
     
     return System.Type.GetType(name)
@@ -308,7 +308,7 @@ public class %(name)s : %(supername)s, IPythonAwareException {
     public %(name)s(string message, Exception innerException)
         : base(message, innerException) {
     }
-#if !SILVERLIGHT // SerializationInfo
+#if FEATURE_SERIALIZATION
     protected %(name)s(SerializationInfo info, StreamingContext context) : base(info, context) { }
     
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase")]

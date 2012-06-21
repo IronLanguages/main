@@ -142,8 +142,8 @@ def test_buffer_bytes():
         
 @skip("silverlight")
 def test_write_file():
-    inputs = [buffer('abcdef'), buffer(b'abcdef'), buffer(bytearray(b'abcdef'))]
-    text_inputs = [buffer(array.array('b', 'abcdef')), array.array('b', 'abcdef'), array.array('c', 'abcdef')]
+    inputs = [buffer('abcdef'), buffer(b'abcdef'), buffer(bytearray(b'abcdef')), buffer(array.array('b', 'abcdef'))]
+    text_inputs = [array.array('b', 'abcdef'), array.array('c', 'abcdef')]
     #if is_cli:
     #    inputs.append(System.Array[System.Char]('abcdef'))
 
@@ -157,6 +157,8 @@ def test_write_file():
         
     
     # TODO: Arrays not allowed in non-binary mode
+    # buffer(array(...)) is currently allowed because disallowing it
+    # would require some hacks.
     for inp in inputs:
         f = file('foo', 'w')
         f.write(inp)

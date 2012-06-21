@@ -127,7 +127,7 @@ class PlatformTest(unittest.TestCase):
         res = platform.uname()
         self.assertTrue(any(res))
 
-    @unittest.skipUnless(sys.platform.startswith('win'), "windows only test")
+    @unittest.skipUnless(sys.platform.startswith('win') or os.name == 'nt', "windows only test")
     def test_uname_win32_ARCHITEW6432(self):
         # Issue 7860: make sure we get architecture from the correct variable
         # on 64 bit Windows: if PROCESSOR_ARCHITEW6432 exists we should be

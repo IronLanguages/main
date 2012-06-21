@@ -1433,7 +1433,7 @@ namespace IronPython.Runtime.Types {
                     }
                 }
                 if (filteredMembers != null) {
-                    foundMembers = filteredMembers.ToArray();
+                    foundMembersArray = filteredMembers.ToArray();
                 }
 
                 MemberGroup members = new MemberGroup(foundMembersArray);

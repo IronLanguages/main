@@ -16,6 +16,7 @@ def disassemble(func):
 def dis_single(line):
     return disassemble(compile(line, '', 'single'))
 
+@unittest.skipIf(sys.platform == 'cli', 'No pyc bytecode in IronPython.')
 class TestTranforms(unittest.TestCase):
 
     def test_unot(self):

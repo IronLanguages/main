@@ -457,7 +457,8 @@ namespace IronPython.Compiler.Ast {
                 return;
             }
             if (lookup != null) {
-                instructions.EmitCall(typeof(PythonOps).GetMethod(lookup.IsLocal ? "SetLocal" : "SetGlobal"));
+                var setter = typeof(PythonOps).GetMethod(lookup.IsLocal ? "SetLocal" : "SetGlobal");
+                instructions.Emit(CallInstruction.Create(setter));
                 return;
             }
 

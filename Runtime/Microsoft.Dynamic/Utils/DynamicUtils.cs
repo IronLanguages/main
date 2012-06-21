@@ -228,7 +228,7 @@ namespace Microsoft.Scripting.Utils {
                 public void AddInstructions(LightCompiler compiler) {
                     compiler.Compile(_test);
                     compiler.Instructions.EmitLoad(_bindingInfo);
-                    compiler.Instructions.EmitCall(InterpretedCallSiteTest);
+                    compiler.EmitCall(InterpretedCallSiteTest);
                 }
 
                 #endregion

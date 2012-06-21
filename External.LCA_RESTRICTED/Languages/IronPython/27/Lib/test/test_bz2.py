@@ -201,6 +201,7 @@ class BZ2FileTest(BaseTest):
             self.assertRaises(IOError, bz2f.write, "a")
             self.assertRaises(IOError, bz2f.writelines, ["a"])
 
+    @unittest.skipIf(sys.platform == 'cli', 'http://ironpython.codeplex.com/workitem/32803')
     def testSeekForward(self):
         # "Test BZ2File.seek(150, 0)"
         self.createTempFile()
@@ -209,6 +210,7 @@ class BZ2FileTest(BaseTest):
             bz2f.seek(150)
             self.assertEqual(bz2f.read(), self.TEXT[150:])
 
+    @unittest.skipIf(sys.platform == 'cli', 'http://ironpython.codeplex.com/workitem/32803')
     def testSeekBackwards(self):
         # "Test BZ2File.seek(-150, 1)"
         self.createTempFile()
@@ -217,6 +219,7 @@ class BZ2FileTest(BaseTest):
             bz2f.seek(-150, 1)
             self.assertEqual(bz2f.read(), self.TEXT[500-150:])
 
+    @unittest.skipIf(sys.platform == 'cli', 'http://ironpython.codeplex.com/workitem/32803')
     def testSeekBackwardsFromEnd(self):
         # "Test BZ2File.seek(-150, 2)"
         self.createTempFile()
@@ -224,6 +227,7 @@ class BZ2FileTest(BaseTest):
             bz2f.seek(-150, 2)
             self.assertEqual(bz2f.read(), self.TEXT[len(self.TEXT)-150:])
 
+    @unittest.skipIf(sys.platform == 'cli', 'http://ironpython.codeplex.com/workitem/32803')
     def testSeekPostEnd(self):
         # "Test BZ2File.seek(150000)"
         self.createTempFile()
@@ -232,6 +236,7 @@ class BZ2FileTest(BaseTest):
             self.assertEqual(bz2f.tell(), len(self.TEXT))
             self.assertEqual(bz2f.read(), "")
 
+    @unittest.skipIf(sys.platform == 'cli', 'http://ironpython.codeplex.com/workitem/32803')
     def testSeekPostEndTwice(self):
         # "Test BZ2File.seek(150000) twice"
         self.createTempFile()
@@ -241,6 +246,7 @@ class BZ2FileTest(BaseTest):
             self.assertEqual(bz2f.tell(), len(self.TEXT))
             self.assertEqual(bz2f.read(), "")
 
+    @unittest.skipIf(sys.platform == 'cli', 'http://ironpython.codeplex.com/workitem/32803')
     def testSeekPreStart(self):
         # "Test BZ2File.seek(-150, 0)"
         self.createTempFile()

@@ -53,18 +53,19 @@ namespace IronPython.Runtime.Operations {
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s) {
-            if (cls == TypeCache.BigInteger) {
-                object value;
-                IPythonObject po = s as IPythonObject;
-                if (po != null &&
-                    PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__long__", out value)) {
-                    return value;
-                }
-
-                return ParseBigIntegerSign(s.MakeString(), 10);
+            object value;
+            IPythonObject po = s as IPythonObject;
+            if (po == null ||
+                !PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__long__", out value)) {
+                    value = ParseBigIntegerSign(s.MakeString(), 10);
             }
 
-            return cls.CreateInstance(context, ParseBigIntegerSign(s.MakeString(), 10));
+            if (cls == TypeCache.BigInteger) {
+                return value;
+            } else {
+                // derived long creation...
+                return cls.CreateInstance(context, value);
+            }
         }
 
         private static BigInteger ParseBigIntegerSign(string s, int radix) {

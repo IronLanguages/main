@@ -137,7 +137,7 @@ def selfless_method_caller_switch(cw):
     cw.exit_block()
         
 function_caller_template = """
-class FunctionCaller<%(typeParams)s> : FunctionCaller {
+public sealed class FunctionCaller<%(typeParams)s> : FunctionCaller {
     public FunctionCaller(int compat) : base(compat) { }
     
     public object Call%(argCount)d(CallSite site, CodeContext context, object func, %(callParams)s) {
@@ -172,7 +172,9 @@ public object Default%(argCount)dCall0(CallSite site, CodeContext context, objec
 }"""
 
 def function_callers(cw):
-    cw.write('internal const int MaxGeneratedFunctionArgs = %d;' % (MAX_ARGS-2))
+    cw.write('''class FunctionCallerProperties {
+    internal const int MaxGeneratedFunctionArgs = %d;
+}''' % (MAX_ARGS-2))
     cw.write('')
     for nparams in range(1, MAX_ARGS-2):        
         cw.write(function_caller_template % {

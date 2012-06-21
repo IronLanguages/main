@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Security;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -758,14 +759,6 @@ namespace Microsoft.Scripting.Interpreter {
             }
         }
 
-        public void EmitCall(MethodInfo method) {
-            EmitCall(method, method.GetParameters());
-        }
-
-        public void EmitCall(MethodInfo method, ParameterInfo[] parameters) {
-            Emit(CallInstruction.Create(method, parameters));
-        }
-
         #endregion
 
         #region Dynamic
@@ -847,6 +840,7 @@ namespace Microsoft.Scripting.Interpreter {
         private static Dictionary<Type, Func<CallSiteBinder, Instruction>> _factories =
             new Dictionary<Type, Func<CallSiteBinder, Instruction>>();
 
+        /// <exception cref="SecurityException">Instruction can't be created due to insufficient privileges.</exception>
         internal static Instruction CreateDynamicInstruction(Type delegateType, CallSiteBinder binder) {
             Func<CallSiteBinder, Instruction> factory;
             lock (_factories) {

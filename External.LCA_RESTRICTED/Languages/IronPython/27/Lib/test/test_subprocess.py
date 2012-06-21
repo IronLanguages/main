@@ -10,7 +10,7 @@ import time
 import re
 import sysconfig
 
-mswindows = (sys.platform == "win32")
+mswindows = (sys.platform == "win32" or os.name == 'nt')
 
 #
 # Depends on the following external programs: Python

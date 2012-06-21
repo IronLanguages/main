@@ -104,11 +104,15 @@ namespace IronPython.Modules {
         }
 
         public static void chmod(string path, int mode) {
-            FileInfo fi = new FileInfo(path);
-            if ((mode & S_IWRITE) != 0) {
-                fi.Attributes &= ~(FileAttributes.ReadOnly);
-            } else {
-                fi.Attributes |= FileAttributes.ReadOnly;
+            try {
+                FileInfo fi = new FileInfo(path);
+                if ((mode & S_IWRITE) != 0) {
+                    fi.Attributes &= ~(FileAttributes.ReadOnly);
+                } else {
+                    fi.Attributes |= FileAttributes.ReadOnly;
+                }
+            } catch (Exception e) {
+                throw ToPythonException(e, path);
             }
         }
 #endif
@@ -1372,7 +1376,9 @@ namespace IronPython.Modules {
 #if FEATURE_FILESYSTEM
         public static void utime(string path, PythonTuple times) {
             try {
-                FileInfo fi = new FileInfo(path);
+                // Create a DirectoryInfo or FileInfo depending on what it is
+                // Changing the times of a directory does not work with a FileInfo and v.v.
+                FileSystemInfo fi = Directory.Exists(path) ? new DirectoryInfo(path) : (FileSystemInfo)new FileInfo(path);
                 if (times == null) {
                     fi.LastAccessTime = DateTime.Now;
                     fi.LastWriteTime = DateTime.Now;

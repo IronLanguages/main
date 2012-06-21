@@ -50,10 +50,10 @@ namespace IronPython.Runtime {
         public readonly MutableTuple Closure;
 
         private object[]/*!*/ _defaults;                // the default parameters of the method
-        internal PythonDictionary _dict;           // a dictionary to story arbitrary members on the function object
+        internal PythonDictionary _dict;                // a dictionary to story arbitrary members on the function object
         private object _module;                         // the module name
 
-        private int _id, _compat;                       // ID/Compat flags used for testing in rules
+        internal int _id, _compat;                      // ID/Compat flags used for testing in rules
         private FunctionCode _code;                     // the Python function code object.  Not currently used for much by us...        
         private string _name;                           // the name of the method
         private object _doc;                            // the current documentation string
