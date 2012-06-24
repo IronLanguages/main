@@ -728,7 +728,8 @@ namespace IronPython.Runtime.Operations {
             if (self.Length == 0) return false;
             string v = self;
             for (int i = v.Length - 1; i >= 0; i--) {
-                if (!Char.IsDigit(v, i)) return false;
+                // CPython considers the circled digits to be digits
+                if (!Char.IsDigit(v, i) && (v[i] < '\u2460' || v[i] > '\u2468')) return false;
             }
             return true;
         }

@@ -27,7 +27,7 @@ namespace IronPython.Runtime.Operations {
     public static class DelegateOps {
         [StaticExtensionMethod]
         public static object __new__(CodeContext context, PythonType type, object function) {
-            if (type == null) throw PythonOps.TypeError("expected type for 1st param, got {0}", type.Name);
+            if (type == null) throw PythonOps.TypeError("expected type for 1st param, got null");
 
             IDelegateConvertible dlgConv = function as IDelegateConvertible;
             if (dlgConv != null) {
