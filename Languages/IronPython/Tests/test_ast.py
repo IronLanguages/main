@@ -249,8 +249,6 @@ class AST_Tests(unittest.TestCase):
         self.assertEqual( eval(c), {} )
 
     # TODO: do more with arguments
-
-
     # parenthesis ?
 
     def test_compile_from_ast_018(self):
@@ -677,7 +675,23 @@ foo=Foo()
         sys.stdout = saveStdout
         self.assertEqual(cap.getvalue(), "2\n")
 
+    def test_compile_argument_bytes(self):
+        p = ast.parse(b'1+1', "<unknown>", mode="eval")
+        c = compile(p, "<unknown>", mode="eval")
+        self.assertEqual(eval(c),2)
 
+    def test_compile_argument_buffer(self):
+        p = ast.parse(buffer('1+1'), "<unknown>", mode="eval")
+        c = compile(p, "<unknown>", mode="eval")
+        self.assertEqual(eval(c),2)
+
+    def test_compile_argument_bytearray(self):
+        p = ast.parse(bytearray('1+1','ascii'), "<unknown>", mode="eval")
+        c = compile(p, "<unknown>", mode="eval")
+        self.assertEqual(eval(c),2)
+
+    def test_compile_argument_error(self):
+        self.assertRaises( TypeError, ast.parse, ['1+1'], "<unknown>", mode="eval")
 
     def test_snippets(self):
         # Things which diverted from cpython:

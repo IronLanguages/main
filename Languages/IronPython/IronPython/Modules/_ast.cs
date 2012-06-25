@@ -68,511 +68,52 @@ namespace IronPython.Modules
 
         // Someone with more internal knowledge of IronPthon must review all ConvertToPythonAst
 
-        internal static PythonAst ConvertToPythonAst(CodeContext codeContext, Interactive interactive) {
-            Statement stmt = RevertStmts(interactive.body);
-            int[] lineNo = {};
-            PythonContext pythonContext = codeContext.LanguageContext;
+        internal static PythonAst ConvertToPythonAst(CodeContext codeContext, AST source ) {
+            Statement stmt;
             PythonCompilerOptions options = new PythonCompilerOptions(ModuleOptions.ExecOrEvalCode);
-            SourceUnit unit = new SourceUnit(pythonContext, NullTextContentProvider.Null, "", SourceCodeKind.InteractiveCode);
+            SourceUnit unit = new SourceUnit(codeContext.LanguageContext, NullTextContentProvider.Null, "", SourceCodeKind.AutoDetect);
             CompilerContext compilerContext = new CompilerContext(unit, options, ErrorSink.Default);
-            PythonAst ast = new PythonAst(stmt, false, ModuleOptions.ExecOrEvalCode, true, compilerContext, lineNo);
-            return ast;
+            bool printExpression = false;
+
+            if (source is Expression) {
+                Expression exp = (Expression)source;
+                stmt = new ReturnStatement(Revert(exp.body));
+            } else if (source is Module) {
+                Module module = (Module)source;
+                stmt = RevertStmts(module.body);
+            } else if (source is Interactive) {
+                Interactive interactive = (Interactive)source;
+                stmt = RevertStmts(interactive.body);
+                printExpression = true;
+            } else 
+                throw PythonOps.TypeError("unsupported type of AST: {0}",(source.GetType()));
+
+            return new PythonAst(stmt, false, ModuleOptions.ExecOrEvalCode, printExpression, compilerContext, new int[] {} );
         }
 
-        internal static PythonAst ConvertToPythonAst(CodeContext codeContext, Expression exp) {
-            Statement returnStatement = new ReturnStatement(Revert(exp.body));
-            int[] lineNo = {};
-            PythonContext pythonContext = codeContext.LanguageContext;
-            PythonCompilerOptions options = new PythonCompilerOptions(ModuleOptions.ExecOrEvalCode);
-            SourceUnit unit = new SourceUnit(pythonContext, NullTextContentProvider.Null, "", SourceCodeKind.AutoDetect);
-            CompilerContext compilerContext = new CompilerContext(unit, options, ErrorSink.Default);
-            PythonAst ast = new PythonAst(returnStatement, false, ModuleOptions.ExecOrEvalCode, false, compilerContext, lineNo);
-            return ast;
-        }
 
-        internal static PythonAst ConvertToPythonAst(CodeContext codeContext, Module mod) {
-            Statement stmt = RevertStmts(mod.body);
-            int[] lineNo = {};
-            PythonContext pythonContext = codeContext.LanguageContext;
-            PythonCompilerOptions options = new PythonCompilerOptions(ModuleOptions.ExecOrEvalCode);
-            SourceUnit unit = new SourceUnit(pythonContext, NullTextContentProvider.Null, "", SourceCodeKind.AutoDetect);
-            CompilerContext compilerContext = new CompilerContext(unit, options, ErrorSink.Default);
-            PythonAst ast = new PythonAst(stmt, false, ModuleOptions.ExecOrEvalCode, false, compilerContext, lineNo);
-            return ast;
-        }
-
-        static Statement[] Revert(Module mod) {
-            List<Statement> statements = new List<Statement>(mod.body.Count);
-            foreach (stmt statement in mod.body)
-                statements.Add(Revert(statement));
-            return statements.ToArray();
-        }
-
-        static Statement Revert(stmt statement)  {
-            if (statement is Pass)
-                return new EmptyStatement();
-            if (statement is Break)
-                return new BreakStatement();
-            if (statement is Continue)
-                return new ContinueStatement();
-            if (statement is Print)
-                return Revert((Print)statement);
-            if (statement is Assign) 
-                return Revert((Assign)statement);
-            if (statement is AugAssign)
-                return Revert((AugAssign)statement);
-            if (statement is Assert)
-                return Revert((Assert)statement);
-            if (statement is Delete)
-                return Revert((Delete)statement);
-            if (statement is FunctionDef)
-                return Revert((FunctionDef)statement);
-            if (statement is Return)
-                return Revert((Return)statement);
-            if (statement is Expr)
-                return Revert((Expr)statement);
-            if (statement is Raise)
-                return Revert((Raise)statement);
-            if (statement is While)
-                return Revert((While)statement);
-            if (statement is Import)
-                return Revert((Import)statement);
-            if (statement is ImportFrom)
-                return Revert((ImportFrom)statement);
-            if (statement is Global)
-                return Revert((Global)statement);
-            if (statement is Exec)
-                return Revert((Exec)statement);
-            if (statement is If)
-                return Revert((If)statement);
-            if (statement is For)
-                return Revert((For)statement);
-            if (statement is TryExcept)
-                return Revert((TryExcept)statement);
-            if (statement is TryFinally)
-                return Revert((TryFinally)statement);
-            if (statement is With)
-                return Revert((With)statement);
-            if (statement is ClassDef)
-                return Revert((ClassDef)statement);
-
-            throw new ArgumentTypeException("Unexpected statement type: " + statement.GetType());
-        }
-
-        static ClassDefinition Revert(ClassDef cd) {
-            // TODO: once decorators are fixed in compile, fix it here as well
-            return new ClassDefinition(cd.name, Revert(cd.bases), RevertStmts(cd.body));
-        }
-
-        static WithStatement Revert(With w) {
-            return new WithStatement(Revert(w.context_expr), Revert(w.optional_vars), RevertStmts(w.body));
-        }
-
-        static TryStatement Revert(TryFinally tf) {
-            if (tf.body.Count == 1 && tf.body[0] is TryExcept) {
-                TryExcept te = (TryExcept)tf.body[0];
-                TryStatementHandler[] tshs = new TryStatementHandler[te.handlers.Count];
-                for (int i = 0; i < te.handlers.Count; i++) {
-                    tshs[i] = Revert((ExceptHandler)te.handlers[i]);
-                }
-                return new TryStatement(RevertStmts(te.body), tshs, RevertStmts(te.orelse), RevertStmts(tf.finalbody));
-            } 
-            return new TryStatement(RevertStmts(tf.body), null, null, RevertStmts(tf.finalbody));
-        }
-
-        static TryStatement Revert(TryExcept te) {
-            TryStatementHandler[] tshs = new TryStatementHandler[te.handlers.Count];
-            for (int i = 0; i < te.handlers.Count; i++) {
-                tshs[i] = Revert((ExceptHandler)te.handlers[i]);
-            }
-            return new TryStatement(RevertStmts(te.body),tshs, RevertStmts(te.orelse), null); 
-        }
-
-        static TryStatementHandler Revert(ExceptHandler eh) {
-            return new TryStatementHandler(Revert(eh.type),Revert(eh.name),RevertStmts(eh.body));        
-        }
-
-        static ForStatement Revert(For f) {
-            return new ForStatement(Revert(f.target), Revert(f.iter), RevertStmts(f.body), RevertStmts(f.orelse));
-        }
-
-        static IfStatement Revert(If i) {
-            List<IfStatementTest> tests = new List<IfStatementTest>();
-            tests.Add(new IfStatementTest(Revert(i.test), RevertStmts(i.body)));
-            If currIf = i;
-            while( currIf.orelse != null && currIf.orelse.Count==1 && currIf.orelse[0] is If ) {
-                If orelse = (If)currIf.orelse[0];
-                tests.Add(new IfStatementTest(Revert(orelse.test), RevertStmts(orelse.body)));
-                currIf = orelse;
-            }          
-            return new IfStatement(tests.ToArray(), RevertStmts(currIf.orelse));
-        }
-
-        static ExecStatement Revert(Exec e) {
-            return new ExecStatement(Revert(e.body), Revert(e.locals), Revert(e.globals));
-        }
-
-        static GlobalStatement Revert(Global g) {
-            string[] names = new string[g.names.Count];
-            for (int i = 0; i < g.names.Count; i++)
-                names[i] = (string)g.names[i];
-            return new GlobalStatement(names);
-        }
-
-        static FromImportStatement Revert(ImportFrom import) {
-            ModuleName root = null;
-            bool absolute = false; // TODO: absolute import appears in ModuleOptions, not sure how it should work together
-            if (import.module != null)
-                if (import.module[0] == '.') // relative module
-                    root = new RelativeModuleName(import.module.Split(MODULE_NAME_SPLITTER), import.level);
-                else {
-                    root = new ModuleName(import.module.Split(MODULE_NAME_SPLITTER));
-                    absolute = true;
-                }
-
-            if (import.names.Count == 1 && ((alias)import.names[0]).name == "*")
-                return new FromImportStatement(root, (string[])FromImportStatement.Star, null, false, absolute);
-
-            String[] names = new String[import.names.Count];
-            String[] asNames = new String[import.names.Count];
-            for (int i = 0; i < import.names.Count; i++) {
-                alias alias = (alias)import.names[i];
-                names[i] = alias.name;
-                asNames[i] = alias.asname;
-            }
-            return new FromImportStatement(root, names, asNames, false, absolute);
-
-        }
-
-        private static char[] MODULE_NAME_SPLITTER = new char[1] { '.' };
-
-        static ImportStatement Revert(Import import) {
-            ModuleName[] moduleNames = new ModuleName[import.names.Count];
-            String[] asNames = new String[import.names.Count];
-            for (int i=0;i<import.names.Count;i++) {
-                alias alias = (alias)import.names[i];
-                moduleNames[i] = new ModuleName(alias.name.Split(MODULE_NAME_SPLITTER));
-                asNames[i]=alias.asname;
-            }
-            return new ImportStatement(moduleNames, asNames, false);  // TODO: not so sure about the relative/absolute argument here
-        }
-
-        static WhileStatement Revert(While w) {
-            return new WhileStatement(Revert(w.test), RevertStmts(w.body), RevertStmts(w.orelse));
-        }
-
-        static RaiseStatement Revert(Raise r) {
-            return new RaiseStatement(Revert(r.type), Revert(r.inst), Revert(r.tback));
-        }
-
-        // if yield is detected, the containing function has to be marked as generator
-        private static bool _containsYield = false;
-
-        static YieldExpression Revert(Yield y) {
-            _containsYield = true;
-            return new YieldExpression(Revert(y.value));
-        }
-
-        static ExpressionStatement Revert(Expr expr) {
-            return new ExpressionStatement(Revert(expr.value));
-        }
-
-        static ReturnStatement Revert(Return ret) {
-            return new ReturnStatement(Revert(ret.value));
-        }
 
         static Statement RevertStmts(PythonList stmts) {
             if (stmts.Count == 1)
-                return Revert((stmt)stmts[0]);
+                return ((stmt)stmts[0]).Revert();
             Statement[] statements = new Statement[stmts.Count];
             for (int i = 0; i < stmts.Count; i++)
-                statements[i] = Revert((stmt)stmts[i]);
+                statements[i] = ((stmt)stmts[i]).Revert();
             return new SuiteStatement(statements);
         }
 
-        static FunctionDefinition Revert(FunctionDef def) {
-            IList<AstExpression> decorators = null;
-            if (def.decorators.Count != 0)
-                decorators = Revert(def.decorators);
-            //SourceUnit su = new SourceUnit();
-            FunctionDefinition fd = new FunctionDefinition(def.name, Revert(def.args), RevertStmts(def.body));
-            fd.IsGenerator = _containsYield;
-            _containsYield = false;
-            fd.Decorators = decorators;
-            return fd;
-        }
-
-        static AstExpression[] Revert( PythonList exprs ) {
+        static AstExpression[] RevertExpr(PythonList exprs) {
             // it is assumed that list elements are expr
             AstExpression[] ret = new AstExpression[exprs.Count];
             for (int i = 0; i < exprs.Count; i++)
-                ret[i] = Revert((expr)exprs[i]);
+                ret[i] = ((expr)exprs[i]).Revert();
             return ret;
-        }
-
-        static DelStatement Revert(Delete d) {
-            return new DelStatement(Revert(d.targets));
-        }
-
-        static AssertStatement Revert(Assert a) {
-            return new AssertStatement(Revert(a.test), Revert(a.msg));
-        }
-
-        static AugmentedAssignStatement Revert(AugAssign aa) {
-            return new AugmentedAssignStatement(Revert(aa.op), Revert(aa.target), Revert(aa.value));
-        }
-
-        static AssignmentStatement Revert(Assign assign) {
-            return new AssignmentStatement(Revert(assign.targets), Revert(assign.value));
-        }
-
-        static PrintStatement Revert(Print p) {
-            return new PrintStatement(Revert(p.dest), Revert(p.values), !p.nl);
-        }
-
-        static AstExpression Revert(BoolOp bo) {
-            if (bo.op == And.Instance) {
-                AndExpression ae = new AndExpression(
-                    Revert((expr)bo.values[0]), 
-                    Revert((expr)bo.values[1]));
-                return ae;
-            } else if (bo.op == Or.Instance) {
-                OrExpression oe = new OrExpression(
-                    Revert((expr)bo.values[0]), 
-                    Revert((expr)bo.values[1]));
-                return oe;
-            }
-            throw new ArgumentTypeException("Unexpected boolean operator: " + bo.op);
-        }
-
-        static PyOperator Revert(unaryop op) {
-            if (op == Invert.Instance)
-                return PyOperator.Invert;
-            if (op == USub.Instance)
-                return PythonOperator.Negate;
-            if (op == Not.Instance)
-                return PythonOperator.Not;
-            if (op == UAdd.Instance)
-                return PythonOperator.Pos;
-
-            throw new ArgumentTypeException("Unexpected unary operator: " + op.GetType());
         }
 
         static AstExpression Revert(expr ex) {
             if (ex == null)
                 return null;
-            if (ex is UnaryOp) {
-                UnaryOp uo = (UnaryOp)ex;
-                return new UnaryExpression(Revert(uo.op), Revert(uo.operand));
-            }
-            if (ex is BinOp) {
-                BinOp bo = (BinOp)ex;
-                return new BinaryExpression(Revert(bo.op), Revert(bo.left), Revert(bo.right));
-            }
-            if (ex is BoolOp)
-                return Revert((BoolOp)ex);
-            if (ex is Num)
-                return new ConstantExpression(((Num)ex).n);
-            if (ex is Name)
-                return new NameExpression(((Name)ex).id);
-            if (ex is Str)
-                return new ConstantExpression(((Str)ex).s);
-            if (ex is Num)
-                return new ConstantExpression(((Num)ex).n);
-            if (ex is List)
-                return Revert((List)ex);
-            if (ex is Set)
-                return Revert((Set)ex);
-            if (ex is Dict)
-                return Revert((Dict)ex);
-            if (ex is Tuple)
-                return Revert((Tuple)ex);
-            if (ex is Call)
-                return Revert((Call)ex);
-            if (ex is ListComp)
-                return Revert((ListComp)ex);
-            if (ex is SetComp)
-                return Revert((SetComp)ex);
-            if (ex is DictComp)
-                return Revert((DictComp)ex);
-            if (ex is Compare)
-                return Revert((Compare)ex);
-            if (ex is Attribute) {
-                Attribute attr = (Attribute)ex;
-                return new MemberExpression(Revert(attr.value), attr.attr);
-            }
-            if (ex is Lambda)
-                return Revert((Lambda)ex);
-            if (ex is IfExp) {
-                IfExp exp = (IfExp)ex;
-                return new ConditionalExpression(Revert(exp.test), Revert(exp.body), Revert(exp.orelse));
-            }
-            if (ex is GeneratorExp)
-                return Revert((GeneratorExp)ex);
-            if (ex is Repr)
-                return new BackQuoteExpression(Revert(((Repr)ex).value));
-            if (ex is Subscript)
-                return Revert((Subscript)ex);
-            if (ex is Yield)
-                return Revert((Yield)ex);
-
-            throw new ArgumentTypeException("Unexpected expression type: " + ex.GetType());
-        }
-
-        static IndexExpression Revert(Subscript sub) {
-
-            AstExpression index=null;
-            if (sub.slice is Index)
-                index = Revert(((Index)sub.slice).value);
-            else if (sub.slice is Slice) {
-                Slice slice = (Slice)sub.slice;
-                AstExpression start = null;
-                if (slice.lower != null)
-                    start = Revert(slice.lower);
-                AstExpression stop = null;
-                if (slice.upper != null)
-                    stop = Revert(slice.upper);
-                AstExpression step = null;
-                bool stepProvided = false;
-                if (slice.step != null) {
-                    stepProvided = true;
-                    if (slice.step is Name && ((Name)slice.step).id == "None") {
-                        // pass
-                    } else {
-                        step = Revert(slice.step);
-                    }
-                }
-                index = new SliceExpression(start, stop, step, stepProvided);
-            } else if (sub.slice is Ellipsis) {
-                index = new ConstantExpression(PythonOps.Ellipsis);
-            } else if (sub.slice is ExtSlice) {
-                ExtSlice extSlice = (ExtSlice)sub.slice;
-                index = new TupleExpression(true, Revert((ExtSlice)sub.slice));
-            } else {
-                Debug.Assert(false, "Unexpected type when converting Subscript: " + sub.slice.GetType());
-            }
-
-            return new IndexExpression(Revert(sub.value),index);
-        }
-
-        static AstExpression[] Revert(ExtSlice extSlice) {
-            List<AstExpression> ret = new List<AstExpression>(extSlice.dims.Count);
-            foreach (expr ex in extSlice.dims) 
-                ret.Add(Revert((expr)ex));
-            return ret.ToArray();
-        }
-
-        // TODO: following 2 names are copy paste from Parser.cs
-        //       it would be better to have them in one place
-        private const string generatorFnName = "<genexpr>";
-        private const string generatorFnArgName = "__gen_$_parm__";
-        static GeneratorExpression Revert(GeneratorExp exp) {
-            Statement stmt = new ExpressionStatement(new YieldExpression(Revert(exp.elt)));
-            int comprehensionIdx = exp.generators.Count-1;
-            AstExpression list;
-            do {
-                comprehension c = (comprehension)exp.generators[comprehensionIdx];
-                if (c.ifs != null && c.ifs.Count != 0) {
-                    int ifIdx = c.ifs.Count - 1;
-                    while (ifIdx >= 0) {
-                        IfStatementTest ist = new IfStatementTest(Revert((expr)c.ifs[ifIdx]), stmt);
-                        stmt = new IfStatement(new IfStatementTest[] { ist }, null);
-                        ifIdx--;
-                    }
-                }
-                list = Revert(c.iter);
-                stmt = new ForStatement(Revert(c.target), list, stmt, null);
-                comprehensionIdx--;
-            } while (comprehensionIdx >= 0);
-            ((ForStatement)stmt).List = new NameExpression(generatorFnArgName);
-            Parameter parameter = new Parameter(generatorFnArgName, 0);
-            FunctionDefinition functionDefinition = new FunctionDefinition(generatorFnName, new Parameter[] { parameter }, stmt);
-            functionDefinition.IsGenerator = true;
-            return new GeneratorExpression(functionDefinition, list);
-        }
-
-        static LambdaExpression Revert(Lambda lambda) {
-            Statement body;
-            AstExpression exp = Revert(lambda.body);
-            if (!_containsYield)
-                body = new ReturnStatement(exp);
-            else
-                body = new ExpressionStatement(exp);
-            Parameter[] para = Revert(lambda.args);
-            FunctionDefinition fd = new FunctionDefinition(null, para, body);
-            fd.IsGenerator = _containsYield;
-            _containsYield = false;
-            return new LambdaExpression(fd);
-        }
-
-        static Parameter[] Revert(arguments arguments) {
-            List<Parameter> parameters = new List<Parameter>();
-            int argIdx=arguments.args.Count-1;
-            for (int defIdx = arguments.defaults.Count - 1; defIdx >= 0; defIdx--, argIdx--) { 
-                Name name = (Name)arguments.args[argIdx];
-                Parameter p = new Parameter(name.id);
-                p.DefaultValue = Revert((expr)arguments.defaults[defIdx]);
-                parameters.Add(p);
-            }
-            while (argIdx >= 0) {
-                Name name = (Name)arguments.args[argIdx--];
-                parameters.Add(new Parameter(name.id));
-            }
-            parameters.Reverse();
-            if (arguments.vararg!=null)
-                parameters.Add(new Parameter(arguments.vararg, ParameterKind.List));
-            if (arguments.kwarg != null)
-                parameters.Add(new Parameter(arguments.kwarg, ParameterKind.Dictionary));
-            return parameters.ToArray();
-        }
-
-        static BinaryExpression Revert(Compare compare) {
-            // the most likely case first
-            if (compare.ops.Count == 1) {
-                return new BinaryExpression(
-                    Revert((cmpop)(compare.ops[0])),
-                    Revert(compare.left),
-                    Revert((expr)(compare.comparators[0])));
-            }
-
-            // chaining of comparators is processed here (a>b>c> ...)
-            Debug.Assert(compare.ops.Count > 1, "expected 2 or more ops in chained comparator");
-            int i = compare.ops.Count-1;
-            BinaryExpression right = new BinaryExpression(
-                    Revert((cmpop)(compare.ops[i])),
-                    Revert((expr)(compare.comparators[i-1])),
-                    Revert((expr)(compare.comparators[i])));
-            i--;
-            while (i > 0) {
-                right = new BinaryExpression(
-                    Revert((cmpop)(compare.ops[i])),
-                    Revert((expr)(compare.comparators[i-1])),
-                    right);
-                i--;
-            }
-            return new BinaryExpression(
-                    Revert((cmpop)(compare.ops[0])),
-                    Revert(compare.left),
-                    right);
-        }
-
-        static DictionaryComprehension Revert(DictComp dc) {
-            AstExpression key = Revert(dc.key);
-            AstExpression value = Revert(dc.value);
-            ComprehensionIterator[] iters = RevertIterators(dc.generators);
-            return new DictionaryComprehension(key, value, iters);
-        }
-
-        static SetComprehension Revert(SetComp sc) {
-            AstExpression item = Revert(sc.elt);
-            ComprehensionIterator[] iters = RevertIterators(sc.generators);
-            return new SetComprehension(item, iters);
-        }
- 
-        static ListComprehension Revert(ListComp lc) {
-            AstExpression item = Revert(lc.elt);
-            ComprehensionIterator[] iters = RevertIterators(lc.generators);
-            return new ListComprehension(item, iters);
+            return ex.Revert();
         }
 
         static ComprehensionIterator[] RevertIterators(PythonList generators) {
@@ -586,109 +127,6 @@ namespace IronPython.Modules
                 }
             }
             return comprehensionIterators.ToArray();
-        }
-
-        static CallExpression Revert(Call call) {
-            AstExpression target = Revert(call.func);
-            Arg[] args = new Arg[call.args.Count];
-            int i=0;
-            foreach(expr ex in call.args) 
-                args[i++]=new Arg(Revert(ex));
-            if (null!=call.starargs)
-                args[i++] = new Arg("*", Revert(call.starargs));
-            if (null!=call.kwargs)
-                args[i++] = new Arg("**", Revert(call.kwargs));
-            foreach(keyword kw in call.keywords)
-                args[i++] = new Arg(kw.arg, Revert(kw.value));
-            return new CallExpression(target,args);
-        }
-
-        static TupleExpression Revert(Tuple tpl) {
-            AstExpression[] e = new AstExpression[tpl.elts.Count];
-            int i = 0;
-            foreach (expr el in tpl.elts)
-                e[i++] = Revert(el);
-            return new TupleExpression(false,e);
-        }
-
-        static DictionaryExpression Revert(Dict dict) {
-            SliceExpression[] e = new SliceExpression[dict.values.Count];
-            for (int i = 0; i < dict.values.Count; i++) {
-                e[i] = new SliceExpression( 
-                    Revert((expr)dict.keys[i]), 
-                    Revert((expr)dict.values[i]), 
-                    null, 
-                    false);
-            }
-            return new DictionaryExpression(e);
-        }
-
-        static SetExpression Revert(Set st) {
-            AstExpression[] e = new AstExpression[st.elts.Count];
-            int i = 0;
-            foreach (expr el in st.elts)
-                e[i++] = Revert(el);
-            return new SetExpression(e);
-        }
-
-        static ListExpression Revert(List list) {
-            AstExpression[] e = new AstExpression[list.elts.Count];
-            int i = 0;
-            foreach (expr el in list.elts)
-                e[i++] = Revert(el);
-            return new ListExpression(e);
-        }
-
-        static PythonOperator Revert(cmpop op) {
-            if (op == Eq.Instance)
-                return PyOperator.Equal;
-            if (op == Gt.Instance)
-                return PyOperator.GreaterThan;
-            if (op == GtE.Instance)
-                return PyOperator.GreaterThanOrEqual;
-            if (op == In.Instance)
-                return PyOperator.In;
-            if (op == Is.Instance)
-                return PyOperator.Is;
-            if (op == IsNot.Instance)
-                return PyOperator.IsNot;
-            if (op == Lt.Instance)
-                return PyOperator.LessThan;
-            if (op == LtE.Instance)
-                return PyOperator.LessThanOrEqual;
-            if (op == NotEq.Instance)
-                return PythonOperator.NotEqual;
-            if (op == NotIn.Instance)
-                return PythonOperator.NotIn;
-            throw new ArgumentTypeException("Unexpected compare operator type: " + op.GetType());
-        }
-
-        static PythonOperator Revert( @operator op ) {
-            if ( op == Add.Instance )
-                return PythonOperator.Add;
-            if ( op == BitAnd.Instance )
-                return PyOperator.BitwiseAnd;
-            if ( op == BitOr.Instance )
-                return PyOperator.BitwiseOr;
-            if ( op == Div.Instance )
-                return PyOperator.Divide;
-            if ( op == FloorDiv.Instance )
-                return PyOperator.FloorDivide;
-            if ( op == LShift.Instance )
-                return PyOperator.LeftShift;
-            if ( op == Mod.Instance)
-                return PythonOperator.Mod;
-            if ( op == Mult.Instance)
-                return PythonOperator.Multiply;
-            if ( op == Pow.Instance)
-                return PythonOperator.Power;
-            if ( op == RShift.Instance )
-                return PyOperator.RightShift;
-            if ( op == Sub.Instance )
-                return PythonOperator.Subtract;
-            if ( op == BitXor.Instance )
-                return PythonOperator.Xor;
-            throw new ArgumentTypeException("Unexpected operator type: " + op.GetType());
         }
 
         internal static AST BuildAst(CodeContext context, SourceUnit sourceUnit, PythonCompilerOptions opts, string mode) {
@@ -836,6 +274,7 @@ namespace IronPython.Modules
 
                 return PythonOps.MakeListNoCopy(Convert(stmt));
             }
+
 
             internal static stmt Convert(Statement stmt) {
                 stmt ast;
@@ -1131,7 +570,6 @@ namespace IronPython.Modules
         public class alias : AST
         {
             private string _name;
-            private string _asname;  // Optional
 
             public alias() {
                 _fields = new PythonTuple(new[] { "name", "asname" });
@@ -1140,7 +578,7 @@ namespace IronPython.Modules
             internal alias(string name, [Optional]string asname)
                 : this() {
                 _name = name;
-                _asname = asname;
+                this.asname = asname;
             }
 
             public string name {
@@ -1148,10 +586,7 @@ namespace IronPython.Modules
                 set { _name = value; }
             }
 
-            public string asname {
-                get { return _asname; }
-                set { _asname = value; }
-            }
+            public string asname { get; set; }
         }
 
         [PythonType]
@@ -1216,6 +651,29 @@ namespace IronPython.Modules
                 get { return _defaults; }
                 set { _defaults = value; }
             }
+
+            internal Parameter[] Revert() {
+                List<Parameter> parameters = new List<Parameter>();
+                int argIdx = args.Count - 1;
+                for (int defIdx = defaults.Count - 1; defIdx >= 0; defIdx--, argIdx--) {
+                    Name name = (Name)args[argIdx];
+                    Parameter p = new Parameter(name.id);
+                    p.DefaultValue = _ast.Revert((expr)defaults[defIdx]);
+                    parameters.Add(p);
+                }
+                while (argIdx >= 0) {
+                    Name name = (Name)args[argIdx--];
+                    parameters.Add(new Parameter(name.id));
+                }
+                parameters.Reverse();
+                if (vararg != null)
+                    parameters.Add(new Parameter(vararg, ParameterKind.List));
+                if (kwarg != null)
+                    parameters.Add(new Parameter(kwarg, ParameterKind.Dictionary));
+                return parameters.ToArray();
+            }
+
+
         }
 
         [PythonType]
@@ -1226,6 +684,30 @@ namespace IronPython.Modules
         [PythonType]
         public abstract class cmpop : AST
         {
+            internal PythonOperator Revert() {
+                if (this == Eq.Instance)
+                    return PyOperator.Equal;
+                if (this == Gt.Instance)
+                    return PyOperator.GreaterThan;
+                if (this == GtE.Instance)
+                    return PyOperator.GreaterThanOrEqual;
+                if (this == In.Instance)
+                    return PyOperator.In;
+                if (this == Is.Instance)
+                    return PyOperator.Is;
+                if (this == IsNot.Instance)
+                    return PyOperator.IsNot;
+                if (this == Lt.Instance)
+                    return PyOperator.LessThan;
+                if (this == LtE.Instance)
+                    return PyOperator.LessThanOrEqual;
+                if (this == NotEq.Instance)
+                    return PythonOperator.NotEqual;
+                if (this == NotIn.Instance)
+                    return PythonOperator.NotIn;
+                throw PythonOps.TypeError("Unexpected compare operator: {0}", GetType());
+            }
+
         }
 
         [PythonType]
@@ -1285,6 +767,10 @@ namespace IronPython.Modules
             protected expr() {
                 _attributes = new PythonTuple(new[] { "lineno", "col_offset" });
             }
+
+            internal virtual AstExpression Revert() {
+                throw new Exception("please fix revert for: " + GetType());
+            }
         }
 
         [PythonType]
@@ -1332,8 +818,35 @@ namespace IronPython.Modules
         }
 
         [PythonType]
-        public abstract class @operator : AST
-        {
+        public abstract class @operator : AST {
+            internal PythonOperator Revert() {
+                if (this == Add.Instance)
+                    return PythonOperator.Add;
+                if (this == BitAnd.Instance)
+                    return PyOperator.BitwiseAnd;
+                if (this == BitOr.Instance)
+                    return PyOperator.BitwiseOr;
+                if (this == Div.Instance)
+                    return PyOperator.Divide;
+                if (this == FloorDiv.Instance)
+                    return PyOperator.FloorDivide;
+                if (this == LShift.Instance)
+                    return PyOperator.LeftShift;
+                if (this == Mod.Instance)
+                    return PythonOperator.Mod;
+                if (this == Mult.Instance)
+                    return PythonOperator.Multiply;
+                if (this == Pow.Instance)
+                    return PythonOperator.Power;
+                if (this == RShift.Instance)
+                    return PyOperator.RightShift;
+                if (this == Sub.Instance)
+                    return PythonOperator.Subtract;
+                if (this == BitXor.Instance)
+                    return PythonOperator.Xor;
+                throw PythonOps.TypeError("Unexpected unary operator: {0}", GetType());
+            }
+
         }
 
         [PythonType]
@@ -1347,11 +860,26 @@ namespace IronPython.Modules
             protected stmt() {
                 _attributes = new PythonTuple(new[] { "lineno", "col_offset" });
             }
+
+            internal virtual Statement Revert() {
+                throw PythonOps.TypeError("Unexpected statement type: {0}", GetType());
+            }
         }
 
         [PythonType]
         public abstract class unaryop : AST
         {
+            internal PyOperator Revert() {
+                if (this == Invert.Instance)
+                    return PyOperator.Invert;
+                if (this == USub.Instance)
+                    return PythonOperator.Negate;
+                if (this == Not.Instance)
+                    return PythonOperator.Not;
+                if (this == UAdd.Instance)
+                    return PythonOperator.Pos;
+                throw PythonOps.TypeError("Unexpected unary operator: {0}", GetType());
+            }
         }
 
         [PythonType]
@@ -1400,6 +928,11 @@ namespace IronPython.Modules
                 get { return _msg; }
                 set { _msg = value; }
             }
+
+            internal override Statement Revert() {
+                return new AssertStatement(_ast.Revert(test), _ast.Revert(msg));
+            }
+
         }
 
         [PythonType]
@@ -1437,6 +970,10 @@ namespace IronPython.Modules
             public expr value {
                 get { return _value; }
                 set { _value = value; }
+            }
+
+            internal override Statement Revert() {
+                return new AssignmentStatement(RevertExpr(targets), _ast.Revert(value));    
             }
         }
 
@@ -1482,6 +1019,10 @@ namespace IronPython.Modules
                 get { return _ctx; }
                 set { _ctx = value; }
             }
+            
+            internal override AstExpression Revert() {
+                return new MemberExpression(_ast.Revert(value), attr);
+            }
         }
 
         [PythonType]
@@ -1525,6 +1066,10 @@ namespace IronPython.Modules
             public expr value {
                 get { return _value; }
                 set { _value = value; }
+            }
+
+            internal override Statement Revert() {
+                return new AugmentedAssignStatement(op.Revert(), _ast.Revert(target), _ast.Revert(value));
             }
         }
 
@@ -1585,6 +1130,11 @@ namespace IronPython.Modules
                 get { return _op; }
                 set { _op = value; }
             }
+
+            internal override AstExpression Revert() {
+                return new BinaryExpression(op.Revert(), _ast.Revert(left), _ast.Revert(right));
+            }
+
         }
 
         [PythonType]
@@ -1644,6 +1194,21 @@ namespace IronPython.Modules
                 get { return _values; }
                 set { _values = value; }
             }
+
+            internal override AstExpression Revert() {
+                if (op == And.Instance) {
+                    AndExpression ae = new AndExpression(
+                        _ast.Revert((expr)values[0]),
+                        _ast.Revert((expr)values[1]));
+                    return ae;
+                } else if (op == Or.Instance) {
+                    OrExpression oe = new OrExpression(
+                        _ast.Revert((expr)values[0]),
+                        _ast.Revert((expr)values[1]));
+                    return oe;
+                }
+                throw PythonOps.TypeError("Unexpected boolean operator: {0}", op);
+            }
         }
 
         [PythonType]
@@ -1657,6 +1222,10 @@ namespace IronPython.Modules
             public Break([Optional]int? lineno, [Optional]int? col_offset) {
                 _lineno = lineno;
                 _col_offset = col_offset;
+            }
+
+            internal override Statement Revert() {
+                return new BreakStatement();
             }
         }
 
@@ -1728,6 +1297,21 @@ namespace IronPython.Modules
                 get { return _kwargs; }
                 set { _kwargs = value; }
             }
+
+            internal override AstExpression Revert() {
+                AstExpression target = _ast.Revert(func);
+                Arg[] newArgs = new Arg[args.Count];
+                int i = 0;
+                foreach (expr ex in args)
+                    newArgs[i++] = new Arg(_ast.Revert(ex));
+                if (null != starargs)
+                    newArgs[i++] = new Arg("*", _ast.Revert(starargs));
+                if (null != kwargs)
+                    newArgs[i++] = new Arg("**", _ast.Revert(kwargs));
+                foreach (keyword kw in keywords)
+                    newArgs[i++] = new Arg(kw.arg, _ast.Revert(kw.value));
+                return new CallExpression(target, newArgs);
+            }
         }
 
         [PythonType]
@@ -1783,6 +1367,12 @@ namespace IronPython.Modules
                 get { return _decorator_list; }
                 set { _decorator_list = value; }
             }
+
+            internal override Statement Revert() {
+                // TODO: once decorators are fixed in compile, fix it here as well
+                return new ClassDefinition(name, RevertExpr(bases), RevertStmts(body));
+            }
+
         }
 
         [PythonType]
@@ -1836,6 +1426,36 @@ namespace IronPython.Modules
                 get { return _comparators; }
                 set { _comparators = value; }
             }
+
+            internal override AstExpression Revert() {
+                // the most likely case first
+                if (ops.Count == 1) {
+                    return new BinaryExpression(
+                        ((cmpop)(ops[0])).Revert(),
+                        _ast.Revert(left),
+                        _ast.Revert((expr)(comparators[0])));
+                }
+
+                // chaining of comparators is processed here (a>b>c> ...)
+                Debug.Assert(ops.Count > 1, "expected 2 or more ops in chained comparator");
+                int i = ops.Count - 1;
+                BinaryExpression right = new BinaryExpression(
+                        ((cmpop)(ops[i])).Revert(),
+                        _ast.Revert((expr)(comparators[i - 1])),
+                        _ast.Revert((expr)(comparators[i])));
+                i--;
+                while (i > 0) {
+                    right = new BinaryExpression(
+                        ((cmpop)(ops[i])).Revert(),
+                        _ast.Revert((expr)(comparators[i - 1])),
+                        right);
+                    i--;
+                }
+                return new BinaryExpression(
+                        ((cmpop)(ops[0])).Revert(),
+                        _ast.Revert(left),
+                        right);
+            }
         }
 
         [PythonType]
@@ -1849,6 +1469,10 @@ namespace IronPython.Modules
             public Continue([Optional]int? lineno, [Optional]int? col_offset) {
                 _lineno = lineno;
                 _col_offset = col_offset;
+            }
+
+            internal override Statement Revert() {
+                return new ContinueStatement();
             }
         }
 
@@ -1884,6 +1508,10 @@ namespace IronPython.Modules
             public PythonList targets {
                 get { return _targets; }
                 set { _targets = value; }
+            }
+
+            internal override Statement Revert() {
+                return new DelStatement(RevertExpr(targets));
             }
         }
 
@@ -1923,6 +1551,18 @@ namespace IronPython.Modules
             public PythonList values {
                 get { return _values; }
                 set { _values = value; }
+            }
+
+            internal override AstExpression Revert() {
+                SliceExpression[] e = new SliceExpression[values.Count];
+                for (int i = 0; i < values.Count; i++) {
+                    e[i] = new SliceExpression(
+                        _ast.Revert((expr)keys[i]),
+                        _ast.Revert((expr)values[i]),
+                        null,
+                        false);
+                }
+                return new DictionaryExpression(e);
             }
         }
 
@@ -1966,6 +1606,10 @@ namespace IronPython.Modules
             public PythonList generators {
                 get { return _generators; }
                 set { _generators = value; }
+            }
+
+            internal override AstExpression Revert() {
+                return new DictionaryComprehension(_ast.Revert(key), _ast.Revert(value), RevertIterators(generators));
             }
         }
 
@@ -2033,6 +1677,12 @@ namespace IronPython.Modules
                 get { return _body; }
                 set { _body = value; }
             }
+
+            internal TryStatementHandler RevertHandler() {
+                return new TryStatementHandler(Revert(type), Revert(name), RevertStmts(body));
+            }
+
+
         }
 
         [PythonType]
@@ -2080,6 +1730,11 @@ namespace IronPython.Modules
                 get { return _locals; }
                 set { _locals = value; }
             }
+
+            internal override Statement Revert() {
+                return new ExecStatement(_ast.Revert(body), _ast.Revert(locals), _ast.Revert(globals));
+            }
+
         }
 
         [PythonType]
@@ -2107,6 +1762,11 @@ namespace IronPython.Modules
                 get { return _value; }
                 set { _value = value; }
             }
+
+            internal override Statement Revert() {
+                return new ExpressionStatement(_ast.Revert(value));
+            }
+
         }
 
         [PythonType]
@@ -2155,6 +1815,13 @@ namespace IronPython.Modules
             public PythonList dims {
                 get { return _dims; }
                 set { _dims = value; }
+            }
+
+            internal AstExpression[] Revert() {
+                List<AstExpression> ret = new List<AstExpression>(dims.Count);
+                foreach (expr ex in dims)
+                    ret.Add(_ast.Revert((expr)ex));
+                return ret.ToArray();
             }
         }
 
@@ -2217,6 +1884,11 @@ namespace IronPython.Modules
                 get { return _orelse; }
                 set { _orelse = value; }
             }
+
+            internal override Statement Revert() {
+                return new ForStatement(_ast.Revert(target), _ast.Revert(iter), RevertStmts(body), RevertStmts(orelse));
+            }
+
         }
 
         [PythonType]
@@ -2275,6 +1947,19 @@ namespace IronPython.Modules
                 get { return _decorators; }
                 set { _decorators = value; }
             }
+
+            internal override Statement Revert() {
+                IList<AstExpression> decos = null;
+                if (decorators.Count != 0)
+                    decos = RevertExpr(decorators); 
+                //SourceUnit su = new SourceUnit();
+                FunctionDefinition fd = new FunctionDefinition(name, args.Revert(), RevertStmts(body));
+                fd.IsGenerator = _containsYield;
+                _containsYield = false;
+                fd.Decorators = decos;
+                return fd;
+            }
+
         }
 
 
@@ -2398,6 +2083,37 @@ namespace IronPython.Modules
                     return false;
                 }
             }
+
+
+            // TODO: following 2 names are copy paste from Parser.cs
+            //       it would be better to have them in one place
+            private const string generatorFnName = "<genexpr>";
+            private const string generatorFnArgName = "__gen_$_parm__";
+
+            internal override AstExpression Revert() {
+                Statement stmt = new ExpressionStatement(new YieldExpression(_ast.Revert(elt)));
+                int comprehensionIdx = generators.Count - 1;
+                AstExpression list;
+                do {
+                    comprehension c = (comprehension)generators[comprehensionIdx];
+                    if (c.ifs != null && c.ifs.Count != 0) {
+                        int ifIdx = c.ifs.Count - 1;
+                        while (ifIdx >= 0) {
+                            IfStatementTest ist = new IfStatementTest(_ast.Revert((expr)c.ifs[ifIdx]), stmt);
+                            stmt = new IfStatement(new IfStatementTest[] { ist }, null);
+                            ifIdx--;
+                        }
+                    }
+                    list = _ast.Revert(c.iter);
+                    stmt = new ForStatement(_ast.Revert(c.target), list, stmt, null);
+                    comprehensionIdx--;
+                } while (comprehensionIdx >= 0);
+                ((ForStatement)stmt).List = new NameExpression(generatorFnArgName);
+                Parameter parameter = new Parameter(generatorFnArgName, 0);
+                FunctionDefinition functionDefinition = new FunctionDefinition(generatorFnName, new Parameter[] { parameter }, stmt);
+                functionDefinition.IsGenerator = true;
+                return new GeneratorExpression(functionDefinition, list);
+            }
         }
 
         [PythonType]
@@ -2424,6 +2140,13 @@ namespace IronPython.Modules
             public PythonList names {
                 get { return _names; }
                 set { _names = value; }
+            }
+
+            internal override Statement Revert() {
+                string[] newNames = new string[names.Count];
+                for (int i = 0; i < names.Count; i++)
+                    newNames[i] = (string)names[i];
+                return new GlobalStatement(newNames);
             }
         }
 
@@ -2497,6 +2220,19 @@ namespace IronPython.Modules
                 get { return _orelse; }
                 set { _orelse = value; }
             }
+
+            internal override Statement Revert() {
+                List<IfStatementTest> tests = new List<IfStatementTest>();
+                tests.Add(new IfStatementTest(_ast.Revert(test), RevertStmts(body)));
+                If currIf = this;
+                while (currIf.orelse != null && currIf.orelse.Count == 1 && currIf.orelse[0] is If) {
+                    If orelse = (If)currIf.orelse[0];
+                    tests.Add(new IfStatementTest(_ast.Revert(orelse.test), RevertStmts(orelse.body)));
+                    currIf = orelse;
+                }
+                return new IfStatement(tests.ToArray(), RevertStmts(currIf.orelse));
+            }
+
         }
 
         [PythonType]
@@ -2540,7 +2276,14 @@ namespace IronPython.Modules
                 get { return _orelse; }
                 set { _orelse = value; }
             }
+
+            internal override AstExpression Revert() {
+                return new ConditionalExpression(_ast.Revert(test), _ast.Revert(body), _ast.Revert(orelse));
+            }
         }
+
+        private static char[] MODULE_NAME_SPLITTER = new char[1] { '.' };
+
 
         [PythonType]
         public class Import : stmt
@@ -2567,6 +2310,18 @@ namespace IronPython.Modules
                 get { return _names; }
                 set { _names = value; }
             }
+
+            internal override Statement Revert() {
+                ModuleName[] moduleNames = new ModuleName[names.Count];
+                String[] asNames = new String[names.Count];
+                for (int i = 0; i < names.Count; i++) {
+                    alias alias = (alias)names[i];
+                    moduleNames[i] = new ModuleName(alias.name.Split(MODULE_NAME_SPLITTER));
+                    asNames[i] = alias.asname;
+                }
+                return new ImportStatement(moduleNames, asNames, false);  // TODO: not so sure about the relative/absolute argument here
+            }
+
         }
 
         [PythonType]
@@ -2613,6 +2368,31 @@ namespace IronPython.Modules
                 get { return _level; }
                 set { _level = value; }
             }
+
+            internal override Statement Revert() {
+                ModuleName root = null;
+                bool absolute = false; // TODO: absolute import appears in ModuleOptions, not sure how it should work together
+                if (module != null)
+                    if (module[0] == '.') // relative module
+                        root = new RelativeModuleName(module.Split(MODULE_NAME_SPLITTER), level);
+                    else {
+                        root = new ModuleName(module.Split(MODULE_NAME_SPLITTER));
+                        absolute = true;
+                    }
+
+                if (names.Count == 1 && ((alias)names[0]).name == "*")
+                    return new FromImportStatement(root, (string[])FromImportStatement.Star, null, false, absolute);
+
+                String[] newNames = new String[names.Count];
+                String[] asNames = new String[names.Count];
+                for (int i = 0; i < names.Count; i++) {
+                    alias alias = (alias)names[i];
+                    newNames[i] = alias.name;
+                    asNames[i] = alias.asname;
+                }
+                return new FromImportStatement(root, newNames, asNames, false, absolute);
+            }
+
         }
 
         [PythonType]
@@ -2732,7 +2512,7 @@ namespace IronPython.Modules
 
                     _body = ((Yield)((Expr)statement).value).value;
                 }  else
-                    throw new ArgumentTypeException("Unexpected statement type: " + statement.GetType());
+                    throw PythonOps.TypeError("Unexpected statement type: {0}, expected Return or Expr", statement.GetType());
             }
 
             public arguments args {
@@ -2744,6 +2524,21 @@ namespace IronPython.Modules
                 get { return _body; }
                 set { _body = value; }
             }
+
+            internal override AstExpression Revert() {
+                Statement newBody;
+                AstExpression exp = _ast.Revert(body);
+                if (!_containsYield)
+                    newBody = new ReturnStatement(exp);
+                else
+                    newBody = new ExpressionStatement(exp);
+                Parameter[] para = args.Revert();
+                FunctionDefinition fd = new FunctionDefinition(null, para, newBody);
+                fd.IsGenerator = _containsYield;
+                _containsYield = false;
+                return new LambdaExpression(fd);
+            }
+
         }
 
         [PythonType]
@@ -2782,6 +2577,15 @@ namespace IronPython.Modules
                 get { return _ctx; }
                 set { _ctx = value; }
             }
+
+            internal override AstExpression Revert() {
+                AstExpression[] e = new AstExpression[elts.Count];
+                int i = 0;
+                foreach (expr el in elts)
+                    e[i++] = _ast.Revert(el);
+                return new ListExpression(e);
+            }
+
         }
 
         [PythonType]
@@ -2816,6 +2620,12 @@ namespace IronPython.Modules
             public PythonList generators {
                 get { return _generators; }
                 set { _generators = value; }
+            }
+
+            internal override AstExpression Revert() {
+                AstExpression item = _ast.Revert(elt);
+                ComprehensionIterator[] iters = RevertIterators(generators);
+                return new ListComprehension(item, iters);
             }
         }
 
@@ -2924,6 +2734,10 @@ namespace IronPython.Modules
                 get { return _id; }
                 set { _id = value; }
             }
+
+            internal override AstExpression  Revert() {
+                return new NameExpression(id);
+            }
         }
 
         [PythonType]
@@ -2967,6 +2781,10 @@ namespace IronPython.Modules
                 get { return _n; }
                 set { _n = value; }
             }
+
+            internal override AstExpression Revert() {
+                return new ConstantExpression(n);
+            }
         }
 
         [PythonType]
@@ -2992,6 +2810,10 @@ namespace IronPython.Modules
             public Pass([Optional]int? lineno, [Optional]int? col_offset) {
                 _lineno = lineno;
                 _col_offset = col_offset;
+            }
+
+            internal override Statement Revert() {
+                return new EmptyStatement();
             }
         }
 
@@ -3048,6 +2870,14 @@ namespace IronPython.Modules
                 get { return _nl; }
                 set { _nl = value; }
             }
+
+            internal override Statement Revert() {
+                return new PrintStatement(_ast.Revert(dest), RevertExpr(values), !nl);
+                // return null;
+                
+            }
+
+
         }
 
         [PythonType]
@@ -3095,6 +2925,11 @@ namespace IronPython.Modules
                 get { return _tback; }
                 set { _tback = value; }
             }
+
+            internal override Statement Revert() {
+                return new RaiseStatement(_ast.Revert(type), _ast.Revert(inst), _ast.Revert(tback));
+            }
+
         }
 
         [PythonType]
@@ -3121,6 +2956,10 @@ namespace IronPython.Modules
             public expr value {
                 get { return _value; }
                 set { _value = value; }
+            }
+
+            internal override AstExpression Revert() {
+                return new BackQuoteExpression(_ast.Revert(value));
             }
         }
 
@@ -3154,6 +2993,11 @@ namespace IronPython.Modules
                 get { return _value; }
                 set { _value = value; }
             }
+
+            internal override Statement Revert() {
+                return new ReturnStatement(_ast.Revert(value));
+            }
+
         }
 
         [PythonType]
@@ -3189,6 +3033,15 @@ namespace IronPython.Modules
                 get { return _elts; }
                 set { _elts = value; }
             }
+
+            internal override AstExpression Revert() {
+                AstExpression[] e = new AstExpression[elts.Count];
+                int i = 0;
+                foreach (expr el in elts)
+                    e[i++] = _ast.Revert(el);
+                return new SetExpression(e);
+            }
+
         }
 
         [PythonType]
@@ -3222,6 +3075,12 @@ namespace IronPython.Modules
             public PythonList generators {
                 get { return _generators; }
                 set { _generators = value; }
+            }
+
+            internal override AstExpression Revert() {
+                AstExpression item = _ast.Revert(elt);
+                ComprehensionIterator[] iters = RevertIterators(generators);
+                return new SetComprehension(item, iters);
             }
         }
 
@@ -3305,6 +3164,10 @@ namespace IronPython.Modules
                 get { return _s; }
                 set { _s = value; }
             }
+
+            internal override AstExpression Revert() {
+                return new ConstantExpression(s);
+            }
         }
 
         [PythonType]
@@ -3356,6 +3219,39 @@ namespace IronPython.Modules
             public expr_context ctx {
                 get { return _ctx; }
                 set { _ctx = value; }
+            }
+
+            internal override AstExpression Revert() {
+                AstExpression index = null;
+                if (slice is Index)
+                    index = _ast.Revert(((Index)slice).value);
+                else if (slice is Slice) {
+                    Slice concreteSlice = (Slice)slice;
+                    AstExpression start = null;
+                    if (concreteSlice.lower != null)
+                        start = _ast.Revert(concreteSlice.lower);
+                    AstExpression stop = null;
+                    if (concreteSlice.upper != null)
+                        stop = _ast.Revert(concreteSlice.upper);
+                    AstExpression step = null;
+                    bool stepProvided = false;
+                    if (concreteSlice.step != null) {
+                        stepProvided = true;
+                        if (concreteSlice.step is Name && ((Name)concreteSlice.step).id == "None") {
+                            // pass
+                        } else {
+                            step = _ast.Revert(concreteSlice.step);
+                        }
+                    }
+                    index = new SliceExpression(start, stop, step, stepProvided);
+                } else if (slice is Ellipsis) {
+                    index = new ConstantExpression(PythonOps.Ellipsis);
+                } else if (slice is ExtSlice) {
+                    index = new TupleExpression(true, ((ExtSlice)slice).Revert());
+                } else {
+                    Debug.Assert(false, "Unexpected type when converting Subscript: " + slice.GetType());
+                }
+                return new IndexExpression(_ast.Revert(value), index);
             }
         }
 
@@ -3436,6 +3332,16 @@ namespace IronPython.Modules
                 get { return _orelse; }
                 set { _orelse = value; }
             }
+
+            internal override Statement Revert() {
+                TryStatementHandler[] tshs = new TryStatementHandler[handlers.Count];
+                for (int i = 0; i < handlers.Count; i++) {
+                    tshs[i] = ((ExceptHandler)handlers[i]).RevertHandler();
+                }
+                return new TryStatement(RevertStmts(body), tshs, RevertStmts(orelse), null);
+            }
+
+
         }
 
         [PythonType]
@@ -3473,6 +3379,19 @@ namespace IronPython.Modules
                 get { return _finalbody; }
                 set { _finalbody = value; }
             }
+
+            internal override Statement Revert() {
+                if (body.Count == 1 && body[0] is TryExcept) {
+                    TryExcept te = (TryExcept)body[0];
+                    TryStatementHandler[] tshs = new TryStatementHandler[te.handlers.Count];
+                    for (int i = 0; i < te.handlers.Count; i++) {
+                        tshs[i] = ((ExceptHandler)te.handlers[i]).RevertHandler();
+                    }
+                    return new TryStatement(RevertStmts(te.body), tshs, RevertStmts(te.orelse), RevertStmts(finalbody));
+                }
+                return new TryStatement(RevertStmts(body), null, null, RevertStmts(finalbody));
+            }
+
         }
 
         [PythonType]
@@ -3511,6 +3430,14 @@ namespace IronPython.Modules
                 get { return _ctx; }
                 set { _ctx = value; }
             }
+
+            internal override AstExpression Revert() {
+                AstExpression[] e = new AstExpression[elts.Count];
+                int i = 0;
+                foreach (expr el in elts)
+                    e[i++] = _ast.Revert(el);
+                return new TupleExpression(false, e);
+            }
         }
 
         [PythonType]
@@ -3545,6 +3472,10 @@ namespace IronPython.Modules
             public expr operand {
                 get { return _operand; }
                 set { _operand = value; }
+            }
+
+            internal override AstExpression Revert() {
+                return new UnaryExpression(op.Revert(), _ast.Revert(operand));
             }
         }
 
@@ -3605,6 +3536,11 @@ namespace IronPython.Modules
                 get { return _orelse; }
                 set { _orelse = value; }
             }
+
+            internal override Statement Revert() {
+                return new WhileStatement(_ast.Revert(test), RevertStmts(body), RevertStmts(orelse));
+            }
+
         }
 
         [PythonType]
@@ -3651,7 +3587,15 @@ namespace IronPython.Modules
                 get { return _body; }
                 set { _body = value; }
             }
+
+            internal override Statement Revert() {
+                return new WithStatement(_ast.Revert(context_expr), _ast.Revert(optional_vars), RevertStmts(body));
+            }
+
         }
+
+        // if yield is detected, the containing function has to be marked as generator
+        private static bool _containsYield = false;
 
         [PythonType]
         public class Yield : expr
@@ -3678,6 +3622,11 @@ namespace IronPython.Modules
             public expr value {
                 get { return _value; }
                 set { _value = value; }
+            }
+            
+            internal override AstExpression Revert() {
+                _containsYield = true;
+                return new YieldExpression(_ast.Revert(value));
             }
         }
     }

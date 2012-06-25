@@ -34,7 +34,6 @@ using IronPython.Runtime.Binding;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-
 #if FEATURE_NUMERICS
 using System.Numerics;
 #else
@@ -294,21 +293,31 @@ namespace IronPython.Modules {
                 if (astOnly) {
                     return source;
                 } else {
-                    PythonAst ast = _ast.ConvertToPythonAst(context,source as dynamic);
+                    PythonAst ast = _ast.ConvertToPythonAst(context, (_ast.AST) source);
                     ast.Bind();
-                    ScriptCode code =  ast.ToScriptCode();
+                    ScriptCode code = ast.ToScriptCode();
                     return ((RunnableScriptCode)code).GetFunctionCode(true);
                 }
-            } else if (!(source is String)) {
-                throw new System.ArgumentException("srouce can be a ast.Expression or string [" + source.GetType() + "]");
             }
-            string src = (string)source;
-            if (src.IndexOf('\0') != -1) {
+
+            string text;
+            if (source is string)
+                text = (string)source;                        
+            else if (source is PythonBuffer)
+                text = ((PythonBuffer)source).ToString();
+            else if (source is ByteArray)
+                text = ((ByteArray)source).ToString();
+            else if (source is Bytes)
+                text = ((Bytes)source).ToString();
+            else 
+                // cpython accepts either AST or readable buffer object
+                throw PythonOps.TypeError("srouce can be either AST or string, actual argument: {0}", source.GetType());
+            
+            if (text.IndexOf('\0') != -1) {
                 throw PythonOps.TypeError("compile() expected string without null bytes");
             }
 
-            // src is string beyond this point
-            src = RemoveBom(src);
+            text = RemoveBom(text);
 
             bool inheritContext = GetCompilerInheritance(dont_inherit);
             CompileFlags cflags = GetCompilerFlags(iflags);
@@ -317,13 +326,11 @@ namespace IronPython.Modules {
                 opts.DontImplyDedent = true;
             }
 
-            SourceUnit sourceUnit;
+            SourceUnit sourceUnit = null; 
             switch (mode) {
-                case "exec": sourceUnit = context.LanguageContext.CreateSnippet(src, filename, SourceCodeKind.Statements); break;
-                case "eval": sourceUnit = context.LanguageContext.CreateSnippet(src, filename, SourceCodeKind.Expression); break;
-                case "single": sourceUnit = context.LanguageContext.CreateSnippet(src, filename, SourceCodeKind.InteractiveCode); break;
-                default:
-                    throw PythonOps.ValueError("compile() arg 3 must be 'exec' or 'eval' or 'single'");
+                case "exec": sourceUnit = context.LanguageContext.CreateSnippet(text, filename, SourceCodeKind.Statements); break;
+                case "eval": sourceUnit = context.LanguageContext.CreateSnippet(text, filename, SourceCodeKind.Expression); break;
+                case "single": sourceUnit = context.LanguageContext.CreateSnippet(text, filename, SourceCodeKind.InteractiveCode); break;
             }
 
             return !astOnly ? 
