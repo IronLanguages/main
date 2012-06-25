@@ -641,7 +641,7 @@ namespace IronPython.Modules
                 for (int defIdx = defaults.Count - 1; defIdx >= 0; defIdx--, argIdx--) {
                     Name name = (Name)args[argIdx];
                     Parameter p = new Parameter(name.id);
-                    p.DefaultValue = expr.Revert((expr)defaults[defIdx]);
+                    p.DefaultValue = expr.Revert(defaults[defIdx]);
                     parameters.Add(p);
                 }
                 while (argIdx >= 0) {
@@ -763,13 +763,20 @@ namespace IronPython.Modules
             }
 
             internal virtual AstExpression Revert() {
-                throw new Exception("please fix revert for: " + GetType());
+                throw PythonOps.TypeError("Unexpected expr type: {0}", GetType());
             }
 
             internal static AstExpression Revert(expr ex) {
                 if (ex == null)
                     return null;
                 return ex.Revert();
+            }
+
+            internal static AstExpression Revert(object ex) {
+                if (ex == null)
+                    return null;
+                Debug.Assert(ex is expr);
+                return ((expr)ex).Revert();
             }
 
             internal static AstExpression[] RevertExprs(PythonList exprs) {
@@ -1216,13 +1223,13 @@ namespace IronPython.Modules
             internal override AstExpression Revert() {
                 if (op == And.Instance) {
                     AndExpression ae = new AndExpression(
-                        expr.Revert((expr)values[0]),
-                        expr.Revert((expr)values[1]));
+                        expr.Revert(values[0]),
+                        expr.Revert(values[1]));
                     return ae;
                 } else if (op == Or.Instance) {
                     OrExpression oe = new OrExpression(
-                        expr.Revert((expr)values[0]),
-                        expr.Revert((expr)values[1]));
+                        expr.Revert(values[0]),
+                        expr.Revert(values[1]));
                     return oe;
                 }
                 throw PythonOps.TypeError("Unexpected boolean operator: {0}", op);
@@ -1451,7 +1458,7 @@ namespace IronPython.Modules
                     return new BinaryExpression(
                         ((cmpop)(ops[0])).Revert(),
                         expr.Revert(left),
-                        expr.Revert((expr)(comparators[0])));
+                        expr.Revert(comparators[0]));
                 }
 
                 // chaining of comparators is processed here (a>b>c> ...)
@@ -1459,13 +1466,13 @@ namespace IronPython.Modules
                 int i = ops.Count - 1;
                 BinaryExpression right = new BinaryExpression(
                         ((cmpop)(ops[i])).Revert(),
-                        expr.Revert((expr)(comparators[i - 1])),
-                        expr.Revert((expr)(comparators[i])));
+                        expr.Revert(comparators[i - 1]),
+                        expr.Revert(comparators[i]));
                 i--;
                 while (i > 0) {
                     right = new BinaryExpression(
                         ((cmpop)(ops[i])).Revert(),
-                        expr.Revert((expr)(comparators[i - 1])),
+                        expr.Revert(comparators[i - 1]),
                         right);
                     i--;
                 }
@@ -1575,8 +1582,8 @@ namespace IronPython.Modules
                 SliceExpression[] e = new SliceExpression[values.Count];
                 for (int i = 0; i < values.Count; i++) {
                     e[i] = new SliceExpression(
-                        expr.Revert((expr)keys[i]),
-                        expr.Revert((expr)values[i]),
+                        expr.Revert(keys[i]),
+                        expr.Revert(values[i]),
                         null,
                         false);
                 }
@@ -1838,7 +1845,7 @@ namespace IronPython.Modules
             internal AstExpression[] Revert() {
                 List<AstExpression> ret = new List<AstExpression>(dims.Count);
                 foreach (expr ex in dims)
-                    ret.Add(expr.Revert((expr)ex));
+                    ret.Add(expr.Revert(ex));
                 return ret.ToArray();
             }
         }
@@ -2093,7 +2100,7 @@ namespace IronPython.Modules
                     if (c.ifs != null && c.ifs.Count != 0) {
                         int ifIdx = c.ifs.Count - 1;
                         while (ifIdx >= 0) {
-                            IfStatementTest ist = new IfStatementTest(expr.Revert((expr)c.ifs[ifIdx]), stmt);
+                            IfStatementTest ist = new IfStatementTest(expr.Revert(c.ifs[ifIdx]), stmt);
                             stmt = new IfStatement(new IfStatementTest[] { ist }, null);
                             ifIdx--;
                         }
