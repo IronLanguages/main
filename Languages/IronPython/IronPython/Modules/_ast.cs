@@ -838,7 +838,8 @@ namespace IronPython.Modules
         }
 
         [PythonType]
-        public abstract class @operator : AST {
+        public abstract class @operator : AST 
+        {
             internal PythonOperator Revert() {
                 if (this == Add.Instance)
                     return PythonOperator.Add;
@@ -1593,7 +1594,8 @@ namespace IronPython.Modules
         }
 
         [PythonType]
-        public class DictComp : expr {
+        public class DictComp : expr 
+        {
             private expr _key;
             private expr _value;
             private PythonList _generators;
@@ -2038,8 +2040,8 @@ namespace IronPython.Modules
                 ComprehensionIterator[] iters = walker.Iterators;
                 Debug.Assert(iters.Length != 0, "A generator expression cannot have zero iterators.");
                 iters[0] = new ComprehensionFor(((ComprehensionFor)iters[0]).Left, expr.Iterable);
-                _generators = Convert(iters);
                 _elt = Convert(walker.Yield.Expression);
+                _generators = Convert(iters);
             }
 
             internal class ExtractListComprehensionIterators : PythonWalker
@@ -2990,7 +2992,8 @@ namespace IronPython.Modules
         }
 
         [PythonType]
-        public class Set : expr {
+        public class Set : expr 
+        {
             private PythonList _elts;
 
             public Set() {
@@ -3027,7 +3030,8 @@ namespace IronPython.Modules
         }
 
         [PythonType]
-        public class SetComp : expr {
+        public class SetComp : expr 
+        {
             private expr _elt;
             private PythonList _generators;
 
