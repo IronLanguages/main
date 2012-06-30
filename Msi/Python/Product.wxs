@@ -118,9 +118,9 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
           <ComponentGroupRef Id='IronPythonPlatformsSl5'/>
         </Feature>
         
-        <Feature Id='IronPython_Platforms_WP7' AllowAdvertise='no' Level='1' Title='Windows Phone 7' Description='Development assemblies for Windows Phone 7.'>
+        <!--<Feature Id='IronPython_Platforms_WP7' AllowAdvertise='no' Level='1' Title='Windows Phone 7' Description='Development assemblies for Windows Phone 7.'>
           <ComponentGroupRef Id='IronPythonPlatformsWP7'/>
-        </Feature>
+        </Feature>-->
       </Feature>
 
       <Feature Id='IronPython_SilverlightTools' AllowAdvertise='no' Level='1' Title='Silverlight Tools' Description='Tools for developing Silverlight apps with IronPython (Chiron.exe et al.).'>

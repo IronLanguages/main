@@ -56,9 +56,9 @@
     <WixConstant Include="PlatformsSl5Dir">
       <Value>Platforms\Sl5</Value>
     </WixConstant>
-    <WixConstant Include="PlatformsWP7Dir">
+    <!--<WixConstant Include="PlatformsWP7Dir">
       <Value>Platforms\Sl4-WP71</Value>
-    </WixConstant>
+    </WixConstant>-->
     <WixConstant Include="SilverlightToolsDir">
       <Value>Silverlight</Value>
     </WixConstant>
@@ -147,11 +147,11 @@
       <PreprocessorVariable>var.PlatformsSl5Dir</PreprocessorVariable>
     </HarvestDirectory>
     
-    <HarvestDirectory Include="$(BaseInputPaths)\Platforms\Sl4-WP71">
+    <!--<HarvestDirectory Include="$(BaseInputPaths)\Platforms\Sl4-WP71">
       <DirectoryRefId>IronPythonPlatformsDir</DirectoryRefId>
       <ComponentGroupName>IronPythonPlatformsWP7</ComponentGroupName>
       <PreprocessorVariable>var.PlatformsWP7Dir</PreprocessorVariable>
-    </HarvestDirectory>
+    </HarvestDirectory>-->
 
     <HarvestDirectory Include="$(BaseInputPaths)\Silverlight">
       <DirectoryRefId>INSTALLDIR</DirectoryRefId>
