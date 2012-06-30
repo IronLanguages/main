@@ -20,6 +20,7 @@
     <BaseInputPaths Condition=" '$(BaseInputPaths)' == '' ">$(MSBuildProjectDirectory)\..\..\Stage\$(Configuration)\IronPython-$(DisplayVersion)</BaseInputPaths>
     
     <MsiVersion Condition=" '$(MsiVersion)' == '' ">$(MajorVersion).$(MinorVersion).$(MicroVersion)$(AssemblyFileRevision).0</MsiVersion>
+    <SetMsiAssemblyNameFileVersion>True</SetMsiAssemblyNameFileVersion>
   </PropertyGroup>
 
   <ItemGroup>
