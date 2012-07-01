@@ -28,6 +28,7 @@ using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Actions;
 
 #if !CLR2
 using BigInt = System.Numerics.BigInteger;
@@ -1780,7 +1781,7 @@ false
         /// </summary>
         public void ClrTypes1() {
             TestTypeAndTracker(typeof(ClassWithMethods1));
-            TestTypeAndTracker(ReflectionCache.GetTypeTracker(typeof(ClassWithMethods1)));
+            TestTypeAndTracker(TypeTracker.GetTypeTracker(typeof(ClassWithMethods1)));
         }
 
         public void TestTypeAndTracker(object type) {

@@ -12,6 +12,8 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_LCG
+
 #if FEATURE_PDBEMIT
 using System.Diagnostics.SymbolStore;
 #endif
@@ -1667,3 +1669,4 @@ namespace Microsoft.Scripting.Generation {
         }
     }
 }
+#endif

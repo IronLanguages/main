@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Tests {
@@ -301,6 +302,43 @@ namespace IronRuby.Tests {
             var gp_expected = gp.GetMembers(all);
             var gp_actual = gp.GetInheritedMembers();
             AreSetsEqual(gp_actual.Select(m => m.ToString()), gp_expected.Select(m => m.ToString()));
+        }
+
+        public delegate int FRefIntIntOutInt(ref int a, int b, out int c);
+
+        public delegate int FIntIntInt(int a, int b);
+
+        public void DelegateInfo1() {
+            object lambda = Engine.Execute("lambda { |a,b| a + b }");
+
+            var creator = new DynamicDelegateCreator(Context);
+            var d1a = (Func<int, int, int>)creator.GetDelegate(lambda, typeof(Func<int, int, int>));
+            var d1b = (Func<int, int, int>)creator.GetDelegate(lambda, typeof(Func<int, int, int>));
+            var d2 = (FIntIntInt)creator.GetDelegate(lambda, typeof(FIntIntInt));
+            Assert(d1a == d1b);
+
+            int r1 = d1a(1, 2);
+            int r2 = d2(10, 20);
+
+            Assert(r1 == 3);
+            Assert(r2 == 30);
+        }
+
+        public void DelegateInfo2() {
+            object lambda = Engine.Execute("lambda { |a,b,c| r = a.value + b; a.value = 1; c.value = 10; r }");
+
+            var creator = new DynamicDelegateCreator(Context);
+            var da = (FRefIntIntOutInt)creator.GetDelegate(lambda, typeof(FRefIntIntOutInt));
+            var db = (FRefIntIntOutInt)creator.GetDelegate(lambda, typeof(FRefIntIntOutInt));
+            Assert(da == db);
+
+            int a = 2;
+            int c = 3;
+            int r = da(ref a, 3, out c);
+
+            Assert(r == 5);
+            Assert(a == 1);
+            Assert(c == 10);
         }
     }
 }

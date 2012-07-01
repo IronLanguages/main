@@ -65,7 +65,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {
-            return new MemberInfo[] { _lambda.Dispatcher.Method.GetMethod() };
+            return new MemberInfo[] { _lambda.Dispatcher.Method.GetMethodInfo() };
         }
 
         protected internal override RubyMemberInfo/*!*/ Copy(RubyMemberFlags flags, RubyModule/*!*/ module) {

@@ -236,7 +236,7 @@ namespace Microsoft.Scripting.Interpreter {
             return t;
         }
         public static MethodInfo CacheFunc<TRet>(Func<TRet> method) {
-            var info = method.GetMethod();
+            var info = method.GetMethodInfo();
             lock (_cache) {
                 _cache[info] = new FuncCallInstruction<TRet>(method);
             }
@@ -244,7 +244,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheFunc<T0, TRet>(Func<T0, TRet> method) {
-            var info = method.GetMethod();
+            var info = method.GetMethodInfo();
             lock (_cache) {
                 _cache[info] = new FuncCallInstruction<T0, TRet>(method);
             }
@@ -252,7 +252,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheFunc<T0, T1, TRet>(Func<T0, T1, TRet> method) {
-            var info = method.GetMethod();
+            var info = method.GetMethodInfo();
             lock (_cache) {
                 _cache[info] = new FuncCallInstruction<T0, T1, TRet>(method);
             }
@@ -260,7 +260,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheFunc<T0, T1, T2, TRet>(Func<T0, T1, T2, TRet> method) {
-            var info = method.GetMethod();
+            var info = method.GetMethodInfo();
             lock (_cache) {
                 _cache[info] = new FuncCallInstruction<T0, T1, T2, TRet>(method);
             }
@@ -268,7 +268,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheFunc<T0, T1, T2, T3, TRet>(Func<T0, T1, T2, T3, TRet> method) {
-            var info = method.GetMethod();
+            var info = method.GetMethodInfo();
             lock (_cache) {
                 _cache[info] = new FuncCallInstruction<T0, T1, T2, T3, TRet>(method);
             }
@@ -276,7 +276,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheFunc<T0, T1, T2, T3, T4, TRet>(Func<T0, T1, T2, T3, T4, TRet> method) {
-            var info = method.GetMethod();
+            var info = method.GetMethodInfo();
             lock (_cache) {
                 _cache[info] = new FuncCallInstruction<T0, T1, T2, T3, T4, TRet>(method);
             }
@@ -284,7 +284,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheFunc<T0, T1, T2, T3, T4, T5, TRet>(Func<T0, T1, T2, T3, T4, T5, TRet> method) {
-            var info = method.GetMethod();
+            var info = method.GetMethodInfo();
             lock (_cache) {
                 _cache[info] = new FuncCallInstruction<T0, T1, T2, T3, T4, T5, TRet>(method);
             }
@@ -292,7 +292,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheFunc<T0, T1, T2, T3, T4, T5, T6, TRet>(Func<T0, T1, T2, T3, T4, T5, T6, TRet> method) {
-            var info = method.GetMethod();
+            var info = method.GetMethodInfo();
             lock (_cache) {
                 _cache[info] = new FuncCallInstruction<T0, T1, T2, T3, T4, T5, T6, TRet>(method);
             }
@@ -300,7 +300,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheFunc<T0, T1, T2, T3, T4, T5, T6, T7, TRet>(Func<T0, T1, T2, T3, T4, T5, T6, T7, TRet> method) {
-            var info = method.GetMethod();
+            var info = method.GetMethodInfo();
             lock (_cache) {
                 _cache[info] = new FuncCallInstruction<T0, T1, T2, T3, T4, T5, T6, T7, TRet>(method);
             }
@@ -308,7 +308,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheFunc<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>(Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet> method) {
-            var info = method.GetMethod();
+            var info = method.GetMethodInfo();
             lock (_cache) {
                 _cache[info] = new FuncCallInstruction<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>(method);
             }
@@ -316,7 +316,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheAction(Action method) {
-            var info = method.GetMethod();
+            var info = method.GetMethodInfo();
             lock (_cache) {
                 _cache[info] = new ActionCallInstruction(method);
             }
@@ -324,7 +324,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheAction<T0>(Action<T0> method) {
-            var info = method.GetMethod();
+            var info = method.GetMethodInfo();
             lock (_cache) {
                 _cache[info] = new ActionCallInstruction<T0>(method);
             }
@@ -332,7 +332,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheAction<T0, T1>(Action<T0, T1> method) {
-            var info = method.GetMethod();
+            var info = method.GetMethodInfo();
             lock (_cache) {
                 _cache[info] = new ActionCallInstruction<T0, T1>(method);
             }
@@ -340,7 +340,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheAction<T0, T1, T2>(Action<T0, T1, T2> method) {
-            var info = method.GetMethod();
+            var info = method.GetMethodInfo();
             lock (_cache) {
                 _cache[info] = new ActionCallInstruction<T0, T1, T2>(method);
             }
@@ -348,7 +348,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheAction<T0, T1, T2, T3>(Action<T0, T1, T2, T3> method) {
-            var info = method.GetMethod();
+            var info = method.GetMethodInfo();
             lock (_cache) {
                 _cache[info] = new ActionCallInstruction<T0, T1, T2, T3>(method);
             }
@@ -356,7 +356,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheAction<T0, T1, T2, T3, T4>(Action<T0, T1, T2, T3, T4> method) {
-            var info = method.GetMethod();
+            var info = method.GetMethodInfo();
             lock (_cache) {
                 _cache[info] = new ActionCallInstruction<T0, T1, T2, T3, T4>(method);
             }
@@ -364,7 +364,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheAction<T0, T1, T2, T3, T4, T5>(Action<T0, T1, T2, T3, T4, T5> method) {
-            var info = method.GetMethod();
+            var info = method.GetMethodInfo();
             lock (_cache) {
                 _cache[info] = new ActionCallInstruction<T0, T1, T2, T3, T4, T5>(method);
             }
@@ -372,7 +372,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheAction<T0, T1, T2, T3, T4, T5, T6>(Action<T0, T1, T2, T3, T4, T5, T6> method) {
-            var info = method.GetMethod();
+            var info = method.GetMethodInfo();
             lock (_cache) {
                 _cache[info] = new ActionCallInstruction<T0, T1, T2, T3, T4, T5, T6>(method);
             }
@@ -380,7 +380,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheAction<T0, T1, T2, T3, T4, T5, T6, T7>(Action<T0, T1, T2, T3, T4, T5, T6, T7> method) {
-            var info = method.GetMethod();
+            var info = method.GetMethodInfo();
             lock (_cache) {
                 _cache[info] = new ActionCallInstruction<T0, T1, T2, T3, T4, T5, T6, T7>(method);
             }
@@ -388,7 +388,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public static MethodInfo CacheAction<T0, T1, T2, T3, T4, T5, T6, T7, T8>(Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> method) {
-            var info = method.GetMethod();
+            var info = method.GetMethodInfo();
             lock (_cache) {
                 _cache[info] = new ActionCallInstruction<T0, T1, T2, T3, T4, T5, T6, T7, T8>(method);
             }
@@ -399,7 +399,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class ActionCallInstruction : CallInstruction {
         private readonly Action _target;
-        public override MethodInfo Info { get { return _target.GetMethod(); } }
+        public override MethodInfo Info { get { return _target.GetMethodInfo(); } }
         public override int ArgumentCount { get { return 0; } }
 
         public ActionCallInstruction(Action target) {
@@ -424,7 +424,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class ActionCallInstruction<T0> : CallInstruction {
         private readonly Action<T0> _target;
-        public override MethodInfo Info { get { return _target.GetMethod(); } }
+        public override MethodInfo Info { get { return _target.GetMethodInfo(); } }
         public override int ArgumentCount { get { return 1; } }
 
         public ActionCallInstruction(Action<T0> target) {
@@ -449,7 +449,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class ActionCallInstruction<T0, T1> : CallInstruction {
         private readonly Action<T0, T1> _target;
-        public override MethodInfo Info { get { return _target.GetMethod(); } }
+        public override MethodInfo Info { get { return _target.GetMethodInfo(); } }
         public override int ArgumentCount { get { return 2; } }
 
         public ActionCallInstruction(Action<T0, T1> target) {
@@ -474,7 +474,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class ActionCallInstruction<T0, T1, T2> : CallInstruction {
         private readonly Action<T0, T1, T2> _target;
-        public override MethodInfo Info { get { return _target.GetMethod(); } }
+        public override MethodInfo Info { get { return _target.GetMethodInfo(); } }
         public override int ArgumentCount { get { return 3; } }
 
         public ActionCallInstruction(Action<T0, T1, T2> target) {
@@ -499,7 +499,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class ActionCallInstruction<T0, T1, T2, T3> : CallInstruction {
         private readonly Action<T0, T1, T2, T3> _target;
-        public override MethodInfo Info { get { return _target.GetMethod(); } }
+        public override MethodInfo Info { get { return _target.GetMethodInfo(); } }
         public override int ArgumentCount { get { return 4; } }
 
         public ActionCallInstruction(Action<T0, T1, T2, T3> target) {
@@ -524,7 +524,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class ActionCallInstruction<T0, T1, T2, T3, T4> : CallInstruction {
         private readonly Action<T0, T1, T2, T3, T4> _target;
-        public override MethodInfo Info { get { return _target.GetMethod(); } }
+        public override MethodInfo Info { get { return _target.GetMethodInfo(); } }
         public override int ArgumentCount { get { return 5; } }
 
         public ActionCallInstruction(Action<T0, T1, T2, T3, T4> target) {
@@ -549,7 +549,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class ActionCallInstruction<T0, T1, T2, T3, T4, T5> : CallInstruction {
         private readonly Action<T0, T1, T2, T3, T4, T5> _target;
-        public override MethodInfo Info { get { return _target.GetMethod(); } }
+        public override MethodInfo Info { get { return _target.GetMethodInfo(); } }
         public override int ArgumentCount { get { return 6; } }
 
         public ActionCallInstruction(Action<T0, T1, T2, T3, T4, T5> target) {
@@ -574,7 +574,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class ActionCallInstruction<T0, T1, T2, T3, T4, T5, T6> : CallInstruction {
         private readonly Action<T0, T1, T2, T3, T4, T5, T6> _target;
-        public override MethodInfo Info { get { return _target.GetMethod(); } }
+        public override MethodInfo Info { get { return _target.GetMethodInfo(); } }
         public override int ArgumentCount { get { return 7; } }
 
         public ActionCallInstruction(Action<T0, T1, T2, T3, T4, T5, T6> target) {
@@ -599,7 +599,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class ActionCallInstruction<T0, T1, T2, T3, T4, T5, T6, T7> : CallInstruction {
         private readonly Action<T0, T1, T2, T3, T4, T5, T6, T7> _target;
-        public override MethodInfo Info { get { return _target.GetMethod(); } }
+        public override MethodInfo Info { get { return _target.GetMethodInfo(); } }
         public override int ArgumentCount { get { return 8; } }
 
         public ActionCallInstruction(Action<T0, T1, T2, T3, T4, T5, T6, T7> target) {
@@ -624,7 +624,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class ActionCallInstruction<T0, T1, T2, T3, T4, T5, T6, T7, T8> : CallInstruction {
         private readonly Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> _target;
-        public override MethodInfo Info { get { return _target.GetMethod(); } }
+        public override MethodInfo Info { get { return _target.GetMethodInfo(); } }
         public override int ArgumentCount { get { return 9; } }
 
         public ActionCallInstruction(Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> target) {
@@ -649,7 +649,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class FuncCallInstruction<TRet> : CallInstruction {
         private readonly Func<TRet> _target;
-        public override MethodInfo Info { get { return _target.GetMethod(); } }
+        public override MethodInfo Info { get { return _target.GetMethodInfo(); } }
         public override int ArgumentCount { get { return 0; } }
 
         public FuncCallInstruction(Func<TRet> target) {
@@ -673,7 +673,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class FuncCallInstruction<T0, TRet> : CallInstruction {
         private readonly Func<T0, TRet> _target;
-        public override MethodInfo Info { get { return _target.GetMethod(); } }
+        public override MethodInfo Info { get { return _target.GetMethodInfo(); } }
         public override int ArgumentCount { get { return 1; } }
 
         public FuncCallInstruction(Func<T0, TRet> target) {
@@ -697,7 +697,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class FuncCallInstruction<T0, T1, TRet> : CallInstruction {
         private readonly Func<T0, T1, TRet> _target;
-        public override MethodInfo Info { get { return _target.GetMethod(); } }
+        public override MethodInfo Info { get { return _target.GetMethodInfo(); } }
         public override int ArgumentCount { get { return 2; } }
 
         public FuncCallInstruction(Func<T0, T1, TRet> target) {
@@ -721,7 +721,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class FuncCallInstruction<T0, T1, T2, TRet> : CallInstruction {
         private readonly Func<T0, T1, T2, TRet> _target;
-        public override MethodInfo Info { get { return _target.GetMethod(); } }
+        public override MethodInfo Info { get { return _target.GetMethodInfo(); } }
         public override int ArgumentCount { get { return 3; } }
 
         public FuncCallInstruction(Func<T0, T1, T2, TRet> target) {
@@ -745,7 +745,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class FuncCallInstruction<T0, T1, T2, T3, TRet> : CallInstruction {
         private readonly Func<T0, T1, T2, T3, TRet> _target;
-        public override MethodInfo Info { get { return _target.GetMethod(); } }
+        public override MethodInfo Info { get { return _target.GetMethodInfo(); } }
         public override int ArgumentCount { get { return 4; } }
 
         public FuncCallInstruction(Func<T0, T1, T2, T3, TRet> target) {
@@ -769,7 +769,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class FuncCallInstruction<T0, T1, T2, T3, T4, TRet> : CallInstruction {
         private readonly Func<T0, T1, T2, T3, T4, TRet> _target;
-        public override MethodInfo Info { get { return _target.GetMethod(); } }
+        public override MethodInfo Info { get { return _target.GetMethodInfo(); } }
         public override int ArgumentCount { get { return 5; } }
 
         public FuncCallInstruction(Func<T0, T1, T2, T3, T4, TRet> target) {
@@ -793,7 +793,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class FuncCallInstruction<T0, T1, T2, T3, T4, T5, TRet> : CallInstruction {
         private readonly Func<T0, T1, T2, T3, T4, T5, TRet> _target;
-        public override MethodInfo Info { get { return _target.GetMethod(); } }
+        public override MethodInfo Info { get { return _target.GetMethodInfo(); } }
         public override int ArgumentCount { get { return 6; } }
 
         public FuncCallInstruction(Func<T0, T1, T2, T3, T4, T5, TRet> target) {
@@ -817,7 +817,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class FuncCallInstruction<T0, T1, T2, T3, T4, T5, T6, TRet> : CallInstruction {
         private readonly Func<T0, T1, T2, T3, T4, T5, T6, TRet> _target;
-        public override MethodInfo Info { get { return _target.GetMethod(); } }
+        public override MethodInfo Info { get { return _target.GetMethodInfo(); } }
         public override int ArgumentCount { get { return 7; } }
 
         public FuncCallInstruction(Func<T0, T1, T2, T3, T4, T5, T6, TRet> target) {
@@ -841,7 +841,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class FuncCallInstruction<T0, T1, T2, T3, T4, T5, T6, T7, TRet> : CallInstruction {
         private readonly Func<T0, T1, T2, T3, T4, T5, T6, T7, TRet> _target;
-        public override MethodInfo Info { get { return _target.GetMethod(); } }
+        public override MethodInfo Info { get { return _target.GetMethodInfo(); } }
         public override int ArgumentCount { get { return 8; } }
 
         public FuncCallInstruction(Func<T0, T1, T2, T3, T4, T5, T6, T7, TRet> target) {
@@ -865,7 +865,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal sealed class FuncCallInstruction<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet> : CallInstruction {
         private readonly Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet> _target;
-        public override MethodInfo Info { get { return _target.GetMethod(); } }
+        public override MethodInfo Info { get { return _target.GetMethodInfo(); } }
         public override int ArgumentCount { get { return 9; } }
 
         public FuncCallInstruction(Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet> target) {

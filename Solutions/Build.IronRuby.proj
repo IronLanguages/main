@@ -46,16 +46,12 @@
     <BuildProject Include="$(Solution)">
       <Properties>Configuration=Android$(BaseConfiguration)</Properties>
     </BuildProject>
-    <!--
     <BuildProject Include="$(Solution)">
       <Properties>Configuration=Win8$(BaseConfiguration)</Properties>
     </BuildProject>
-    -->
-    <!--
-    <InstallerProject Include="$(BaseDir)\Msi\Ruby\IronRuby.Installer.wixproj">
+    <InstallerProject Include="$(BaseDir)\Msi\Ruby\Installer.wixproj">
       <Properties>Configuration=$(BaseConfiguration);BaseInputPaths=$(StageDir);WixToolPath=$(UtilDir)\Wix35\;OutputPath=$(PackageDir)</Properties>
     </InstallerProject>
-    -->
   </ItemGroup>
 
   <ItemGroup>

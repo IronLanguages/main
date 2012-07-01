@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_LCG
 
 using System;
 using System.Reflection;
@@ -81,3 +82,4 @@ namespace Microsoft.Scripting.Generation {
     }
 #endif
 }
+#endif

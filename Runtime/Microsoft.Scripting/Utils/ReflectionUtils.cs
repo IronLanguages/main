@@ -70,16 +70,8 @@ namespace Microsoft.Scripting.Utils {
         public static FieldInfo GetField(this Type type, string name) {
             return type.GetTypeInfo().GetDeclaredField(name);
         }
-
-        public static Type CreateType(this TypeBuilder builder) {
-            return builder.CreateTypeInfo().AsType();
-        }
-
-        public static MethodInfo GetMethod(this Delegate d) {
-            return ((dynamic)d).Method;
-        }
 #else
-        public static MethodInfo GetMethod(this Delegate d) {
+        public static MethodInfo GetMethodInfo(this Delegate d) {
             return d.Method;
         }
 

@@ -73,5 +73,19 @@ namespace Microsoft.Scripting.Actions {
             }
             return tracker.Type;
         }
+
+        private static readonly Dictionary<Type, TypeTracker> _typeCache = new Dictionary<Type, TypeTracker>();
+
+        public static TypeTracker GetTypeTracker(Type type) {
+            TypeTracker res;
+
+            lock (_typeCache) {
+                if (!_typeCache.TryGetValue(type, out res)) {
+                    _typeCache[type] = res = new NestedTypeTracker(type);
+                }
+            }
+
+            return res;
+        }
     }
 }

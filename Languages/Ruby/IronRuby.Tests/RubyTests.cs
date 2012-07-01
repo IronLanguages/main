@@ -62,6 +62,8 @@ namespace IronRuby.Tests {
      
                 TypeMemberCache,
                 ReflectionUtils_GetMembers,
+                DelegateInfo1,
+                DelegateInfo2,
 
                 Scenario_ParserLogging,
                 Parser1,

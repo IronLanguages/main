@@ -807,6 +807,7 @@ namespace Microsoft.Scripting.Generation {
             return "lambda_method" + "$" + System.Threading.Interlocked.Increment(ref _Counter);
         }
 
+#if FEATURE_LCG
         // Matches ILGen.TryEmitConstant
         public static bool CanEmitConstant(object value, Type type) {
             if (value == null || CanEmitILConstant(type)) {
@@ -847,6 +848,7 @@ namespace Microsoft.Scripting.Generation {
             }
             return false;
         }
+#endif
 
         /// <summary>
         /// Reduces the provided DynamicExpression into site.Target(site, *args).

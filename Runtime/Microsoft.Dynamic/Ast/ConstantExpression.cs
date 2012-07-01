@@ -116,7 +116,7 @@ namespace Microsoft.Scripting.Ast {
             int ival;
             if (value.AsInt32(out ival)) {
                 return Expression.Call(
-                    new Func<int, BigInteger>(BigInteger.Create).GetMethod(),
+                    new Func<int, BigInteger>(BigInteger.Create).GetMethodInfo(),
                     Constant(ival)
                 );
             }
@@ -124,7 +124,7 @@ namespace Microsoft.Scripting.Ast {
             long lval;
             if (value.AsInt64(out lval)) {
                 return Expression.Call(
-                    new Func<long, BigInteger>(BigInteger.Create).GetMethod(),
+                    new Func<long, BigInteger>(BigInteger.Create).GetMethodInfo(),
                     Constant(lval)
                 );
             }
@@ -137,7 +137,7 @@ namespace Microsoft.Scripting.Ast {
             );
 #else
             return Expression.Call(
-                new Func<bool, byte[], BigInteger>(CompilerHelpers.CreateBigInteger).GetMethod(),
+                new Func<bool, byte[], BigInteger>(CompilerHelpers.CreateBigInteger).GetMethodInfo(),
                 Constant(value.Sign < 0),
                 CreateArray<byte>(value.Abs().ToByteArray())
             );
@@ -147,7 +147,7 @@ namespace Microsoft.Scripting.Ast {
             int ival;
             if (value.AsInt32(out ival)) {
                 return Expression.Call(
-                    new Func<int, BigInt>(CompilerHelpers.CreateBigInt).GetMethod(),
+                    new Func<int, BigInt>(CompilerHelpers.CreateBigInt).GetMethodInfo(),
                     Constant(ival)
                 );
             }
@@ -155,13 +155,13 @@ namespace Microsoft.Scripting.Ast {
             long lval;
             if (value.AsInt64(out lval)) {
                 return Expression.Call(
-                    new Func<long, BigInt>(CompilerHelpers.CreateBigInt).GetMethod(),
+                    new Func<long, BigInt>(CompilerHelpers.CreateBigInt).GetMethodInfo(),
                     Constant(lval)
                 );
             }
 
             return Expression.Call(
-                new Func<bool, byte[], BigInt>(CompilerHelpers.CreateBigInt).GetMethod(),
+                new Func<bool, byte[], BigInt>(CompilerHelpers.CreateBigInt).GetMethodInfo(),
                 Constant(value.Sign < 0),
                 CreateArray<byte>(value.Abs().ToByteArray())
             );
@@ -182,19 +182,19 @@ namespace Microsoft.Scripting.Ast {
             if (value.Real != 0.0) {
                 if (value.Imaginary() != 0.0) {
                     return Expression.Call(
-                        new Func<double, double, Complex>(MathUtils.MakeComplex).GetMethod(),
+                        new Func<double, double, Complex>(MathUtils.MakeComplex).GetMethodInfo(),
                         Constant(value.Real),
                         Constant(value.Imaginary())
                     );
                 } else {
                     return Expression.Call(
-                        new Func<double, Complex>(MathUtils.MakeReal).GetMethod(),
+                        new Func<double, Complex>(MathUtils.MakeReal).GetMethodInfo(),
                         Constant(value.Real)
                     );
                 }
             } else {
                 return Expression.Call(
-                    new Func<double, Complex>(MathUtils.MakeImaginary).GetMethod(),
+                    new Func<double, Complex>(MathUtils.MakeImaginary).GetMethodInfo(),
                     Constant(value.Imaginary())
                 );
             }
@@ -205,19 +205,19 @@ namespace Microsoft.Scripting.Ast {
             if (value.Real != 0.0) {
                 if (value.Imag != 0.0) {
                     return Expression.Call(
-                        new Func<double, double, Complex64>(Complex64.Make).GetMethod(),
+                        new Func<double, double, Complex64>(Complex64.Make).GetMethodInfo(),
                         Constant(value.Real),
                         Constant(value.Imag)
                     );
                 } else {
                     return Expression.Call(
-                        new Func<double, Complex64>(Complex64.MakeReal).GetMethod(),
+                        new Func<double, Complex64>(Complex64.MakeReal).GetMethodInfo(),
                         Constant(value.Real)
                     );
                 }
             } else {
                 return Expression.Call(
-                    new Func<double, Complex64>(Complex64.MakeImaginary).GetMethod(),
+                    new Func<double, Complex64>(Complex64.MakeImaginary).GetMethodInfo(),
                     Constant(value.Imag)
                 );
             }

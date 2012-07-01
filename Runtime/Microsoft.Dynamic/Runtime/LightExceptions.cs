@@ -51,7 +51,7 @@ namespace Microsoft.Scripting.Runtime {
     /// via 2-pass exception handling.
     /// </summary>
     public static class LightExceptions {
-        internal static MethodInfo _checkAndThrow = new Func<object, object>(LightExceptions.CheckAndThrow).GetMethod();
+        internal static MethodInfo _checkAndThrow = new Func<object, object>(LightExceptions.CheckAndThrow).GetMethodInfo();
 
         /// <summary>
         /// Rewrites the provided expression to support light exceptions.  

@@ -60,7 +60,7 @@ namespace Microsoft.Scripting.Runtime {
                 siteArgs[i + 2] = Expression.ArrayIndex(args, Expression.Constant(i));
             }
 
-            var getOrCreateSiteFunc = new Func<CallSiteBinder, CallSite<Func<object>>>(GetOrCreateSite<Func<object>>).GetMethod().GetGenericMethodDefinition();
+            var getOrCreateSiteFunc = new Func<CallSiteBinder, CallSite<Func<object>>>(GetOrCreateSite<Func<object>>).GetMethodInfo().GetGenericMethodDefinition();
             return Expression.Lambda<Func<DynamicOperations, CallSiteBinder, object, object[], object>>(
                 Expression.Block(
                     new[] { site },

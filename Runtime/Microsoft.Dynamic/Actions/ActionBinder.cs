@@ -293,7 +293,7 @@ namespace Microsoft.Scripting.Actions {
         public virtual ErrorInfo MakeConversionError(Type toType, Expression value) {
             return ErrorInfo.FromException(
                 Expression.Call(
-                    new Func<Type, object, Exception>(ScriptingRuntimeHelpers.CannotConvertError).GetMethod(),
+                    new Func<Type, object, Exception>(ScriptingRuntimeHelpers.CannotConvertError).GetMethodInfo(),
                     AstUtils.Constant(toType),
                     AstUtils.Convert(value, typeof(object))
                )

@@ -61,7 +61,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             Type dictType = ParameterInfo.ParameterType;
 
             return Ast.Call(
-                GetCreationDelegate(dictType).GetMethod(),
+                GetCreationDelegate(dictType).GetMethodInfo(),
                 Ast.NewArrayInit(typeof(string), ConstantNames()),
                 AstUtils.NewArrayHelper(typeof(object), GetParameters(args, hasBeenUsed))
             );

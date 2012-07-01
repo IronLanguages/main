@@ -1,0 +1,658 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<doc>
+  <assembly>
+    <name>System.Text.Encoding</name>
+  </assembly>
+  <members>
+    <member name="T:System.Text.Decoder">
+      <summary>Converts a sequence of encoded bytes into a set of characters.</summary>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Decoder.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Text.Decoder" /> class.</summary>
+    </member>
+    <member name="M:System.Text.Decoder.Convert(System.Byte*,System.Int32,System.Char*,System.Int32,System.Boolean,System.Int32@,System.Int32@,System.Boolean@)">
+      <summary>Converts a buffer of encoded bytes to UTF-16 encoded characters and stores the result in another buffer.</summary>
+      <param name="bytes">The address of a buffer that contains the byte sequences to convert.</param>
+      <param name="byteCount">The number of bytes in <paramref name="bytes" /> to convert.</param>
+      <param name="chars">The address of a buffer to store the converted characters.</param>
+      <param name="charCount">The maximum number of characters in <paramref name="chars" /> to use in the conversion.</param>
+      <param name="flush">true to indicate no further data is to be converted; otherwise, false.</param>
+      <param name="bytesUsed">When this method returns, contains the number of bytes that were produced by the conversion. This parameter is passed uninitialized.</param>
+      <param name="charsUsed">When this method returns, contains the number of characters from <paramref name="chars" /> that were used in the conversion. This parameter is passed uninitialized.</param>
+      <param name="completed">When this method returns, contains true if all the characters specified by <paramref name="byteCount" /> were converted; otherwise, false. This parameter is passed uninitialized.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="chars" /> or <paramref name="bytes" /> is null (Nothing).</exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="charCount" /> or <paramref name="byteCount" /> is less than zero.</exception>
+      <exception cref="T:System.ArgumentException">The output buffer is too small to contain any of the converted input. The output buffer should be greater than or equal to the size indicated by the <see cref="Overload:System.Text.Decoder.GetCharCount" /> method.</exception>
+      <exception cref="T:System.Text.DecoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for fuller explanation)-and-<see cref="P:System.Text.Decoder.Fallback" /> is set to <see cref="T:System.Text.DecoderExceptionFallback" />.</exception>
+      <filterpriority>2</filterpriority>
+    </member>
+    <member name="M:System.Text.Decoder.Convert(System.Byte[],System.Int32,System.Int32,System.Char[],System.Int32,System.Int32,System.Boolean,System.Int32@,System.Int32@,System.Boolean@)">
+      <summary>Converts an array of encoded bytes to UTF-16 encoded characters and stores the result in a character array.</summary>
+      <param name="bytes">A byte array to convert.</param>
+      <param name="byteIndex">The first element of <paramref name="bytes" /> to convert.</param>
+      <param name="byteCount">The number of elements of <paramref name="bytes" /> to convert.</param>
+      <param name="chars">An array to store the converted characters.</param>
+      <param name="charIndex">The first element of <paramref name="chars" /> in which data is stored.</param>
+      <param name="charCount">The maximum number of elements of <paramref name="chars" /> to use in the conversion.</param>
+      <param name="flush">true to indicate that no further data is to be converted; otherwise, false.</param>
+      <param name="bytesUsed">When this method returns, contains the number of bytes that were used in the conversion. This parameter is passed uninitialized.</param>
+      <param name="charsUsed">When this method returns, contains the number of characters from <paramref name="chars" /> that were produced by the conversion. This parameter is passed uninitialized.</param>
+      <param name="completed">When this method returns, contains true if all the characters specified by <paramref name="byteCount" /> were converted; otherwise, false. This parameter is passed uninitialized.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="chars" /> or <paramref name="bytes" /> is null (Nothing).</exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="charIndex" />, <paramref name="charCount" />, <paramref name="byteIndex" />, or <paramref name="byteCount" /> is less than zero.-or-The length of <paramref name="chars" /> - <paramref name="charIndex" /> is less than <paramref name="charCount" />.-or-The length of <paramref name="bytes" /> - <paramref name="byteIndex" /> is less than <paramref name="byteCount" />.</exception>
+      <exception cref="T:System.ArgumentException">The output buffer is too small to contain any of the converted input. The output buffer should be greater than or equal to the size indicated by the <see cref="Overload:System.Text.Decoder.GetCharCount" /> method.</exception>
+      <exception cref="T:System.Text.DecoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for fuller explanation)-and-<see cref="P:System.Text.Decoder.Fallback" /> is set to <see cref="T:System.Text.DecoderExceptionFallback" />.</exception>
+      <filterpriority>2</filterpriority>
+    </member>
+    <member name="M:System.Text.Decoder.GetCharCount(System.Byte*,System.Int32,System.Boolean)">
+      <summary>When overridden in a derived class, calculates the number of characters produced by decoding a sequence of bytes starting at the specified byte pointer. A parameter indicates whether to clear the internal state of the decoder after the calculation.</summary>
+      <returns>The number of characters produced by decoding the specified sequence of bytes and any bytes in the internal buffer.</returns>
+      <param name="bytes">A pointer to the first byte to decode. </param>
+      <param name="count">The number of bytes to decode. </param>
+      <param name="flush">true to simulate clearing the internal state of the encoder after the calculation; otherwise, false. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="bytes" /> is null (Nothing in Visual Basic .NET). </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="count" /> is less than zero. </exception>
+      <exception cref="T:System.Text.DecoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for fuller explanation)-and-<see cref="P:System.Text.Decoder.Fallback" /> is set to <see cref="T:System.Text.DecoderExceptionFallback" />.</exception>
+      <filterpriority>2</filterpriority>
+    </member>
+    <member name="M:System.Text.Decoder.GetCharCount(System.Byte[],System.Int32,System.Int32)">
+      <summary>When overridden in a derived class, calculates the number of characters produced by decoding a sequence of bytes from the specified byte array.</summary>
+      <returns>The number of characters produced by decoding the specified sequence of bytes and any bytes in the internal buffer.</returns>
+      <param name="bytes">The byte array containing the sequence of bytes to decode. </param>
+      <param name="index">The index of the first byte to decode. </param>
+      <param name="count">The number of bytes to decode. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="bytes" /> is null (Nothing). </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="index" /> or <paramref name="count" /> is less than zero.-or- <paramref name="index" /> and <paramref name="count" /> do not denote a valid range in <paramref name="bytes" />. </exception>
+      <exception cref="T:System.Text.DecoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for fuller explanation)-and-<see cref="P:System.Text.Decoder.Fallback" /> is set to <see cref="T:System.Text.DecoderExceptionFallback" />.</exception>
+      <filterpriority>2</filterpriority>
+    </member>
+    <member name="M:System.Text.Decoder.GetCharCount(System.Byte[],System.Int32,System.Int32,System.Boolean)">
+      <summary>When overridden in a derived class, calculates the number of characters produced by decoding a sequence of bytes from the specified byte array. A parameter indicates whether to clear the internal state of the decoder after the calculation.</summary>
+      <returns>The number of characters produced by decoding the specified sequence of bytes and any bytes in the internal buffer.</returns>
+      <param name="bytes">The byte array containing the sequence of bytes to decode. </param>
+      <param name="index">The index of the first byte to decode. </param>
+      <param name="count">The number of bytes to decode. </param>
+      <param name="flush">true to simulate clearing the internal state of the encoder after the calculation; otherwise, false. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="bytes" /> is null (Nothing). </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="index" /> or <paramref name="count" /> is less than zero.-or- <paramref name="index" /> and <paramref name="count" /> do not denote a valid range in <paramref name="bytes" />. </exception>
+      <exception cref="T:System.Text.DecoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for fuller explanation)-and-<see cref="P:System.Text.Decoder.Fallback" /> is set to <see cref="T:System.Text.DecoderExceptionFallback" />.</exception>
+      <filterpriority>2</filterpriority>
+    </member>
+    <member name="M:System.Text.Decoder.GetChars(System.Byte*,System.Int32,System.Char*,System.Int32,System.Boolean)">
+      <summary>When overridden in a derived class, decodes a sequence of bytes starting at the specified byte pointer and any bytes in the internal buffer into a set of characters that are stored starting at the specified character pointer. A parameter indicates whether to clear the internal state of the decoder after the conversion.</summary>
+      <returns>The actual number of characters written at the location indicated by the <paramref name="chars" /> parameter.</returns>
+      <param name="bytes">A pointer to the first byte to decode. </param>
+      <param name="byteCount">The number of bytes to decode. </param>
+      <param name="chars">A pointer to the location at which to start writing the resulting set of characters. </param>
+      <param name="charCount">The maximum number of characters to write. </param>
+      <param name="flush">true to clear the internal state of the decoder after the conversion; otherwise, false. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="bytes" /> is null (Nothing).-or- <paramref name="chars" /> is null (Nothing). </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="byteCount" /> or <paramref name="charCount" /> is less than zero. </exception>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="charCount" /> is less than the resulting number of characters. </exception>
+      <exception cref="T:System.Text.DecoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for fuller explanation)-and-<see cref="P:System.Text.Decoder.Fallback" /> is set to <see cref="T:System.Text.DecoderExceptionFallback" />.</exception>
+      <filterpriority>2</filterpriority>
+    </member>
+    <member name="M:System.Text.Decoder.GetChars(System.Byte[],System.Int32,System.Int32,System.Char[],System.Int32)">
+      <summary>When overridden in a derived class, decodes a sequence of bytes from the specified byte array and any bytes in the internal buffer into the specified character array.</summary>
+      <returns>The actual number of characters written into <paramref name="chars" />.</returns>
+      <param name="bytes">The byte array containing the sequence of bytes to decode. </param>
+      <param name="byteIndex">The index of the first byte to decode. </param>
+      <param name="byteCount">The number of bytes to decode. </param>
+      <param name="chars">The character array to contain the resulting set of characters. </param>
+      <param name="charIndex">The index at which to start writing the resulting set of characters. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="bytes" /> is null (Nothing).-or- <paramref name="chars" /> is null (Nothing). </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="byteIndex" /> or <paramref name="byteCount" /> or <paramref name="charIndex" /> is less than zero.-or- <paramref name="byteindex" /> and <paramref name="byteCount" /> do not denote a valid range in <paramref name="bytes" />.-or- <paramref name="charIndex" /> is not a valid index in <paramref name="chars" />. </exception>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="chars" /> does not have enough capacity from <paramref name="charIndex" /> to the end of the array to accommodate the resulting characters. </exception>
+      <exception cref="T:System.Text.DecoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for fuller explanation)-and-<see cref="P:System.Text.Decoder.Fallback" /> is set to <see cref="T:System.Text.DecoderExceptionFallback" />.</exception>
+      <filterpriority>2</filterpriority>
+    </member>
+    <member name="M:System.Text.Decoder.GetChars(System.Byte[],System.Int32,System.Int32,System.Char[],System.Int32,System.Boolean)">
+      <summary>When overridden in a derived class, decodes a sequence of bytes from the specified byte array and any bytes in the internal buffer into the specified character array. A parameter indicates whether to clear the internal state of the decoder after the conversion.</summary>
+      <returns>The actual number of characters written into the <paramref name="chars" /> parameter.</returns>
+      <param name="bytes">The byte array containing the sequence of bytes to decode. </param>
+      <param name="byteIndex">The index of the first byte to decode. </param>
+      <param name="byteCount">The number of bytes to decode. </param>
+      <param name="chars">The character array to contain the resulting set of characters. </param>
+      <param name="charIndex">The index at which to start writing the resulting set of characters. </param>
+      <param name="flush">true to clear the internal state of the decoder after the conversion; otherwise, false. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="bytes" /> is null (Nothing).-or- <paramref name="chars" /> is null (Nothing). </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="byteIndex" /> or <paramref name="byteCount" /> or <paramref name="charIndex" /> is less than zero.-or- <paramref name="byteindex" /> and <paramref name="byteCount" /> do not denote a valid range in <paramref name="bytes" />.-or- <paramref name="charIndex" /> is not a valid index in <paramref name="chars" />. </exception>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="chars" /> does not have enough capacity from <paramref name="charIndex" /> to the end of the array to accommodate the resulting characters. </exception>
+      <exception cref="T:System.Text.DecoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for fuller explanation)-and-<see cref="P:System.Text.Decoder.Fallback" /> is set to <see cref="T:System.Text.DecoderExceptionFallback" />.</exception>
+      <filterpriority>2</filterpriority>
+    </member>
+    <member name="M:System.Text.Decoder.Reset">
+      <summary>When overridden in a derived class, sets the decoder back to its initial state.</summary>
+      <filterpriority>2</filterpriority>
+    </member>
+    <member name="T:System.Text.DecoderFallbackException">
+      <summary>The exception that is thrown when a decoder fallback operation fails. This class cannot be inherited.</summary>
+      <filterpriority>2</filterpriority>
+    </member>
+    <member name="M:System.Text.DecoderFallbackException.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Text.DecoderFallbackException" /> class. </summary>
+    </member>
+    <member name="M:System.Text.DecoderFallbackException.#ctor(System.String)">
+      <summary>Initializes a new instance of the <see cref="T:System.Text.DecoderFallbackException" /> class. A parameter specifies the error message.</summary>
+      <param name="message">An error message.</param>
+    </member>
+    <member name="M:System.Text.DecoderFallbackException.#ctor(System.String,System.Byte[],System.Int32)">
+      <summary>Initializes a new instance of the <see cref="T:System.Text.DecoderFallbackException" /> class. Parameters specify the error message, the array of bytes being decoded, and the index of the byte that cannot be decoded.</summary>
+      <param name="message">An error message.</param>
+      <param name="bytesUnknown">The input byte array.</param>
+      <param name="index">The index position in <paramref name="bytesUnknown" /> of the byte that cannot be decoded.</param>
+    </member>
+    <member name="M:System.Text.DecoderFallbackException.#ctor(System.String,System.Exception)">
+      <summary>Initializes a new instance of the <see cref="T:System.Text.DecoderFallbackException" /> class. Parameters specify the error message and the inner exception that is the cause of this exception.</summary>
+      <param name="message">An error message.</param>
+      <param name="innerException">The exception that caused this exception.</param>
+    </member>
+    <member name="P:System.Text.DecoderFallbackException.BytesUnknown">
+      <summary>Gets the input byte sequence that caused the exception.</summary>
+      <returns>The input byte array that cannot be decoded. </returns>
+      <filterpriority>2</filterpriority>
+    </member>
+    <member name="P:System.Text.DecoderFallbackException.Index">
+      <summary>Gets the index position in the input byte sequence of the byte that caused the exception.</summary>
+      <returns>The index position in the input byte array of the byte that cannot be decoded. The index position is zero-based. </returns>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="T:System.Text.Encoder">
+      <summary>Converts a set of characters into a sequence of bytes.</summary>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoder.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Text.Encoder" /> class.</summary>
+    </member>
+    <member name="M:System.Text.Encoder.Convert(System.Char*,System.Int32,System.Byte*,System.Int32,System.Boolean,System.Int32@,System.Int32@,System.Boolean@)">
+      <summary>Converts a buffer of Unicode characters to an encoded byte sequence and stores the result in another buffer.</summary>
+      <param name="chars">The address of a string of UTF-16 encoded characters to convert.</param>
+      <param name="charCount">The number of characters in <paramref name="chars" /> to convert.</param>
+      <param name="bytes">The address of a buffer to store the converted bytes.</param>
+      <param name="byteCount">The maximum number of bytes in <paramref name="bytes" /> to use in the conversion.</param>
+      <param name="flush">true to indicate no further data is to be converted; otherwise, false.</param>
+      <param name="charsUsed">When this method returns, contains the number of characters from <paramref name="chars" /> that were used in the conversion. This parameter is passed uninitialized.</param>
+      <param name="bytesUsed">When this method returns, contains the number of bytes that were used in the conversion. This parameter is passed uninitialized.</param>
+      <param name="completed">When this method returns, contains true if all the characters specified by <paramref name="charCount" /> were converted; otherwise, false. This parameter is passed uninitialized.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="chars" /> or <paramref name="bytes" /> is null (Nothing).</exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="charCount" /> or <paramref name="byteCount" /> is less than zero.</exception>
+      <exception cref="T:System.ArgumentException">The output buffer is too small to contain any of the converted input. The output buffer should be greater than or equal to the size indicated by the <see cref="Overload:System.Text.Encoder.GetByteCount" /> method.</exception>
+      <exception cref="T:System.Text.EncoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for fuller explanation)-and-<see cref="P:System.Text.Encoder.Fallback" /> is set to <see cref="T:System.Text.EncoderExceptionFallback" />.</exception>
+      <filterpriority>2</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoder.Convert(System.Char[],System.Int32,System.Int32,System.Byte[],System.Int32,System.Int32,System.Boolean,System.Int32@,System.Int32@,System.Boolean@)">
+      <summary>Converts an array of Unicode characters to an encoded byte sequence and stores the result in an array of bytes.</summary>
+      <param name="chars">An array of characters to convert.</param>
+      <param name="charIndex">The first element of <paramref name="chars" /> to convert.</param>
+      <param name="charCount">The number of elements of <paramref name="chars" /> to convert.</param>
+      <param name="bytes">An array where the converted bytes are stored.</param>
+      <param name="byteIndex">The first element of <paramref name="bytes" /> in which data is stored.</param>
+      <param name="byteCount">The maximum number of elements of <paramref name="bytes" /> to use in the conversion.</param>
+      <param name="flush">true to indicate no further data is to be converted; otherwise, false.</param>
+      <param name="charsUsed">When this method returns, contains the number of characters from <paramref name="chars" /> that were used in the conversion. This parameter is passed uninitialized.</param>
+      <param name="bytesUsed">When this method returns, contains the number of bytes that were produced by the conversion. This parameter is passed uninitialized.</param>
+      <param name="completed">When this method returns, contains true if all the characters specified by <paramref name="charCount" /> were converted; otherwise, false. This parameter is passed uninitialized.</param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="chars" /> or <paramref name="bytes" /> is null (Nothing).</exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="charIndex" />, <paramref name="charCount" />, <paramref name="byteIndex" />, or <paramref name="byteCount" /> is less than zero.-or-The length of <paramref name="chars" /> - <paramref name="charIndex" /> is less than <paramref name="charCount" />.-or-The length of <paramref name="bytes" /> - <paramref name="byteIndex" /> is less than <paramref name="byteCount" />.</exception>
+      <exception cref="T:System.ArgumentException">The output buffer is too small to contain any of the converted input. The output buffer should be greater than or equal to the size indicated by the <see cref="Overload:System.Text.Encoder.GetByteCount" /> method.</exception>
+      <exception cref="T:System.Text.EncoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for fuller explanation)-and-<see cref="P:System.Text.Encoder.Fallback" /> is set to <see cref="T:System.Text.EncoderExceptionFallback" />.</exception>
+      <filterpriority>2</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoder.GetByteCount(System.Char*,System.Int32,System.Boolean)">
+      <summary>When overridden in a derived class, calculates the number of bytes produced by encoding a set of characters starting at the specified character pointer. A parameter indicates whether to clear the internal state of the encoder after the calculation.</summary>
+      <returns>The number of bytes produced by encoding the specified characters and any characters in the internal buffer.</returns>
+      <param name="chars">A pointer to the first character to encode. </param>
+      <param name="count">The number of characters to encode. </param>
+      <param name="flush">true to simulate clearing the internal state of the encoder after the calculation; otherwise, false. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="chars" /> is null (Nothing in Visual Basic .NET). </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="count" /> is less than zero. </exception>
+      <exception cref="T:System.Text.EncoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for fuller explanation)-and-<see cref="P:System.Text.Encoder.Fallback" /> is set to <see cref="T:System.Text.EncoderExceptionFallback" />.</exception>
+      <filterpriority>2</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoder.GetByteCount(System.Char[],System.Int32,System.Int32,System.Boolean)">
+      <summary>When overridden in a derived class, calculates the number of bytes produced by encoding a set of characters from the specified character array. A parameter indicates whether to clear the internal state of the encoder after the calculation.</summary>
+      <returns>The number of bytes produced by encoding the specified characters and any characters in the internal buffer.</returns>
+      <param name="chars">The character array containing the set of characters to encode. </param>
+      <param name="index">The index of the first character to encode. </param>
+      <param name="count">The number of characters to encode. </param>
+      <param name="flush">true to simulate clearing the internal state of the encoder after the calculation; otherwise, false. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="chars" /> is null. </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="index" /> or <paramref name="count" /> is less than zero.-or- <paramref name="index" /> and <paramref name="count" /> do not denote a valid range in <paramref name="chars" />. </exception>
+      <exception cref="T:System.Text.EncoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for fuller explanation)-and-<see cref="P:System.Text.Encoder.Fallback" /> is set to <see cref="T:System.Text.EncoderExceptionFallback" />.</exception>
+      <filterpriority>2</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoder.GetBytes(System.Char*,System.Int32,System.Byte*,System.Int32,System.Boolean)">
+      <summary>When overridden in a derived class, encodes a set of characters starting at the specified character pointer and any characters in the internal buffer into a sequence of bytes that are stored starting at the specified byte pointer. A parameter indicates whether to clear the internal state of the encoder after the conversion.</summary>
+      <returns>The actual number of bytes written at the location indicated by the <paramref name="bytes" /> parameter.</returns>
+      <param name="chars">A pointer to the first character to encode. </param>
+      <param name="charCount">The number of characters to encode. </param>
+      <param name="bytes">A pointer to the location at which to start writing the resulting sequence of bytes. </param>
+      <param name="byteCount">The maximum number of bytes to write. </param>
+      <param name="flush">true to clear the internal state of the encoder after the conversion; otherwise, false. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="chars" /> is null (Nothing).-or- <paramref name="bytes" /> is null (Nothing). </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="charCount" /> or <paramref name="byteCount" /> is less than zero. </exception>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="byteCount" /> is less than the resulting number of bytes. </exception>
+      <exception cref="T:System.Text.EncoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for fuller explanation)-and-<see cref="P:System.Text.Encoder.Fallback" /> is set to <see cref="T:System.Text.EncoderExceptionFallback" />.</exception>
+      <filterpriority>2</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoder.GetBytes(System.Char[],System.Int32,System.Int32,System.Byte[],System.Int32,System.Boolean)">
+      <summary>When overridden in a derived class, encodes a set of characters from the specified character array and any characters in the internal buffer into the specified byte array. A parameter indicates whether to clear the internal state of the encoder after the conversion.</summary>
+      <returns>The actual number of bytes written into <paramref name="bytes" />.</returns>
+      <param name="chars">The character array containing the set of characters to encode. </param>
+      <param name="charIndex">The index of the first character to encode. </param>
+      <param name="charCount">The number of characters to encode. </param>
+      <param name="bytes">The byte array to contain the resulting sequence of bytes. </param>
+      <param name="byteIndex">The index at which to start writing the resulting sequence of bytes. </param>
+      <param name="flush">true to clear the internal state of the encoder after the conversion; otherwise, false. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="chars" /> is null (Nothing).-or- <paramref name="bytes" /> is null (Nothing). </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="charIndex" /> or <paramref name="charCount" /> or <paramref name="byteIndex" /> is less than zero.-or- <paramref name="charIndex" /> and <paramref name="charCount" /> do not denote a valid range in <paramref name="chars" />.-or- <paramref name="byteIndex" /> is not a valid index in <paramref name="bytes" />. </exception>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="bytes" /> does not have enough capacity from <paramref name="byteIndex" /> to the end of the array to accommodate the resulting bytes. </exception>
+      <exception cref="T:System.Text.EncoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for fuller explanation)-and-<see cref="P:System.Text.Encoder.Fallback" /> is set to <see cref="T:System.Text.EncoderExceptionFallback" />.</exception>
+      <filterpriority>2</filterpriority>
+    </member>
+    <member name="T:System.Text.EncoderFallbackException">
+      <summary>The exception that is thrown when an encoder fallback operation fails. This class cannot be inherited.</summary>
+      <filterpriority>2</filterpriority>
+    </member>
+    <member name="M:System.Text.EncoderFallbackException.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Text.EncoderFallbackException" /> class.</summary>
+    </member>
+    <member name="M:System.Text.EncoderFallbackException.#ctor(System.String)">
+      <summary>Initializes a new instance of the <see cref="T:System.Text.EncoderFallbackException" /> class. A parameter specifies the error message.</summary>
+      <param name="message">An error message.</param>
+    </member>
+    <member name="M:System.Text.EncoderFallbackException.#ctor(System.String,System.Exception)">
+      <summary>Initializes a new instance of the <see cref="T:System.Text.EncoderFallbackException" /> class. Parameters specify the error message and the inner exception that is the cause of this exception.</summary>
+      <param name="message">An error message.</param>
+      <param name="innerException">The exception that caused this exception.</param>
+    </member>
+    <member name="P:System.Text.EncoderFallbackException.CharUnknown">
+      <summary>Gets the input character that caused the exception.</summary>
+      <returns>The character that cannot be encoded.</returns>
+      <filterpriority>2</filterpriority>
+    </member>
+    <member name="P:System.Text.EncoderFallbackException.CharUnknownHigh">
+      <summary>Gets the high component character of the surrogate pair that caused the exception.</summary>
+      <returns>The high component character of the surrogate pair that cannot be encoded.</returns>
+      <filterpriority>2</filterpriority>
+    </member>
+    <member name="P:System.Text.EncoderFallbackException.CharUnknownLow">
+      <summary>Gets the low component character of the surrogate pair that caused the exception.</summary>
+      <returns>The low component character of the surrogate pair that cannot be encoded.</returns>
+      <filterpriority>2</filterpriority>
+    </member>
+    <member name="P:System.Text.EncoderFallbackException.Index">
+      <summary>Gets the index position in the input buffer of the character that caused the exception.</summary>
+      <returns>The index position in the input buffer of the character that cannot be encoded.</returns>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="T:System.Text.Encoding">
+      <summary>Represents a character encoding.</summary>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.#ctor">
+      <summary>Initializes a new instance of the <see cref="T:System.Text.Encoding" /> class.</summary>
+    </member>
+    <member name="P:System.Text.Encoding.BigEndianUnicode">
+      <summary>Gets an encoding for the UTF-16 format that uses the big endian byte order.</summary>
+      <returns>An encoding object for the UTF-16 format that uses the big endian byte order.</returns>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.Convert(System.Text.Encoding,System.Text.Encoding,System.Byte[])">
+      <summary>Converts an entire byte array from one encoding to another.</summary>
+      <returns>An array of type <see cref="T:System.Byte" /> containing the results of converting <paramref name="bytes" /> from <paramref name="srcEncoding" /> to <paramref name="dstEncoding" />.</returns>
+      <param name="srcEncoding">The encoding format of <paramref name="bytes" />. </param>
+      <param name="dstEncoding">The target encoding format. </param>
+      <param name="bytes">The bytes to convert. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="srcEncoding" /> is null.-or- <paramref name="dstEncoding" /> is null.-or- <paramref name="bytes" /> is null. </exception>
+      <exception cref="T:System.Text.DecoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-srcEncoding.<see cref="P:System.Text.Encoding.DecoderFallback" /> is set to <see cref="T:System.Text.DecoderExceptionFallback" />.</exception>
+      <exception cref="T:System.Text.EncoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-dstEncoding.<see cref="P:System.Text.Encoding.EncoderFallback" /> is set to <see cref="T:System.Text.EncoderExceptionFallback" />.</exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.Convert(System.Text.Encoding,System.Text.Encoding,System.Byte[],System.Int32,System.Int32)">
+      <summary>Converts a range of bytes in a byte array from one encoding to another.</summary>
+      <returns>An array of type <see cref="T:System.Byte" /> containing the result of converting a range of bytes in <paramref name="bytes" /> from <paramref name="srcEncoding" /> to <paramref name="dstEncoding" />.</returns>
+      <param name="srcEncoding">The encoding of the source array, <paramref name="bytes" />. </param>
+      <param name="dstEncoding">The encoding of the output array. </param>
+      <param name="bytes">The array of bytes to convert. </param>
+      <param name="index">The index of the first element of <paramref name="bytes" /> to convert. </param>
+      <param name="count">The number of bytes to convert. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="srcEncoding" /> is null.-or- <paramref name="dstEncoding" /> is null.-or- <paramref name="bytes" /> is null. </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="index" /> and <paramref name="count" /> do not specify a valid range in the byte array. </exception>
+      <exception cref="T:System.Text.DecoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-srcEncoding.<see cref="P:System.Text.Encoding.DecoderFallback" /> is set to <see cref="T:System.Text.DecoderExceptionFallback" />.</exception>
+      <exception cref="T:System.Text.EncoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-dstEncoding.<see cref="P:System.Text.Encoding.EncoderFallback" /> is set to <see cref="T:System.Text.EncoderExceptionFallback" />.</exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.Equals(System.Object)">
+      <summary>Determines whether the specified <see cref="T:System.Object" /> is equal to the current instance.</summary>
+      <returns>true if <paramref name="value" /> is an instance of <see cref="T:System.Text.Encoding" /> and is equal to the current instance; otherwise, false. </returns>
+      <param name="value">The <see cref="T:System.Object" /> to compare with the current instance. </param>
+      <filterpriority>2</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetByteCount(System.Char*,System.Int32)">
+      <summary>When overridden in a derived class, calculates the number of bytes produced by encoding a set of characters starting at the specified character pointer.</summary>
+      <returns>The number of bytes produced by encoding the specified characters.</returns>
+      <param name="chars">A pointer to the first character to encode. </param>
+      <param name="count">The number of characters to encode. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="chars" /> is null. </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="count" /> is less than zero. </exception>
+      <exception cref="T:System.Text.EncoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-<see cref="P:System.Text.Encoding.EncoderFallback" /> is set to <see cref="T:System.Text.EncoderExceptionFallback" />.</exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetByteCount(System.Char[])">
+      <summary>When overridden in a derived class, calculates the number of bytes produced by encoding all the characters in the specified character array.</summary>
+      <returns>The number of bytes produced by encoding all the characters in the specified character array.</returns>
+      <param name="chars">The character array containing the characters to encode. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="chars" /> is null. </exception>
+      <exception cref="T:System.Text.EncoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-<see cref="P:System.Text.Encoding.EncoderFallback" /> is set to <see cref="T:System.Text.EncoderExceptionFallback" />.</exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetByteCount(System.Char[],System.Int32,System.Int32)">
+      <summary>When overridden in a derived class, calculates the number of bytes produced by encoding a set of characters from the specified character array.</summary>
+      <returns>The number of bytes produced by encoding the specified characters.</returns>
+      <param name="chars">The character array containing the set of characters to encode. </param>
+      <param name="index">The index of the first character to encode. </param>
+      <param name="count">The number of characters to encode. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="chars" /> is null. </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="index" /> or <paramref name="count" /> is less than zero.-or- <paramref name="index" /> and <paramref name="count" /> do not denote a valid range in <paramref name="chars" />. </exception>
+      <exception cref="T:System.Text.EncoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-<see cref="P:System.Text.Encoding.EncoderFallback" /> is set to <see cref="T:System.Text.EncoderExceptionFallback" />.</exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetByteCount(System.String)">
+      <summary>When overridden in a derived class, calculates the number of bytes produced by encoding the characters in the specified string.</summary>
+      <returns>The number of bytes produced by encoding the specified characters.</returns>
+      <param name="s">The string containing the set of characters to encode. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="s" /> is null. </exception>
+      <exception cref="T:System.Text.EncoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-<see cref="P:System.Text.Encoding.EncoderFallback" /> is set to <see cref="T:System.Text.EncoderExceptionFallback" />.</exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetBytes(System.Char*,System.Int32,System.Byte*,System.Int32)">
+      <summary>When overridden in a derived class, encodes a set of characters starting at the specified character pointer into a sequence of bytes that are stored starting at the specified byte pointer.</summary>
+      <returns>The actual number of bytes written at the location indicated by the <paramref name="bytes" /> parameter.</returns>
+      <param name="chars">A pointer to the first character to encode. </param>
+      <param name="charCount">The number of characters to encode. </param>
+      <param name="bytes">A pointer to the location at which to start writing the resulting sequence of bytes. </param>
+      <param name="byteCount">The maximum number of bytes to write. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="chars" /> is null.-or- <paramref name="bytes" /> is null. </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="charCount" /> or <paramref name="byteCount" /> is less than zero. </exception>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="byteCount" /> is less than the resulting number of bytes. </exception>
+      <exception cref="T:System.Text.EncoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-<see cref="P:System.Text.Encoding.EncoderFallback" /> is set to <see cref="T:System.Text.EncoderExceptionFallback" />.</exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetBytes(System.Char[])">
+      <summary>When overridden in a derived class, encodes all the characters in the specified character array into a sequence of bytes.</summary>
+      <returns>A byte array containing the results of encoding the specified set of characters.</returns>
+      <param name="chars">The character array containing the characters to encode. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="chars" /> is null. </exception>
+      <exception cref="T:System.Text.EncoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-<see cref="P:System.Text.Encoding.EncoderFallback" /> is set to <see cref="T:System.Text.EncoderExceptionFallback" />.</exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetBytes(System.Char[],System.Int32,System.Int32)">
+      <summary>When overridden in a derived class, encodes a set of characters from the specified character array into a sequence of bytes.</summary>
+      <returns>A byte array containing the results of encoding the specified set of characters.</returns>
+      <param name="chars">The character array containing the set of characters to encode. </param>
+      <param name="index">The index of the first character to encode. </param>
+      <param name="count">The number of characters to encode. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="chars" /> is null. </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="index" /> or <paramref name="count" /> is less than zero.-or- <paramref name="index" /> and <paramref name="count" /> do not denote a valid range in <paramref name="chars" />. </exception>
+      <exception cref="T:System.Text.EncoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-<see cref="P:System.Text.Encoding.EncoderFallback" /> is set to <see cref="T:System.Text.EncoderExceptionFallback" />.</exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetBytes(System.Char[],System.Int32,System.Int32,System.Byte[],System.Int32)">
+      <summary>When overridden in a derived class, encodes a set of characters from the specified character array into the specified byte array.</summary>
+      <returns>The actual number of bytes written into <paramref name="bytes" />.</returns>
+      <param name="chars">The character array containing the set of characters to encode. </param>
+      <param name="charIndex">The index of the first character to encode. </param>
+      <param name="charCount">The number of characters to encode. </param>
+      <param name="bytes">The byte array to contain the resulting sequence of bytes. </param>
+      <param name="byteIndex">The index at which to start writing the resulting sequence of bytes. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="chars" /> is null.-or- <paramref name="bytes" /> is null. </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="charIndex" /> or <paramref name="charCount" /> or <paramref name="byteIndex" /> is less than zero.-or- <paramref name="charIndex" /> and <paramref name="charCount" /> do not denote a valid range in <paramref name="chars" />.-or- <paramref name="byteIndex" /> is not a valid index in <paramref name="bytes" />. </exception>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="bytes" /> does not have enough capacity from <paramref name="byteIndex" /> to the end of the array to accommodate the resulting bytes. </exception>
+      <exception cref="T:System.Text.EncoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-<see cref="P:System.Text.Encoding.EncoderFallback" /> is set to <see cref="T:System.Text.EncoderExceptionFallback" />.</exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetBytes(System.String)">
+      <summary>When overridden in a derived class, encodes all the characters in the specified string into a sequence of bytes.</summary>
+      <returns>A byte array containing the results of encoding the specified set of characters.</returns>
+      <param name="s">The string containing the characters to encode. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="s" /> is null. </exception>
+      <exception cref="T:System.Text.EncoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-<see cref="P:System.Text.Encoding.EncoderFallback" /> is set to <see cref="T:System.Text.EncoderExceptionFallback" />.</exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetBytes(System.String,System.Int32,System.Int32,System.Byte[],System.Int32)">
+      <summary>When overridden in a derived class, encodes a set of characters from the specified string into the specified byte array.</summary>
+      <returns>The actual number of bytes written into <paramref name="bytes" />.</returns>
+      <param name="s">The string containing the set of characters to encode. </param>
+      <param name="charIndex">The index of the first character to encode. </param>
+      <param name="charCount">The number of characters to encode. </param>
+      <param name="bytes">The byte array to contain the resulting sequence of bytes. </param>
+      <param name="byteIndex">The index at which to start writing the resulting sequence of bytes. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="s" /> is null.-or- <paramref name="bytes" /> is null. </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="charIndex" /> or <paramref name="charCount" /> or <paramref name="byteIndex" /> is less than zero.-or- <paramref name="charIndex" /> and <paramref name="charCount" /> do not denote a valid range in <paramref name="chars" />.-or- <paramref name="byteIndex" /> is not a valid index in <paramref name="bytes" />. </exception>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="bytes" /> does not have enough capacity from <paramref name="byteIndex" /> to the end of the array to accommodate the resulting bytes. </exception>
+      <exception cref="T:System.Text.EncoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-<see cref="P:System.Text.Encoding.EncoderFallback" /> is set to <see cref="T:System.Text.EncoderExceptionFallback" />.</exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetCharCount(System.Byte*,System.Int32)">
+      <summary>When overridden in a derived class, calculates the number of characters produced by decoding a sequence of bytes starting at the specified byte pointer.</summary>
+      <returns>The number of characters produced by decoding the specified sequence of bytes.</returns>
+      <param name="bytes">A pointer to the first byte to decode. </param>
+      <param name="count">The number of bytes to decode. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="bytes" /> is null. </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="count" /> is less than zero. </exception>
+      <exception cref="T:System.Text.DecoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-<see cref="P:System.Text.Encoding.DecoderFallback" /> is set to <see cref="T:System.Text.DecoderExceptionFallback" />.</exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetCharCount(System.Byte[])">
+      <summary>When overridden in a derived class, calculates the number of characters produced by decoding all the bytes in the specified byte array.</summary>
+      <returns>The number of characters produced by decoding the specified sequence of bytes.</returns>
+      <param name="bytes">The byte array containing the sequence of bytes to decode. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="bytes" /> is null. </exception>
+      <exception cref="T:System.Text.DecoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-<see cref="P:System.Text.Encoding.DecoderFallback" /> is set to <see cref="T:System.Text.DecoderExceptionFallback" />.</exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetCharCount(System.Byte[],System.Int32,System.Int32)">
+      <summary>When overridden in a derived class, calculates the number of characters produced by decoding a sequence of bytes from the specified byte array.</summary>
+      <returns>The number of characters produced by decoding the specified sequence of bytes.</returns>
+      <param name="bytes">The byte array containing the sequence of bytes to decode. </param>
+      <param name="index">The index of the first byte to decode. </param>
+      <param name="count">The number of bytes to decode. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="bytes" /> is null. </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="index" /> or <paramref name="count" /> is less than zero.-or- <paramref name="index" /> and <paramref name="count" /> do not denote a valid range in <paramref name="bytes" />. </exception>
+      <exception cref="T:System.Text.DecoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-<see cref="P:System.Text.Encoding.DecoderFallback" /> is set to <see cref="T:System.Text.DecoderExceptionFallback" />.</exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetChars(System.Byte*,System.Int32,System.Char*,System.Int32)">
+      <summary>When overridden in a derived class, decodes a sequence of bytes starting at the specified byte pointer into a set of characters that are stored starting at the specified character pointer.</summary>
+      <returns>The actual number of characters written at the location indicated by the <paramref name="chars" /> parameter.</returns>
+      <param name="bytes">A pointer to the first byte to decode. </param>
+      <param name="byteCount">The number of bytes to decode. </param>
+      <param name="chars">A pointer to the location at which to start writing the resulting set of characters. </param>
+      <param name="charCount">The maximum number of characters to write. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="bytes" /> is null.-or- <paramref name="chars" /> is null. </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="byteCount" /> or <paramref name="charCount" /> is less than zero. </exception>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="charCount" /> is less than the resulting number of characters. </exception>
+      <exception cref="T:System.Text.DecoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-<see cref="P:System.Text.Encoding.DecoderFallback" /> is set to <see cref="T:System.Text.DecoderExceptionFallback" />.</exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetChars(System.Byte[])">
+      <summary>When overridden in a derived class, decodes all the bytes in the specified byte array into a set of characters.</summary>
+      <returns>A character array containing the results of decoding the specified sequence of bytes.</returns>
+      <param name="bytes">The byte array containing the sequence of bytes to decode. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="bytes" /> is null. </exception>
+      <exception cref="T:System.Text.DecoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-<see cref="P:System.Text.Encoding.DecoderFallback" /> is set to <see cref="T:System.Text.DecoderExceptionFallback" />.</exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetChars(System.Byte[],System.Int32,System.Int32)">
+      <summary>When overridden in a derived class, decodes a sequence of bytes from the specified byte array into a set of characters.</summary>
+      <returns>A character array containing the results of decoding the specified sequence of bytes.</returns>
+      <param name="bytes">The byte array containing the sequence of bytes to decode. </param>
+      <param name="index">The index of the first byte to decode. </param>
+      <param name="count">The number of bytes to decode. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="bytes" /> is null. </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="index" /> or <paramref name="count" /> is less than zero.-or- <paramref name="index" /> and <paramref name="count" /> do not denote a valid range in <paramref name="bytes" />. </exception>
+      <exception cref="T:System.Text.DecoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-<see cref="P:System.Text.Encoding.DecoderFallback" /> is set to <see cref="T:System.Text.DecoderExceptionFallback" />.</exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetChars(System.Byte[],System.Int32,System.Int32,System.Char[],System.Int32)">
+      <summary>When overridden in a derived class, decodes a sequence of bytes from the specified byte array into the specified character array.</summary>
+      <returns>The actual number of characters written into <paramref name="chars" />.</returns>
+      <param name="bytes">The byte array containing the sequence of bytes to decode. </param>
+      <param name="byteIndex">The index of the first byte to decode. </param>
+      <param name="byteCount">The number of bytes to decode. </param>
+      <param name="chars">The character array to contain the resulting set of characters. </param>
+      <param name="charIndex">The index at which to start writing the resulting set of characters. </param>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="bytes" /> is null.-or- <paramref name="chars" /> is null. </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="byteIndex" /> or <paramref name="byteCount" /> or <paramref name="charIndex" /> is less than zero.-or- <paramref name="byteindex" /> and <paramref name="byteCount" /> do not denote a valid range in <paramref name="bytes" />.-or- <paramref name="charIndex" /> is not a valid index in <paramref name="chars" />. </exception>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="chars" /> does not have enough capacity from <paramref name="charIndex" /> to the end of the array to accommodate the resulting characters. </exception>
+      <exception cref="T:System.Text.DecoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-<see cref="P:System.Text.Encoding.DecoderFallback" /> is set to <see cref="T:System.Text.DecoderExceptionFallback" />.</exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetDecoder">
+      <summary>When overridden in a derived class, obtains a decoder that converts an encoded sequence of bytes into a sequence of characters.</summary>
+      <returns>A <see cref="T:System.Text.Decoder" /> that converts an encoded sequence of bytes into a sequence of characters.</returns>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetEncoder">
+      <summary>When overridden in a derived class, obtains an encoder that converts a sequence of Unicode characters into an encoded sequence of bytes.</summary>
+      <returns>A <see cref="T:System.Text.Encoder" /> that converts a sequence of Unicode characters into an encoded sequence of bytes.</returns>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetEncoding(System.String)">
+      <summary>Returns the encoding associated with the specified code page name.</summary>
+      <returns>The encoding  associated with the specified code page.</returns>
+      <param name="name">The code page name of the preferred encoding. Any value returned by the <see cref="P:System.Text.Encoding.WebName" /> property is valid. Possible values are listed in the Name column of the table that appears in the <see cref="T:System.Text.Encoding" /> class topic.</param>
+      <exception cref="T:System.ArgumentException">
+        <paramref name="name" /> is not a valid code page name.-or- The code page indicated by <paramref name="name" /> is not supported by the underlying platform. </exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetHashCode">
+      <summary>Returns the hash code for the current instance.</summary>
+      <returns>The hash code for the current instance.</returns>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetMaxByteCount(System.Int32)">
+      <summary>When overridden in a derived class, calculates the maximum number of bytes produced by encoding the specified number of characters.</summary>
+      <returns>The maximum number of bytes produced by encoding the specified number of characters.</returns>
+      <param name="charCount">The number of characters to encode. </param>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="charCount" /> is less than zero. </exception>
+      <exception cref="T:System.Text.EncoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-<see cref="P:System.Text.Encoding.EncoderFallback" /> is set to <see cref="T:System.Text.EncoderExceptionFallback" />.</exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetMaxCharCount(System.Int32)">
+      <summary>When overridden in a derived class, calculates the maximum number of characters produced by decoding the specified number of bytes.</summary>
+      <returns>The maximum number of characters produced by decoding the specified number of bytes.</returns>
+      <param name="byteCount">The number of bytes to decode. </param>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="byteCount" /> is less than zero. </exception>
+      <exception cref="T:System.Text.DecoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-<see cref="P:System.Text.Encoding.DecoderFallback" /> is set to <see cref="T:System.Text.DecoderExceptionFallback" />.</exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetPreamble">
+      <summary>When overridden in a derived class, returns a sequence of bytes that specifies the encoding used.</summary>
+      <returns>A byte array containing a sequence of bytes that specifies the encoding used.-or- A byte array of length zero, if a preamble is not required.</returns>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="M:System.Text.Encoding.GetString(System.Byte[],System.Int32,System.Int32)">
+      <summary>When overridden in a derived class, decodes a sequence of bytes from the specified byte array into a string.</summary>
+      <returns>A string that contains the results of decoding the specified sequence of bytes.</returns>
+      <param name="bytes">The byte array containing the sequence of bytes to decode. </param>
+      <param name="index">The index of the first byte to decode. </param>
+      <param name="count">The number of bytes to decode. </param>
+      <exception cref="T:System.ArgumentException">The byte array contains invalid Unicode code points.</exception>
+      <exception cref="T:System.ArgumentNullException">
+        <paramref name="bytes" /> is null. </exception>
+      <exception cref="T:System.ArgumentOutOfRangeException">
+        <paramref name="index" /> or <paramref name="count" /> is less than zero.-or- <paramref name="index" /> and <paramref name="count" /> do not denote a valid range in <paramref name="bytes" />. </exception>
+      <exception cref="T:System.Text.DecoderFallbackException">A fallback occurred (see Character Encoding in the .NET Framework for complete explanation)-and-<see cref="P:System.Text.Encoding.DecoderFallback" /> is set to <see cref="T:System.Text.DecoderExceptionFallback" />.</exception>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="P:System.Text.Encoding.Unicode">
+      <summary>Gets an encoding for the UTF-16 format using the little endian byte order.</summary>
+      <returns>An encoding for the UTF-16 format using the little endian byte order.</returns>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="P:System.Text.Encoding.UTF8">
+      <summary>Gets an encoding for the UTF-8 format.</summary>
+      <returns>An encoding for the UTF-8 format.</returns>
+      <filterpriority>1</filterpriority>
+    </member>
+    <member name="P:System.Text.Encoding.WebName">
+      <summary>When overridden in a derived class, gets the name registered with the Internet Assigned Numbers Authority (IANA) for the current encoding.</summary>
+      <returns>The IANA name for the current <see cref="T:System.Text.Encoding" />.</returns>
+      <filterpriority>2</filterpriority>
+    </member>
+  </members>
+</doc>

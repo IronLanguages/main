@@ -6,11 +6,11 @@
     </PropertyGroup>
     <ItemGroup>
         <!-- Needed to be built ahead of time for the MSIs to include the Silverlight binaries -->
-        <ProjectToBuild Include="..\Solutions\Dlr.sln">
+        <ProjectToBuild Include="..\..\Solutions\Dlr.sln">
             <Properties>Configuration=Silverlight4$(Configuration)</Properties>
         </ProjectToBuild>  
         <!-- It looks like the IronPython installer has been rewritten as a seperate wixproj... -->
-        <ProjectToBuild Include="Ruby\Msi\IronRuby.Msi.wproj">
+        <ProjectToBuild Include="Msi\IronRuby.Msi.wproj">
             <Properties>Configuration=$(Configuration);TreatWarningsAsErrors=false</Properties>
         </ProjectToBuild>
     </ItemGroup>
@@ -19,7 +19,7 @@
         <MSBuild Projects="@(ProjectToBuild)"/>
     </Target>
     <Target Name="Rebuild">
-        <!-- WiX deosn't clean up properly -->
+        <!-- WiX doesn't clean up properly -->
         <RemoveDir Directories="
              IronStudio\obj;
              Python\Msi\obj;

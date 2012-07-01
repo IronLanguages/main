@@ -34,7 +34,10 @@ namespace Microsoft.Scripting.Generation {
         public static readonly Snippets Shared = new Snippets();
 
         private Snippets() { }
+
+#if FEATURE_LCG
         private int _methodNameIndex;
+#endif
 
 #if FEATURE_REFEMIT
 
@@ -219,6 +222,7 @@ namespace Microsoft.Scripting.Generation {
 
 #endif
 
+#if FEATURE_LCG
         public DynamicILGen CreateDynamicMethod(string methodName, Type returnType, Type[] parameterTypes, bool isDebuggable) {
             ContractUtils.RequiresNotEmpty(methodName, "methodName");
             ContractUtils.RequiresNotNull(returnType, "returnType");
@@ -240,5 +244,6 @@ namespace Microsoft.Scripting.Generation {
             string uniqueName = name + "##" + Interlocked.Increment(ref _methodNameIndex);
             return ReflectionUtils.RawCreateDynamicMethod(uniqueName, returnType, parameterTypes);
         }
+#endif
     }
 }

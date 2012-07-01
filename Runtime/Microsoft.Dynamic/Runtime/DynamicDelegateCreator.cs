@@ -12,11 +12,13 @@
  *
  *
  * ***************************************************************************/
-
 using System;
+using System.Collections.Generic;
 using System.Dynamic;
+using System.Linq.Expressions;
 using System.Reflection;
-
+using System.Runtime.CompilerServices;
+using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Runtime {
@@ -38,9 +40,6 @@ namespace Microsoft.Scripting.Runtime {
 
             _languageContext = languageContext;
         }
-
-        /// <summary> Table of dynamically generated delegates which are shared based upon method signature. </summary>
-        private Publisher<DelegateSignatureInfo, DelegateInfo> _dynamicDelegateCache = new Publisher<DelegateSignatureInfo, DelegateInfo>();
 
         /// <summary>
         /// Creates a delegate with a given signature that could be used to invoke this object from non-dynamic code (w/o code context).
@@ -70,20 +69,7 @@ namespace Microsoft.Scripting.Runtime {
                     throw ScriptingRuntimeHelpers.SimpleTypeError("A specific delegate type is required.");
                 }
 
-                ParameterInfo[] parameters = invoke.GetParameters();
-                DelegateSignatureInfo signatureInfo = new DelegateSignatureInfo(
-                    invoke.ReturnType,
-                    parameters
-                );
-
-                DelegateInfo delegateInfo = _dynamicDelegateCache.GetOrCreateValue(signatureInfo,
-                    delegate() {
-                        // creation code
-                        return signatureInfo.GenerateDelegateStub(_languageContext);
-                    });
-
-
-                result = delegateInfo.CreateDelegate(delegateType, dynamicObject);
+                result = GetOrCreateDelegateForDynamicObject(callableObject, delegateType, invoke);
                 if (result != null) {
                     return result;
                 }
@@ -92,5 +78,44 @@ namespace Microsoft.Scripting.Runtime {
             throw ScriptingRuntimeHelpers.SimpleTypeError("Object is not callable.");
         }
 
+#if FEATURE_LCG
+        // Table of dynamically generated delegates which are shared based upon method signature. 
+        //
+        // We generate a dynamic method stub and object[] closure template for each signature.
+        // The stub does only depend on the signature, it doesn't depend on the dynamic object.
+        // So we can reuse these stubs among multiple dynamic object for which a delegate was created with the same signature.
+        // 
+        private Publisher<DelegateSignatureInfo, DelegateInfo> _dynamicDelegateCache = new Publisher<DelegateSignatureInfo, DelegateInfo>();
+
+        public Delegate GetOrCreateDelegateForDynamicObject(object dynamicObject, Type delegateType, MethodInfo invoke) {
+            var signatureInfo = new DelegateSignatureInfo(invoke);
+            DelegateInfo delegateInfo = _dynamicDelegateCache.GetOrCreateValue(
+                signatureInfo, 
+                () => new DelegateInfo(_languageContext, signatureInfo.ReturnType, signatureInfo.ParameterTypes)
+            );
+
+            return delegateInfo.CreateDelegate(delegateType, dynamicObject);
+        }
+#else
+        //
+        // Using Expression Trees we create a new stub for every dynamic object and every delegate type.
+        // This is less efficient than with LCG since we can't reuse generated code for multiple dynamic objects and signatures.
+        //
+        private static ConditionalWeakTable<object, Dictionary<Type, Delegate>> _dynamicDelegateCache =
+            new ConditionalWeakTable<object, Dictionary<Type, Delegate>>();
+
+        private Delegate GetOrCreateDelegateForDynamicObject(object dynamicObject, Type delegateType, MethodInfo invoke) {
+            var signatures = _dynamicDelegateCache.GetOrCreateValue(dynamicObject);
+            lock (signatures) {
+                Delegate result;
+                if (!signatures.TryGetValue(delegateType, out result)) {
+                    result = DelegateInfo.CreateDelegateForDynamicObject(_languageContext, dynamicObject, delegateType, invoke);
+                    signatures.Add(delegateType, result);
+                }
+
+                return result;
+            }
+        }
+#endif
     }
 }

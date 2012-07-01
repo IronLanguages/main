@@ -140,7 +140,7 @@ namespace Microsoft.Scripting.Actions {
                         _dict[normalizedTypeName] = MemberTracker.FromMemberInfo(newType.GetTypeInfo());
                     } else {
                         // Unify the new type with the existing type
-                        _dict[normalizedTypeName] = TypeGroup.UpdateTypeEntity(existingTypeEntity, ReflectionCache.GetTypeTracker(newType));
+                        _dict[normalizedTypeName] = TypeGroup.UpdateTypeEntity(existingTypeEntity, TypeTracker.GetTypeTracker(newType));
                     }
                 }
             }
@@ -240,7 +240,7 @@ namespace Microsoft.Scripting.Actions {
                 }
 
                 // We dont use TypeCollision.UpdateTypeEntity here because we do not handle generic type names                    
-                return ReflectionCache.GetTypeTracker(type);
+                return TypeTracker.GetTypeTracker(type);
             }
 
             return null;
@@ -411,7 +411,7 @@ namespace Microsoft.Scripting.Actions {
                 if (_simpleTypeNames.Contains(normalizedTypeName)) {
                     Type newType = LoadType(_assembly, GetFullChildName(normalizedTypeName));
                     if (newType != null) {
-                        existingTypeEntity = TypeGroup.UpdateTypeEntity(existingTypeEntity, ReflectionCache.GetTypeTracker(newType));
+                        existingTypeEntity = TypeGroup.UpdateTypeEntity(existingTypeEntity, TypeTracker.GetTypeTracker(newType));
                     }
                 }
 
@@ -421,7 +421,7 @@ namespace Microsoft.Scripting.Actions {
                     foreach (string actualName in actualNames) {
                         Type newType = LoadType(_assembly, GetFullChildName(actualName));
                         if (newType != null) {
-                            existingTypeEntity = TypeGroup.UpdateTypeEntity(existingTypeEntity, ReflectionCache.GetTypeTracker(newType));
+                            existingTypeEntity = TypeGroup.UpdateTypeEntity(existingTypeEntity, TypeTracker.GetTypeTracker(newType));
                         }
                     }
                 }

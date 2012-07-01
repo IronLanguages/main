@@ -1546,6 +1546,50 @@ namespace IronPython.Runtime.Types {
             }
             return sig;
         }
+
+        /// <summary>
+        /// Same as the DLR ReturnFixer, but accepts lower level constructs,
+        /// such as LocalBuilder, ParameterInfos and ILGen.
+        /// </summary>
+        private sealed class ReturnFixer {
+            private readonly ParameterInfo _parameter;
+            private readonly LocalBuilder _reference;
+            private readonly int _index;
+
+            private ReturnFixer(LocalBuilder reference, ParameterInfo parameter, int index) {
+                Debug.Assert(reference.LocalType.IsGenericType() && reference.LocalType.GetGenericTypeDefinition() == typeof(StrongBox<>));
+                Debug.Assert(parameter.ParameterType.IsByRef);
+
+                _parameter = parameter;
+                _reference = reference;
+                _index = index;
+            }
+
+            public void FixReturn(ILGen il) {
+                il.EmitLoadArg(_index);
+                il.Emit(OpCodes.Ldloc, _reference);
+                il.EmitFieldGet(_reference.LocalType.GetDeclaredField("Value"));
+                il.EmitStoreValueIndirect(_parameter.ParameterType.GetElementType());
+            }
+
+            public static ReturnFixer EmitArgument(ILGen il, ParameterInfo parameter, int index) {
+                il.EmitLoadArg(index);
+                if (parameter.ParameterType.IsByRef) {
+                    Type elementType = parameter.ParameterType.GetElementType();
+                    Type concreteType = typeof(StrongBox<>).MakeGenericType(elementType);
+                    LocalBuilder refSlot = il.DeclareLocal(concreteType);
+                    il.EmitLoadValueIndirect(elementType);
+                    ConstructorInfo ci = concreteType.GetConstructor(new Type[] { elementType });
+                    il.Emit(OpCodes.Newobj, ci);
+                    il.Emit(OpCodes.Stloc, refSlot);
+                    il.Emit(OpCodes.Ldloc, refSlot);
+                    return new ReturnFixer(refSlot, parameter, index);
+                } else {
+                    il.EmitBoxing(parameter.ParameterType);
+                    return null;
+                }
+            }
+        }
 #endif
         #endregion
 
@@ -1788,49 +1832,5 @@ namespace IronPython.Runtime.Types {
 
         #endregion
 
-    }
-
-    /// <summary>
-    /// Same as the DLR ReturnFixer, but accepts lower level constructs,
-    /// such as LocalBuilder, ParameterInfos and ILGen.
-    /// </summary>
-    sealed class ReturnFixer {
-        private readonly ParameterInfo _parameter;
-        private readonly LocalBuilder _reference;
-        private readonly int _index;
-
-        private ReturnFixer(LocalBuilder reference, ParameterInfo parameter, int index) {
-            Debug.Assert(reference.LocalType.IsGenericType() && reference.LocalType.GetGenericTypeDefinition() == typeof(StrongBox<>));
-            Debug.Assert(parameter.ParameterType.IsByRef);
-
-            _parameter = parameter;
-            _reference = reference;
-            _index = index;
-        }
-
-        public void FixReturn(ILGen il) {
-            il.EmitLoadArg(_index);
-            il.Emit(OpCodes.Ldloc, _reference);
-            il.EmitFieldGet(_reference.LocalType.GetDeclaredField("Value"));
-            il.EmitStoreValueIndirect(_parameter.ParameterType.GetElementType());
-        }
-
-        public static ReturnFixer EmitArgument(ILGen il, ParameterInfo parameter, int index) {
-            il.EmitLoadArg(index);
-            if (parameter.ParameterType.IsByRef) {
-                Type elementType = parameter.ParameterType.GetElementType();
-                Type concreteType = typeof(StrongBox<>).MakeGenericType(elementType);
-                LocalBuilder refSlot = il.DeclareLocal(concreteType);
-                il.EmitLoadValueIndirect(elementType);
-                ConstructorInfo ci = concreteType.GetConstructor(new Type[] { elementType });
-                il.Emit(OpCodes.Newobj, ci);
-                il.Emit(OpCodes.Stloc, refSlot);
-                il.Emit(OpCodes.Ldloc, refSlot);
-                return new ReturnFixer(refSlot, parameter, index);
-            } else {
-                il.EmitBoxing(parameter.ParameterType);
-                return null;
-            }
-        }
     }
 }
