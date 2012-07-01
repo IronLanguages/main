@@ -23,15 +23,7 @@ Runtime/Samples/Hosting/Scenarios/bin/
 
 # TODO - testing scripts should not create these files
 debug.log
-External.LCA_RESTRICTED/Languages/IronPython/27/Lib/@test_2000_tmp1
-External.LCA_RESTRICTED/Languages/IronPython/27/Lib/@test_2000_tmp2
-External.LCA_RESTRICTED/Languages/IronPython/27/Lib/@test_2928_tmp/
-External.LCA_RESTRICTED/Languages/IronPython/27/Lib/@test_4044_tmp
-External.LCA_RESTRICTED/Languages/IronPython/27/Lib/@test_4500_tmp
-External.LCA_RESTRICTED/Languages/IronPython/27/Lib/@test_4500_tmp.1341096880.IOCASTE.4500
-External.LCA_RESTRICTED/Languages/IronPython/27/Lib/@test_4500_tmp.lock
-External.LCA_RESTRICTED/Languages/IronPython/27/Lib/@test_5992_tmp
-External.LCA_RESTRICTED/Languages/IronPython/27/Lib/@test_7680_tmp.dir
+External.LCA_RESTRICTED/Languages/IronPython/27/Lib/@test_*
 External.LCA_RESTRICTED/Languages/IronPython/27/Lib/lib2to3/Grammar2.9.9.alpha.0.pickle
 External.LCA_RESTRICTED/Languages/IronPython/27/Lib/lib2to3/PatternGrammar2.9.9.alpha.0.pickle
 Languages/IronPython/Tests/ImportTestDir/
@@ -55,5 +47,4 @@ Languages/IronPython/Tests/test.xaml
 Languages/IronPython/Tests/testfile.tmp
 Languages/IronPython/Tests/testilcode.dll
 Languages/IronPython/Tests/the_dir/
-Languages/IronPython/Tests/vbproptest0.159422.dll
-Languages/IronPython/Tests/vbproptest0.999147.dll
+Languages/IronPython/Tests/vbproptest0.*.dll
