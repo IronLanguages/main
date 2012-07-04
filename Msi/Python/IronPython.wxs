@@ -61,8 +61,18 @@
       </Component>
       
       <Component>
-        <RegistryValue Id='VSReferenceAssemblyKey'
-          Root='HKLM' Key='SOFTWARE\Microsoft\.NETFramework\v4.0.30319\AssemblyFoldersEx\$(var.ProductShortName)$(var.ReleaseSeries)' Type='string' Value='[INSTALLDIR]' />
+        <RegistryValue Id='VSNet40ReferenceAssemblyKey'
+          Root='HKLM' Key='SOFTWARE\Microsoft\.NETFramework\v4.0.30319\AssemblyFoldersEx\$(var.ProductShortName)$(var.ReleaseSeries)' Type='string' Value='[INSTALLDIR]$(var.PlatformsNet40Dir)' />
+      </Component>
+      
+      <Component>
+        <RegistryValue Id='VSNet20ReferenceAssemblyKey'
+          Root='HKLM' Key='SOFTWARE\Microsoft\.NETFramework\v2.0.50727\AssemblyFoldersEx\$(var.ProductShortName)$(var.ReleaseSeries)' Type='string' Value='[INSTALLDIR]$(var.PlatformsNet35Dir)' />
+      </Component>
+      
+      <Component>
+        <RegistryValue Id='VSSl5ReferenceAssemblyKey'
+          Root='HKLM' Key='SOFTWARE\Microsoft\Microsoft SDKs\Silverlight\v5.0\AssemblyFoldersEx\$(var.ProductShortName)$(var.ReleaseSeries)' Type='string' Value='[INSTALLDIR]$(var.PlatformsSl5Dir)' />
       </Component>
     </DirectoryRef>
 
@@ -90,7 +100,9 @@
       <ComponentRef Id="Readme.html"/>
       <ComponentRef Id="License.txt"/>
       <ComponentRef Id="InstallationKey"/>
-      <ComponentRef Id="VSReferenceAssemblyKey"/>
+      <ComponentRef Id="VSNet40ReferenceAssemblyKey"/>
+      <ComponentRef Id="VSNet20ReferenceAssemblyKey"/>
+      <ComponentRef Id="VSSl5ReferenceAssemblyKey"/>
     </ComponentGroup>
 
     <ComponentGroup Id="IronPythonGac">
