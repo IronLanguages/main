@@ -23,6 +23,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
+using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
@@ -52,10 +53,15 @@ namespace IronPython.Modules {
         // The RAND_ functions are effectively no-ops, as the BCL draws on system sources
         // for cryptographically-strong randomness and doesn't need (or accept) user input
 
-        public static void RAND_add(string buf, double entropy) {
+        public static void RAND_add(object buf, double entropy) {
+            if (buf == null) {
+                throw PythonOps.TypeError("must be string or read-only buffer, not None");
+            } else if (!(buf is string) && !(buf is PythonBuffer)) {
+                throw PythonOps.TypeError("must be string or read-only buffer, not {0}", PythonOps.GetPythonTypeName(buf));
+            }
         }
 
-        public static void RAND_egd(string source) {
+        public static void RAND_egd([NotNull]string source) {
         }
 
         public static int RAND_status() {
