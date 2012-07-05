@@ -141,7 +141,7 @@ namespace Microsoft.Scripting.Silverlight {
                     }
 
                 // Lastly, check to see if this is a zip file
-                } else if (src != null && ((type != null && type == "application/x-zip-compressed") || Path.GetExtension(src) == ".zip")) {
+                } else if (src != null && ((type != null && (type == "application/x-zip-compressed" || type == "application/zip")) || Path.GetExtension(src) == ".zip")) {
                     
                     ZipPackages.Add(DynamicApplication.MakeUri(src));
 
