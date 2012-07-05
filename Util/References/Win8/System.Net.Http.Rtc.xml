@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<doc>
+  <assembly>
+    <name>System.Net.Http.Rtc</name>
+  </assembly>
+  <members>
+    <member name="T:System.Net.Http.RtcRequestFactory">
+      <summary>Represents the class that is used to create special <see cref="T:System.Net.Http.HttpRequestMessage" /> for use with the Real-Time-Communications (RTC) background notification infrastructure.</summary>
+    </member>
+    <member name="M:System.Net.Http.RtcRequestFactory.Create(System.Net.Http.HttpMethod,System.Uri)">
+      <summary>Creates a special <see cref="T:System.Net.Http.HttpRequestMessage" /> for use with the Real-Time-Communications (RTC) background notification infrastructure.</summary>
+      <returns>Returns <see cref="T:System.Net.Http.HttpRequestMessage" />.An HTTP request message for use with the RTC background notification infrastructure.</returns>
+      <param name="method">The HTTP method.</param>
+      <param name="uri">The Uri the request is sent to.</param>
+    </member>
+  </members>
+</doc>

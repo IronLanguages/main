@@ -1263,7 +1263,11 @@ namespace Microsoft.Scripting.Interpreter {
 
             if (node.Constructor != null) {
                 var parameters = node.Constructor.GetParameters();
-                if (!CollectionUtils.TrueForAll(parameters, (p) => !p.ParameterType.IsByRef) || node.Constructor.DeclaringType == typeof(DynamicMethod)) {
+                if (!CollectionUtils.TrueForAll(parameters, (p) => !p.ParameterType.IsByRef)
+#if FEATURE_LCG
+                     || node.Constructor.DeclaringType == typeof(DynamicMethod)
+#endif
+                ) {
                     _forceCompile = true;
                 }
             }

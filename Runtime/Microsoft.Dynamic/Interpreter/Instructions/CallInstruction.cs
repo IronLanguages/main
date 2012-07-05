@@ -117,19 +117,19 @@ namespace Microsoft.Scripting.Interpreter {
                 case 1:
                     return Create(isGetter ?
                         arrayType.GetMethod("GetValue", new[] { typeof(int)}) :
-                        new Action<Array, int, object>(ArrayItemSetter1).GetMethod()
+                        new Action<Array, int, object>(ArrayItemSetter1).GetMethodInfo()
                     );
                
                 case 2: 
                     return Create(isGetter ? 
                         arrayType.GetMethod("GetValue", new[] { typeof(int), typeof(int) }) :
-                        new Action<Array, int, int, object>(ArrayItemSetter2).GetMethod()
+                        new Action<Array, int, int, object>(ArrayItemSetter2).GetMethodInfo()
                     );
 
                 case 3: 
                     return Create(isGetter ?
                         arrayType.GetMethod("GetValue", new[] { typeof(int), typeof(int), typeof(int) }) :
-                        new Action<Array, int, int, int, object>(ArrayItemSetter3).GetMethod()
+                        new Action<Array, int, int, int, object>(ArrayItemSetter3).GetMethodInfo()
                     );
 
                 default: 

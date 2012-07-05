@@ -75,7 +75,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 ),
                 Expression.Throw(
                     Expression.Call(
-                        new Func<Type, object, Exception>(RuntimeHelpers.MakeIncorrectBoxTypeError).GetMethod(),
+                        new Func<Type, object, Exception>(RuntimeHelpers.MakeIncorrectBoxTypeError).GetMethodInfo(),
                         AstUtils.Constant(_elementType),
                         AstUtils.Convert(arg, typeof(object))
                     ),

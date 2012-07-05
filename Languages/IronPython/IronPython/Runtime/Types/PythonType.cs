@@ -784,7 +784,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         public static implicit operator TypeTracker(PythonType self) {
-            return ReflectionCache.GetTypeTracker(self.UnderlyingSystemType);
+            return TypeTracker.GetTypeTracker(self.UnderlyingSystemType);
         }
 
         #endregion

@@ -101,7 +101,7 @@ namespace Microsoft.Scripting.Actions {
             if (!_typesByArity.TryGetValue(arity, out typeWithMatchingArity)) {
                 return null;
             }
-            return ReflectionCache.GetTypeTracker(typeWithMatchingArity);
+            return TypeTracker.GetTypeTracker(typeWithMatchingArity);
         }
 
         /// <param name="existingTypeEntity">The merged list so far. Could be null</param>

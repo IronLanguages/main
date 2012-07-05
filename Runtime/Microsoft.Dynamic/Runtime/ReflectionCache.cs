@@ -12,7 +12,6 @@
  *
  *
  * ***************************************************************************/
-
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -25,9 +24,29 @@ namespace Microsoft.Scripting.Runtime {
     /// specific request.
     /// </summary>
     public static class ReflectionCache {
-        private static readonly Dictionary<MethodBaseCache, MethodGroup> _functions = new Dictionary<MethodBaseCache, MethodGroup>();
-        private static readonly Dictionary<Type, TypeTracker> _typeCache = new Dictionary<Type, TypeTracker>();
+#if WIN8 // tokens are not exposed, we need to implement method comparison that doesn't use them, for now just always return a new method group
+        public static MethodGroup GetMethodGroup(string name, MethodBase[] methods) {
+            return new MethodGroup(
+                ArrayUtils.ConvertAll<MethodBase, MethodTracker>(
+                    methods,
+                    delegate(MethodBase x) {
+                        return (MethodTracker)MemberTracker.FromMemberInfo(x);
+                    }
+                )
+            );
+        }
 
+        public static MethodGroup GetMethodGroup(string name, MemberGroup mems) {
+            MethodTracker[] trackers = new MethodTracker[mems.Count];
+            for (int i = 0; i < trackers.Length; i++) {
+                trackers[i] = (MethodTracker)mems[i];
+            }
+
+            return new MethodGroup(trackers);
+        }
+#else
+        private static readonly Dictionary<MethodBaseCache, MethodGroup> _functions = new Dictionary<MethodBaseCache, MethodGroup>();
+        
         public static MethodGroup GetMethodGroup(string name, MethodBase[] methods) {
             MethodGroup res = null;
             MethodBaseCache cache = new MethodBaseCache(name, methods);
@@ -68,18 +87,6 @@ namespace Microsoft.Scripting.Runtime {
             return res;
         }
 
-        public static TypeTracker GetTypeTracker(Type type) {
-            TypeTracker res;
-
-            lock (_typeCache) {
-                if (!_typeCache.TryGetValue(type, out res)) {
-                    _typeCache[type] = res = new NestedTypeTracker(type);
-                }
-            }
-
-            return res;
-        }
-
         /// <summary>
         /// TODO: Make me private again
         /// </summary>
@@ -97,11 +104,11 @@ namespace Microsoft.Scripting.Runtime {
             }
 
             private static int CompareMethods(MethodBase x, MethodBase y) {
-                Module xModule = x.GetModule();
-                Module yModule = y.GetModule();
+                Module xModule = x.Module;
+                Module yModule = y.Module;
 
                 if (xModule == yModule) {
-                    return x.GetMetadataToken() - y.GetMetadataToken();
+                    return x.MetadataToken - y.MetadataToken;
                 }
                 
 #if SILVERLIGHT || WIN8 || WP75
@@ -132,7 +139,7 @@ namespace Microsoft.Scripting.Runtime {
 
                 for (int i = 0; i < _members.Length; i++) {
                     if (_members[i].DeclaringType != other._members[i].DeclaringType ||
-                        _members[i].GetMetadataToken() != other._members[i].GetMetadataToken() ||
+                        _members[i].MetadataToken != other._members[i].MetadataToken ||
                         _members[i].IsGenericMethod != other._members[i].IsGenericMethod) {
                         return false;
                     }
@@ -159,12 +166,13 @@ namespace Microsoft.Scripting.Runtime {
             public override int GetHashCode() {
                 int res = 6551;
                 foreach (MemberInfo mi in _members) {
-                    res ^= res << 5 ^ mi.DeclaringType.GetHashCode() ^ mi.GetMetadataToken();
+                    res ^= res << 5 ^ mi.DeclaringType.GetHashCode() ^ mi.MetadataToken;
                 }
                 res ^= _name.GetHashCode();
 
                 return res;
             }
         }
+#endif
     }
 }

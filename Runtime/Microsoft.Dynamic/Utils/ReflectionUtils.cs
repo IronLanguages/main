@@ -807,25 +807,8 @@ namespace Microsoft.Scripting.Utils {
             return type.GetTypeInfo().GetDeclaredMethods(name).WithBindingFlags(bindingFlags);
         }
 
-
-        public static Type CreateType(this TypeBuilder builder) {
-            return builder.CreateTypeInfo().AsType();
-        }
-
         public static MethodInfo GetMethod(this Delegate d) {
-            return ((dynamic)d).Method;
-        }
-
-        public static object GetRawConstantValue(this FieldInfo field) {
-            return ((dynamic)field).GetRawConstantValue();
-        }
-
-        public static int GetMetadataToken(this MemberInfo member) {
-            return ((dynamic)member).MetadataToken;
-        }
-
-        public static Module GetModule(this MemberInfo member) {
-            return ((dynamic)member).Module;
+            return d.GetMethodInfo();
         }
 
         public static Type[] GetGenericArguments(this Type type) {
@@ -893,16 +876,8 @@ namespace Microsoft.Scripting.Utils {
             return Type.GetTypeCode(type);
         }
 
-        public static MethodInfo GetMethod(this Delegate d) {
+        public static MethodInfo GetMethodInfo(this Delegate d) {
             return d.Method;
-        }
-        
-        public static int GetMetadataToken(this MemberInfo member) {
-            return member.MetadataToken;
-        }
-
-        public static Module GetModule(this MemberInfo member) {
-            return member.Module;
         }
 
         public static bool IsDefined(this Assembly assembly, Type attributeType) {
@@ -983,6 +958,53 @@ namespace Microsoft.Scripting.Utils {
         }
         
         public static Type[] EmptyTypes = new Type[0];
+
+        public static object GetRawConstantValue(this FieldInfo field) {
+            if (!field.IsLiteral) {
+                throw new ArgumentException(field + " not a literal.");
+            }
+
+            object value = field.GetValue(null);
+            return field.FieldType.IsEnum() ? UnwrapEnumValue(value) : value;
+        }
+
+        /// <summary>
+        /// Converts a boxed enum value to the underlying integer value.
+        /// </summary>
+        public static object UnwrapEnumValue(object value) {
+            if (value == null) {
+                throw new ArgumentNullException("value");
+            }
+
+            switch (value.GetType().GetTypeCode()) {
+                case TypeCode.Byte:
+                    return System.Convert.ToByte(value);
+
+                case TypeCode.Int16:
+                    return System.Convert.ToInt16(value);
+
+                case TypeCode.Int32:
+                    return System.Convert.ToInt32(value);
+
+                case TypeCode.Int64:
+                    return System.Convert.ToInt64(value);
+
+                case TypeCode.SByte:
+                    return System.Convert.ToSByte(value);
+
+                case TypeCode.UInt16:
+                    return System.Convert.ToUInt16(value);
+
+                case TypeCode.UInt32:
+                    return System.Convert.ToUInt32(value);
+
+                case TypeCode.UInt64:
+                    return System.Convert.ToUInt64(value);
+
+                default: 
+                    throw new ArgumentException("Value must be a boxed enum.", "value");
+            }
+        }
 
         #endregion
 
@@ -1191,6 +1213,7 @@ namespace Microsoft.Scripting.Utils {
         }
 #endif
 
+#if FEATURE_LCG
         public static bool IsDynamicMethod(MethodBase method) {
             return !PlatformAdaptationLayer.IsCompactFramework && IsDynamicMethodInternal(method);
         }
@@ -1199,6 +1222,11 @@ namespace Microsoft.Scripting.Utils {
         private static bool IsDynamicMethodInternal(MethodBase method) {
             return method is DynamicMethod;
         }
+#else
+        public static bool IsDynamicMethod(MethodBase method) {
+            return false;
+        }
+#endif
 
         public static void GetDelegateSignature(Type delegateType, out ParameterInfo[] parameterInfos, out ParameterInfo returnInfo) {
             ContractUtils.RequiresNotNull(delegateType, "delegateType");
@@ -1246,6 +1274,7 @@ namespace Microsoft.Scripting.Utils {
             }
         }
 
+#if FEATURE_LCG
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Portability", "CA1903:UseOnlyApiFromTargetedFramework")]
         internal static DynamicMethod RawCreateDynamicMethod(string name, Type returnType, Type[] parameterTypes) {
 #if SILVERLIGHT // Module-hosted DynamicMethod is not available in SILVERLIGHT
@@ -1259,6 +1288,7 @@ namespace Microsoft.Scripting.Utils {
             return new DynamicMethod(name, returnType, parameterTypes, true);
 #endif
         }
+#endif
 
         #endregion
 

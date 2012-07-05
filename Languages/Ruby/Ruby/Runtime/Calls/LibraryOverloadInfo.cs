@@ -99,23 +99,23 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal static LibraryOverload/*!*/ Reflect(Delegate/*!*/ overloadDelegate) {
-            return Create(overloadDelegate, EncodeCustomAttributes(overloadDelegate.GetMethod()));
+            return Create(overloadDelegate, EncodeCustomAttributes(overloadDelegate.GetMethodInfo()));
         }
 
         public override MethodBase ReflectionInfo {
-            get { return _delegate.GetMethod(); }
+            get { return _delegate.GetMethodInfo(); }
         }
 
         public override Type ReturnType {
-            get { return _delegate.GetMethod().ReturnType; }
+            get { return _delegate.GetMethodInfo().ReturnType; }
         }
 
         public override ParameterInfo/*!*/ ReturnParameter {
-            get { return _delegate.GetMethod().ReturnParameter; }
+            get { return _delegate.GetMethodInfo().ReturnParameter; }
         }
 
         public override Type/*!*/ DeclaringType {
-            get { return _delegate.GetMethod().DeclaringType; }
+            get { return _delegate.GetMethodInfo().DeclaringType; }
         }
 
         // name is irrelevant for library methods
@@ -124,7 +124,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public override IList<ParameterInfo>/*!*/ Parameters {
-            get { return _parameters ?? (_parameters = new ReadOnlyCollection<ParameterInfo>(_delegate.GetMethod().GetParameters())); }
+            get { return _parameters ?? (_parameters = new ReadOnlyCollection<ParameterInfo>(_delegate.GetMethodInfo().GetParameters())); }
         }
 
         public override bool IsParamArray(int parameterIndex) {

@@ -42,8 +42,8 @@ namespace Microsoft.Scripting.Ast {
 
         private static readonly ParameterExpression _lastValue = Expression.Parameter(typeof(object), "$lastValue");
         private static readonly ReadOnlyCollection<ParameterExpression> _lastValueParamArray = new ReadOnlyCollectionBuilder<ParameterExpression>(1) { _lastValue }.ToReadOnlyCollection();
-        private static readonly Expression _isLightExExpr = Expression.Call(new Func<Exception, bool>(LightExceptions.IsLightException).GetMethod(), _lastValue);
-        private static readonly Expression _lastException = Expression.Call(new Func<object, Exception>(LightExceptions.GetLightException).GetMethod(), _lastValue);
+        private static readonly Expression _isLightExExpr = Expression.Call(new Func<Exception, bool>(LightExceptions.IsLightException).GetMethodInfo(), _lastValue);
+        private static readonly Expression _lastException = Expression.Call(new Func<object, Exception>(LightExceptions.GetLightException).GetMethodInfo(), _lastValue);
         private readonly LabelTarget _returnLabel = Expression.Label(typeof(object), GetEhLabelName("ehUnwind"));
 #if DEBUG
         private static int _curLabel;

@@ -105,7 +105,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal static MSA.Expression/*!*/ CallDelegate(Delegate/*!*/ method, MSA.Expression[]/*!*/ arguments) {
-            MethodInfo methodInfo = method.GetMethod();
+            MethodInfo methodInfo = method.GetMethodInfo();
 
             // We prefer to peek inside the delegate and call the target method directly. However, we need to
             // exclude DynamicMethods since Delegate.Method returns a dummy MethodInfo, and we cannot emit a call to it.
@@ -117,7 +117,7 @@ namespace IronRuby.Compiler.Ast {
             if (method.Target != null) {
                 // inline a closed static delegate:
                 if (methodInfo.IsStatic) {
-                    return Ast.Call(null, method.GetMethod(), ArrayUtils.Insert(AstUtils.Constant(method.Target), arguments));
+                    return Ast.Call(null, method.GetMethodInfo(), ArrayUtils.Insert(AstUtils.Constant(method.Target), arguments));
                 } 
 
                 // inline a closed instance delegate:

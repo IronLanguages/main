@@ -716,7 +716,7 @@ namespace IronRuby.Runtime {
             //
 
             // only Object should expose CLR methods:
-            TypeTracker objectTracker = ReflectionCache.GetTypeTracker(typeof(object));
+            TypeTracker objectTracker = TypeTracker.GetTypeTracker(typeof(object));
 
             var moduleFactories = new Delegate[] {
                 new Func<RubyScope, BlockParam, RubyClass, object>(RubyModule.CreateAnonymousModule),
@@ -1366,7 +1366,7 @@ namespace IronRuby.Runtime {
         }
 
         private static TypeTracker GetLibraryModuleTypeTracker(Type/*!*/ type, ModuleRestrictions restrictions) {
-            return (restrictions & ModuleRestrictions.NoUnderlyingType) != 0 ? null : ReflectionCache.GetTypeTracker(type);
+            return (restrictions & ModuleRestrictions.NoUnderlyingType) != 0 ? null : TypeTracker.GetTypeTracker(type);
         }
 
         #endregion

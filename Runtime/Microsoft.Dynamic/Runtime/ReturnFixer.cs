@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if FEATURE_LCG
 
 using System;
 using System.Diagnostics;
@@ -20,7 +21,7 @@ using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Generation {
-    sealed class ReturnFixer {
+    internal sealed class ReturnFixer {
         private readonly LocalBuilder _refSlot;
         private readonly int _argIndex;
         private readonly Type _argType;
@@ -59,3 +60,4 @@ namespace Microsoft.Scripting.Generation {
         }
     }
 }
+#endif
