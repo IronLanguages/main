@@ -56,7 +56,7 @@ namespace IronRuby.Tests {
             base.CountError(severity);
 
             if (!_suppressOutput) {
-                Console.Error.WriteLine("{0}({1}:{2}): {3}: RB{4}: {5}", source.Path, span.Start.Line, span.Start.Column,
+                Driver.WriteError("{0}({1}:{2}): {3}: RB{4}: {5}", source.Path, span.Start.Line, span.Start.Column,
                     severity, errorCode, message);
             }
 
@@ -119,65 +119,21 @@ namespace IronRuby.Tests {
 
             string name = _driver.TestRuntime.TestName;
 
+#if !WIN8
             if (_driver.SaveToAssemblies) {
                 string path = Path.Combine(Snippets.Shared.SnippetsDirectory, name + ".rb");
                 Directory.CreateDirectory(Snippets.Shared.SnippetsDirectory);
                 File.WriteAllText(path, code);
                 source = _driver.TestRuntime.Context.CreateFileUnit(path);
-            } else {
+            } else
+#endif
                 source = _driver.TestRuntime.Context.CreateSnippet(code, name + ".rb", SourceCodeKind.File);
-            }
 
             ScriptCode compiledCode = source.Compile(new RubyCompilerOptions(Context.RubyOptions), sink);
             if (compiledCode != null) {
                 compiledCode.Run(new Scope());
             }
         }
-
-        public List<Tokens> GetRubyTokens(ErrorSink log, string source) {
-            return GetRubyTokens(log, source, false);
-        }
-
-        public List<Tokens> GetRubyTokens(ErrorSink log, string source, bool dumpTokens) {
-            return GetRubyTokens(Context, log, source, dumpTokens, false);
-        }
-
-        public static List<Tokens> GetRubyTokens(RubyContext context, ErrorSink log, string source, bool dumpTokens, bool dumpReductions) {
-            Parser parser = new Parser();
-            List<Tokens> tokens = new List<Tokens>();
-
-            if (dumpTokens) {
-                parser.Tokenizer.EnableLogging(1, Console.Out);
-            }
-
-            parser.TokenSink = delegate(Tokens token, SourceSpan span) {
-                tokens.Add(token);
-            };
-
-#if DEBUG
-            if (dumpReductions) {
-                DefaultParserLogger.Attach(parser, Console.Out);
-            }
-#endif
-            parser.Parse(context.CreateSnippet(source, SourceCodeKind.File), new RubyCompilerOptions(), log);
-
-            //tokenizer.Initialize(SourceUnit.CreateSnippet(RB, source));
-            //List<Tokens> tokens = new List<Tokens>();
-            //Tokens token;
-            //while ((token = tokenizer.GetNextToken()) != Tokens.EOF) {
-            //    tokens.Add(token);
-            //}
-
-            return tokens;
-        }        
-
-#if !SILVERLIGHT
-        private static int domainId = 0;
-
-        private static AppDomain CreateDomain() {
-            return AppDomain.CreateDomain("RemoteScripts" + domainId++);
-        }
-#endif
 
         [Flags]
         enum OutputFlags {
@@ -194,13 +150,13 @@ namespace IronRuby.Tests {
 
         [DebuggerHiddenAttribute]
         private void XAssertOutput(Action f, string expectedOutput) {
-            Driver.ColorWrite(ConsoleColor.Yellow, "Assertion check skipped.");
+            Driver.WriteWarning("Assertion check skipped.");
             // just run the code
             f();
         }
 
         private void XAssertOutput(Action f, string expectedOutput, OutputFlags flags) {
-            Driver.ColorWrite(ConsoleColor.Yellow, "Assertion check skipped.");
+            Driver.WriteWarning("Assertion check skipped.");
             // just run the code
             f();
         }
@@ -295,12 +251,14 @@ namespace IronRuby.Tests {
             } else {
                 MemoryStream stream = new MemoryStream();
                 Runtime.IO.SetOutput(stream, StringUtils.DefaultEncoding);
-                Runtime.IO.SetErrorOutput(Console.OpenStandardError(), Console.Error);
+                Runtime.IO.SetErrorOutput(Driver.OpenOutputStream(), Driver.Output);
 
                 try {
                     f();
                 } finally {
-                    output.Write(StringUtils.DefaultEncoding.GetString(stream.ToArray()));
+                    var bytes = stream.ToArray();
+                    output.Write(StringUtils.DefaultEncoding.GetString(bytes, 0, bytes.Length));
+                    output.Flush();
                     Runtime.IO.RedirectToConsole();
                 }
             }
@@ -400,6 +358,43 @@ namespace IronRuby.Tests {
         }
 
         #region Parser, Tokenizer
+
+        public List<Tokens> GetRubyTokens(ErrorSink log, string source) {
+            return GetRubyTokens(log, source, false);
+        }
+
+        public List<Tokens> GetRubyTokens(ErrorSink log, string source, bool dumpTokens) {
+            return GetRubyTokens(Context, log, source, dumpTokens, false);
+        }
+
+        public static List<Tokens> GetRubyTokens(RubyContext context, ErrorSink log, string source, bool dumpTokens, bool dumpReductions) {
+            Parser parser = new Parser();
+            List<Tokens> tokens = new List<Tokens>();
+
+            if (dumpTokens) {
+                parser.Tokenizer.EnableLogging(1, Driver.Output);
+            }
+
+            parser.TokenSink = delegate(Tokens token, SourceSpan span) {
+                tokens.Add(token);
+            };
+
+#if DEBUG
+            if (dumpReductions) {
+                DefaultParserLogger.Attach(parser, Driver.Output);
+            }
+#endif
+            parser.Parse(context.CreateSnippet(source, SourceCodeKind.File), new RubyCompilerOptions(), log);
+
+            //tokenizer.Initialize(SourceUnit.CreateSnippet(RB, source));
+            //List<Tokens> tokens = new List<Tokens>();
+            //Tokens token;
+            //while ((token = tokenizer.GetNextToken()) != Tokens.EOF) {
+            //    tokens.Add(token);
+            //}
+
+            return tokens;
+        }  
 
         public object TestCategorizer(ScriptEngine engine, object state, string/*!*/ src, params TokenInfo[]/*!*/ expected) {
             return TestCategorizer(engine, state, src, SourceLocation.MinValue, expected);

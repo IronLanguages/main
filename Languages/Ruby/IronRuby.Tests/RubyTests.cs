@@ -26,9 +26,11 @@ namespace IronRuby.Tests {
                 
                 MutableString_Factories,
                 MutableString_GetHashCode,
+#if !WIN8
                 MutableString_IsAscii,
                 MutableString_Surrogates1,
                 MutableString_Surrogates2,
+#endif
                 MutableString_Length,
                 MutableString_CompareTo1,
                 MutableString_CompareTo2,
@@ -51,7 +53,9 @@ namespace IronRuby.Tests {
                 MutableString_Characters1,
                 MutableString_Bytes1,
                 MutableString_ChangeEncoding1,
+#if !WIN8
                 MutableString_ValidEncoding1,
+#endif
                 RubyArray_Ctors,
                 RubyArray_Basic,
                 RubyArray_Add,
@@ -61,7 +65,9 @@ namespace IronRuby.Tests {
                 RubyArray_Indexer,
      
                 TypeMemberCache,
+#if !WIN8
                 ReflectionUtils_GetMembers,
+#endif
                 DelegateInfo1,
                 DelegateInfo2,
 
@@ -101,7 +107,9 @@ namespace IronRuby.Tests {
                 OverloadResolution_ParamArrays1,
                 OverloadResolution_Numeric1,
                 AmbiguousMatch1,
+#if !WIN8
                 InterpreterNew,
+#endif
                 Interpreter1A,
                 Interpreter1B,
                 Interpreter1C,
@@ -109,8 +117,10 @@ namespace IronRuby.Tests {
                 Interpreter_JumpFromFinally1,
                 Interpreter_JumpFromFinally2,
                 Interpreter2,
+#if !WIN8
                 Interpreter3,
                 Interpreter4,
+#endif
                 Interpreter5,
                 Interpreter6,
                 InterpreterNumeric1,
@@ -145,7 +155,9 @@ namespace IronRuby.Tests {
 
                 Encoding1,
                 Encoding2,
+#if !WIN8
                 Encoding4,
+#endif
                 Encoding_Host1,
                 Encoding_Host2,
 
@@ -172,12 +184,17 @@ namespace IronRuby.Tests {
                 ToSConversion1,
                 ToSConversion2,
                 Symbols1,
-                Inspect2,
+                Inspect2_Unicode,
+#if !WIN8
+                Inspect2_SJIS,
+#endif
                 File1,
                 File_AppendBytes1,
                 File_WriteBytes1,
                 File_ReadLine1,
+#if !WIN8
                 Dir2,
+#endif
                 
                 Regex1,
                 Regex2,
@@ -437,7 +454,9 @@ namespace IronRuby.Tests {
                 RubyHosting1D,
                 RubyHosting1E,
                 RubyHosting1F,
+#if !WIN8
                 RubyHosting2,
+#endif
                 RubyHosting3,
                 RubyHosting4,
                 RubyHosting5,
@@ -461,17 +480,18 @@ namespace IronRuby.Tests {
                 // TODO: PythonInterop_Operators_Fallback1,
                 PythonInterop_NamedIndexers1,
 
+#if !WIN8
                 CustomTypeDescriptor1,
                 CustomTypeDescriptor2,
-                
-                Loader_Assemblies1,
-
                 Require1,
                 RequireInterop1,
                 RequireInterop2,
                 Load1,
+#endif
                 LibraryLoader1,
                 LibraryLoader2,
+
+                Loader_Assemblies1,
 
                 ClrFields1,
                 ClrFields2,
@@ -488,7 +508,9 @@ namespace IronRuby.Tests {
                 ClrMembers1,
                 ClrVisibility1,
                 ClrVisibility2,
+#if !WIN8
                 SpecialMethods,
+#endif
                 ClrExtensionMethods0,
                 ClrExtensionMethods1,
                 ClrExtensionMethods2,
@@ -811,7 +833,9 @@ namespace IronRuby.Tests {
                 Dlr_DynamicObject2, 
                 Dlr_DynamicObject3, 
 
+#if !WIN8
                 Serialization1,
+#endif
 #if !CLR2
                 ClrBigIntegerV4,
 #endif

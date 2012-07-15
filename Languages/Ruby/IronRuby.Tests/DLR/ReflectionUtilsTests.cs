@@ -244,6 +244,7 @@ namespace IronRuby.Tests {
         public abstract class GetMembers<T> where T : GetMembers_A {
         }
 
+#if !WIN8
         public void ReflectionUtils_GetMembers() {
             const BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
             
@@ -303,7 +304,7 @@ namespace IronRuby.Tests {
             var gp_actual = gp.GetInheritedMembers();
             AreSetsEqual(gp_actual.Select(m => m.ToString()), gp_expected.Select(m => m.ToString()));
         }
-
+#endif
         public delegate int FRefIntIntOutInt(ref int a, int b, out int c);
 
         public delegate int FIntIntInt(int a, int b);

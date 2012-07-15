@@ -64,6 +64,7 @@ namespace IronRuby.Tests {
             Assert(b == true && assembly == str && type == null);
         }
 
+#if !WIN8
         public void Require1() {
             if (_driver.PartialTrust) return;
 
@@ -96,7 +97,8 @@ false
             }
         }
 
-        public void Load1() {
+        public void Load1()
+        {
             if (_driver.PartialTrust) return;
 
             try {
@@ -170,7 +172,7 @@ Python
                 File.Delete("b.py");
             }
         }
-
+#endif
         public class TestLibraryInitializer1 : LibraryInitializer {
             protected override void LoadModules() {
                 Context.ObjectClass.SetConstant("TEST_LIBRARY", "hello from library");

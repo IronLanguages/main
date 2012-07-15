@@ -48,5 +48,8 @@ using IronRuby.Runtime;
 //
 [assembly: AssemblyVersion(RubyContext.IronRubyVersionString)]
 [assembly: AssemblyFileVersion(RubyContext.IronRubyVersionString)]
+
+#if !WIN8
 [assembly: AllowPartiallyTrustedCallers]
 [assembly: SecurityTransparent]
+#endif

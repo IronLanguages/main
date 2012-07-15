@@ -236,6 +236,8 @@ hello
             Assert(((MutableString)entries[2]).Equals(MutableString.Create("ﾎ", RubyEncoding.KCodeSJIS)));
         }
 #endif
+
+#if !WIN8
         [Options(Pal = typeof(Pal1))]
         public void Dir2() {
             RubyClass dir = Context.GetClass(typeof(RubyDir));
@@ -256,5 +258,6 @@ hello
 
             pal.Entries.Clear();
         }
+#endif
     }
 }

@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if !WIN8
 
 using System;
 using System.Collections.Generic;
@@ -62,3 +63,4 @@ namespace IronRuby.Tests {
         }
     }
 }
+#endif

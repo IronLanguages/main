@@ -17,9 +17,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security;
-using System.Security.Permissions;
-using System.Security.Policy;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Utils;
@@ -31,6 +30,10 @@ using System.Text;
 using System.Globalization;
 using System.Threading;
 using Microsoft.Scripting.Hosting.Providers;
+
+#if WIN8
+using System.Runtime.InteropServices.WindowsRuntime;
+#endif
 
 namespace IronRuby.Tests {
     public class TestCase {
@@ -70,11 +73,12 @@ namespace IronRuby.Tests {
             if (testCase.Options.NoRuntime) {
                 return;
             }
-
+            
+#if !WIN8
             if (_driver.SaveToAssemblies) {
                 Environment.SetEnvironmentVariable("DLR_AssembliesFileName", _testName);
             }
-
+#endif
             var runtimeSetup = ScriptRuntimeSetup.ReadConfiguration();
             var languageSetup = runtimeSetup.AddRubySetup();
 
@@ -82,6 +86,7 @@ namespace IronRuby.Tests {
             runtimeSetup.PrivateBinding = testCase.Options.PrivateBinding;
             runtimeSetup.HostType = typeof(TestHost);
             runtimeSetup.HostArguments = new object[] { testCase.Options };
+
             languageSetup.Options["ApplicationBase"] = _driver.BaseDirectory;
             languageSetup.Options["NoAdaptiveCompilation"] = _driver.NoAdaptiveCompilation;
             languageSetup.Options["CompilationThreshold"] = _driver.CompilationThreshold;
@@ -92,24 +97,56 @@ namespace IronRuby.Tests {
             _context = (RubyContext)HostingHelpers.GetLanguageContext(_engine);
         }
     }
-
+    
     public class TestHost : ScriptHost {
         private readonly OptionsAttribute/*!*/ _options;
         private readonly PlatformAdaptationLayer/*!*/ _pal;
 
         public TestHost(OptionsAttribute/*!*/ options) {
             _options = options;
-            _pal = options.Pal != null ?
-                (PlatformAdaptationLayer)Activator.CreateInstance(options.Pal) :
-                PlatformAdaptationLayer.Default;
+            _pal = options.Pal != null ? (PlatformAdaptationLayer)Activator.CreateInstance(options.Pal) :
+                   Driver.IsWin8 ? new Win8PAL() :
+                   PlatformAdaptationLayer.Default;
         }
 
         public override PlatformAdaptationLayer PlatformAdaptationLayer {
             get { return _pal; }
         }
+
+        public class Win8PAL : PlatformAdaptationLayer
+        {
+            public override Assembly LoadAssembly(string name)
+            {
+                if (name == "IronRuby, Version=1.1.4.0, Culture=neutral, PublicKeyToken=7f709c5b713576e1")
+                {
+                    return typeof(Ruby).GetTypeInfo().Assembly;
+                }
+                else if (name == "IronRuby.Libraries, Version=1.1.4.0, Culture=neutral, PublicKeyToken=7f709c5b713576e1")
+                {
+                    return typeof(IronRuby.Builtins.Integer).GetTypeInfo().Assembly;
+                }
+
+                return base.LoadAssembly(name);
+            }
+        }
     }
 
     public class Driver {
+
+#if WIN8
+        public class StackFrame
+        {
+            public string GetFileName()
+            {
+                return "N/A";
+            }
+
+            public int GetFileLineNumber()
+            {
+                return 0;
+            }
+        }
+#endif
 
         private Tests _tests;
 
@@ -127,9 +164,9 @@ namespace IronRuby.Tests {
         private static bool _noAdaptiveCompilation;
         private static int _compilationThreshold;
         private static bool _runPython = true;
-        private readonly string/*!*/ _baseDirectory;
+        private readonly string _baseDirectory;
 
-        public Driver(string/*!*/ baseDirectory) {
+        public Driver(string baseDirectory) {
             _baseDirectory = baseDirectory;
         }
 
@@ -177,22 +214,116 @@ namespace IronRuby.Tests {
             get { return _baseDirectory; }
         }
 
+#if WIN8
+        private static TextWriter logWriter;
+        private static Stream logStream;
+
+        private static void EnsureOutputInitialized()
+        {
+            if (logWriter == null)
+            {
+                logStream = ConsoleOutputStream.Instance;
+                logWriter = new StreamWriter(logStream);
+            }
+        }
+
+        public static TextWriter Output
+        {
+            get
+            {
+                EnsureOutputInitialized();
+                return logWriter;
+            }
+        }
+
+        public static Stream OpenOutputStream()
+        {
+            EnsureOutputInitialized();
+            return logStream;
+        }
+
+        public static void WriteOutput(string/*!*/ str, params object[] args)
+        {
+            Output.WriteLine(str, args);
+            Output.Flush();
+        }
+
+        public static void WriteSuccess(string/*!*/ str, params object[] args)
+        {
+            Output.WriteLine(str, args);
+            Output.Flush();
+        }
+
+        public static void WriteError(string/*!*/ str, params object[] args)
+        {
+            Output.WriteLine(str, args);
+            Output.Flush();
+        }
+
+        public static void WriteWarning(string/*!*/ str, params object[] args)
+        {
+            Output.WriteLine(str, args);
+            Output.Flush();
+        }
+#else
+        public static TextWriter Output
+        {
+            get 
+            { 
+                return Console.Out; 
+            }
+        }
+
+        public static Stream OpenOutputStream()
+        {
+            return Console.OpenStandardOutput();
+        }
+
+        public static void WriteOutput(string/*!*/ str, params object[] args)
+        {
+            Console.WriteLine(str, args);
+        }
+
+        public static void WriteSuccess(string/*!*/ str, params object[] args)
+        {
+            ColorWrite(ConsoleColor.Green, str, args);
+        }
+
+        public static void WriteError(string/*!*/ str, params object[] args)
+        {
+            ColorWrite(ConsoleColor.Red, str, args);
+        }
+
+        public static void WriteWarning(string/*!*/ str, params object[] args)
+        {
+            ColorWrite(ConsoleColor.Yellow, str, args);
+        }
+
+        internal static void ColorWrite(ConsoleColor color, string/*!*/ str, params object[] args)
+        {
+            var oldColor = Console.ForegroundColor;
+            Console.ForegroundColor = color;
+            Console.WriteLine(str, args);
+            Console.ForegroundColor = oldColor;
+        }
+#endif
+
         private static bool ParseArguments(List<string>/*!*/ args) {
             if (args.Contains("/help") || args.Contains("-?") || args.Contains("/?") || args.Contains("-help")) {
-                Console.WriteLine("Verbose                      : /verbose");
-                Console.WriteLine("Partial trust                : /partial");
-                Console.WriteLine("No adaptive compilation      : /noadaptive");
-                Console.WriteLine("Synchronous compilation      : /sync0            (-X:CompilationThreshold 0)");
-                Console.WriteLine("Synchronous compilation      : /sync1            (-X:CompilationThreshold 1)");
-                Console.WriteLine("Interpret only               : /interpret        (-X:CompilationThreshold Int32.MaxValue)");
-                Console.WriteLine("Save to assemblies           : /save");
-                Console.WriteLine("Debug Mode                   : /debug");
-                Console.WriteLine("Disable Python interop tests : /py-");
-                Console.WriteLine("Run Specific Tests           : [/exclude] [test_to_run ...]");
-                Console.WriteLine("List Tests                   : /list");
-                Console.WriteLine("Tokenizer baseline           : /tokenizer <target-dir> <sources-file>");
-                Console.WriteLine("Productions dump             : /tokenizer /prod <target-dir> <sources-file>");
-                Console.WriteLine("Benchmark                    : /tokenizer /bm <target-dir> <sources-file>");
+                WriteOutput("Verbose                      : /verbose");
+                WriteOutput("Partial trust                : /partial");
+                WriteOutput("No adaptive compilation      : /noadaptive");
+                WriteOutput("Synchronous compilation      : /sync0            (-X:CompilationThreshold 0)");
+                WriteOutput("Synchronous compilation      : /sync1            (-X:CompilationThreshold 1)");
+                WriteOutput("Interpret only               : /interpret        (-X:CompilationThreshold Int32.MaxValue)");
+                WriteOutput("Save to assemblies           : /save");
+                WriteOutput("Debug Mode                   : /debug");
+                WriteOutput("Disable Python interop tests : /py-");
+                WriteOutput("Run Specific Tests           : [/exclude] [test_to_run ...]");
+                WriteOutput("List Tests                   : /list");
+                WriteOutput("Tokenizer baseline           : /tokenizer <target-dir> <sources-file>");
+                WriteOutput("Productions dump             : /tokenizer /prod <target-dir> <sources-file>");
+                WriteOutput("Benchmark                    : /tokenizer /bm <target-dir> <sources-file>");
             }
 
             if (args.Contains("/list")) {
@@ -273,115 +404,68 @@ namespace IronRuby.Tests {
             return true;
         }
 
-        public static void Main(string[]/*!*/ arguments) {
+        public static int Main(string[]/*!*/ arguments) {
             List<string> args = new List<string>(arguments);
-            string culture = Environment.GetEnvironmentVariable("IR_CULTURE");
+            try
+            {
+#if WIN8
+                return Run(args, baseDirectory: null);
+#else
+                string culture = Environment.GetEnvironmentVariable("IR_CULTURE");
 
-            if (args.Contains("/partial")) {
-                Console.WriteLine("Running in partial trust");
-
-                PermissionSet ps = CreatePermissionSet();
-                AppDomainSetup setup = new AppDomainSetup();
-
-                setup.ApplicationBase = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                AppDomain domain = AppDomain.CreateDomain("Tests", null, setup, ps);
-
-                Loader loader = new Loader(args, setup.ApplicationBase);
-                domain.DoCallBack(new CrossAppDomainDelegate(loader.Run));
-                
-                Environment.ExitCode = loader.ExitCode;
-            } else {
+                if (args.Contains("/partial")) {
+                    WriteOutput("Running in partial trust");
+                    return PartialTrustDriver.Run(args); 
+                }
                 if (!String.IsNullOrEmpty(culture)) {
                     Thread.CurrentThread.CurrentCulture = new CultureInfo(culture, false);
                 }
-                Environment.ExitCode = Run(args, AppDomain.CurrentDomain.BaseDirectory);
-            }
-        }
 
-        public sealed class Loader : MarshalByRefObject {
-            public int ExitCode;
-            public readonly List<string>/*!*/ Args;
-            public readonly string/*!*/ BaseDirectory;
-
-            public Loader(List<string>/*!*/ args, string/*!*/ baseDirectory) {
-                Args = args;
-                BaseDirectory = baseDirectory;
-            }
-
-            public void Run() {
-                ExitCode = Driver.Run(Args, BaseDirectory);
-            }
-        }
-
-        private static PermissionSet/*!*/ CreatePermissionSet() {
-#if CLR2
-            string name = "Internet";
-            bool foundName = false;
-            PermissionSet setIntersection = new PermissionSet(PermissionState.Unrestricted);
-
-            // iterate over each policy level
-            IEnumerator e = SecurityManager.PolicyHierarchy();
-            while (e.MoveNext()) {
-                PolicyLevel level = (PolicyLevel)e.Current;
-                PermissionSet levelSet = level.GetNamedPermissionSet(name);
-                if (levelSet != null) {
-                    foundName = true;
-                    setIntersection = setIntersection.Intersect(levelSet);
-                }
-            }
-
-            if (setIntersection == null || !foundName) {
-                setIntersection = new PermissionSet(PermissionState.None);
-            } else {
-                setIntersection = new NamedPermissionSet(name, setIntersection);
-            }
-
-            return setIntersection;
-#else
-            // this functionality is not available on Mono (AddHostEvidence is undefined), use dynamic to resolve it at runtime
-            dynamic e = new Evidence();
-            e.AddHostEvidence(new Zone(SecurityZone.Internet));
-            return SecurityManager.GetStandardSandbox((Evidence)e);
+                return Run(args, AppDomain.CurrentDomain.BaseDirectory);
 #endif
-        }       
-
-        public static int Run(List<string>/*!*/ args, string/*!*/ baseDirectory) {
-            if (Thread.CurrentThread.CurrentCulture.ToString() != "en-US") {
-                Console.WriteLine("Current culture: {0}", Thread.CurrentThread.CurrentCulture);
             }
+            finally
+            {
+                Output.Flush();
+            }
+        }
 
+        public static int Run(List<string>/*!*/ args, string baseDirectory) {
+#if !WIN8
+            if (Thread.CurrentThread.CurrentCulture.ToString() != "en-US") {
+                WriteOutput("Current culture: {0}", Thread.CurrentThread.CurrentCulture);
+            }
+#endif
             if (!ParseArguments(args)) {
                 return -3;
             }
 
-            int status = 0;
-
+#if !WIN8
             if (_runTokenizerDriver) {
-                TokenizerTestDriver driver = new TokenizerTestDriver((RubyContext)HostingHelpers.GetLanguageContext(Ruby.CreateEngine()));
-                if (!driver.ParseArgs(args)) {
+                TokenizerTestDriver tokenizerDriver = new TokenizerTestDriver((RubyContext)HostingHelpers.GetLanguageContext(Ruby.CreateEngine()));
+                if (!tokenizerDriver.ParseArgs(args)) {
                     return -3;
                 }
 
-                status = driver.RunTests();
-            } else {
-                InitializeDomain();
-                Driver driver = new Driver(baseDirectory);
+                return tokenizerDriver.RunTests();
+            } 
+#endif
+            InitializeDomain();
+            Driver driver = new Driver(baseDirectory);
                 
-                if (Manual.TestCode.Trim().Length == 0) {
-                    status = driver.RunUnitTests(args);
-                } else {
-                    driver.RunManualTest();
+            if (Manual.TestCode.Trim().Length == 0) {
+                return driver.RunUnitTests(args);
+            } 
 
-                    // for case the test is forgotten, this would fail the test suite:
-                    status = -2;
-                }
-            }
-
-            // return failure on bad filter (any real failures throw)
-            return status;
+#if !WIN8
+            driver.RunManualTest();
+#endif
+            // for case the test is forgotten, this would fail the test suite:
+            return -2;
         }
 
         private static void InitializeDomain() {
+#if !WIN8
             if (_saveToAssemblies) {
                 string _dumpDir = Path.Combine(Path.GetTempPath(), "RubyTests");
 
@@ -393,42 +477,44 @@ namespace IronRuby.Tests {
                     Directory.CreateDirectory(_dumpDir);
                 }
                     
-                Console.WriteLine("Generating binaries to {0}", _dumpDir);
+                WriteOutput("Generating binaries to {0}", _dumpDir);
 
                 Snippets.SetSaveAssemblies(true, _dumpDir);
             }
+#endif
         }
-        
+
+#if !WIN8
         private void RunManualTest() {
-            Console.WriteLine("Running hardcoded test case");
-            
+            Output.WriteLine("Running hardcoded test case");
             if (Manual.ParseOnly) {
                 _testRuntime = new TestRuntime(this, new TestCase { Name = "<manual>" });
-                Tests.GetRubyTokens(_testRuntime.Context, new LoggingErrorSink(false), Manual.TestCode, !Manual.DumpReductions, Manual.DumpReductions);                
-            } else {
-                try {
+                Tests.GetRubyTokens(_testRuntime.Context, new LoggingErrorSink(false), Manual.TestCode, !Manual.DumpReductions, Manual.DumpReductions);
+                return;
+            } 
 
-                    for (int i = 0; i < Manual.RequiredFiles.Length; i += 2) {
-                        File.CreateText(Manual.RequiredFiles[i]).WriteLine(Manual.RequiredFiles[i + 1]);
-                    }
+            try {
+                for (int i = 0; i < Manual.RequiredFiles.Length; i += 2) {
+                    File.CreateText(Manual.RequiredFiles[i]).WriteLine(Manual.RequiredFiles[i + 1]);
+                }
 
-                    _tests = new Tests(this);
-                    RunTestCase(new TestCase() {
-                        Name = "$manual$",
-                        TestMethod = () => _tests.CompilerTest(Manual.TestCode),
-                    });
+                _tests = new Tests(this);
+                RunTestCase(new TestCase() {
+                    Name = "$manual$",
+                    TestMethod = () => _tests.CompilerTest(Manual.TestCode),
+                });
 
-                } finally {
-                    for (int i = 0; i < Manual.RequiredFiles.Length; i += 2) {
-                        try {
-                            File.Delete(Manual.RequiredFiles[i]);
-                        } catch {
-                            // nop
-                        }
+            } finally {
+                for (int i = 0; i < Manual.RequiredFiles.Length; i += 2) {
+                    try {
+                        File.Delete(Manual.RequiredFiles[i]);
+                    } catch {
+                        // nop
                     }
                 }
             }
         }
+#endif
 
         private int RunUnitTests(List<string>/*!*/ largs) {
 
@@ -436,7 +522,7 @@ namespace IronRuby.Tests {
             
             if (_displayList) {
                 for (int i = 0; i < _tests.TestMethods.Length; i++) {
-                    Console.WriteLine(_tests.TestMethods[i].Method.Name);
+                    Output.WriteLine(_tests.TestMethods[i].GetMethodInfo().Name);
                 }
                 return -1;
             }
@@ -445,20 +531,20 @@ namespace IronRuby.Tests {
             IList<TestCase> selectedCases = new List<TestCase>();
 
             foreach (var m in _tests.TestMethods) {
-                if (m.Method.IsDefined(typeof(RunAttribute), false)) {
+                if (m.GetMethodInfo().IsDefined(typeof(RunAttribute), false)) {
                     AddTestCases(selectedCases, m);
                 }
             }
 
             if (selectedCases.Count == 0 && largs.Count > 0) {
                 foreach (var m in _tests.TestMethods) {
-                    bool caseIsSpecified = largs.Contains(m.Method.Name);
+                    bool caseIsSpecified = largs.Contains(m.GetMethodInfo().Name);
                     if ((caseIsSpecified && !_excludeSelectedCases) || (!caseIsSpecified && _excludeSelectedCases)) {
                         AddTestCases(selectedCases, m);
                     }
                 }
             } else if (selectedCases.Count > 0 && largs.Count > 0) {
-                Console.WriteLine("Arguments overrided by Run attribute.");
+                Output.WriteLine("Arguments overrided by Run attribute.");
             } else if (selectedCases.Count == 0 && largs.Count == 0) {
                 foreach (var m in _tests.TestMethods) {
                     AddTestCases(selectedCases, m);
@@ -477,13 +563,14 @@ namespace IronRuby.Tests {
                     string message = _failedAssertions[i].Item002;
                     failedCases.Add(test);
 
-                    Console.Error.WriteLine();
+                    Output.WriteLine();
                     if (_partialTrust) {
-                        ColorWrite(ConsoleColor.Red, "{0}) {1}", failedCases.Count, test);
+                        WriteError("{0}) {1}", failedCases.Count, test);
                     } else {
-                        ColorWrite(ConsoleColor.Red, "{0}) {1} {2} : {3}", failedCases.Count, test, frame.GetFileName(), frame.GetFileLineNumber());
+                        WriteError("{0}) {1} {2} : {3}", failedCases.Count, test, frame.GetFileName(), frame.GetFileLineNumber());
                     }
-                    Console.Error.WriteLine(message);
+
+                    Output.WriteLine(message);
                 }
             }
 
@@ -492,46 +579,50 @@ namespace IronRuby.Tests {
                     string test = _unexpectedExceptions[i].Item000;
                     Exception exception = _unexpectedExceptions[i].Item001;
 
-                    Console.Error.WriteLine();
-                    ColorWrite(ConsoleColor.Red, "{0}) {1} (unexpected exception)", failedCases.Count, test);
-                    Console.Error.WriteLine(exception);
+                    Output.WriteLine();
+                    WriteError("{0}) {1} (unexpected exception)", failedCases.Count, test);
+                    Output.WriteLine(exception);
                     failedCases.Add(test);
                 }
             }
 
             if (failedCases.Count == 0) {
-                ColorWrite(ConsoleColor.Green, "PASSED");
+                WriteSuccess("PASSED");
             } else {
-                Console.WriteLine();
+                Output.WriteLine();
                 // TODO:
-                if (!_partialTrust) { 
-                    Console.Write("Repro: {0}", Environment.CommandLine);
+                if (!_partialTrust) {
+#if WIN8
+                    Output.Write("Repro: {0}", string.Join(" ", largs));
+#else
+                    Output.Write("Repro: {0}", Environment.CommandLine);
+#endif
                 } else {
-                    Console.Write("Repro: IronRuby.Tests.exe /partial{0}{1}", 
+                    Output.Write("Repro: IronRuby.Tests.exe /partial{0}{1}", 
                         _noAdaptiveCompilation ? " /noadaptive" : "",
                         _isDebug ? " /debug" : "");
                 }
                 if (largs.Count == 0) {
-                    Console.Write(" {0}", String.Join(" ", failedCases.ToArray()));
+                    Output.Write(" {0}", String.Join(" ", failedCases.ToArray()));
                 }
-                Console.WriteLine();
+                Output.WriteLine();
             }
             return failedCases.Count;
         }
 
         private void AddTestCases(IList<TestCase>/*!*/ cases, Action/*!*/ testMethod) {
-            var attrs = testMethod.Method.GetCustomAttributes(typeof(OptionsAttribute), false);
-            if (attrs.Length > 0) {
+            var attrs = testMethod.GetMethodInfo().GetCustomAttributes<OptionsAttribute>();
+            if (attrs.Any()) {
                 foreach (OptionsAttribute options in attrs) {
                     cases.Add(new TestCase {
-                        Name = testMethod.Method.Name,
+                        Name = testMethod.GetMethodInfo().Name,
                         TestMethod = testMethod,
                         Options = options,
                     });
                 }
             } else {
                 cases.Add(new TestCase {
-                    Name = testMethod.Method.Name,
+                    Name = testMethod.GetMethodInfo().Name,
                     TestMethod = testMethod,
                     Options = new OptionsAttribute(),
                 });
@@ -542,9 +633,9 @@ namespace IronRuby.Tests {
             _testRuntime = new TestRuntime(this, testCase);
 
             if (_verbose) {
-                Console.WriteLine("Executing {0}", testCase.Name);
+                Output.WriteLine("Executing {0}", testCase.Name);
             } else {
-                Console.Write('.');
+                Output.Write('.');
             }
 
             try {
@@ -553,23 +644,19 @@ namespace IronRuby.Tests {
                 PrintTestCaseFailed();
                 _unexpectedExceptions.Add(new MutableTuple<string, Exception>(testCase.Name, e));
             } finally {
+#if !WIN8
                 Snippets.SaveAndVerifyAssemblies();
+#endif
             }
         }
 
         private void PrintTestCaseFailed() {
-            ColorWrite(ConsoleColor.Red, "\n> FAILED: {0}", _testRuntime.TestName);
-        }
-
-        internal static void ColorWrite(ConsoleColor color, string/*!*/ str, params object[] args) {
-            var oldColor = Console.ForegroundColor;
-            Console.ForegroundColor = color;
-            Console.WriteLine(str, args);
-            Console.ForegroundColor = oldColor;
+            WriteError("\n> FAILED: {0}", _testRuntime.TestName);
         }
 
         [DebuggerHiddenAttribute]
         internal void AssertionFailed(string/*!*/ msg) {
+#if !WIN8
             var trace = new StackTrace(true);
             StackFrame frame = null;
             for (int i = 0; i < trace.FrameCount; i++) {
@@ -583,10 +670,29 @@ namespace IronRuby.Tests {
             Debug.Assert(frame != null);
 
             _failedAssertions.Add(new MutableTuple<string, StackFrame, string, object>(_testRuntime.TestName, frame, msg, null));
+#endif
             PrintTestCaseFailed();
         }
 
+#if WIN8
+        public static readonly bool IsWin8 = true;
+
         internal string/*!*/ MakeTempDir() {
+            throw new NotSupportedException();
+        }
+
+        internal TempFile/*!*/ MakeTempFile(string/*!*/ globalVariableName, string/*!*/ suffix, string/*!*/ content) {
+            throw new NotSupportedException();
+        }
+
+        internal static string/*!*/ MakeTempFile(string/*!*/ suffix, string/*!*/ content) {
+            throw new NotSupportedException();
+        }
+#else
+        public static readonly bool IsWin8 = false;
+
+        internal string/*!*/ MakeTempDir()
+        {
             string dir = Path.Combine(Path.GetTempPath(), _testRuntime.TestName);
             Directory.CreateDirectory(dir);
             return dir;
@@ -618,7 +724,7 @@ namespace IronRuby.Tests {
                 }
             }
         }
-
+#endif
         internal sealed class TempFile : IDisposable {
             private readonly string/*!*/ _file;
 
@@ -628,7 +734,9 @@ namespace IronRuby.Tests {
             }
 
             public void Dispose() {
+#if !WIN8
                 File.Delete(_file);
+#endif
             }
         }
     }

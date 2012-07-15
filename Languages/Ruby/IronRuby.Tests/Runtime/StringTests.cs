@@ -251,7 +251,7 @@ SUB
             Assert(a.Equals(c));
             Assert(a.Equals(d));
 #endif
-            a = Context.CreateSymbol(MutableString.CreateBinary(Encoding.ASCII.GetBytes("foo"), RubyEncoding.Binary), false);
+            a = Context.CreateSymbol(MutableString.CreateBinary(Encoding.UTF8.GetBytes("foo"), RubyEncoding.Binary), false);
             b = Context.CreateSymbol(MutableString.CreateMutable("foo", RubyEncoding.UTF8), false);
             Assert(a.Equals(b));
         }
@@ -309,16 +309,13 @@ SUB
 
 #endif
         [Options(NoRuntime = true)]
-        private void Inspect2() {
+        private void Inspect2_Unicode() {
             const char sq = '\'';
 
-            var sjisEncoding = RubyEncoding.SJIS;
-            // あ
-            var sjisWide = new byte[] { 0x82, 0xa0 };
             // \u{12345} in UTF-8:
             var utf8 = new byte[] { 0xF0, 0x92, 0x8D, 0x85 };
             // \u{12345} in UTF-16: U+d808 U+df45 
-            var utf16 = Encoding.UTF8.GetString(utf8);
+            var utf16 = Encoding.UTF8.GetString(utf8, 0, utf8.Length);
 
             string s;
 
@@ -337,12 +334,25 @@ SUB
             // incomplete character:
             s = MutableStringOps.GetQuotedStringRepresentation(MutableString.Create("\ud808\udf45\ud808", RubyEncoding.UTF8), false, sq).ToString();
             Assert(s == @"'\u{12345}\u{d808}'");
+        }
+
+#if !WIN8
+        [Options(NoRuntime = true)]
+        private void Inspect2_SJIS() {
+            const char sq = '\'';
             
+            // あ
+            var sjisWide = new byte[] { 0x82, 0xa0 };
+            var sjisEncoding = RubyEncoding.SJIS;
+
+            string s;
+
             s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(sjisWide, sjisEncoding), false, sq).ToString();
             Assert(s == @"'\x82\xA0'");
 
             s = MutableStringOps.GetQuotedStringRepresentation(MutableString.CreateBinary(sjisWide, sjisEncoding), true, sq).ToString();
             Assert(s == @"'\x82\xA0'");
         }
+#endif
     }
 }

@@ -38,7 +38,7 @@ namespace IronRuby.Tests {
             w.Start();
             Engine.CreateScriptSourceFromString("def foo; puts 2 + 2; end").Execute(Engine.CreateScope());
             w.Stop();
-            Console.WriteLine("> total time: {0}ms", w.ElapsedMilliseconds);
+            Driver.WriteOutput("> total time: {0}ms", w.ElapsedMilliseconds);
         }
 
         // manual test
@@ -49,7 +49,7 @@ namespace IronRuby.Tests {
         }
 
         private void ParserLoggingTest() {
-#if DEBUG
+#if DEBUG && !WIN8
             string source = "def foo(a); end";
             var sourceUnit = Context.CreateSnippet(source, SourceCodeKind.Statements);
             var options = new RubyCompilerOptions();
@@ -1384,6 +1384,7 @@ B")
                 Assert(RubyEncoding.AsciiIdentity(encoding));
             }
 
+#if !WIN8
             foreach (var info in Encoding.GetEncodings()) {
                 var encoding = info.GetEncoding();
                 
@@ -1392,7 +1393,7 @@ B")
 
                 //Console.WriteLine("case " + info.CodePage + ": // " + encoding.EncodingName);
             }
-
+#endif
         }
 
         private void Encoding2() {
@@ -1414,16 +1415,20 @@ p __ENCODING__
             AssertOutput(() => source2.Execute(), @"#<Encoding:UTF-8>");
         }
         
+#if !WIN8
         private void Encoding4() {
             var enc = Engine.Execute<RubyEncoding>(@"eval('# encoding: SJIS
 __ENCODING__
 ')");
             Assert(enc == RubyEncoding.SJIS);
         }
+#endif
 
         private void Encoding_Host1() {
             Encoding_HostHelper(Encoding.UTF8, "\u0394", true);
+#if !WIN8
             Encoding_HostHelper(Encoding.UTF32, "\u0394", false);
+#endif
         }
 
         private void Encoding_HostHelper(Encoding/*!*/ encoding, string/*!*/ specialChars, bool shouldSucceed) {
@@ -1613,7 +1618,7 @@ add 'foo', 'bar'
             }
 
             if (repeat != 0) {
-                Console.WriteLine("{0}: optimized = {1}ms, universal = {2}ms",
+                Driver.WriteOutput("{0}: optimized = {1}ms, universal = {2}ms",
                     @base,
                     optimizedTime.ElapsedMilliseconds,
                     universalTime.ElapsedMilliseconds);

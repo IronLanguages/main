@@ -28,6 +28,10 @@ namespace IronRuby.Tests {
 
     public partial class Tests {
         internal static OverloadInfo/*!*/ CreateParamsArrayMethod(string/*!*/ name, Type/*!*/[]/*!*/ paramTypes, int paramsArrayIndex, int returnValue) {
+#if WIN8
+            // TODO: 
+            throw new NotSupportedException();
+#else
             var tb = Snippets.Shared.DefineType("<T>", typeof(object), false, false).TypeBuilder;
             var mb = tb.DefineMethod(name, CompilerHelpers.PublicStatic, typeof(KeyValuePair<int, Array>), paramTypes);
             var pb = mb.DefineParameter(1 + paramsArrayIndex, ParameterAttributes.None, "ps");
@@ -39,6 +43,7 @@ namespace IronRuby.Tests {
             il.Emit(OpCodes.Newobj, typeof(KeyValuePair<int, Array>).GetConstructor(new[] { typeof(int), typeof(Array) }));
             il.Emit(OpCodes.Ret);
             return new ReflectionOverloadInfo(tb.CreateType().GetMethod(name, BindingFlags.Public | BindingFlags.Static));
+#endif
         }
 
         public void Scenario_RubyArgSplatting1() {
@@ -116,6 +121,8 @@ p [has_value, value]
         }
 
         public void Scenario_RubyArgSplatting5() {
+            if (Driver.IsWin8) return;
+
             var c = Context.GetClass(typeof(MethodsWithParamArrays));
             Runtime.Globals.SetVariable("C", new MethodsWithParamArrays());
 

@@ -236,6 +236,7 @@ puts method_missing(:bar) rescue p $!
 ");
         }
 
+#if !WIN8
         public void RubyHosting2() {
             Hashtable hash = new Hashtable();
             hash.Add("foo", "bar");
@@ -254,6 +255,7 @@ puts h.foo
 bar
 ");
         }
+#endif
 
         public void RubyHosting3() {
             object value;
@@ -873,6 +875,7 @@ c.send(:Foo=, 10, 11, 12)
 ");
         }
 
+#if !WIN8
         public void CustomTypeDescriptor1() {
             object cls = Engine.Execute(@"
 class C
@@ -929,5 +932,6 @@ end
             props[0].SetValue(obj, "abc");
             Assert(Engine.Operations.InvokeMember(obj, "a").Equals("abc"));
         }
+#endif
     }
 }

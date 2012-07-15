@@ -36,6 +36,12 @@ class IRTest
         @config = "v2Debug"
         @sl_config = "Silverlight3Debug"
       end
+    elsif options[:win8]
+      if options[:release]
+        @config = "Win8Release"
+      else
+        @config = "Win8Debug"
+      end
     else
       if options[:release]
         @config = "Release"
@@ -91,7 +97,7 @@ class IRTest
         #:Tutorial         => shell_runner("#{dlr_path('Languages/Ruby/Samples/Tutorial/tutorial.bat')} #{dlr_path('Languages/Ruby/Samples/Tutorial/test/test_console.rb')}"),
       }
       
-      @all_tasks[:BuildSilverlight] = silverlight_build_runner unless options[:nocompile]
+      # @all_tasks[:BuildSilverlight] = silverlight_build_runner unless options[:nocompile]
     
       if not options[:minimum]
         @all_tasks.merge!({
@@ -376,6 +382,10 @@ if $0 == __FILE__
     
     opts.on("-2", "--clr2", "Use CLR2 configuration") do |n|
       iroptions[:clr2] = n
+    end
+    
+    opts.on("-8", "--win2", "Use Win8 configuration") do |n|
+      iroptions[:win8] = n
     end
     
     opts.on("-m", "--mono", "Run tests on Mono") do |n|

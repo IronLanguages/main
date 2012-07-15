@@ -23,8 +23,17 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Win8Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(ReferencedPlatform)' == 'Win8' ">
+    <Reference Include="System.Runtime.WindowsRuntime">
+      <HintPath>$(FrameworkReferences)\System.Runtime.WindowsRuntime.dll</HintPath>
+    </Reference>
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="DLR\ReflectionUtilsTests.cs" />
+    <Compile Include="PartialTrustDriver.cs" />
     <Compile Include="Runtime\ClrTests_Globals.cs" />
     <Compile Include="Driver.cs" />
     <Compile Include="Helpers.cs" />
@@ -80,6 +89,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="$(SolutionDir)..\Config\$(SignedDir)\App.config" />
+    <Compile Include="ConsoleStream.Win8.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(IsFullFramework)' == 'true' ">
     <Reference Include="System.Data" />

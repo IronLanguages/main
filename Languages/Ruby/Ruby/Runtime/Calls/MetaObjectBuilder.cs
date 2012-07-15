@@ -20,6 +20,7 @@ using Microsoft.Scripting.Ast;
 #endif
 
 using System;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -259,8 +260,11 @@ namespace IronRuby.Runtime.Calls {
                 Type type = target.GetType();
                 AddTypeRestriction(type, targetParameter);
             
-                // Ruby objects (get the method directly to prevent interface dispatch):
-                MethodInfo classGetter = type.GetMethod(Methods.IRubyObject_get_ImmediateClass.Name, BindingFlags.Public | BindingFlags.Instance);
+                // Ruby objects (get the method directly to avoid interface dispatch):
+                MethodInfo classGetter = type.GetInheritedMethods(Methods.IRubyObject_get_ImmediateClass.Name)
+                    .Where(m => m.IsPublic && !m.IsStatic)
+                    .SingleOrDefault();
+
                 if (type.IsVisible() && classGetter != null && classGetter.ReturnType == typeof(RubyClass)) {
                     AddCondition(
                         // (#{type})target.ImmediateClass.Version.Method == #{immediateClass.Version.Method}

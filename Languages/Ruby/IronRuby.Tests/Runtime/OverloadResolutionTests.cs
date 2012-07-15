@@ -20,6 +20,7 @@ using Microsoft.Scripting.Ast;
 #endif
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Reflection;
@@ -43,17 +44,19 @@ namespace IronRuby.Tests {
         }
 
         private static OverloadInfo/*!*/[]/*!*/ GetStaticMethods(Type/*!*/ type, string/*!*/ name) {
-            return Array.ConvertAll(
-                type.GetMember(name, BindingFlags.Public | BindingFlags.Static),
-                (mi) => new ReflectionOverloadInfo((MethodBase)mi)
-            );
+            return type
+                .GetDeclaredMethods(name)
+                .WithBindingFlags(BindingFlags.Public | BindingFlags.Static)
+                .Select(mi => new ReflectionOverloadInfo(mi))
+                .ToArray();
         }
 
         private static OverloadInfo/*!*/[]/*!*/ GetInstanceMethods(Type/*!*/ type, string/*!*/ name) {
-            return Array.ConvertAll(
-                type.GetMember(name, BindingFlags.Public | BindingFlags.Instance), 
-                (mi) => new ReflectionOverloadInfo((MethodBase)mi)
-            );
+            return type
+               .GetDeclaredMethods(name)
+               .WithBindingFlags(BindingFlags.Public | BindingFlags.Instance)
+               .Select(mi => new ReflectionOverloadInfo(mi))
+               .ToArray();
         }
 
         #region Block

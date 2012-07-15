@@ -17,6 +17,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -398,6 +399,7 @@ Baz(I): 1
 
         public delegate void TestDelegate(string a);
 
+#if !WIN8
         public void SpecialMethods() {
             var result = Engine.Execute(@"
 System::AppDomain.CurrentDomain.CreateInstance(""mscorlib"", ""System.Object"")
@@ -413,6 +415,7 @@ System::Reflection::Emit::DynamicMethod.new(""foo"", 1.GetType(), System::Array[
             var d = invoke.CreateDelegate(typeof(Action<string>));
             Assert(d is Action<string>);
         }
+#endif
 
         #endregion
 
@@ -751,7 +754,9 @@ p I.Mixed(1)
         #region Extension Methods
 
         public void ClrExtensionMethods0() {
-            bool expectExact = typeof(Enumerable).Assembly.FullName == "System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
+            Assembly systemCore = typeof(System.Linq.Enumerable).GetTypeInfo().Assembly;
+
+            bool expectExact = systemCore.FullName == "System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
 
             Dictionary<string, int> expected = new Dictionary<string, int>();
             foreach (string name in new[] {
@@ -796,8 +801,8 @@ p I.Mixed(1)
                 expected[name] = count + 1;
             }
 
-            var methods = ReflectionUtils.GetVisibleExtensionMethods(typeof(Enumerable).Assembly);
-            new List<MethodInfo>(ReflectionUtils.GetVisibleExtensionMethodsSlow(typeof(Enumerable).Assembly));
+            var methods = ReflectionUtils.GetVisibleExtensionMethods(systemCore);
+            new List<MethodInfo>(ReflectionUtils.GetVisibleExtensionMethodsSlow(systemCore));
 
             Dictionary<string, int> actual = new Dictionary<string, int>();
             foreach (MethodInfo method in methods) {
@@ -815,7 +820,7 @@ p I.Mixed(1)
         }
 
         public void ClrExtensionMethods1() {
-            Context.ObjectClass.SetConstant("SystemCoreAssembly", typeof(Expression).Assembly.FullName);
+            Context.ObjectClass.SetConstant("SystemCoreAssembly", typeof(Expression).GetTypeInfo().Assembly.FullName);
             TestOutput(@"
 load_assembly SystemCoreAssembly
 using_clr_extensions System::Linq
@@ -832,8 +837,8 @@ p a.first_or_default
         /// Loads an assembly that defines more extension methods in the given namespace.
         /// </summary>
         public void ClrExtensionMethods2() {
-            Context.ObjectClass.SetConstant("SystemCoreAssembly", typeof(Expression).Assembly.FullName);
-            Context.ObjectClass.SetConstant("DummyLinqAssembly", typeof(System.Linq.Dummy).Assembly.FullName);
+            Context.ObjectClass.SetConstant("SystemCoreAssembly", typeof(Expression).GetTypeInfo().Assembly.FullName);
+            Context.ObjectClass.SetConstant("DummyLinqAssembly", typeof(System.Linq.Dummy).GetTypeInfo().Assembly.FullName);
             TestOutput(@"
 load_assembly DummyLinqAssembly
 
@@ -850,8 +855,8 @@ p System::Array[Fixnum].new([1,2,3]).first_or_default
         /// Extension methods not available by default onlty after their declaring namespace is "used".
         /// </summary>
         public void ClrExtensionMethods3() {
-            Context.ObjectClass.SetConstant("SystemCoreAssembly", typeof(Expression).Assembly.FullName);
-            Context.ObjectClass.SetConstant("DummyLinqAssembly", typeof(System.Linq.Dummy).Assembly.FullName);
+            Context.ObjectClass.SetConstant("SystemCoreAssembly", typeof(Expression).GetTypeInfo().Assembly.FullName);
+            Context.ObjectClass.SetConstant("DummyLinqAssembly", typeof(System.Linq.Dummy).GetTypeInfo().Assembly.FullName);
             
             TestOutput(@"
 load_assembly DummyLinqAssembly
@@ -872,7 +877,7 @@ p a.first_or_default
         /// Extension methods defined using generic parameters and constraints.
         /// </summary>
         public void ClrExtensionMethods4() {
-            Runtime.LoadAssembly(typeof(IronRubyTests.ExtensionMethods2.EMs).Assembly);
+            Runtime.LoadAssembly(typeof(IronRubyTests.ExtensionMethods2.EMs).GetTypeInfo().Assembly);
 
             TestOutput(@"
 L = System::Collections::Generic::List
@@ -1260,7 +1265,7 @@ f4
         }
 
         public void ClrOverloadInheritance_ExtensionMethods1() {
-            Runtime.LoadAssembly(Assembly.GetExecutingAssembly());
+            Runtime.LoadAssembly(typeof(OverloadInheritance2).GetTypeInfo().Assembly);
             OverloadInheritance2.Load(Context);
 
             TestOutput(@"
@@ -1296,7 +1301,7 @@ e6
         }
 
         public void ClrOverloadInheritance_ExtensionMethods2() {
-            Runtime.LoadAssembly(Assembly.GetExecutingAssembly());
+            Runtime.LoadAssembly(typeof(OverloadInheritance2).GetTypeInfo().Assembly);
             OverloadInheritance2.Load(Context);
 
             TestOutput(@"
@@ -1828,7 +1833,7 @@ System::Collections
         }
 
         public void ClrNamespaces2() {
-            Runtime.LoadAssembly(typeof(InteropTests.Namespaces2.C).Assembly);
+            Runtime.LoadAssembly(typeof(InteropTests.Namespaces2.C).GetTypeInfo().Assembly);
             AssertOutput(() => CompilerTest(@"
 module InteropTests::Namespaces2
   X = 1
@@ -1862,7 +1867,7 @@ nil
         }
         
         public void ClrGenerics1() {
-            Runtime.LoadAssembly(typeof(Tests).Assembly);
+            Runtime.LoadAssembly(typeof(Tests).GetTypeInfo().Assembly);
 
             TestOutput(@"
 include InteropTests::Generics1
@@ -2063,7 +2068,7 @@ $d = D.new { |foo, bar| $foo = foo; $bar = bar; 777 }
         }
         
         public void ClrDelegates2() {
-            Runtime.LoadAssembly(typeof(Func<>).Assembly);
+            Runtime.LoadAssembly(typeof(Func<>).GetTypeInfo().Assembly);
 
             var f = Engine.Execute<Func<int, int>>(FuncFullName + @".of(Fixnum, Fixnum).new { |a| a + 1 }");
             Assert(f(1) == 2);
@@ -2847,7 +2852,12 @@ unstarted
         }
 
         private static bool IsCtorAvailable(RubyClass cls, params Type[] parameters) {
-            var method = cls.GetUnderlyingSystemType().GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, parameters, null);
+            var method = cls.GetUnderlyingSystemType()
+                            .GetDeclaredConstructors()
+                            .WithBindingFlags(BindingFlags.Public | BindingFlags.Instance)
+                            .WithSignature(parameters)
+                            .FirstOrDefault();
+
             return method != null && !method.IsPrivate && !method.IsFamilyAndAssembly;
         }
 

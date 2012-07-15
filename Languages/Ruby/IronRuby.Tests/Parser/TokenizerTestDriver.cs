@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if !WIN8
 
 using System;
 using System.Collections;
@@ -439,3 +440,4 @@ namespace IronRuby.Tests {
         #endregion
     }
 }
+#endif

@@ -84,7 +84,7 @@ namespace IronRuby.Tests {
         }
 
         public static void Attach(Parser/*!*/ parser) {
-            Attach(parser, Console.Out);
+            Attach(parser, Driver.Output);
         }
 
         public static void Attach(Parser/*!*/ parser, TextWriter/*!*/ output) {

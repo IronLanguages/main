@@ -152,7 +152,7 @@ namespace Microsoft.Scripting.Interpreter {
                 }
                 return ExceptionHandlingResult.Return;
             }
-
+            
 #if FEATURE_THREAD
             // stay in the current catch so that ThreadAbortException is not rethrown by CLR:
             var abort = exception as ThreadAbortException;
