@@ -588,6 +588,46 @@ namespace IronRuby.Builtins {
         #endregion
 
         #region TODO: min_by, max_by, minmax_by
+        
+        [RubyMethod("min_by")]
+        public static object GetMinBy(CallSiteStorage<EachSite>/*!*/ each, ComparisonStorage/*!*/ comparisonStorage, BlockParam comparer, object self) {
+            
+            bool firstItem = true;
+            object result = null;
+            object resultValue = null;
+            
+            Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+                if (firstItem) {
+                    result = item;
+                    object firstBlockResult;
+                    comparer.Yield(item, out blockResult);
+                    resultValue = blockResult;
+                    firstItem = false;
+                    return null;
+                }
+                
+                Protocols.Compare(comparisonStorage, left, right);
+                
+                object itemBlockResult;
+                comparer.Yield (item, out itemBlockResult);
+                object compareBlockResult;
+                int? compareResult = CompareItems(comparisonStorage, itemBlockResult, resultValue, comparer, out compareBlockResult);
+                if (compareResult == null) {
+                    result = compareBlockResult;
+                    return selfBlock.PropagateFlow(comparer, blockResult);
+                }
+                
+                // Check if we have found the new minimum or maximum (+1 to select max, -1 to select min)
+                if (compareResult == comparisonValue) {
+                    result = item;
+                    resultValue = itemBlockResult;
+                }
+                
+                return null;
+            }));
+            
+            return result;
+        }
 
         #endregion
 
