@@ -600,13 +600,13 @@ namespace IronRuby.Builtins {
                 if (firstItem) {
                     result = item;
                     object firstBlockResult;
-                    comparer.Yield(item, out blockResult);
-                    resultValue = blockResult;
+                    comparer.Yield(item, out firstBlockResult);
+                    resultValue = firstBlockResult;
                     firstItem = false;
                     return null;
                 }
                 
-                Protocols.Compare(comparisonStorage, left, right);
+                //Protocols.Compare(comparisonStorage, left, right);
                 
                 object itemBlockResult;
                 comparer.Yield (item, out itemBlockResult);
@@ -614,11 +614,11 @@ namespace IronRuby.Builtins {
                 int? compareResult = CompareItems(comparisonStorage, itemBlockResult, resultValue, comparer, out compareBlockResult);
                 if (compareResult == null) {
                     result = compareBlockResult;
-                    return selfBlock.PropagateFlow(comparer, blockResult);
+                    return selfBlock.PropagateFlow(comparer, compareBlockResult);
                 }
                 
                 // Check if we have found the new minimum or maximum (+1 to select max, -1 to select min)
-                if (compareResult == comparisonValue) {
+                if (compareResult == -1) {
                     result = item;
                     resultValue = itemBlockResult;
                 }
