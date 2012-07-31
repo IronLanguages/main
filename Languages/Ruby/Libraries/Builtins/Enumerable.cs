@@ -591,6 +591,15 @@ namespace IronRuby.Builtins {
         
         [RubyMethod("min_by")]
         public static object GetMinBy(CallSiteStorage<EachSite>/*!*/ each, ComparisonStorage/*!*/ comparisonStorage, BlockParam comparer, object self) {
+			return GetExtremeBy(each, comparisonStorage, comparer, self, -1);
+		}
+
+        [RubyMethod("max_by")]
+        public static object GetMaxBy(CallSiteStorage<EachSite>/*!*/ each, ComparisonStorage/*!*/ comparisonStorage, BlockParam comparer, object self) {
+			return GetExtremeBy(each, comparisonStorage, comparer, self, +1);
+		}
+
+        private static object GetExtremeBy(CallSiteStorage<EachSite>/*!*/ each, ComparisonStorage/*!*/ comparisonStorage, BlockParam comparer, object self, int comparisonValue) {
             
             bool firstItem = true;
             object result = null;
@@ -606,19 +615,18 @@ namespace IronRuby.Builtins {
                     return null;
                 }
                 
-                //Protocols.Compare(comparisonStorage, left, right);
-                
                 object itemBlockResult;
                 comparer.Yield (item, out itemBlockResult);
                 object compareBlockResult;
-                int? compareResult = CompareItems(comparisonStorage, itemBlockResult, resultValue, comparer, out compareBlockResult);
+                int? compareResult = Protocols.Compare(comparisonStorage, itemBlockResult, resultValue);// CompareItems(comparisonStorage, itemBlockResult, resultValue, comparer, out compareBlockResult);
                 if (compareResult == null) {
-                    result = compareBlockResult;
+					result = item;
+                    resultValue = compareBlockResult;
                     return selfBlock.PropagateFlow(comparer, compareBlockResult);
                 }
                 
                 // Check if we have found the new minimum or maximum (+1 to select max, -1 to select min)
-                if (compareResult == -1) {
+                if (compareResult == comparisonValue) {
                     result = item;
                     resultValue = itemBlockResult;
                 }
