@@ -670,7 +670,9 @@ namespace IronRuby.Tests {
                 MainSingleton2,
                 Singletons1A,
                 Singletons1B,
+#if FEATURE_REFEMIT
                 Singletons1C,
+#endif
                 Singletons1D,
                 Singletons2,
                 Singletons3,
@@ -724,7 +726,9 @@ namespace IronRuby.Tests {
                 Scenario_ModuleOps_Methods,
                 Scenario_MainSingleton,
 
+#if FEATURE_THREAD
                 Scenario_RubyThreads1,
+#endif
                 Scenario_YieldCodeGen,
                 Methods1, 
                 MethodDef1, 
@@ -816,7 +820,9 @@ namespace IronRuby.Tests {
                 Backtrace7,
 
                 Dlr_RubySnippet,
+#if FEATURE_REFEMIT
                 Dlr_ClrSubtype,
+#endif
                 Dlr_MethodMissing,
                 Dlr_Miscellaneous,
                 Dlr_Conversions1,

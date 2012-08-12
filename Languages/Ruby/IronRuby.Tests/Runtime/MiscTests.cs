@@ -771,6 +771,7 @@ y.foo
 ");
         }
 
+#if FEATURE_THREAD
         public void Scenario_RubyThreads1() { 
             AssertOutput(delegate() {
                 CompilerTest(@"
@@ -787,7 +788,7 @@ puts 4
 4
 ");
         }
-
+#endif
         public void Scenario_YieldCodeGen() {
             AssertOutput(delegate() {
                 CompilerTest(@"

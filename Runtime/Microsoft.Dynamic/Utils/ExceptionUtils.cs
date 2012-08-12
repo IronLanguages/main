@@ -85,7 +85,7 @@ namespace Microsoft.Scripting.Utils {
                     return null;
                 }
 
-                return data.First(entry => entry.Key == key).Value;
+                return data.FirstOrDefault(entry => entry.Key == key).Value;
             }
         }
 

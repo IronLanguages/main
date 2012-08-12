@@ -54,13 +54,14 @@ foo
             Singletons1_Test("Object", null);
         }
 
+#if FEATURE_REFEMIT
         /// <summary>
         /// A subclass of a CLR class.
         /// </summary>
         public void Singletons1C() {
             Singletons1_Test("X", "< System::Collections::ArrayList");
         }
-
+#endif
         /// <summary>
         /// A CLR class.
         /// </summary>

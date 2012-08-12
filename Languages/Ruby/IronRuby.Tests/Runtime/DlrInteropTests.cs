@@ -330,9 +330,11 @@ if $0 == __FILE__ then
         include DynamicAttributes
     end
 end
-
-#------------------------------------------------------------------------------
-# Inherit from a CLR type
+"
+// Inherit from a CLR type
+#if FEATURE_REFEMIT
++
+@"
 
 class RubyArrayList < ArrayList
     def initialize *args
@@ -345,8 +347,7 @@ class RubyArrayList < ArrayList
 
     attr_accessor :ruby_attribute
 
-    # override a CLR virtual method
-    def IndexOf obj
+    def IndexOf obj            # override a CLR virtual method
         123456789
     end
 end
@@ -355,19 +356,22 @@ self.ruby_array_list = RubyArrayList.new()
 self.ruby_array_list.Add(100)
 self.ruby_array_list.Add(200)
 
+class DynamicArrayList < RubyArrayList
+    include DynamicAttributes
+end
+
+self.dynamic_array_list = DynamicArrayList.new
+
+" 
+#endif
++
+@"
 #------------------------------------------------------------------------------
 class DynamicObject
     include DynamicAttributes
 end
 
 self.dynamic_object = DynamicObject.new
-
-#------------------------------------------------------------------------------
-class DynamicArrayList < RubyArrayList
-    include DynamicAttributes
-end
-
-self.dynamic_array_list = DynamicArrayList.new
 
 #------------------------------------------------------------------------------
 class Miscellaneous
@@ -451,13 +455,17 @@ class SanityTest
     end
 
     def self.sanity_test main
-        # $ruby_array_list
+" + 
+#if FEATURE_REFEMIT
+@"
         assert_equal main.ruby_array_list.Count, 2
         main.ruby_array_list[0]
     
         assert_equal main.ruby_array_list.ruby_method, 'Hi from Ruby'.to_clr_string
         assert_equal main.ruby_array_list.IndexOf(nil), 123456789
-        
+" + 
+#endif
+@"
         # main.dynamic_object
         assert_equal main.dynamic_object.foo, 'dynamic_foo'.to_clr_string
         main.dynamic_object.bar = 'my bar'
@@ -520,6 +528,7 @@ end
             Engine.Execute("SanityTest.sanity_test self", scope);
         }
 
+#if FEATURE_REFEMIT
         public void Dlr_ClrSubtype() {
             var scope = CreateInteropScope();
             object ruby_array_list = scope.GetVariable("ruby_array_list");
@@ -554,6 +563,7 @@ end
             Assert(result.Count == 2 && (int)result[0] == 100 && (int)result[1] == 200);
 #endif
         }
+#endif
 
         public void Dlr_MethodMissing() {
             var scope = CreateInteropScope();

@@ -2692,6 +2692,7 @@ end
         public class EmptyClass1 {
         }
 
+        [Run]
         public void ClrToString1() {
             Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(EmptyClass1)));
 
@@ -2737,6 +2738,7 @@ Z.eql?(1)
 ");
             Assert(!b);
 
+#if FEATURE_REFEMIT
             // detached method groups should be considered user-defined methods:
             var objs = Engine.Execute<RubyArray>(@"
 class C < B
@@ -2756,6 +2758,7 @@ end
             
             h = d.GetHashCode();
             Assert(h == 11);
+#endif
         }
 
         #endregion

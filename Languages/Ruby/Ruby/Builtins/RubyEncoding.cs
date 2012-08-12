@@ -623,7 +623,7 @@ namespace IronRuby.Builtins {
             ContractUtils.RequiresNotNull(encoding, "encoding");
             if (encoding == BinaryEncoding.Instance) {
                 return Binary;
-            } else if (encoding == Encoding.UTF8) {
+            } else if (encoding.GetType() == typeof(UTF8Encoding)) {
                 return UTF8;
             } else {
                 throw new ArgumentException(String.Format("Unknown encoding: '{0}'", encoding));
