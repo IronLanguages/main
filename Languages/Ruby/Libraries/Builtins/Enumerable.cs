@@ -20,10 +20,10 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using IronRuby.Runtime;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Builtins {
@@ -617,7 +617,7 @@ namespace IronRuby.Builtins {
                 
                 object itemBlockResult;
                 comparer.Yield (item, out itemBlockResult);
-                object compareBlockResult;
+                object compareBlockResult = null;
                 int? compareResult = Protocols.Compare(comparisonStorage, itemBlockResult, resultValue);// CompareItems(comparisonStorage, itemBlockResult, resultValue, comparer, out compareBlockResult);
                 if (compareResult == null) {
 					result = item;
