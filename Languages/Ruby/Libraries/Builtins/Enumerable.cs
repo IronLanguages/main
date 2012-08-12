@@ -588,6 +588,54 @@ namespace IronRuby.Builtins {
         #endregion
 
         #region TODO: min_by, max_by, minmax_by
+        
+        [RubyMethod("min_by")]
+        public static object GetMinBy(CallSiteStorage<EachSite>/*!*/ each, ComparisonStorage/*!*/ comparisonStorage, BlockParam comparer, object self) {
+			return GetExtremeBy(each, comparisonStorage, comparer, self, -1);
+		}
+
+        [RubyMethod("max_by")]
+        public static object GetMaxBy(CallSiteStorage<EachSite>/*!*/ each, ComparisonStorage/*!*/ comparisonStorage, BlockParam comparer, object self) {
+			return GetExtremeBy(each, comparisonStorage, comparer, self, +1);
+		}
+
+        private static object GetExtremeBy(CallSiteStorage<EachSite>/*!*/ each, ComparisonStorage/*!*/ comparisonStorage, BlockParam comparer, object self, int comparisonValue) {
+            
+            bool firstItem = true;
+            object result = null;
+            object resultValue = null;
+            
+            Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
+                if (firstItem) {
+                    result = item;
+                    object firstBlockResult;
+                    comparer.Yield(item, out firstBlockResult);
+                    resultValue = firstBlockResult;
+                    firstItem = false;
+                    return null;
+                }
+                
+                object itemBlockResult;
+                comparer.Yield (item, out itemBlockResult);
+                object compareBlockResult;
+                int? compareResult = Protocols.Compare(comparisonStorage, itemBlockResult, resultValue);// CompareItems(comparisonStorage, itemBlockResult, resultValue, comparer, out compareBlockResult);
+                if (compareResult == null) {
+					result = item;
+                    resultValue = compareBlockResult;
+                    return selfBlock.PropagateFlow(comparer, compareBlockResult);
+                }
+                
+                // Check if we have found the new minimum or maximum (+1 to select max, -1 to select min)
+                if (compareResult == comparisonValue) {
+                    result = item;
+                    resultValue = itemBlockResult;
+                }
+                
+                return null;
+            }));
+            
+            return result;
+        }
 
         #endregion
 
