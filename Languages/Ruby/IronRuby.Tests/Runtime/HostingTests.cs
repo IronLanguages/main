@@ -278,6 +278,7 @@ bar
             Assert(Runtime.Globals.TryGetVariable("E", out value));
             Assert(((RubyModule)value).Name == "E");
 
+#if FEATURE_FILESYSTEM
             // TODO:
             // the library paths are incorrect (not combined with location of .exe file) in partial trust:
             if (_driver.PartialTrust) return;
@@ -302,6 +303,7 @@ bar
             // standard library classes are also published (whether implemented in C# or not):
             var module = Runtime.Globals.GetVariable("Fcntl");
             Assert(module is RubyModule && ((RubyModule)module).Name == "Fcntl");
+#endif
         }
 
         public void RubyHosting4() {

@@ -621,7 +621,7 @@ nil
         }
 
         public void ConstantCaching_CrossRuntime1() {
-            var engine2 = Ruby.CreateEngine();
+            var engine2 = _driver.CreateRubyEngine();
 
             var c = Engine.Execute(@"
 module C

@@ -12,8 +12,6 @@
  *
  *
  * ***************************************************************************/
-#if FEATURE_ENCODING
-
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -25,7 +23,7 @@ using Microsoft.Scripting;
 using System.Globalization;
 
 namespace IronRuby.Builtins {
-    [RubyClass("Encoding", Extends = typeof(RubyEncoding), Inherits = typeof(Object), BuildConfig = "FEATURE_ENCODING")]
+    [RubyClass("Encoding", Extends = typeof(RubyEncoding), Inherits = typeof(Object))]
     public static class RubyEncodingOps {
         #region Exceptions
 
@@ -47,7 +45,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-#region Constants
+        #region Constants
 
         [RubyConstant("ANSI_X3_4_1968")]
         [RubyConstant("US_ASCII")]
@@ -63,29 +61,30 @@ namespace IronRuby.Builtins {
         [RubyConstant]
         public static readonly RubyEncoding BINARY = RubyEncoding.Binary;
 
-        [RubyConstant("SHIFT_JIS")]
-        [RubyConstant("Shift_JIS")]
+#if FEATURE_ENCODING
+        [RubyConstant("SHIFT_JIS", BuildConfig = "FEATURE_ENCODING")]
+        [RubyConstant("Shift_JIS", BuildConfig = "FEATURE_ENCODING")]
         public static readonly RubyEncoding SHIFT_JIS = RubyEncoding.SJIS;
         
-        [RubyConstant]
+        [RubyConstant(BuildConfig = "FEATURE_ENCODING")]
         public static readonly RubyEncoding EUC_JP = RubyEncoding.EUCJP;
 
-        [RubyConstant]
+        [RubyConstant(BuildConfig = "FEATURE_ENCODING")]
         public static readonly RubyEncoding KOI8_R = RubyEncoding.GetRubyEncoding(20866);
 
-        [RubyConstant]
+        [RubyConstant(BuildConfig = "FEATURE_ENCODING")]
         public static readonly RubyEncoding TIS_620 = RubyEncoding.GetRubyEncoding(874);
 
-        [RubyConstant("ISO8859_9")]
-        [RubyConstant("ISO_8859_9")]
+        [RubyConstant("ISO8859_9", BuildConfig = "FEATURE_ENCODING")]
+        [RubyConstant("ISO_8859_9", BuildConfig = "FEATURE_ENCODING")]
         public static readonly RubyEncoding ISO_8859_9 = RubyEncoding.GetRubyEncoding(28599);
 
-        [RubyConstant("ISO8859_15")]
-        [RubyConstant("ISO_8859_15")]
+        [RubyConstant("ISO8859_15", BuildConfig = "FEATURE_ENCODING")]
+        [RubyConstant("ISO_8859_15", BuildConfig = "FEATURE_ENCODING")]
         public static readonly RubyEncoding ISO_8859_15 = RubyEncoding.GetRubyEncoding(28605);
 
-        [RubyConstant("Big5")]
-        [RubyConstant("BIG5")]
+        [RubyConstant("Big5", BuildConfig = "FEATURE_ENCODING")]
+        [RubyConstant("BIG5", BuildConfig = "FEATURE_ENCODING")]
         public static readonly RubyEncoding Big5 = RubyEncoding.GetRubyEncoding(RubyEncoding.CodePageBig5);
 
         // TODO:
@@ -93,24 +92,24 @@ namespace IronRuby.Builtins {
 
         // TODO: lazy encoding load?
 
-        [RubyConstant]
+        [RubyConstant(BuildConfig = "FEATURE_ENCODING")]
         public static readonly RubyEncoding UTF_7 = RubyEncoding.GetRubyEncoding(Encoding.UTF7);
 
+        [RubyConstant(BuildConfig = "FEATURE_ENCODING")]
+        public static readonly RubyEncoding UTF_32BE = RubyEncoding.GetRubyEncoding(RubyEncoding.CodePageUTF32BE);
+
+        [RubyConstant(BuildConfig = "FEATURE_ENCODING")]
+        public static readonly RubyEncoding UTF_32LE = RubyEncoding.GetRubyEncoding(Encoding.UTF32);
+#endif
         [RubyConstant]
         public static readonly RubyEncoding UTF_16BE = RubyEncoding.GetRubyEncoding(Encoding.BigEndianUnicode);
 
         [RubyConstant]
         public static readonly RubyEncoding UTF_16LE = RubyEncoding.GetRubyEncoding(Encoding.Unicode);
 
-        [RubyConstant]
-        public static readonly RubyEncoding UTF_32BE = RubyEncoding.GetRubyEncoding(RubyEncoding.CodePageUTF32BE);
-
-        [RubyConstant]
-        public static readonly RubyEncoding UTF_32LE = RubyEncoding.GetRubyEncoding(Encoding.UTF32);
-
         #endregion
 
-#region to_s, inspect, based_encoding, dummy?, ascii_compatible?
+        #region to_s, inspect, based_encoding, dummy?, ascii_compatible?
 
         [RubyMethod("name")]
         [RubyMethod("to_s")]
@@ -179,7 +178,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-#region aliases, name_list, list, find
+        #region aliases, name_list, list, find
 
         [RubyMethod("aliases", RubyMethodAttributes.PublicSingleton)]
         public static Hash/*!*/ GetAliases(RubyClass/*!*/ self) {
@@ -197,38 +196,23 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("name_list", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray/*!*/ GetNameList(RubyClass/*!*/ self) {
-            var infos = Encoding.GetEncodings();
-            var result = new RubyArray(1 + infos.Length);
+            var result = new RubyArray();
 
-            // Ruby specific:
-            result.Add(MutableString.CreateAscii(RubyEncoding.Binary.Name));
-
-            foreach (var info in infos) {
-                result.Add(MutableString.Create(RubyEncoding.GetRubySpecificName(info.CodePage) ?? info.Name));
+            foreach (string name in RubyEncoding.GetEncodingNames()) {
+                result.Add(MutableString.Create(name));
             }
-
-            foreach (var alias in RubyEncoding.Aliases.Keys) {
-                result.Add(MutableString.CreateAscii(alias));
-            }
-
-            result.Add(MutableString.CreateAscii("locale"));
-            result.Add(MutableString.CreateAscii("external"));
-            result.Add(MutableString.CreateAscii("filesystem"));
             
             return result;
         }
 
         [RubyMethod("list", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray/*!*/ GetAvailableEncodings(RubyClass/*!*/ self) {
-            var infos = Encoding.GetEncodings();
-            var result = new RubyArray(1 + infos.Length);
+            var result = new RubyArray();
 
-            // Ruby specific:
-            result.Add(RubyEncoding.Binary);
-
-            foreach (var info in infos) {
-                result.Add(RubyEncoding.GetRubyEncoding(info.CodePage));
+            foreach (int codePage in RubyEncoding.GetEncodingCodePages()) {
+                result.Add(RubyEncoding.GetRubyEncoding(codePage));
             }
+
             return result;
         }
 
@@ -239,7 +223,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-#region compatible?
+        #region compatible?
 
         [RubyMethod("compatible?", RubyMethodAttributes.PublicSingleton)]
         public static RubyEncoding GetCompatible(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ str1, [NotNull]MutableString/*!*/ str2) {
@@ -293,7 +277,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-#region default_external, default_internal, locale_charmap
+        #region default_external, default_internal, locale_charmap
 
         [RubyMethod("default_external", RubyMethodAttributes.PublicSingleton)]
         public static RubyEncoding/*!*/ GetDefaultExternalEncoding(RubyClass/*!*/ self) {
@@ -340,4 +324,3 @@ namespace IronRuby.Builtins {
         #endregion
     }
 }
-#endif

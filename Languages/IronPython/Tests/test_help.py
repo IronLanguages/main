@@ -460,8 +460,8 @@ def test_paramrefs():
     # by paramnames.
     import System
     x = run_help(System.DateTime.Parse)
-    
-    Assert(x.find("A System.DateTime equivalent to the date and time contained in s") != -1)
+
+    Assert(x.find("equivalent to the date and time contained in s") != -1)
 
 @skip("silverlight") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=20236#
 def test_type():        

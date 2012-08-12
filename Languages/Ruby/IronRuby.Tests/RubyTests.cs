@@ -53,7 +53,7 @@ namespace IronRuby.Tests {
                 MutableString_Characters1,
                 MutableString_Bytes1,
                 MutableString_ChangeEncoding1,
-#if !WIN8
+#if FEATURE_ENCODING
                 MutableString_ValidEncoding1,
 #endif
                 RubyArray_Ctors,
@@ -155,7 +155,7 @@ namespace IronRuby.Tests {
 
                 Encoding1,
                 Encoding2,
-#if !WIN8
+#if FEATURE_ENCODING
                 Encoding4,
 #endif
                 Encoding_Host1,
@@ -185,9 +185,12 @@ namespace IronRuby.Tests {
                 ToSConversion2,
                 Symbols1,
                 Inspect2_Unicode,
-#if !WIN8
+#if FEATURE_ENCODING
                 Inspect2_SJIS,
 #endif
+                IsAbsolutePath_Windows,
+                IsAbsolutePath_Unix,
+
                 File1,
                 File_AppendBytes1,
                 File_WriteBytes1,
@@ -251,9 +254,10 @@ namespace IronRuby.Tests {
                 ConstantCaching_Qualified_IsDefined1,
                 ConstantCaching_Qualified_IsDefined2,
                 ConstantCaching_CrossRuntime1,
+#if !WIN8 // TODO: files
                 ConstantCaching_AutoUpdating1A,
                 ConstantCaching_AutoUpdating1B,
-
+#endif
                 Scenario_ClassVariables1,
                 Scenario_ClassVariables2,
                 Scenario_RubyLocals1,
@@ -463,9 +467,10 @@ namespace IronRuby.Tests {
                 RubyHosting_Scopes1,
                 RubyHosting_Scopes2,
                 RubyHosting_Scopes3,
+#if !WIN8 // TODO: the test needs to pass thru the Win8PAL
                 CrossRuntime1,
                 CrossRuntime2,
-
+#endif
                 Scenario_RubyConsole1,
                 ObjectOperations1,
                 ObjectOperations2,
@@ -487,10 +492,9 @@ namespace IronRuby.Tests {
                 RequireInterop1,
                 RequireInterop2,
                 Load1,
-#endif
                 LibraryLoader1,
                 LibraryLoader2,
-
+#endif
                 Loader_Assemblies1,
 
                 ClrFields1,
@@ -506,8 +510,10 @@ namespace IronRuby.Tests {
                 ClrMethods3,
                 ClrMethods4,
                 ClrMembers1,
+#if FEATURE_REFEMIT
                 ClrVisibility1,
                 ClrVisibility2,
+#endif
 #if !WIN8
                 SpecialMethods,
 #endif
@@ -541,17 +547,22 @@ namespace IronRuby.Tests {
                 // TODO: ClrExplicitInterfaces1,
                 ClrInclude1,
                 ClrNew1,
+#if FEATURE_THREAD
                 ClrNew2,
+#endif
                 ClrAlias1,
                 ClrEnums1, 
                 ClrEnums2, 
                 ClrEnums3, 
                 ClrDelegates1,
                 ClrDelegates2,
+#if !WIN8 // WinForms
                 ClrEvents1,
+#endif
                 ClrEvents2,
                 ClrEvents3,
                 ClrEvents4,
+#if FEATURE_REFEMIT
                 ClrOverride1,
                 ClrOverride2,
                 ClrOverride3,
@@ -564,6 +575,7 @@ namespace IronRuby.Tests {
                 ClrConstructor2,
                 ClrConstructor3,
                 ClrConstructor4,
+#endif
                 ClrConstructor5,
                 ClrPrimitiveNumericTypes1,
                 ClrArrays1,
@@ -573,12 +585,14 @@ namespace IronRuby.Tests {
                 ClrOperators2,
                 ClrOperators3,
                 ClrConversions1,
-                ClrHashEqualsToString1,
-                ClrHashEqualsToString2,
-                ClrHashEqualsToString3,
+#if FEATURE_REFEMIT
+                ClrHashEqualsToString1, // TODO: part of the test doesn't depend on deriving from a CLR type
+                ClrHashEqualsToString2, // TODO: part of the test doesn't depend on deriving from a CLR type
+                ClrHashEqualsToString3, // TODO: part of the test doesn't depend on deriving from a CLR type
                 ClrToString1,
-                ClrHashEquals4,
                 ClrTypeVariance1,
+#endif
+                ClrHashEquals4,
                 // TODO: fails with /noadaptive
                 // ClrValueTypes1,
                 ClrValueTypes2,
@@ -733,7 +747,9 @@ namespace IronRuby.Tests {
                 Methods1, 
                 MethodDef1, 
                 ToIntegerConversion1,
+#if !WIN8
                 ToIntToStrConversion1,
+#endif
                 ConvertToFixnum1,
                 ProtocolCaching1,
                 ProtocolCaching2,
@@ -756,7 +772,9 @@ namespace IronRuby.Tests {
                 Structs1,
                 MetaModules1,
                 MetaModulesDuplication1,
+#if !WIN8 // TODO: test issue
                 Autoload1,
+#endif
                 ModuleFreezing1,
                 ModuleFreezing2,
 
@@ -811,6 +829,7 @@ namespace IronRuby.Tests {
                 BEGIN2,
                 SymbolToProc1,
 
+#if FEATURE_STACK_TRACE
                 Backtrace1,
                 Backtrace2,
                 Backtrace3,
@@ -818,7 +837,7 @@ namespace IronRuby.Tests {
                 Backtrace5,
                 Backtrace6,
                 Backtrace7,
-
+#endif
                 Dlr_RubySnippet,
 #if FEATURE_REFEMIT
                 Dlr_ClrSubtype,

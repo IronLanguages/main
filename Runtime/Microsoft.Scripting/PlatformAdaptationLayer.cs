@@ -165,11 +165,13 @@ namespace Microsoft.Scripting {
 
         #region Virtual File System
 
-        private static bool IsSingleRootFileSystem {
+        public virtual bool IsSingleRootFileSystem {
             get {
 #if FEATURE_FILESYSTEM
                 return Environment.OSVersion.Platform == PlatformID.Unix
                     || Environment.OSVersion.Platform == PlatformID.MacOSX;
+#elif WIN8
+                return false;
 #else
                 return true;
 #endif
@@ -316,21 +318,36 @@ namespace Microsoft.Scripting {
 
         /// <exception cref="ArgumentException">Invalid path.</exception>
         public virtual bool IsAbsolutePath(string path) {
-#if FEATURE_FILESYSTEM
-            // GetPathRoot returns either :
-            // "" -> relative to the current dir
-            // "\" -> relative to the drive of the current dir
-            // "X:" -> relative to the current dir, possibly on a different drive
-            // "X:\" -> absolute
-            if (IsSingleRootFileSystem) {
-                return Path.IsPathRooted(path);
+            if (String.IsNullOrEmpty(path)) {
+                return false;
             }
-            var root = Path.GetPathRoot(path);
-            return root.EndsWith(@":\") || root.EndsWith(@":/");
-#else
-            throw new NotImplementedException();
-#endif
+
+            // no drives, no UNC:
+            if (IsSingleRootFileSystem) {
+                return IsDirectorySeparator(path[0]);
+            }
+
+            if (IsDirectorySeparator(path[0])) {
+                // UNC path
+                return path.Length > 1 && IsDirectorySeparator(path[1]);
+            }
+
+            if (path.Length > 2 && path[1] == ':' && IsDirectorySeparator(path[2])) {
+                return true;
+            }
+
+            return false;
         }
+
+#if FEATURE_FILESYSTEM
+        private bool IsDirectorySeparator(char c) {
+            return c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar;
+        }
+#else
+        private bool IsDirectorySeparator(char c) {
+            return c == '\\' || c == '/';
+        }
+#endif
 
         public virtual string CurrentDirectory {
             get {

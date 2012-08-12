@@ -855,13 +855,10 @@ p System::Array[Fixnum].new([1,2,3]).first_or_default
         /// Extension methods not available by default onlty after their declaring namespace is "used".
         /// </summary>
         public void ClrExtensionMethods3() {
-            Context.ObjectClass.SetConstant("SystemCoreAssembly", typeof(Expression).GetTypeInfo().Assembly.FullName);
-            Context.ObjectClass.SetConstant("DummyLinqAssembly", typeof(System.Linq.Dummy).GetTypeInfo().Assembly.FullName);
+            Runtime.LoadAssembly(typeof(Expression).GetTypeInfo().Assembly);
+            Runtime.LoadAssembly(typeof(System.Linq.Dummy).GetTypeInfo().Assembly);
             
             TestOutput(@"
-load_assembly DummyLinqAssembly
-load_assembly SystemCoreAssembly
-
 a = System::Array[Fixnum].new([1,2,3])
 a.first_or_default rescue p $!
 
@@ -1948,6 +1945,7 @@ InteropTests::Generics1::C[String]
 [InteropTests::Generics1::C[Float], InteropTests::Generics1::C[T], Object]
 ");
 
+#if FEATURE_REFEMIT
             // It is possible to include a generic type definition into another class. It behaves like a Ruby module.
             // Besides inclusion of a generic interface instantiation transitively includes its generic type definition.
             TestOutput(@"
@@ -1968,9 +1966,10 @@ class ClassB
 end
 ", @"
 [ClassA, InteropTests::Generics1::I[T], InteropTests::Generics1::C[T], Object, InteropTests::Generics1, Kernel, BasicObject]
-#<TypeError: wrong argument type Class (expected Module)>
+" + @"#<TypeError: wrong argument type Class (expected Module)>
 [ClassB, InteropTests::Generics1::I[Fixnum], InteropTests::Generics1::I[T], Object, InteropTests::Generics1, Kernel, BasicObject]
 ");
+#endif
 
             // generic type definitions cannot be instantiated and don't expose their methods:
             TestOutput(@"
@@ -2692,7 +2691,6 @@ end
         public class EmptyClass1 {
         }
 
-        [Run]
         public void ClrToString1() {
             Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(EmptyClass1)));
 
@@ -2771,7 +2769,6 @@ end
         public void ClrNew1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
-require 'mscorlib'
 b = System::Text::StringBuilder.new
 b.Append 1
 b.Append '-'
@@ -3466,12 +3463,14 @@ p Inst.Foo(a) rescue p $!
             var r1 = Engine.Execute<int>("Inst.delegate(Proc.new { |x| x + 1 }).invoke(123)");
             Assert(r1 == 124);
 
-            // foreign meta-object conversion:
-            var py = Runtime.GetEngine("python");
-            var scope = Runtime.CreateScope();
-            py.Execute(@"def foo(x): return x + 2", scope);
-            var r2 = Engine.Execute<int>(@"Inst.delegate(foo).invoke(123)", scope);
-            Assert(r2 == 125);
+            if (_driver.RunPython) {
+                // foreign meta-object conversion:
+                var py = Runtime.GetEngine("python");
+                var scope = Runtime.CreateScope();
+                py.Execute(@"def foo(x): return x + 2", scope);
+                var r2 = Engine.Execute<int>(@"Inst.delegate(foo).invoke(123)", scope);
+                Assert(r2 == 125);
+            }
         }
 
         #endregion

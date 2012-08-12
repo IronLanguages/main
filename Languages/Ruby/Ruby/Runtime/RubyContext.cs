@@ -2939,6 +2939,8 @@ namespace IronRuby.Runtime {
                     }
                     return Encoding.GetEncoding(name);
 #else
+                case "US-ASCII":
+                case "ASCII": return AsciiEncoding.Instance;
                 case "UTF-8": return Encoding.UTF8;
                 default: throw new ArgumentException(String.Format("Unknown encoding: '{0}'", name));
 #endif

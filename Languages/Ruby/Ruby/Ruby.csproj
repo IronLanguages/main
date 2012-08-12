@@ -135,6 +135,7 @@
     <Compile Include="Runtime\Calls\VisibilityContext.cs" />
     <Compile Include="Runtime\CheckedMonitor.cs" />
     <Compile Include="Runtime\ClrName.cs" />
+    <Compile Include="Runtime\AsciiEncoding.cs" />
     <Compile Include="Runtime\CustomTypeDescHelpers.cs" />
     <Compile Include="Compiler\Generation\RubyTypeDispenser.cs" />
     <Compile Include="Compiler\Generation\InterfacesBuilder.cs" />

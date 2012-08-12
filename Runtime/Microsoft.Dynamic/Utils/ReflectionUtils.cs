@@ -811,19 +811,19 @@ namespace Microsoft.Scripting.Utils {
             return d.GetMethodInfo();
         }
 
-        // TODO: Callers should distinguish parameters from arguments, for now we emulate 4.0 behavior
-        public static Type[] GetGenericArguments(this Type type)
-        {
-            return type.GetTypeInfo().GenericTypeParameters ?? type.GetTypeInfo().GenericTypeArguments;
+        // TODO: Callers should distinguish parameters from arguments. Stop using this method.
+        public static Type[] GetGenericArguments(this Type type) {
+            var info = type.GetTypeInfo();
+            return info.IsGenericTypeDefinition ? info.GenericTypeParameters : info.GenericTypeArguments;
         }
 
-        //public static Type[] GetGenericTypeArguments(this Type type) {
-        //    return type.GetTypeInfo().GenericTypeArguments;
-        //}
+        public static Type[] GetGenericTypeArguments(this Type type) {
+            return type.GetTypeInfo().GenericTypeArguments;
+        }
 
-        //public static Type[] GetGenericTypeParameters(this Type type) {
-        //    return type.GetTypeInfo().GenericTypeParameters;
-        //}
+        public static Type[] GetGenericTypeParameters(this Type type) {
+            return type.GetTypeInfo().GenericTypeParameters;
+        }
 
         public static bool IsAssignableFrom(this Type type, Type other) {
             return type.GetTypeInfo().IsAssignableFrom(other.GetTypeInfo());
@@ -873,13 +873,13 @@ namespace Microsoft.Scripting.Utils {
             return Enumerable.Empty<MemberInfo>();
         }
 #else
-        //public static Type[] GetGenericTypeArguments(this Type type) {
-        //    return type.IsGenericType && !type.IsGenericTypeDefinition ? type.GetTypeInfo().GetGenericArguments() : null;
-        //}
+        public static Type[] GetGenericTypeArguments(this Type type) {
+            return type.IsGenericType && !type.IsGenericTypeDefinition ? type.GetTypeInfo().GetGenericArguments() : null;
+        }
 
-        //public static Type[] GetGenericTypeParameters(this Type type) {
-        //    return type.IsGenericTypeDefinition ? type.GetTypeInfo().GetGenericArguments() : null;
-        //}
+        public static Type[] GetGenericTypeParameters(this Type type) {
+            return type.IsGenericTypeDefinition ? type.GetTypeInfo().GetGenericArguments() : null;
+        }
 
         public static IEnumerable<Module> GetModules(this Assembly assembly) {
             return assembly.GetModules();

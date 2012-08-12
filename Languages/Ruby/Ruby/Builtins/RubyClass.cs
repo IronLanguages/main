@@ -1082,7 +1082,7 @@ namespace IronRuby.Builtins {
 
         private IEnumerable<ExtensionMethodInfo>/*!*/ GetClrExtensionMethods(Type/*!*/ type, string/*!*/ name) {
             List<ExtensionMethodInfo> extensions;
-            if (_extensionMethods != null && _extensionMethods.TryGetValue(name, out extensions)) {
+            if (ExtensionMethods != null && ExtensionMethods.TryGetValue(name, out extensions)) {
                 foreach (var extension in extensions) {
                     // Don't check IsExtensionOf: the target type of an extension method stored in _extensionMethods is 
                     // an instantiation (not parameterized), a generic parameter T (type == Object), or T[] (type == Array). 
@@ -1094,7 +1094,7 @@ namespace IronRuby.Builtins {
             }
 
             foreach (var mixin in Mixins) {
-                if (mixin._extensionMethods != null && mixin._extensionMethods.TryGetValue(name, out extensions)) {
+                if (mixin.ExtensionMethods != null && mixin.ExtensionMethods.TryGetValue(name, out extensions)) {
                     foreach (var extension in extensions) {
                         if (extension.IsExtensionOf(type)) {
                             yield return extension;

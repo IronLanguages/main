@@ -187,7 +187,8 @@ namespace IronRuby.Tests {
         }
 
         [DebuggerHiddenAttribute]
-        private void AssertOutput(Action f, string expectedOutput, OutputFlags flags) {
+        private void AssertOutput(Action f, string expectedOutput, OutputFlags flags)
+        {
             var error = CompareOutput(f, expectedOutput, flags);
             if (error != null) {
                 Assert(false, error);
@@ -339,10 +340,10 @@ namespace IronRuby.Tests {
         /// Asserts an condition it true
         /// </summary>
         [DebuggerHidden]
-        public void Assert(bool condition, string msg) {
+        public void Assert(bool condition, string message) {
             if (!condition) {
-                AssertBreak();
-                _driver.AssertionFailed(msg);
+                AssertBreak(message);
+                _driver.AssertionFailed(message);
             }
         }
 
@@ -351,7 +352,7 @@ namespace IronRuby.Tests {
             Assert(condition, "Assertion failed");
         }
 
-        internal void AssertBreak() {
+        internal void AssertBreak(string message) {
             if (Debugger.IsAttached) {
                 Debugger.Break();
             }

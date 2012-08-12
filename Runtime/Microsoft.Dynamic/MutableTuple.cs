@@ -138,7 +138,12 @@ namespace Microsoft.Scripting {
             ContractUtils.RequiresNotNull(tupleType, "tupleType");
 
             int count = 0;
-            lock(_sizeDict) if (_sizeDict.TryGetValue(tupleType, out count)) return count;
+            lock (_sizeDict) {
+                if (_sizeDict.TryGetValue(tupleType, out count)) {
+                    return count;
+                }
+            }
+
             Stack<Type> types = new Stack<Type>(tupleType.GetGenericArguments());            
 
             while (types.Count != 0) {
@@ -151,12 +156,17 @@ namespace Microsoft.Scripting {
                     continue;
                 }
 
-                if (t == typeof(DynamicNull)) continue;
+                if (t == typeof(DynamicNull)) {
+                    continue;
+                }
 
                 count++;
             }
 
-            lock (_sizeDict) _sizeDict[tupleType] = count;
+            lock (_sizeDict) {
+                _sizeDict[tupleType] = count;
+            }
+
             return count;
         }
 

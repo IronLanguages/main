@@ -287,7 +287,7 @@ namespace IronRuby.Builtins {
 
         // A list of extension methods included into this type or null if none were included.
         // { method-name -> methods }
-        internal Dictionary<string, List<ExtensionMethodInfo>> _extensionMethods;
+        private Dictionary<string, List<ExtensionMethodInfo>> _extensionMethods;
         
         #endregion
 

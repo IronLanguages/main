@@ -43,17 +43,19 @@ namespace IronRuby.Tests {
             return new DynamicMetaObject(Ast.Constant(value), BindingRestrictions.Empty, value);
         }
 
-        private static OverloadInfo/*!*/[]/*!*/ GetStaticMethods(Type/*!*/ type, string/*!*/ name) {
+        private static OverloadInfo/*!*/[]/*!*/ GetStaticMethodsStartingWith(Type/*!*/ type, string/*!*/ prefix) {
             return type
-                .GetDeclaredMethods(name)
+                .GetDeclaredMethods()
+                .Where(m => m.Name.StartsWith(prefix, StringComparison.Ordinal))
                 .WithBindingFlags(BindingFlags.Public | BindingFlags.Static)
                 .Select(mi => new ReflectionOverloadInfo(mi))
                 .ToArray();
         }
 
-        private static OverloadInfo/*!*/[]/*!*/ GetInstanceMethods(Type/*!*/ type, string/*!*/ name) {
+        private static OverloadInfo/*!*/[]/*!*/ GetInstanceMethodsStartingWith(Type/*!*/ type, string/*!*/ prefix) {
             return type
-               .GetDeclaredMethods(name)
+               .GetDeclaredMethods()
+               .Where(m => m.Name.StartsWith(prefix, StringComparison.Ordinal))
                .WithBindingFlags(BindingFlags.Public | BindingFlags.Instance)
                .Select(mi => new ReflectionOverloadInfo(mi))
                .ToArray();
@@ -105,8 +107,11 @@ namespace IronRuby.Tests {
             var metaBuilder = new MetaObjectBuilder(null);
             for (int i = 0; i < arguments.Length; i++) {
                 RubyOverloadResolver resolver;
+
+                var methods = GetStaticMethodsStartingWith(typeof(OverloadsWithBlock), "Times");
+
                 var bindingTarget = RubyMethodGroupInfo.ResolveOverload(
-                    metaBuilder, arguments[i], "times", GetStaticMethods(typeof(OverloadsWithBlock), "Times*"), SelfCallConvention.SelfIsParameter,
+                    metaBuilder, arguments[i], "times", methods, SelfCallConvention.SelfIsParameter,
                     false, out resolver
                 );
 
@@ -165,60 +170,65 @@ namespace IronRuby.Tests {
 
         public void OverloadResolution_Numeric1() {
             var metaBuilder = new MetaObjectBuilder(null);
-            Context.ObjectClass.SetConstant("X", Context.GetClass(typeof(Overloads1.X)));
 
+#if FEATURE_REFEMIT
+            Context.ObjectClass.SetConstant("X", Context.GetClass(typeof(Overloads1.X)));
             object c = Engine.Execute(@"class C < X; new; end");
+#else
+            object c = new Overloads1.X();
+#endif
+
             var sym = Context.CreateAsciiSymbol("x");
             var ms = MutableString.CreateAscii("x");
 
             var cases = new[] {
                 // F
-                new { Args = new[] { MO(1) }, Overloads = "F*", Result = "F1" },
-                new { Args = new[] { MO((byte)1) }, Overloads = "F*", Result = "F1" },
-                new { Args = new[] { MO(1L) }, Overloads = "F*", Result = "F2" },
-                new { Args = new[] { MO(1.2F) }, Overloads = "F*", Result = "F3" },
+                new { Args = new[] { MO(1) }, OverloadPrefix = "F", Result = "F1" },
+                new { Args = new[] { MO((byte)1) }, OverloadPrefix = "F", Result = "F1" },
+                new { Args = new[] { MO(1L) }, OverloadPrefix = "F", Result = "F2" },
+                new { Args = new[] { MO(1.2F) }, OverloadPrefix = "F", Result = "F3" },
 
                 // G
-                new { Args = new[] { MO(1) }, Overloads = "G*", Result = "G1" },
-                new { Args = new[] { MO((byte)1) }, Overloads = "G*", Result = "G1" },
-                new { Args = new[] { MO(1L) }, Overloads = "G*", Result = "G2" },
-                new { Args = new[] { MO(1.2F) }, Overloads = "G*", Result = "G3" },
-                new { Args = new[] { MO(c) }, Overloads = "G*", Result = "G1" },
+                new { Args = new[] { MO(1) }, OverloadPrefix = "G", Result = "G1" },
+                new { Args = new[] { MO((byte)1) }, OverloadPrefix = "G", Result = "G1" },
+                new { Args = new[] { MO(1L) }, OverloadPrefix = "G", Result = "G2" },
+                new { Args = new[] { MO(1.2F) }, OverloadPrefix = "G", Result = "G3" },
+                new { Args = new[] { MO(c) }, OverloadPrefix = "G", Result = "G1" },
 
                 // I
-                new { Args = new[] { MO(c) }, Overloads = "I*", Result = "I3" },
+                new { Args = new[] { MO(c) }, OverloadPrefix = "I", Result = "I3" },
 
                 // J
-                new { Args = new[] { MO(1) }, Overloads = "J*", Result = "J1" },
-                new { Args = new[] { MO((BigInteger)1000) }, Overloads = "J*", Result = "J2" },
-                new { Args = new[] { MO((byte)12) }, Overloads = "J*", Result = "J1" },
-                new { Args = new[] { MO(c) }, Overloads = "J*", Result = "J3" },
-                new { Args = new[] { MO(1.0) }, Overloads = "J*", Result = "J3" },
+                new { Args = new[] { MO(1) }, OverloadPrefix = "J", Result = "J1" },
+                new { Args = new[] { MO((BigInteger)1000) }, OverloadPrefix = "J", Result = "J2" },
+                new { Args = new[] { MO((byte)12) }, OverloadPrefix = "J", Result = "J1" },
+                new { Args = new[] { MO(c) }, OverloadPrefix = "J", Result = "J3" },
+                new { Args = new[] { MO(1.0) }, OverloadPrefix = "J", Result = "J3" },
       
                 // K
-                new { Args = new[] { MO(1) }, Overloads = "K*", Result = "K2" },
-                new { Args = new[] { MO(c) }, Overloads = "K*", Result = "K1" },
-                new { Args = new[] { MO("x") }, Overloads = "K*", Result = "K1" },
+                new { Args = new[] { MO(1) }, OverloadPrefix = "K", Result = "K2" },
+                new { Args = new[] { MO(c) }, OverloadPrefix = "K", Result = "K1" },
+                new { Args = new[] { MO("x") }, OverloadPrefix = "K", Result = "K1" },
 
                 // L
-                new { Args = new[] { MO(sym), MO(sym) }, Overloads = "L*", Result = "L1" },
-                new { Args = new[] { MO("x"), MO(sym) }, Overloads = "L*", Result = "L2" },
-                new { Args = new[] { MO(ms), MO(sym) }, Overloads = "L*", Result = "L3" },
-                new { Args = new[] { MO(null), MO(sym) }, Overloads = "L*", Result = "L3" },
-                new { Args = new[] { MO(c), MO(sym) }, Overloads = "L*", Result = "L3" },
+                new { Args = new[] { MO(sym), MO(sym) }, OverloadPrefix = "L", Result = "L1" },
+                new { Args = new[] { MO("x"), MO(sym) }, OverloadPrefix = "L", Result = "L2" },
+                new { Args = new[] { MO(ms), MO(sym) }, OverloadPrefix = "L", Result = "L3" },
+                new { Args = new[] { MO(null), MO(sym) }, OverloadPrefix = "L", Result = "L3" },
+                new { Args = new[] { MO(c), MO(sym) }, OverloadPrefix = "L", Result = "L3" },
 
                 // M
-                new { Args = new[] { MO(1) }, Overloads = "M*", Result = "M1" },
-                new { Args = new[] { MO(Overloads1.E.A) }, Overloads = "M*", Result = "M2" },
+                new { Args = new[] { MO(1) }, OverloadPrefix = "M", Result = "M1" },
+                new { Args = new[] { MO(Overloads1.E.A) }, OverloadPrefix = "M", Result = "M2" },
 
                 // N
-                new { Args = new[] { MO(MutableString.CreateAscii("x")) }, Overloads = "N*", Result = "N1" },
+                new { Args = new[] { MO(MutableString.CreateAscii("x")) }, OverloadPrefix = "N", Result = "N1" },
             };
 
             for (int i = 0; i < cases.Length; i++) {
                 var args = new CallArguments(Context, MO(new Overloads1()), cases[i].Args, RubyCallSignature.Simple(cases[i].Args.Length));
                 var resolver = new RubyOverloadResolver(metaBuilder, args, SelfCallConvention.SelfIsInstance, false);
-                var overloads = GetInstanceMethods(typeof(Overloads1), cases[i].Overloads);
+                var overloads = GetInstanceMethodsStartingWith(typeof(Overloads1), cases[i].OverloadPrefix);
                 var result = resolver.ResolveOverload(i.ToString(), overloads, NarrowingLevel.None, NarrowingLevel.All);
 
                 Assert(result.Success && result.Overload.Name == cases[i].Result);
@@ -252,7 +262,7 @@ namespace IronRuby.Tests {
 
             internal static List<OverloadInfo>/*!*/ GetMethods() {
                 var methods = new List<OverloadInfo>();
-                methods.AddRange(GetStaticMethods(typeof(MethodsWithParamArrays), "F*"));
+                methods.AddRange(GetStaticMethodsStartingWith(typeof(MethodsWithParamArrays), "F"));
                 methods.Add(CreateParamsArrayMethod("F0", new[] { typeof(int), typeof(int[]), typeof(string), typeof(int) }, 1, 0));
                 return methods;
             }

@@ -30,6 +30,7 @@ using System.Text;
 using System.Globalization;
 using System.Threading;
 using Microsoft.Scripting.Hosting.Providers;
+using System.Runtime.InteropServices;
 
 #if WIN8
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -79,21 +80,8 @@ namespace IronRuby.Tests {
                 Environment.SetEnvironmentVariable("DLR_AssembliesFileName", _testName);
             }
 #endif
-            var runtimeSetup = ScriptRuntimeSetup.ReadConfiguration();
-            var languageSetup = runtimeSetup.AddRubySetup();
-
-            runtimeSetup.DebugMode = _driver.IsDebug;
-            runtimeSetup.PrivateBinding = testCase.Options.PrivateBinding;
-            runtimeSetup.HostType = typeof(TestHost);
-            runtimeSetup.HostArguments = new object[] { testCase.Options };
-
-            languageSetup.Options["ApplicationBase"] = _driver.BaseDirectory;
-            languageSetup.Options["NoAdaptiveCompilation"] = _driver.NoAdaptiveCompilation;
-            languageSetup.Options["CompilationThreshold"] = _driver.CompilationThreshold;
-            languageSetup.Options["Verbosity"] = 2;
-
-            _runtime = Ruby.CreateRuntime(runtimeSetup);
-            _engine = Ruby.GetEngine(_runtime);
+            _engine = _driver.CreateRubyEngine(testCase.Options.PrivateBinding, testCase.Options);
+            _runtime = _engine.Runtime;
             _context = (RubyContext)HostingHelpers.GetLanguageContext(_engine);
         }
     }
@@ -115,18 +103,49 @@ namespace IronRuby.Tests {
 
         public class Win8PAL : PlatformAdaptationLayer
         {
+            private string cwd;
+
+            public Win8PAL()
+            {
+                StringBuilder buffer = new StringBuilder(300);
+                if (GetCurrentDirectory(buffer.Capacity, buffer) == 0) {
+                    throw new IOException();
+                }
+
+                cwd = buffer.ToString();
+            }
+
+            [DllImport("kernel32.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+            internal static extern int GetCurrentDirectory(int nBufferLength, [Out] StringBuilder lpBuffer);
+
             public override Assembly LoadAssembly(string name)
             {
-                if (name == "IronRuby, Version=1.1.4.0, Culture=neutral, PublicKeyToken=7f709c5b713576e1")
-                {
+                if (name.StartsWith("mscorlib")) {
+                    return typeof(object).GetTypeInfo().Assembly;
+                }
+                
+                if (name == "IronRuby, Version=1.1.4.0, Culture=neutral, PublicKeyToken=7f709c5b713576e1") {
                     return typeof(Ruby).GetTypeInfo().Assembly;
                 }
-                else if (name == "IronRuby.Libraries, Version=1.1.4.0, Culture=neutral, PublicKeyToken=7f709c5b713576e1")
-                {
+                
+                if (name == "IronRuby.Libraries, Version=1.1.4.0, Culture=neutral, PublicKeyToken=7f709c5b713576e1") {
                     return typeof(IronRuby.Builtins.Integer).GetTypeInfo().Assembly;
                 }
 
                 return base.LoadAssembly(name);
+            }
+
+            public override string CurrentDirectory {
+                get { return cwd; }
+                set { cwd = value; }
+            }
+
+            public override bool FileExists(string path) {
+                return false;
+            }
+
+            public override bool DirectoryExists(string path) {
+                return false;
             }
         }
     }
@@ -163,12 +182,23 @@ namespace IronRuby.Tests {
         private static bool _partialTrust;
         private static bool _noAdaptiveCompilation;
         private static int _compilationThreshold;
+#if WIN8
+        // TODO: enable when IronPython is ported to WIN8
+        private static bool _runPython = false;
+#else
         private static bool _runPython = true;
+#endif
         private readonly string _baseDirectory;
 
         public Driver(string baseDirectory) {
             _baseDirectory = baseDirectory;
         }
+
+#if FEATURE_REFEMIT
+        public const bool FeatureRefEmit = true;
+#else
+        public const bool FeatureRefEmit = false;
+#endif
 
         public TestRuntime TestRuntime {
             get { return _testRuntime; }
@@ -212,6 +242,25 @@ namespace IronRuby.Tests {
 
         public string BaseDirectory {
             get { return _baseDirectory; }
+        }
+
+        public ScriptEngine CreateRubyEngine(bool privateBinding = false, OptionsAttribute options = null)
+        {
+            var runtimeSetup = ScriptRuntimeSetup.ReadConfiguration();
+            var languageSetup = runtimeSetup.AddRubySetup();
+
+            runtimeSetup.DebugMode = IsDebug;
+            runtimeSetup.PrivateBinding = privateBinding;
+            runtimeSetup.HostType = typeof(TestHost);
+            runtimeSetup.HostArguments = new object[] { options ?? new OptionsAttribute() };
+
+            languageSetup.Options["ApplicationBase"] = BaseDirectory;
+            languageSetup.Options["NoAdaptiveCompilation"] = NoAdaptiveCompilation;
+            languageSetup.Options["CompilationThreshold"] = CompilationThreshold;
+            languageSetup.Options["Verbosity"] = 2;
+
+            var runtime = Ruby.CreateRuntime(runtimeSetup);
+            return Ruby.GetEngine(runtime);
         }
 
 #if WIN8

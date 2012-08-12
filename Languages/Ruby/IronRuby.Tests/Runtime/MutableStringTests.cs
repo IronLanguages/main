@@ -145,13 +145,20 @@ namespace IronRuby.Tests {
             // Assert(b.GetHashCode() != c.GetHashCode());
         }
 
-#if !WIN8 // TODO
         [Options(NoRuntime = true)]
         public void MutableString_IsAscii() {
             MutableString a;
             byte[] b;
 
-            foreach (var e in new[] { RubyEncoding.Binary, RubyEncoding.SJIS, RubyEncoding.EUCJP, RubyEncodingOps.ISO_8859_15 }) {
+            foreach (var e in new[] { 
+                RubyEncoding.Binary, 
+#if FEATURE_ENCODING
+                RubyEncoding.SJIS, 
+                RubyEncoding.EUCJP, 
+                RubyEncodingOps.ISO_8859_15,
+#endif
+            }) {
+
                 a = MutableString.CreateBinary(new byte[] { 0x12, 0x34, 0x56 }, e);
                 Assert(a.IsAscii());
                 a.Remove(2);
@@ -169,7 +176,14 @@ namespace IronRuby.Tests {
             b = Encoding.Unicode.GetBytes("hello");
 
             // non-ascii-identity encodings:
-            foreach (var e in new[] { RubyEncodingOps.UTF_16BE, RubyEncodingOps.UTF_16LE, RubyEncodingOps.UTF_32LE, RubyEncodingOps.UTF_32BE }) {
+            foreach (var e in new[] { 
+                RubyEncodingOps.UTF_16BE,
+                RubyEncodingOps.UTF_16LE, 
+#if FEATURE_ENCODING
+                RubyEncodingOps.UTF_32LE, 
+                RubyEncodingOps.UTF_32BE,
+#endif
+            }) {
                 a = MutableString.CreateBinary(b, e);
                 Assert(!a.IsAscii());
 
@@ -201,7 +215,13 @@ namespace IronRuby.Tests {
 
             // encoding might produce surrogate characters //
 
-            foreach (var e in new[] { RubyEncoding.UTF8, RubyEncodingOps.UTF_16BE, RubyEncodingOps.UTF_32LE }) {
+            foreach (var e in new[] {
+                RubyEncoding.UTF8, 
+                RubyEncodingOps.UTF_16BE,
+#if FEATURE_ENCODING
+                RubyEncodingOps.UTF_32LE, 
+#endif
+            }) {
                 foreach (var str in new[] { "", "x", "xy", "hello world", "\uD7FF", "\uE000" }) {
                     x = MutableString.Create(str, e);
                     Assert(!x.KnowsSurrogates);
@@ -233,8 +253,14 @@ namespace IronRuby.Tests {
             MutableString a;
 
             var encodings = new[] { 
-                RubyEncodingOps.UTF_32LE, RubyEncodingOps.UTF_32BE, RubyEncodingOps.UTF_16LE, RubyEncodingOps.UTF_16BE,
-                RubyEncodingOps.UTF_8, RubyEncodingOps.UTF_7
+                RubyEncodingOps.UTF_16LE, 
+                RubyEncodingOps.UTF_16BE,
+                RubyEncodingOps.UTF_8,
+#if FEATURE_ENCODING
+                RubyEncodingOps.UTF_32LE,
+                RubyEncodingOps.UTF_32BE,
+                RubyEncodingOps.UTF_7,
+#endif
             };
 
             foreach (var e in encodings) {
@@ -269,7 +295,6 @@ namespace IronRuby.Tests {
                 Assert(a.ToString() == "abxx");
             }
         }
-#endif
 
         [Options(NoRuntime = true)]
         public void MutableString_Length() {
@@ -1277,12 +1302,16 @@ namespace IronRuby.Tests {
                 new MSC('α'), new MSC(s_u12345[0], s_u12345[1])
             );
 
-#if FEATURE_ENCODING
             // all Unicode ecnodings
             foreach (var e in new[] { 
-                RubyEncodingOps.UTF_16LE, RubyEncodingOps.UTF_16BE, 
-                RubyEncodingOps.UTF_32LE, RubyEncodingOps.UTF_32BE,
-                RubyEncodingOps.UTF_7, RubyEncodingOps.UTF_8 }) {
+#if FEATURE_ENCODING
+                RubyEncodingOps.UTF_7,  
+                RubyEncodingOps.UTF_32LE, 
+                RubyEncodingOps.UTF_32BE,
+#endif
+                RubyEncodingOps.UTF_16LE, 
+                RubyEncodingOps.UTF_16BE,
+                RubyEncodingOps.UTF_8 }) {
 
                 TestChars(
                     MutableString.CreateMutable("α" + s_u12345 + "xβ", e),
@@ -1292,7 +1321,6 @@ namespace IronRuby.Tests {
                     new MSC('β')
                 );
             }
-#endif
         }
 
         private void TestChars(MutableString/*!*/ str, string/*!*/ expected) {
@@ -1388,7 +1416,7 @@ namespace IronRuby.Tests {
 #endif
         }
 
-#if !WIN8
+#if FEATURE_ENCODING
         [Options(NoRuntime = true)]
         public void MutableString_ValidEncoding1() {
             var str = MutableString.CreateBinary(Encoding.UTF8.GetBytes("\u0081"), RubyEncoding.SJIS);

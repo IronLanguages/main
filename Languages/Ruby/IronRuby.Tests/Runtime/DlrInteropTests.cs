@@ -463,6 +463,14 @@ class SanityTest
     
         assert_equal main.ruby_array_list.ruby_method, 'Hi from Ruby'.to_clr_string
         assert_equal main.ruby_array_list.IndexOf(nil), 123456789
+  
+        assert_equal main.dynamic_array_list.foo, 'dynamic_foo'.to_clr_string
+        main.dynamic_array_list.bar = 'my bar'
+        assert_equal main.dynamic_array_list.bar, 'my bar'
+        assert_equal main.dynamic_array_list.explicit_attribute, 'explicit_attribute'.to_clr_string
+        main.dynamic_array_list.Count = 1
+        assert_equal main.dynamic_array_list.Count, 0
+        assert_equal main.dynamic_array_list.IndexOf(0), 123456789
 " + 
 #endif
 @"
@@ -474,15 +482,6 @@ class SanityTest
         assert_equal main.dynamic_object[:hello], 'dynamic_element_hello'.to_clr_string
         main.dynamic_object[:hello] = 1
         assert_equal main.dynamic_object[:hello], 1
-        
-        # main.dynamic_array_list
-        assert_equal main.dynamic_array_list.foo, 'dynamic_foo'.to_clr_string
-        main.dynamic_array_list.bar = 'my bar'
-        assert_equal main.dynamic_array_list.bar, 'my bar'
-        assert_equal main.dynamic_array_list.explicit_attribute, 'explicit_attribute'.to_clr_string
-        main.dynamic_array_list.Count = 1
-        assert_equal main.dynamic_array_list.Count, 0
-        assert_equal main.dynamic_array_list.IndexOf(0), 123456789
         
         # main.misc
         assert_equal Miscellaneous.static_method, 'static_method'.to_clr_string
