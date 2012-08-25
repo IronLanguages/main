@@ -39,7 +39,7 @@ using IronRuby.Runtime;
 [assembly: AssemblyFileVersion(RubyContext.IronRubyVersionString)]
 #endif
 
-#if !SILVERLIGHT && !WP75
+#if !SILVERLIGHT && !WP75 && !WIN8
 [assembly: AllowPartiallyTrustedCallers]
 #endif
 
@@ -51,7 +51,10 @@ using IronRuby.Runtime;
 #endif
 
 
+#if !WIN8
 [assembly: SecurityTransparent]
+#endif
+
 #if !CLR2 && !SILVERLIGHT && !WIN8 && !ANDROID && !WP75
 [assembly: SecurityRules(SecurityRuleSet.Level1)]
 #endif

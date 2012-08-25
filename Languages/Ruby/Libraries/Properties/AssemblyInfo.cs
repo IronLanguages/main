@@ -32,7 +32,9 @@ using System.Security;
 [assembly: ComVisible(false)]
 [assembly: Guid("ca75230d-3011-485d-b1db-dfe924b6c434")]
 
+#if !WIN8
 [assembly: SecurityTransparent]
+#endif
 
 #if !SILVERLIGHT
 [assembly: AssemblyVersion(RubyContext.IronRubyVersionString)]

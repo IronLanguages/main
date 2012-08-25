@@ -44,10 +44,12 @@ using System.Security;
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
 [assembly: InternalsVisibleTo("TestInternalDLR, PublicKey=0024000004800000940000000602000000240000525341310004000001000100c10ce00dd2e0ce5046d68183d3ad035b47e92bf0ce7bcf8a03a217ca5d0b0c7db973fdf97579b52b502a23d4069dbf043389e1ab65a1d6c508a9837f3e2350f15e05cc63c0fc4b0410867a51919090e4c33f80203e9b0035b21c32bae20f98b068f90d99a50133a5336480d94039b176519f5fd8524765f33be43da65c4b68ba")]
 
-[assembly: SecurityTransparent]
-
 #if CLR4 && !SILVERLIGHT && !WIN8
 [assembly: SecurityRules(SecurityRuleSet.Level1)]
+#endif
+
+#if !WIN8
+[assembly: SecurityTransparent]
 #endif
 
 #if !SILVERLIGHT
@@ -56,6 +58,6 @@ using System.Security;
 [assembly: AssemblyInformationalVersion("1.1")]
 #endif
 
-#if !SILVERLIGHT && !WP75
+#if !SILVERLIGHT && !WP75 && !WIN8
 [assembly: AllowPartiallyTrustedCallers]
 #endif

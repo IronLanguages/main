@@ -23,14 +23,16 @@ using IronRuby.Runtime;
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("a1c8b506-e79a-4013-ae17-2e31618b5baf")]
 
-[assembly: SecurityTransparent]
-
 #if !SILVERLIGHT
 [assembly: AssemblyVersion(RubyContext.IronRubyVersionString)]
 [assembly: AssemblyFileVersion(RubyContext.IronRubyVersionString)]
 #endif
 
-#if !SILVERLIGHT && !WIN8 && !ANDROID && !WP75
+#if !WIN8
+[assembly: SecurityTransparent]
+#endif
+
+#if !SILVERLIGHT && !WIN8 && !ANDROID && !WP75 && !WIN8
 [assembly: AllowPartiallyTrustedCallers]
 #if !CLR2
 [assembly: SecurityRules(SecurityRuleSet.Level1)]

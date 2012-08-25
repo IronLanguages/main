@@ -901,7 +901,7 @@ namespace IronRuby.Builtins {
                                 }
                             }
 
-                            if (method.Name.StartsWith("set_")) {
+                            if (method.Name.StartsWith("set_", StringComparison.Ordinal)) {
                                 var propertyName = method.Name.Substring(4);
                                 yield return propertyName + "=";
 
@@ -909,6 +909,18 @@ namespace IronRuby.Builtins {
                                     yield return "[]=";
                                 }
                             }
+#if WIN8  // TODO: reflect on properties
+                            if (method.Name.StartsWith("put_", StringComparison.Ordinal))
+                            {
+                                var propertyName = method.Name.Substring(4);
+                                yield return propertyName + "=";
+
+                                if (propertyName == defaultIndexerName)
+                                {
+                                    yield return "[]=";
+                                }
+                            }
+#endif
                         }
                     } else if (method.IsStatic == _isSingletonClass) {
                         yield return method.Name;
@@ -1251,7 +1263,17 @@ namespace IronRuby.Builtins {
         private bool TryGetClrProperty(Type/*!*/ type, BindingFlags bindingFlags, bool inherited, bool isWrite, 
             string/*!*/ name, string/*!*/ clrName, string altClrName, out RubyMemberInfo method) {
 
-            return TryGetClrMethod(type, bindingFlags, inherited, true, name, isWrite ? "set_" : "get_", clrName, altClrName, out method);
+            string prefix;
+#if WIN8 // TODO: we should use the PropertyInfo.GetMethod, SetMethod
+            if (type.GetTypeInfo().Assembly.GetName().ContentType == AssemblyContentType.WindowsRuntime) {
+                prefix =  isWrite ? "put_" : "get_";
+            } else {
+                prefix = isWrite ? "set_" : "get_";
+            }
+#else
+            prefix = isWrite ? "set_" : "get_";
+#endif
+            return TryGetClrMethod(type, bindingFlags, inherited, true, name, prefix, clrName, altClrName, out method);
         }
 
         private bool TryGetClrField(Type/*!*/ type, BindingFlags bindingFlags, bool inherited, bool isWrite, string/*!*/ name, string altName, out RubyMemberInfo method) {
