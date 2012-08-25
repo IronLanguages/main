@@ -1,0 +1,20 @@
+﻿<Page
+    x:Class="IronApp.MainPage"
+    IsTabStop="false"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:IronApp"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Background="{StaticResource ApplicationPageBackgroundThemeBrush}">
+        <RichEditBox x:Name="InputBox" Margin="20,58,33,0" Height="275" VerticalAlignment="Top" HorizontalAlignment="Stretch"  FontFamily="Consolas"/>
+        <RichEditBox x:Name="OutputBox" Margin="20,381,33,25" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" FontFamily="Consolas"/>
+        <Button Content="Run" HorizontalAlignment="Left" Margin="20,338,0,0" VerticalAlignment="Top" Click="Button_Click_1" RenderTransformOrigin="0.504,1.751"/>
+        <TextBlock HorizontalAlignment="Left" Margin="20,10,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#FFFB0D0D">
+        	<Run Foreground="#FFFB0D0D" FontSize="36" Text="IronRuby"/>
+        </TextBlock>
+
+    </Grid>
+</Page>
