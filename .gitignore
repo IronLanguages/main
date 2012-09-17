@@ -16,6 +16,7 @@ bin/
 # Generated files
 BuildInfo.Generated.cs
 CurrentVersion.Generated.cs
+*.ncrunch*
 
 TestResult.xml
 Solutions/TestResults/
