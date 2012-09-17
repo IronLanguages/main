@@ -237,7 +237,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <summary>
         /// Creates a new ScriptScope using the default storage container
         /// </summary>
-        public virtual ScriptScope CreateScope() {
+        public ScriptScope CreateScope() {
             return new ScriptScope(this, _language.CreateScope());
         }
 
@@ -246,7 +246,7 @@ namespace Microsoft.Scripting.Hosting {
         /// 
         /// Accesses to the ScriptScope will turn into get,set, and delete members against this dictionary
         /// </summary>
-        public virtual ScriptScope CreateScope(IDictionary<string, object> dictionary)
+        public ScriptScope CreateScope(IDictionary<string, object> dictionary)
         {
             ContractUtils.RequiresNotNull(dictionary, "dictionary");
             return new ScriptScope(this, _language.CreateScope(dictionary));
