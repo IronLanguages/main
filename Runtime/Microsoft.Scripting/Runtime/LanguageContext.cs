@@ -76,8 +76,36 @@ namespace Microsoft.Scripting.Runtime {
 
         #region Scope
 
+        /// <summary>
+        /// Gets the scope associated with a file, or null if none was available
+        /// </summary>
         public virtual Scope GetScope(string path) {
             return null;
+        }
+
+        /// <summary>
+        /// Creates a new ScriptScope using the default storage container
+        /// </summary>
+        public virtual Scope CreateScope() {
+            return new Scope();
+        }
+                
+        /// <summary>
+        /// Creates a new ScriptScope whose storage contains the provided dictionary of objects
+        /// 
+        /// Accesses to the ScriptScope will turn into get,set, and delete members against this dictionary
+        /// </summary>
+        public virtual Scope CreateScope(IDictionary<string, object> dictionary) {
+            return new Scope(dictionary);
+        }
+        
+        /// <summary>
+        /// Creates a new ScriptScope whose storage is an arbitrary object.
+        /// 
+        /// Accesses to the ScriptScope will turn into get, set, and delete members against the object.
+        /// </summary>
+        public virtual Scope CreateScope(IDynamicMetaObjectProvider storage) {
+            return new Scope(storage);
         }
 
         // TODO: remove
