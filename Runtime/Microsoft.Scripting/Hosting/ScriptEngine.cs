@@ -234,13 +234,22 @@ namespace Microsoft.Scripting.Hosting {
 
         #region Scopes
 
+        /// <summary>
+        /// Creates a new ScriptScope using the default storage container
+        /// </summary>
         public ScriptScope CreateScope() {
-            return new ScriptScope(this, new Scope());
+            return new ScriptScope(this, _language.CreateScope());
         }
 
-        public ScriptScope CreateScope(IDictionary<string, object> dictionary) {
+        /// <summary>
+        /// Creates a new ScriptScope whose storage contains the provided dictionary of objects
+        /// 
+        /// Accesses to the ScriptScope will turn into get,set, and delete members against this dictionary
+        /// </summary>
+        public ScriptScope CreateScope(IDictionary<string, object> dictionary)
+        {
             ContractUtils.RequiresNotNull(dictionary, "dictionary");
-            return new ScriptScope(this, new Scope(dictionary));
+            return new ScriptScope(this, _language.CreateScope(dictionary));
         }
 
         /// <summary>
@@ -251,7 +260,7 @@ namespace Microsoft.Scripting.Hosting {
         public ScriptScope CreateScope(IDynamicMetaObjectProvider storage) {
             ContractUtils.RequiresNotNull(storage, "storage");
 
-            return new ScriptScope(this, new Scope(storage));
+            return new ScriptScope(this, _language.CreateScope(storage));
         }
 
         /// <summary>

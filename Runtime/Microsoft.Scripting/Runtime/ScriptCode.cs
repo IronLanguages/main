@@ -53,7 +53,7 @@ namespace Microsoft.Scripting {
         }
 
         public virtual Scope CreateScope() {
-            return new Scope();
+            return _sourceUnit.LanguageContext.CreateScope();
         }
 
         public virtual object Run() {
