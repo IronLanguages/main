@@ -22,19 +22,18 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Compiler;
+using IronPython.Compiler.Ast;
 using IronPython.Runtime;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-
 #if FEATURE_NUMERICS
 using System.Numerics;
 #else
@@ -277,11 +276,8 @@ namespace IronPython.Modules {
             throw PythonOps.TypeError("coercion failed");
         }
 
-        [Documentation("compile a unit of source code.\n\nThe source can be compiled either as exec, eval, or single.\nexec compiles the code as if it were a file\neval compiles the code as if were an expression\nsingle compiles a single statement\n\n")]
-        public static object compile(CodeContext/*!*/ context, string source, string filename, string mode, [DefaultParameterValue(null)]object flags, [DefaultParameterValue(null)]object dont_inherit) {
-            if (source.IndexOf('\0') != -1) {
-                throw PythonOps.TypeError("compile() expected string without null bytes");
-            }
+        [Documentation("compile a unit of source code.\n\nThe source can be compiled either as exec, eval, or single.\nexec compiles the code as if it were a file\neval compiles the code as if were an expression\nsingle compiles a single statement\n\nsource can either be a string or an AST object")]
+        public static object compile(CodeContext/*!*/ context, object source, string filename, string mode, [DefaultParameterValue(null)]object flags, [DefaultParameterValue(null)]object dont_inherit) {
 
             bool astOnly = false;
             int iflags = flags != null ? Converter.ConvertToInt32(flags) : 0;
@@ -290,7 +286,38 @@ namespace IronPython.Modules {
                 iflags &= ~_ast.PyCF_ONLY_AST;
             }
 
-            source = RemoveBom(source);
+            if (mode != "exec" && mode != "eval" && mode != "single") {
+                throw PythonOps.ValueError("compile() arg 3 must be 'exec' or 'eval' or 'single'");
+            }
+            if (source is _ast.AST) {
+                if (astOnly) {
+                    return source;
+                } else {
+                    PythonAst ast = _ast.ConvertToPythonAst(context, (_ast.AST) source);
+                    ast.Bind();
+                    ScriptCode code = ast.ToScriptCode();
+                    return ((RunnableScriptCode)code).GetFunctionCode(true);
+                }
+            }
+
+            string text;
+            if (source is string)
+                text = (string)source;                        
+            else if (source is PythonBuffer)
+                text = ((PythonBuffer)source).ToString();
+            else if (source is ByteArray)
+                text = ((ByteArray)source).ToString();
+            else if (source is Bytes)
+                text = ((Bytes)source).ToString();
+            else 
+                // cpython accepts either AST or readable buffer object
+                throw PythonOps.TypeError("srouce can be either AST or string, actual argument: {0}", source.GetType());
+            
+            if (text.IndexOf('\0') != -1) {
+                throw PythonOps.TypeError("compile() expected string without null bytes");
+            }
+
+            text = RemoveBom(text);
 
             bool inheritContext = GetCompilerInheritance(dont_inherit);
             CompileFlags cflags = GetCompilerFlags(iflags);
@@ -299,13 +326,11 @@ namespace IronPython.Modules {
                 opts.DontImplyDedent = true;
             }
 
-            SourceUnit sourceUnit;
+            SourceUnit sourceUnit = null; 
             switch (mode) {
-                case "exec": sourceUnit = context.LanguageContext.CreateSnippet(source, filename, SourceCodeKind.Statements); break;
-                case "eval": sourceUnit = context.LanguageContext.CreateSnippet(source, filename, SourceCodeKind.Expression); break;
-                case "single": sourceUnit = context.LanguageContext.CreateSnippet(source, filename, SourceCodeKind.InteractiveCode); break;
-                default:
-                    throw PythonOps.ValueError("compile() arg 3 must be 'exec' or 'eval' or 'single'");
+                case "exec": sourceUnit = context.LanguageContext.CreateSnippet(text, filename, SourceCodeKind.Statements); break;
+                case "eval": sourceUnit = context.LanguageContext.CreateSnippet(text, filename, SourceCodeKind.Expression); break;
+                case "single": sourceUnit = context.LanguageContext.CreateSnippet(text, filename, SourceCodeKind.InteractiveCode); break;
             }
 
             return !astOnly ? 
