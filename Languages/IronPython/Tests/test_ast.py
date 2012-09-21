@@ -1,6 +1,9 @@
 import sys, itertools, unittest
 from test import test_support
+from StringIO import StringIO
+
 import ast
+import types
 
 def to_tuple(t):
     if t is None or isinstance(t, (basestring, int, long, complex)):
@@ -22,6 +25,9 @@ def to_tuple(t):
 exec_tests = [
     # FunctionDef
     "def f(): pass",
+    "def f(a): pass",
+    "def f(a=1): pass",
+    "def f(*args, **kwargs): pass",
     # ClassDef
     "class C:pass",
     # Return
@@ -93,14 +99,18 @@ eval_tests = [
   "not v",
   # Lambda
   "lambda:None",
+  "lambda x: x",
+  "lambda x: (yield x)",
   # Dict
   "{ 1:2 }",
   # ListComp
   "[a for b in c if d]",
   # GeneratorExp
+  "(a for b in c for d in e for f in g)",
   "(a for b in c if d)",
-  # Yield - yield expressions can't work outside a function
-  #
+  "(a for b in c for c in d)",
+  # Yield
+  "((yield i) for i in range(5))",
   # Compare
   "1 < 2 < 3",
   # Call
@@ -154,6 +164,536 @@ class AST_Tests(unittest.TestCase):
                     self._assertTrueorder(child, parent_pos)
             elif value is not None:
                 self._assertTrueorder(value, parent_pos)
+
+    def test_compile_from_ast_001(self):
+        p = ast.parse("-1", mode="eval")
+        c = compile(p,"<unknown>", mode="eval" )
+        self.assertEqual( eval(c), -1)
+
+    def test_compile_from_ast_002(self):
+        p = ast.parse("+1", mode="eval")
+        c = compile(p,"<unknown>", mode="eval" )
+        self.assertEqual( eval(c), 1)
+
+    def test_compile_from_ast_003(self):
+        p = ast.parse("not True", mode="eval")
+        c = compile(p,"<unknown>", mode="eval" )
+        self.assertEqual( eval(c), False)
+        
+    def test_compile_from_ast_004(self):
+        p = ast.parse("2+2", mode="eval")
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), 4 )
+
+    def test_compile_from_ast_005(self):
+        p = ast.parse("5-1", mode="eval")
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), 4 )
+
+    def test_compile_from_ast_006(self):
+        p = ast.parse("42%13", mode="eval")
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), 3 )
+
+    def test_compile_from_ast_007(self):
+        p = ast.parse("2**8", mode="eval")
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), 256 )
+
+    def test_compile_from_ast_008(self):
+        p = ast.parse("True or False", mode="eval")
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), True )
+
+    def test_compile_from_ast_009(self):
+        p = ast.parse("True and False", mode="eval")
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), False )
+
+    def test_compile_from_ast_010(self):
+        p = ast.parse("'a'", mode="eval")
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), "a" )
+
+    def test_compile_from_ast_011(self):
+        p = ast.parse("42", mode="eval")
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), 42 )
+
+    def test_compile_from_ast_012(self):
+        p = ast.parse("None", mode="eval")
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), None )
+
+    def test_compile_from_ast_013(self):
+        p = ast.parse("[1,2,3]", mode="eval")
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), [1,2,3] )
+
+    def test_compile_from_ast_014(self):
+        p = ast.parse("{1,2,3}", mode="eval")
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), {1,2,3} )
+
+    def test_compile_from_ast_015(self):
+        p = ast.parse("{1:'a', 2:'b'}", mode="eval")
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), {1:'a',2:'b'} )
+
+    def test_compile_from_ast_016(self):
+        p = ast.parse("1,2", mode="eval")
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), (1,2) )
+
+    def test_compile_from_ast_017(self):
+        p = ast.parse("dict()", mode="eval") # call expression
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), {} )
+
+    # TODO: do more with arguments
+    # parenthesis ?
+
+    def test_compile_from_ast_018(self):
+        p = ast.parse("(1)", mode="eval")  # failed attempt to generate parenthesis expression
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), 1 )
+
+    def test_compile_from_ast_019(self):
+        p = ast.parse("[x for x in range(2)]", mode="eval") # list comprehension
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), [0,1] )
+
+
+    def test_compile_from_ast_020(self):
+        # list comprehension
+        p = ast.parse("[(x, y, z) for x in [1,2,3] if x!=2 for y in [3,1,4] for z in [7,8,9] if x != y]", mode="eval")
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), [(1, 3, 7), (1, 3, 8), (1, 3, 9), (1, 4, 7), 
+                                    (1, 4, 8), (1, 4, 9), (3, 1, 7), (3, 1, 8), 
+                                    (3, 1, 9), (3, 4, 7), (3, 4, 8), (3, 4, 9)] )
+
+    def test_compile_from_ast_021(self):
+        p = ast.parse("2>1", mode="eval") # Compare
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), True )  
+        
+    def test_compile_from_ast_022(self):
+        p = ast.parse("2>1<3==3", mode="eval")  # All comparisons evaluate to True
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), True )
+
+        p = ast.parse("1>1<3==3", mode="eval")  # False at first position
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), False )
+
+        p = ast.parse("2>1<0==0", mode="eval")  # False at second position
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), False )
+
+        p = ast.parse("2>1<3==1", mode="eval")  # False at third position
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), False )
+
+    def test_compile_from_ast_023(self):
+        p = ast.parse("{x for x in range(3) if x!=2 }", mode="eval") # set comprehension
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), {0,1} )
+
+    def test_compile_from_ast_024(self):
+        p = ast.parse("{ x : ord(x) for x in ['a','b'] }", mode="eval") # dict comprehension
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), {'a':97, 'b':98 } )
+
+    def test_compile_from_ast_025(self):
+        p = ast.parse("'a'.upper()", mode="eval") # attribute
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), 'A' )
+
+    def test_compile_from_ast_026(self):
+        p = ast.parse("lambda x: x", mode="eval") # lambda
+        c = compile(p,"<unknown>", mode="eval")
+        f = eval(c)
+        self.assertEqual( f(42),42)
+
+    def test_compile_from_ast_027(self):
+        p = ast.parse("lambda x=42: x", mode="eval") # default argument
+        c = compile(p,"<unknown>", mode="eval")
+        f = eval(c)
+        self.assertEqual( f(),42)
+
+    def test_compile_from_ast_028(self):
+        p = ast.parse("1 if True else 2", mode="eval") # conditional expression
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), 1 )
+
+        p = ast.parse("1 if False else 2", mode="eval") # conditional expression
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), 2 )
+
+    def test_compile_from_ast_029(self):
+        p = ast.parse("(x for x in [1,2,3] if x!=1)", mode="eval") # generator
+        c = compile(p,"<unknown>", mode="eval")
+        g = eval(c)
+        self.assertEqual( g.next(), 2 )
+        self.assertEqual( g.next(), 3 )
+        self.assertRaises( StopIteration, g.next )
+
+    def test_compile_from_ast_030(self):
+        p = ast.parse("`101`", mode="eval") # repr
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), '101' )
+
+    def test_compile_from_ast_031(self):
+        p = ast.parse("range(13)[10]", mode="eval") # index
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), 10 )
+
+    def test_compile_from_ast_032(self):
+        p = ast.parse("range(42)[1:5]", mode="eval") # slice
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), range(1,5))
+
+    def test_compile_from_ast_033(self):
+        p = ast.parse("range(42)[1:5:2]", mode="eval") # extended? slice
+        c = compile(p,"<unknown>", mode="eval")
+        self.assertEqual( eval(c), [1,3])
+
+    def test_compile_from_ast_034(self):
+        # plain generator
+        page = [ "line1 aaaaa bbb cccccc ddddddddd", "line2 xxxxxxxx yyyyyyy zzzzzz", "line3 ssssss ttttttttttt uuuu" ]
+        p = ast.parse("(word  for line in page  for word in line.split())", mode="eval") 
+        c = compile(p,"<unknown>", mode="eval")
+        g = eval(c)
+        self.assertEqual( g.next(), 'line1' )
+        self.assertEqual( g.next(), 'aaaaa' )
+        self.assertEqual( g.next(), 'bbb')
+        self.assertEqual( g.next(), 'cccccc' )
+        self.assertEqual( g.next(), 'ddddddddd' )
+        self.assertEqual( g.next(), 'line2' )
+        self.assertEqual( g.next(), 'xxxxxxxx' )
+        self.assertEqual( g.next(), 'yyyyyyy' )
+        self.assertEqual( g.next(), 'zzzzzz' )
+        self.assertEqual( g.next(), 'line3' )
+        self.assertEqual( g.next(), 'ssssss' )
+        self.assertEqual( g.next(), 'ttttttttttt' )
+        self.assertEqual( g.next(), 'uuuu' )
+        self.assertRaises( StopIteration, g.next )
+
+
+    def test_compile_from_ast_035(self):
+        # generator with multiple ifs
+        page = [ "line1 aaaaa bbb cccccc ddddddddd", "short line", "line2 xxxxxxxx yyyyyyy zzzzzz", "line3 ssssss ttttttttttt uuuu" ]
+        p = ast.parse("(word  for line in page if len(line)>10 for word in line.split() if word!='ssssss' if word!='zzzzzz')",
+                      mode="eval")
+        c = compile(p,"<unknown>", mode="eval")
+        g = eval(c)
+        self.assertEqual( g.next(), 'line1' )
+        self.assertEqual( g.next(), 'aaaaa' )
+        self.assertEqual( g.next(), 'bbb')
+        self.assertEqual( g.next(), 'cccccc' )
+        self.assertEqual( g.next(), 'ddddddddd' )
+        self.assertEqual( g.next(), 'line2' )
+        self.assertEqual( g.next(), 'xxxxxxxx' )
+        self.assertEqual( g.next(), 'yyyyyyy' )
+        self.assertEqual( g.next(), 'line3' )
+        self.assertEqual( g.next(), 'ttttttttttt' )
+        self.assertEqual( g.next(), 'uuuu' )
+        self.assertRaises( StopIteration, g.next )
+
+    def test_compile_from_ast_036(self):
+        # the results comply 1:1 with cpython 2.7.3 on Linux
+        p = ast.parse("((yield i) for i in range(3))", mode="eval") # yield inside generator 
+        c = compile(p,"<unknown>", mode="eval")
+        g = eval(c)
+        self.assertEqual(g.next(),0)
+        self.assertIsNone(g.next())
+        self.assertEqual(g.next(),1)
+        self.assertIsNone(g.next())
+        self.assertEqual(g.next(),2)
+        self.assertIsNone(g.next())
+        self.assertRaises(StopIteration, g.next )
+
+    # TODO: more testing for extended slices [1:2, 5:10], [1:2, ...] etc
+    # inspiration at: http://ilan.schnell-web.net/prog/slicing/
+
+    def test_compile_from_ast_038(self):
+        p = ast.parse("lambda x: (yield x)", mode="eval") # yield inside lambda
+        c = compile(p,"<unknown>", mode="eval")
+        eval(c)
+        f = eval(c)
+        g = f(1)
+        self.assertEqual(g.next(),1)
+        self.assertRaises(StopIteration, g.next )
+
+
+    def test_compile_from_ast_100(self):
+        p = ast.parse("pass", mode="exec") 
+        c = compile(p,"<unknown>", mode="exec")
+        self.assertEqual( eval(c), None)
+
+    def test_compile_from_ast_101(self):
+        cap = StringIO()
+        p = ast.parse("print >> cap, 1, 2,", mode="exec")  # print
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+        self.assertEqual( cap.getvalue(), "1 2")
+    
+    def test_compile_from_ast_102(self):
+        p = ast.parse("a=b=42", mode="exec") # assignment 
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+        self.assertEqual(a, 42) 
+        self.assertEqual(b, 42) 
+
+    def test_compile_from_ast_103(self):
+        p = ast.parse("a,b=13,42", mode="exec") # assignment 
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+        self.assertEqual(a, 13) 
+        self.assertEqual(b, 42) 
+
+    def test_compile_from_ast_104(self):
+        p = ast.parse("a=42\na+=1", mode="exec") # assignment 
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+        self.assertEqual(a, 43) 
+
+    def test_compile_from_ast_105(self):
+        p = ast.parse("assert True", mode="exec") # assert no exception
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+        p = ast.parse("assert False", mode="exec") # assert with exception
+        c = compile(p,"<unknown>", mode="exec")
+        raised=False
+        try:
+            exec c
+        except AssertionError:
+            raised=True
+        self.assertTrue(raised)
+
+    def test_compile_from_ast_106(self):
+        p = ast.parse("a=1\ndel a\nprint a", mode="exec") # delete statement
+        c = compile(p,"<unknown>", mode="exec")
+        raised=False
+        try:
+            exec c
+        except NameError:
+            raised=True
+        self.assertTrue(raised)
+
+    def test_compile_from_ast_107(self):
+        p = ast.parse("def f(): return\nf()", mode="exec") # return statement 
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+
+    def test_compile_from_ast_108(self):
+        cap = StringIO()
+        p = ast.parse("def f(): return 42\nprint >> cap, f(),", mode="exec") # return statement 
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+        self.assertEqual(cap.getvalue(),'42')
+
+    def test_compile_from_ast_109(self):
+        p = ast.parse("def f(): yield 42", mode="exec") # yield statement 
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+        g = f()
+        self.assertEqual(g.next(),42)
+        self.assertRaises(StopIteration, g.next )
+
+    def test_compile_from_ast_110(self):
+        p = ast.parse("raise Exception('expected')", mode="exec") # raise
+        c = compile(p,"<unknown>", mode="exec")
+        raised=False
+        try:
+            exec c
+        except Exception as e:
+            raised=True
+            self.assertEqual(e.message,'expected')
+        self.assertTrue(raised)    
+
+    def test_compile_from_ast_111(self):
+        p = ast.parse("n=0\nwhile n==0:\n n=1\n break\n n=2", mode="exec") # break
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+        self.assertEqual(n,1) 
+
+    def test_compile_from_ast_112(self):
+        p = ast.parse("n=0\nwhile n==0:\n n=1\n continue\n raise Exception()", mode="exec") # continue
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+        self.assertEqual(n,1)
+
+    # TODO: test relative imports
+    # TODO: test imports with subpackages structure
+
+    def test_compile_from_ast_113(self):
+        p = ast.parse("import dummy_module", mode="exec") # import
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+        from sys import modules
+        self.assertNotEqual(modules.get('dummy_module'),None)
+        self.assertEqual(modules.get('dummy_module'),dummy_module)
+
+    def test_compile_from_ast_114(self):
+        p = ast.parse("import dummy_module as baz", mode="exec") # import as
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+        from sys import modules
+        self.assertNotEqual(modules.get('dummy_module'),None)
+        self.assertEqual(modules.get('dummy_module'),baz)
+
+    def test_compile_from_ast_115(self):
+        p = ast.parse("from dummy_module import *", mode="exec") # from import *
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+        from sys import modules
+        self.assertNotEqual(modules.get('dummy_module'),None)
+        self.assertEqual(foo,1)
+        self.assertEqual(bar,2)
+        self.assertEqual(foobar,3)
+
+    def test_compile_from_ast_116(self):
+        p = ast.parse("def f():\n global i\n i+=41\nf()", mode="exec") # global
+        c = compile(p,"<unknown>", mode="exec")
+        v = {'i':1}
+        exec c in v
+        self.assertEqual(v['i'],42)
+
+    def test_compile_from_ast_117(self):
+        cap = StringIO()
+        p = ast.parse("exec 'print >> cap, 42,'", mode="exec") # exec
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+        self.assertEqual(cap.getvalue(), '42')
+
+    def test_compile_from_ast_118(self):
+        p = ast.parse("if a:\n x=1\nelif b:\n x=2\nelse:\n x=3", mode="exec") # if elif else
+        c = compile(p,"<unknown>", mode="exec")
+
+        a = True
+        exec c
+        self.assertEqual(x,1)
+
+        a = False
+        b = True
+        exec c
+        self.assertEqual(x,2)
+
+        a = False
+        b = False
+        exec c
+        self.assertEqual(x,3)
+
+    def test_compile_from_ast_119(self):
+        p = ast.parse("a=1; b=2", mode="exec") # statement list?
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+        self.assertEqual(a,1)
+        self.assertEqual(b,2)
+
+    def test_compile_from_ast_120(self):
+        p = ast.parse("n=1\nwhile n==0:\n n=13\nelse: n=42", mode="exec") # while with else
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+        self.assertEqual(n,42) 
+             
+    def test_compile_from_ast_121(self):
+        cap = StringIO()
+        p = ast.parse("for i in [0,1,2]:\n print>> cap, i,\nelse:\n print>>cap, 'else',", mode="exec") # for with else
+        exec compile(p,"<unknown>", mode="exec")
+        self.assertEqual(cap.getvalue(),"0 1 2 else") 
+
+    def test_compile_from_ast_122(self):
+        cap = StringIO()
+        tc = """
+try:
+    print >> cap, 1,
+    raise Exception("test")
+    print >> cap, 2,
+except Exception as e:
+    print >> cap, 3,
+else:
+    print >> cap, 4,
+finally:
+    print >> cap, 5,
+            """ 
+        p = ast.parse( tc, mode="exec") # try except
+        exec compile(p,"<unknown>", mode="exec")
+        self.assertEquals(cap.getvalue(), "1 3 5") 
+
+    def test_compile_from_ast_123(self):
+        cap = StringIO()
+        tc = """
+try:
+    print >> cap, 1,
+    # raise Exception("test")
+    print >> cap, 2,
+except Exception as e:
+    print >> cap, 3
+else:
+    print >> cap, 4,
+finally:
+    print >> cap, 5,
+            """ 
+        p = ast.parse( tc, mode="exec") # try except
+        exec compile(p,"<unknown>", mode="exec")
+        self.assertEqual(cap.getvalue(),"1 2 4 5") 
+
+    def test_compile_from_ast_124(self):
+        tc = """
+with open("dummy_module.py") as dm:
+    l = len(dm.read())
+            """ 
+        p = ast.parse( tc, mode="exec") # try except
+        exec compile(p,"<unknown>", mode="exec")
+        self.assertEqual(l,20) 
+
+    def test_compile_from_ast_125(self):
+        tc = """
+class Foo(object):
+    pass
+foo=Foo()
+            """ 
+        p = ast.parse( tc, mode="exec") # try except
+        exec compile(p,"<unknown>", mode="exec")
+        self.assertIsInstance(foo,Foo) 
+
+
+
+    def test_compile_from_ast_200(self):
+        p = ast.parse("a=1; b=2", mode="single") # somthing with single
+        c = compile(p,"<unknown>", mode="single")
+        exec c
+        self.assertEqual(a,1)
+        self.assertEqual(b,2)
+
+    def test_compile_from_ast_201(self):
+        p = ast.parse("1+1", mode="single") # expression in single should find its way into stdout
+        c = compile(p,"<unknown>", mode="single")
+        saveStdout = sys.stdout
+        sys.stdout = cap = StringIO()
+        exec c
+        sys.stdout = saveStdout
+        self.assertEqual(cap.getvalue(), "2\n")
+
+    def test_compile_argument_bytes(self):
+        p = ast.parse(b'1+1', "<unknown>", mode="eval")
+        c = compile(p, "<unknown>", mode="eval")
+        self.assertEqual(eval(c),2)
+
+    def test_compile_argument_buffer(self):
+        p = ast.parse(buffer('1+1'), "<unknown>", mode="eval")
+        c = compile(p, "<unknown>", mode="eval")
+        self.assertEqual(eval(c),2)
+
+    def test_compile_argument_bytearray(self):
+        p = ast.parse(bytearray('1+1','ascii'), "<unknown>", mode="eval")
+        c = compile(p, "<unknown>", mode="eval")
+        self.assertEqual(eval(c),2)
+
+    def test_compile_argument_error(self):
+        self.assertRaises( TypeError, ast.parse, ['1+1'], "<unknown>", mode="eval")
 
     def test_snippets(self):
         # Things which diverted from cpython:
@@ -615,6 +1155,10 @@ def test_main():
 def main():
     if __name__ != '__main__':
         return
+    if sys.argv[1:] == ['-x']:
+        # place for a quick individual test
+        sys.exit()
+
     if sys.argv[1:] == ['-g']:
         for statements, kind in ((exec_tests, "exec"), (single_tests, "single"),
                                  (eval_tests, "eval")):
@@ -630,6 +1174,9 @@ def main():
 #### GENERATED FOR IRONPYTHON ####
 exec_results = [
 ('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, None, []), [('Pass', (1, 9))], [])]),
+('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [('Name', (1, 6), 'a', ('Param',))], None, None, []), [('Pass', (1, 10))], [])]),
+('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [('Name', (1, 6), 'a', ('Param',))], None, None, [('Num', (1, 8), 1)]), [('Pass', (1, 12))], [])]),
+('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], 'args', 'kwargs', []), [('Pass', (1, 24))], [])]),
 ('Module', [('ClassDef', (1, 0), 'C', [], [('Pass', (1, 8))], [])]),
 ('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, None, []), [('Return', (1, 8), ('Num', (1, 15), 1))], [])]),
 ('Module', [('Delete', (1, 0), [('Name', (1, 4), 'v', ('Del',))])]),
@@ -664,9 +1211,14 @@ eval_results = [
 ('Expression', ('BinOp', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Add',), ('Name', (1, 4), 'b', ('Load',)))),
 ('Expression', ('UnaryOp', (1, 0), ('Not',), ('Name', (1, 4), 'v', ('Load',)))),
 ('Expression', ('Lambda', (1, 0), ('arguments', [], None, None, []), ('Name', (1, 7), 'None', ('Load',)))),
+('Expression', ('Lambda', (1, 0), ('arguments', [('Name', (1, 7), 'x', ('Param',))], None, None, []), ('Name', (1, 10), 'x', ('Load',)))),
+('Expression', ('Lambda', (1, 0), ('arguments', [('Name', (1, 7), 'x', ('Param',))], None, None, []), ('Yield', (1, 10), ('Name', (1, 17), 'x', ('Load',))))),
 ('Expression', ('Dict', (1, 0), [('Num', (1, 2), 1)], [('Num', (1, 4), 2)])),
 ('Expression', ('ListComp', (1, 0), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), [('Name', (1, 17), 'd', ('Load',))])])),
+('Expression', ('GeneratorExp', (1, 0), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []), ('comprehension', ('Name', (1, 18), 'd', ('Store',)), ('Name', (1, 23), 'e', ('Load',)), []), ('comprehension', ('Name', (1, 29), 'f', ('Store',)), ('Name', (1, 34), 'g', ('Load',)), [])])),
 ('Expression', ('GeneratorExp', (1, 0), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), [('Name', (1, 17), 'd', ('Load',))])])),
+('Expression', ('GeneratorExp', (1, 0), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []), ('comprehension', ('Name', (1, 18), 'c', ('Store',)), ('Name', (1, 23), 'd', ('Load',)), [])])),
+('Expression', ('GeneratorExp', (1, 0), ('Yield', (1, 1), ('Name', (1, 8), 'i', ('Load',))), [('comprehension', ('Name', (1, 15), 'i', ('Store',)), ('Call', (1, 20), ('Name', (1, 20), 'range', ('Load',)), [('Num', (1, 26), 5)], [], None, None), [])])),
 ('Expression', ('Compare', (1, 0), ('Num', (1, 0), 1), [('Lt',), ('Lt',)], [('Num', (1, 4), 2), ('Num', (1, 8), 3)])),
 ('Expression', ('Call', (1, 0), ('Name', (1, 0), 'f', ('Load',)), [('Num', (1, 2), 1), ('Num', (1, 4), 2)], [('keyword', 'c', ('Num', (1, 8), 3))], ('Name', (1, 11), 'd', ('Load',)), ('Name', (1, 15), 'e', ('Load',)))),
 ('Expression', ('Repr', (1, 0), ('Name', (1, 1), 'v', ('Load',)))),
