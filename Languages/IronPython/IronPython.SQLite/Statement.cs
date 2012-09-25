@@ -185,6 +185,8 @@ namespace IronPython.SQLite
                 rc = Sqlite3.sqlite3_bind_int64(st, index, (long)arg);
             else if(arg is Microsoft.Scripting.Math.BigInteger)
                 rc = Sqlite3.sqlite3_bind_int64(st, index, ((Microsoft.Scripting.Math.BigInteger)arg).ToInt64());
+            else if (arg is System.Numerics.BigInteger)
+                rc = Sqlite3.sqlite3_bind_int64(st, index, (long)((System.Numerics.BigInteger)arg));
             else if(arg is float)
                 rc = Sqlite3.sqlite3_bind_double(st, index, (float)arg);
             else if(arg is double)
@@ -203,7 +205,7 @@ namespace IronPython.SQLite
                 rc = Sqlite3.sqlite3_bind_blob(this.st, index, bytes, -1, Sqlite3.SQLITE_TRANSIENT);
             }
             else
-                throw PythonSQLite.MakeInterfaceError("Unable to bind parameter {0} - unsupported type".Format(index));
+                throw PythonSQLite.MakeInterfaceError("Unable to bind parameter {0} - unsupported type {1}".Format(index, arg.GetType()));
 
             if(rc != Sqlite3.SQLITE_OK)
                 throw PythonSQLite.MakeInterfaceError("Unable to bind parameter {0}: {1}".Format(index, Sqlite3.sqlite3_errmsg(db)));
