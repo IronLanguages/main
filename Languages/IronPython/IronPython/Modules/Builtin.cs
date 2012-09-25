@@ -1940,7 +1940,16 @@ namespace IronPython.Modules {
             if (prompt != null) {
                 PythonOps.PrintNoNewline(context, prompt);
             }
-            string line = PythonOps.ReadLineFromSrc(context, PythonContext.GetContext(context).SystemStandardIn) as string;
+            var pc = PythonContext.GetContext(context);
+            var readlineModule = pc.GetModuleByName("readline");
+            string line;
+            if (readlineModule != null) {
+                var rl = readlineModule.GetAttributeNoThrow(context, "rl");
+                line = PythonOps.Invoke(context, rl, "readline") as string;
+            } else {
+                line = PythonOps.ReadLineFromSrc(context, PythonContext.GetContext(context).SystemStandardIn) as string;
+            }
+
             if (line != null && line.EndsWith("\n")) return line.Substring(0, line.Length - 1);
             return line;
         }
