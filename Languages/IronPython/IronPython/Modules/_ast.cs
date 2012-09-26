@@ -1288,7 +1288,7 @@ namespace IronPython.Modules
                 _args = PythonOps.MakeEmptyList(call.Args.Count);
                 _keywords = new PythonList();
                 _func = Convert(call.Target);
-                foreach (IronPython.Compiler.Ast.Arg arg in call.Args) {
+                foreach (Arg arg in call.Args) {
 
                     if (arg.Name == null)
                         _args.Add(Convert(arg.Expression));
@@ -1303,17 +1303,17 @@ namespace IronPython.Modules
 
             internal override AstExpression Revert() {
                 AstExpression target = expr.Revert(func);
-                Arg[] newArgs = new Arg[args.Count];
+                List<Arg> newArgs = new List<Arg>();
                 int i = 0;
                 foreach (expr ex in args)
-                    newArgs[i++] = new Arg(expr.Revert(ex));
+                    newArgs.Add(new Arg(expr.Revert(ex)));
                 if (null != starargs)
-                    newArgs[i++] = new Arg("*", expr.Revert(starargs));
+                    newArgs.Add(new Arg("*", expr.Revert(starargs)));
                 if (null != kwargs)
-                    newArgs[i++] = new Arg("**", expr.Revert(kwargs));
+                    newArgs.Add(new Arg("**", expr.Revert(kwargs)));
                 foreach (keyword kw in keywords)
-                    newArgs[i++] = new Arg(kw.arg, expr.Revert(kw.value));
-                return new CallExpression(target, newArgs);
+                    newArgs.Add(new Arg(kw.arg, expr.Revert(kw.value)));
+                return new CallExpression(target, newArgs.ToArray());
             }
 
             public expr func {

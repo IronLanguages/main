@@ -244,11 +244,10 @@ class AST_Tests(unittest.TestCase):
         self.assertEqual( eval(c), (1,2) )
 
     def test_compile_from_ast_017(self):
-        p = ast.parse("dict()", mode="eval") # call expression
+        p = ast.parse("dict()", mode="eval") # trivial call expression
         c = compile(p,"<unknown>", mode="eval")
         self.assertEqual( eval(c), {} )
 
-    # TODO: do more with arguments
     # parenthesis ?
 
     def test_compile_from_ast_018(self):
@@ -658,6 +657,65 @@ foo=Foo()
         self.assertIsInstance(foo,Foo) 
 
 
+    def test_compile_from_ast_126(self):
+        cap = StringIO()
+        tc = """
+def f(a):
+    return a
+print >> cap, f(22),
+            """
+        p = ast.parse( tc, mode="exec") # call function with an argument
+        exec compile(p,"<unknown>", mode="exec")
+        self.assertEquals(cap.getvalue(), "22")
+
+    def test_compile_from_ast_127(self):
+        cap = StringIO()
+        tc = """
+def f(a):
+    return a
+print >> cap, f(a=222),
+            """
+        p = ast.parse( tc, mode="exec") # call function with an argument, pass as keyword
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+        self.assertEquals(cap.getvalue(), "222")
+
+    def test_compile_from_ast_128(self):
+        cap = StringIO()
+        tc = """
+def f(a,*args):
+    return args[1]
+print >> cap, f(1,2,42),
+            """
+        p = ast.parse( tc, mode="exec") # call function with a variable number of arguments
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+        self.assertEquals(cap.getvalue(), "42")
+
+    def test_compile_from_ast_129(self):
+        cap = StringIO()
+        tc = """
+def f(a,**kwargs):
+    return kwargs["two"]
+d={ "one":13, "two":42 }
+print >> cap, f(1, **d),
+            """
+        p = ast.parse( tc, mode="exec") # call function with a keyword argument
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+        self.assertEquals(cap.getvalue(), "42")
+
+    def test_compile_from_ast_130(self):
+        cap = StringIO()
+        tc = """
+def f(a,**kwargs):
+    return kwargs["two"]
+print >> cap, f(1, two=42, one=13),
+            """
+        p = ast.parse( tc, mode="exec") # call function with a keyword argument
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+        self.assertEquals(cap.getvalue(), "42")
 
     def test_compile_from_ast_200(self):
         p = ast.parse("a=1; b=2", mode="single") # somthing with single
@@ -1154,7 +1212,12 @@ def main():
     if __name__ != '__main__':
         return
     if sys.argv[1:] == ['-x']:
+        import os
         # place for a quick individual test
+        p = ast.parse( "dict(a=1)", mode="exec") # call function with an argument
+        raw_input("attach to %s and press enter" % os.getpid())
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
         sys.exit()
 
     if sys.argv[1:] == ['-g']:
