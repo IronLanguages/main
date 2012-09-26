@@ -83,17 +83,31 @@ namespace IronPython.Runtime {
         }
 
         [StaticExtensionMethod]
-        public static PythonModule/*!*/ __new__(CodeContext/*!*/ context, PythonType/*!*/ cls, [ParamDictionary]PythonDictionary kwDict\u00F8, params object[]/*!*/ args\u00F8) {
+        public static PythonModule/*!*/ __new__(CodeContext/*!*/ context, PythonType/*!*/ cls, [ParamDictionary]IDictionary<object, object> kwDict\u00F8, params object[]/*!*/ args\u00F8) {
             return __new__(context, cls, args\u00F8);
         }
 
         public void __init__(string name) {
-            __init__(name, null);
+            _dict["__name__"] = name;
+            _dict["__doc__"] = null;            
         }
 
         public void __init__(string name, string documentation) {
             _dict["__name__"] = name;
             _dict["__doc__"] = documentation;
+        }
+
+        public void __init__(string name, [ParamDictionary]IDictionary<object, object> kwDict\u00F8) {
+            _dict["__name__"] = name;
+            foreach (var key in kwDict\u00F8.Keys) {
+                var argName = key as string;
+                if (argName == "doc") {
+                    _dict["__doc__"] = kwDict\u00F8[key];
+                } else {
+                    throw PythonOps.TypeError(
+                        String.Format("'{0} is an invalid keyword argument for this function", argName));
+                }
+            }
         }
 
         public object __getattribute__(CodeContext/*!*/ context, string name) {
