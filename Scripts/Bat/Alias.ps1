@@ -65,16 +65,16 @@ function global:msip { cmd /C "`"${env:windir}\system32\WindowsPowerShell\v1.0\p
 # [Iron]Ruby program aliases
 #
 
-function global:rbx { cmd /C "`"${env:DLR_ROOT}\Bin\Debug\ir.exe`" $args" }
-function global:rbr { cmd /C "`"${env:DLR_ROOT}\Bin\Release\ir.exe`" $args" }
-function global:rbd { cmd /C "`"${env:DLR_ROOT}\Bin\Debug\ir.exe`" -D $args" }
-function global:rbx4 { cmd /C "`"${env:DLR_ROOT}\Bin\V4 Debug\ir.exe`" $args" }
-function global:rbr4 { cmd /C "`"${env:DLR_ROOT}\Bin\V4 Release\ir.exe`" $args" }
-function global:rbd4 { cmd /C "`"${env:DLR_ROOT}\Bin\V4 Debug\ir.exe`" -D $args" }
-function global:rbxm { cmd /C "mono `"${env:DLR_ROOT}\Bin\Debug\ir.exe`" $args" }
-function global:rbrm { cmd /C "mono `"${env:DLR_ROOT}\Bin\Release\ir.exe`" $args" }
-function global:rbdm { cmd /C "mono `"${env:DLR_ROOT}\Bin\Debug\ir.exe`" -D $args" }
-function global:msir { cmd /C "${env:windir}\system32\WindowsPowerShell\v1.0\powershell.exe measure-command { %DLR_ROOT%\Bin\Release\ir.exe $args }" }
+function global:rbx { cmd /C "`"${env:DLR_ROOT}\Bin\Debug\iruby.exe`" $args" }
+function global:rbr { cmd /C "`"${env:DLR_ROOT}\Bin\Release\iruby.exe`" $args" }
+function global:rbd { cmd /C "`"${env:DLR_ROOT}\Bin\Debug\iruby.exe`" -D $args" }
+function global:rbx4 { cmd /C "`"${env:DLR_ROOT}\Bin\V4 Debug\iruby.exe`" $args" }
+function global:rbr4 { cmd /C "`"${env:DLR_ROOT}\Bin\V4 Release\iruby.exe`" $args" }
+function global:rbd4 { cmd /C "`"${env:DLR_ROOT}\Bin\V4 Debug\iruby.exe`" -D $args" }
+function global:rbxm { cmd /C "mono `"${env:DLR_ROOT}\Bin\Debug\iruby.exe`" $args" }
+function global:rbrm { cmd /C "mono `"${env:DLR_ROOT}\Bin\Release\iruby.exe`" $args" }
+function global:rbdm { cmd /C "mono `"${env:DLR_ROOT}\Bin\Debug\iruby.exe`" -D $args" }
+function global:msir { cmd /C "${env:windir}\system32\WindowsPowerShell\v1.0\powershell.exe measure-command { %DLR_ROOT%\Bin\Release\iruby.exe $args }" }
 
 #=============================================================================
 # Chiron aliases

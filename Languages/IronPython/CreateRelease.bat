@@ -17,7 +17,7 @@ popd
 
 :GenerateMSI
 pushd %DLR_ROOT%\Msi\Python
-%DLR_ROOT%\Bin\%BUILD_FLAVOR%\ir.exe generate_wxis.rb
+%DLR_ROOT%\Bin\%BUILD_FLAVOR%\iruby.exe generate_wxis.rb
 popd
 
 msbuild %DLR_ROOT%\Msi\Installer.proj /p:Configuration=%BUILD_FLAVOR% /v:minimal

@@ -28,7 +28,7 @@ class UnitTestSetup
     sanity_size(50)
     abort("Did not find some expected files...") unless @all_test_files.select { |f| f =~ /test_gem_config/ }.size > 0
     sanity_version(Version, Gem::RubyGemsVersion)
-    warn("Some tests are expected to fail with 'ir.exe -D'. Do not use -D...") if $DEBUG
+    warn("Some tests are expected to fail with 'iruby.exe -D'. Do not use -D...") if $DEBUG
   end
   
   # test_gem_stream_ui.rb uses Timeout.timeout which can cause hangs as described in 

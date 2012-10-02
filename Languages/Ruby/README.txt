@@ -5,7 +5,7 @@ ClassInitGenerator
   - A tool used to generate Initializer.Generated.cs files in libraries.
 
 Console
-  - ir.exe, ir64.exe
+  - iruby.exe, iruby64.exe
 
 Docs
   - Implementation documents.

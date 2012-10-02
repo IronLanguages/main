@@ -90,18 +90,18 @@ msip    ="%windir%\system32\WindowsPowerShell\v1.0\powershell.exe" measure-comma
 ;= [Iron]Ruby program aliases
 ;=
 
-rbx     ="%DLR_ROOT%\Bin\Debug\ir.exe" $*
-rbr     ="%DLR_ROOT%\Bin\Release\ir.exe" $*
-rbd     ="%DLR_ROOT%\Bin\Debug\ir.exe" -D $*
-rbx2    ="%DLR_ROOT%\Bin\v2Debug\ir.exe" $*
-rbr2    ="%DLR_ROOT%\Bin\v2Release\ir.exe" $*
-rbd2    ="%DLR_ROOT%\Bin\v2Debug\ir.exe" -D $*
-rbxm    =mono "%DLR_ROOT%\Bin\Debug\ir.exe" $*
-rbrm    =mono "%DLR_ROOT%\Bin\Release\ir.exe" $*
-rbdm    =mono "%DLR_ROOT%\Bin\Debug\ir.exe" -D $*
+rbx     ="%DLR_ROOT%\Bin\Debug\iruby.exe" $*
+rbr     ="%DLR_ROOT%\Bin\Release\iruby.exe" $*
+rbd     ="%DLR_ROOT%\Bin\Debug\iruby.exe" -D $*
+rbx2    ="%DLR_ROOT%\Bin\v2Debug\iruby.exe" $*
+rbr2    ="%DLR_ROOT%\Bin\v2Release\iruby.exe" $*
+rbd2    ="%DLR_ROOT%\Bin\v2Debug\iruby.exe" -D $*
+rbxm    =mono "%DLR_ROOT%\Bin\Debug\iruby.exe" $*
+rbrm    =mono "%DLR_ROOT%\Bin\Release\iruby.exe" $*
+rbdm    =mono "%DLR_ROOT%\Bin\Debug\iruby.exe" -D $*
 irb18   ="%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.8.6p368\bin\irb.bat" $*
 ruby18  ="%DLR_ROOT%\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.8.6p368\bin\ruby.exe" $*
-msir    =%windir%\system32\WindowsPowerShell\v1.0\powershell.exe measure-command { %DLR_ROOT%\Bin\Release\ir.exe $* }
+msir    =%windir%\system32\WindowsPowerShell\v1.0\powershell.exe measure-command { %DLR_ROOT%\Bin\Release\iruby.exe $* }
 
 ;==============================================================================
 ;= Chiron aliases
