@@ -14,10 +14,10 @@
  * ***************************************************************************/
 #if !SILVERLIGHT
 
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime;
+using Microsoft.Scripting.Runtime;
 
 namespace IronRuby.Builtins {
 
@@ -270,6 +270,11 @@ namespace IronRuby.Builtins {
             return self;
         }
 
+        [RubyMethod("set_encoding")]
+        public static void SetEncoding(ConversionStorage<IDictionary<object, object>>/*!*/ toHash, ConversionStorage<MutableString>/*!*/ toStr,
+            RubyObject self, object external, [Optional]object @internal, [Optional]IDictionary<object, object> options) {
+            RubyIOOps.SetEncodings(toHash, toStr, self.ImmediateClass.Context.InputProvider.GetCurrentStream(), external, @internal, options);
+        }
     }
 }
 #endif
