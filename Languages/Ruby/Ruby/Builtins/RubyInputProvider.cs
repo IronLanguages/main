@@ -28,7 +28,7 @@ namespace IronRuby.Builtins {
         //TODO: thread safety
         private RubyIO _singletonStream;
         private IOMode _defaultMode;
-        
+
         // $*, ARGV
         private readonly RubyArray/*!*/ _commandLineArguments;
 
@@ -53,7 +53,7 @@ namespace IronRuby.Builtins {
             _singleton = new object();
             _defaultMode = IOMode.ReadOnly;
         }
-        
+
         public RubyContext/*!*/ Context {
             get { return _context; }
         }
@@ -63,7 +63,7 @@ namespace IronRuby.Builtins {
             // set by environment initializer:
             internal set {
                 Assert.NotNull(value);
-                _singleton = value; 
+                _singleton = value;
             }
         }
 
@@ -106,10 +106,10 @@ namespace IronRuby.Builtins {
         }
 
         public RubyIO GetCurrentStream(bool reset) {
-            if (null == SingletonStream || (reset && (SingletonStream.Closed || SingletonStream.IsEndOfStream()))){
+            if (null == SingletonStream || (reset && (SingletonStream.Closed || SingletonStream.IsEndOfStream()))) {
                 IncrementCurrentFileIndex();
                 ResetCurrentStream();
-            } 
+            }
             return SingletonStream;
         }
 
@@ -119,8 +119,12 @@ namespace IronRuby.Builtins {
 
         public void ResetCurrentStream() {
             string file = CurrentFileName.ToString();
-            Stream stream = RubyFile.OpenFileStream(_context, file, _defaultMode);
-            SingletonStream = new RubyIO(_context, stream, _defaultMode);
+            if (file == "-") {
+                SingletonStream = this.Context.StandardInput as RubyIO;
+            } else {
+                Stream stream = RubyFile.OpenFileStream(_context, file, _defaultMode);
+                SingletonStream = new RubyIO(_context, stream, _defaultMode);
+            }
         }
 
 
