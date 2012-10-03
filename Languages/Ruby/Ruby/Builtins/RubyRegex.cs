@@ -14,14 +14,13 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 using System.Text;
 using System.Text.RegularExpressions;
 using IronRuby.Compiler;
 using IronRuby.Runtime;
-using System.Collections.Generic;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
     public partial class RubyRegex : IEquatable<RubyRegex>, IDuplicable {
@@ -43,7 +42,7 @@ namespace IronRuby.Builtins {
             _options = RubyRegexOptions.NONE;
         }
 
-        public RubyRegex(MutableString/*!*/ pattern) 
+        public RubyRegex(MutableString/*!*/ pattern)
             : this(pattern, RubyRegexOptions.NONE) {
         }
 
@@ -69,7 +68,7 @@ namespace IronRuby.Builtins {
             } else {
                 _pattern = pattern.PrepareForCharacterRead().Clone().Freeze();
             }
-            
+
             TransformPattern(encoding, options & RubyRegexOptions.EncodingMask);
         }
 
@@ -130,7 +129,7 @@ namespace IronRuby.Builtins {
                     encoding = RubyEncoding.Binary;
                     kc = 0;
                 }
-                
+
                 strInput = ForceEncoding(input, encoding.Encoding, start);
             } else {
                 _pattern.RequireCompatibleEncoding(input);
@@ -245,7 +244,7 @@ namespace IronRuby.Builtins {
         }
 
         public bool Equals(RubyRegex other) {
-            return ReferenceEquals(this, other) 
+            return ReferenceEquals(this, other)
                 || other != null && _options.Equals(other._options) && _pattern.Equals(other._pattern);
         }
 
@@ -258,7 +257,7 @@ namespace IronRuby.Builtins {
         }
 
         public static RegexOptions ToClrOptions(RubyRegexOptions options) {
-            RegexOptions result = RegexOptions.Multiline | RegexOptions.CultureInvariant;
+            RegexOptions result = RegexOptions.Singleline | RegexOptions.CultureInvariant;
 
 #if DEBUG
             if (RubyOptions.CompileRegexps) {
@@ -278,7 +277,8 @@ namespace IronRuby.Builtins {
             }
 
             if ((options & RubyRegexOptions.Multiline) != 0) {
-                result |= RegexOptions.Singleline;
+                result |= RegexOptions.Multiline;
+                result &= ~RegexOptions.Singleline;
             }
 
             return result;
@@ -420,7 +420,7 @@ namespace IronRuby.Builtins {
             RubyEncoding kcode = null;
             return MutableString.MakeArray(Transform(ref kcode, input, 0, out str).Split(str), kcode ?? input.Encoding);
         }
-        
+
         public MutableString[]/*!*/ Split(MutableString/*!*/ input, int count) {
             string str;
             RubyEncoding kcode = null;
@@ -431,7 +431,7 @@ namespace IronRuby.Builtins {
             return scope.GetInnerMostClosureScope().CurrentMatch = (str != null) ? regex.Match(str) : null;
         }
 
-        #endregion               
+        #endregion
 
         #region ToString, Inspect
 
