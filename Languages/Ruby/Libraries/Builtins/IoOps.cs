@@ -673,7 +673,7 @@ namespace IronRuby.Builtins {
             if (external != Missing.Value && external != null) {
                 externalEncoding = Protocols.ConvertToEncoding(toStr, external);
             }
-            if (@internal != Missing.Value && external != null) {
+            if (@internal != Missing.Value && @internal != null) {
                 internalEncoding = Protocols.ConvertToEncoding(toStr, @internal);
             }
             return SetEncodings(self, externalEncoding, internalEncoding);
