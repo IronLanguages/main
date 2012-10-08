@@ -14,14 +14,11 @@
  * ***************************************************************************/
 
 using System;
-using System.Diagnostics;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-using System.Text;
-using System.Text.RegularExpressions;
-using IronRuby.Compiler;
-using IronRuby.Runtime;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Text;
+using IronRuby.Compiler;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
     /// <summary>
@@ -36,11 +33,16 @@ namespace IronRuby.Builtins {
         private RubyRegexOptions _options;
 
         internal static string Transform(string/*!*/ rubyPattern, RubyRegexOptions options, out bool hasGAnchor, out List<string> warnings) {
-            // TODO: surrogates (REXML uses this pattern)
-            if (rubyPattern == "^[\t\n\r -\uD7FF\uE000-\uFFFD\uD800\uDC00-\uDBFF\uDFFF]*$") {
-                hasGAnchor = false;
-                warnings = null;
-                return "^(?:[\t\n\r -\uD7FF\uE000-\uFFFD]|[\uD800-\uDBFF][\uDC00-\uDFFF])*$";
+            // TODO: surrogates
+            switch (rubyPattern) {
+                case "^[\t\n\r -\uD7FF\uE000-\uFFFD\uD800\uDC00-\uDBFF\uDFFF]*$": // REXML uses this pattern
+                    hasGAnchor = false;
+                    warnings = null;
+                    return "^(?:[\t\n\r -\uD7FF\uE000-\uFFFD]|[\uD800-\uDBFF][\uDC00-\uDFFF])*$";
+                case "[^\t\n\r\u0020-\uD7FF\uE000-\uFFFD\U00010000-\U0010FFFF]": // Builder gem uses this pattern
+                    hasGAnchor = false;
+                    warnings = null;
+                    return "[^\t\n\r\u0020-\uD7FF\uE000-\uFFFD\uD800-\uDBFF\uDC00-\uDFFF]";
             }
 
             RegexpTransformer transformer = new RegexpTransformer(rubyPattern, options);
