@@ -6,7 +6,7 @@
       <Tests>
         <Test>
           <Name>irtests</Name>
-          <Filename>%DLR_ROOT%\Util\IronRuby\bin\iruby.exe</Filename>
+          <Filename>%DLR_ROOT%\Util\IronRuby\bin\ir.exe</Filename>
           <Arguments>%DLR_ROOT%\Languages\Ruby\Tests\Scripts\irtests.rb</Arguments>
           <MaxDuration>10000000</MaxDuration>
           <LongRunning>false</LongRunning>

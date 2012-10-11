@@ -1,1 +1,1 @@
-"%DLR_ROOT%\Util\IronRuby\bin\iruby.exe" "%DLR_ROOT%\Languages\Ruby\Tests\Scripts\unit_tests.rb" %*
+"%DLR_ROOT%\Util\IronRuby\bin\ir.exe" "%DLR_ROOT%\Languages\Ruby\Tests\Scripts\unit_tests.rb" %*

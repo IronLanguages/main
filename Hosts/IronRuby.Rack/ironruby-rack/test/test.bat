@@ -2,7 +2,7 @@
 
 set _LOG="%TEMP%\test_rack.log"
 set _CURRENT_IR="%DLR_VM%" "%DLR_ROOT%\bin\Eelease\iruby.exe"
-set _SAFE_IR="%DLR_VM%" "%DLR_ROOT%\Util\IronRuby\bin\iruby.exe"
+set _SAFE_IR="%DLR_VM%" "%DLR_ROOT%\Util\IronRuby\bin\ir.exe"
 
 if exist %_LOG% del /Q %_LOG%
 

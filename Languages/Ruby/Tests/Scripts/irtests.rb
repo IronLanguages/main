@@ -166,7 +166,7 @@ class IRTest
   
   # Uses the latest shipped IronRuby.
   def safe_ruby_runner(cmd)
-    shell_runner "#{vm_shim} #{dlr_path('Util/IronRuby/bin/iruby.exe')} #{cmd}"
+    shell_runner "#{vm_shim} #{dlr_path('Util/IronRuby/bin/ir.exe')} #{cmd}"
   end
   
   def ruby_runner(cmd)
@@ -235,7 +235,7 @@ class IRTest
       puts "Launching processes for task groups:"
     end
     
-    common_exe = dlr_path('Util/IronRuby/bin/iruby.exe')
+    common_exe = dlr_path('Util/IronRuby/bin/ir.exe')
     common_args = "#{q File.expand_path(__FILE__)} -w -n #{build_options.join}"
     if vm_shim
       common_args = "#{common_exe} #{common_args}"
