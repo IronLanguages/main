@@ -86,7 +86,7 @@ namespace System.Reflection {
         NonPublic = 32
     }
 }
-#else
+#elif !CLR45
 namespace System.Reflection {
     public static class RuntimeReflectionExtensions {
         public static MethodInfo GetRuntimeBaseDefinition(this MethodInfo method) {
@@ -700,7 +700,7 @@ namespace Microsoft.Scripting.Utils {
         #endregion
 
         #region Win8
-#if WIN8
+#if WIN8 || CLR45
         public static TypeCode GetTypeCode(this Enum e) {
             return GetTypeCode(Enum.GetUnderlyingType(e.GetType()));
         }
@@ -1026,7 +1026,7 @@ namespace Microsoft.Scripting.Utils {
         #endregion
 
 #if FEATURE_REFEMIT
-#if WIN8
+#if WIN8 || CLR45
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access) {
             return AssemblyBuilder.DefineDynamicAssembly(name, access);
         }
