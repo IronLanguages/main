@@ -67,7 +67,7 @@ class IRTest
     
     ENV['HOME'] ||= ENV["USERPROFILE"]
     
-    @ir = "#{vm_shim} #{dlr_path("bin/#@config/ir.exe")}" 
+    @ir = "#{vm_shim} #{dlr_path("bin/#@config/iruby.exe")}" 
     
     if options[:selftest]
       @all_tasks = {

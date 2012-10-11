@@ -43,7 +43,7 @@ module TestPath
       if File.exists? ir_cmd
         IRUBY_EXE   = ir_cmd
       else
-        IRUBY_EXE   = DLR_ROOT + "/bin/debug/ir.exe" # ir.cmd does not exist in GIT
+        IRUBY_EXE   = DLR_ROOT + "/bin/debug/iruby.exe" # ir.cmd does not exist in GIT
       end
       IPYTHON_EXE   = DLR_ROOT + "/bin/debug/ipy.exe"
     end

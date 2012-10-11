@@ -74,10 +74,10 @@
     <IronRubyLibs Include="IronRuby.Libraries.Yaml.dll" />
     <IronRubyLibs Include="IronRuby.Libraries.Yaml.xml" />
 
-    <IronRubyBins Include="ir.exe" />
-    <IronRubyBins Include="ir64.exe" />
-    <IronRubyBins Include="irw.exe" />
-    <IronRubyBins Include="irw64.exe" />
+    <IronRubyBins Include="iruby.exe" />
+    <IronRubyBins Include="iruby64.exe" />
+    <IronRubyBins Include="irubyw.exe" />
+    <IronRubyBins Include="irubyw64.exe" />
 
     <ChironBins Include="Chiron.exe" />
     <ChironBins Include="Chiron.exe.config" />

@@ -1,6 +1,6 @@
 require 'rbconfig'
 IR_BIN = RbConfig::CONFIG['bindir']
-IR_EXE = ::File.join(IR_BIN, 'ir.exe')
+IR_EXE = ::File.join(IR_BIN, 'iruby.exe')
 
 require File.dirname(__FILE__) + '/../Scripts/rake_testtask'
 

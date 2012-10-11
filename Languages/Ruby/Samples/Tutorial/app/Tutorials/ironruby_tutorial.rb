@@ -600,8 +600,8 @@ tutorial "IronRuby tutorial" do
         silverlight(false)
         
         introduction %{
-            Note that if you develop Windows applications interactively using <tt>ir.exe</tt> or +iirb+ from
-            the <b>Command Prompt</b> console, IronRuby must be initialized specially for that purpose. <tt>ir.exe</tt>
+            Note that if you develop Windows applications interactively using <tt>iruby.exe</tt> or +iirb+ from
+            the <b>Command Prompt</b> console, IronRuby must be initialized specially for that purpose. <tt>iruby.exe</tt>
             blocks the main thread so that it can read user input. While this thread awaits text input, the 
             Windows application being dynamically created from the console needs to run on a separate thread
             so that it can process Windows messages. Further, WPF requires that all commands that interact

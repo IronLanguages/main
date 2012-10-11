@@ -14,14 +14,11 @@
  * ***************************************************************************/
 
 using System;
-using System.Diagnostics;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-using System.Text;
-using System.Text.RegularExpressions;
-using IronRuby.Compiler;
-using IronRuby.Runtime;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Text;
+using IronRuby.Compiler;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
     /// <summary>
@@ -33,23 +30,30 @@ namespace IronRuby.Builtins {
         private StringBuilder/*!*/ _sb;
         private bool _hasGAnchor;
         private List<string> _warnings;
+        private RubyRegexOptions _options;
 
         internal static string Transform(string/*!*/ rubyPattern, RubyRegexOptions options, out bool hasGAnchor, out List<string> warnings) {
-            // TODO: surrogates (REXML uses this pattern)
-            if (rubyPattern == "^[\t\n\r -\uD7FF\uE000-\uFFFD\uD800\uDC00-\uDBFF\uDFFF]*$") {
-                hasGAnchor = false;
-                warnings = null;
-                return "^(?:[\t\n\r -\uD7FF\uE000-\uFFFD]|[\uD800-\uDBFF][\uDC00-\uDFFF])*$";
+            // TODO: surrogates
+            switch (rubyPattern) {
+                case "^[\t\n\r -\uD7FF\uE000-\uFFFD\uD800\uDC00-\uDBFF\uDFFF]*$": // REXML uses this pattern
+                    hasGAnchor = false;
+                    warnings = null;
+                    return "^(?:[\t\n\r -\uD7FF\uE000-\uFFFD]|[\uD800-\uDBFF][\uDC00-\uDFFF])*$";
+                case "[^\t\n\r\u0020-\uD7FF\uE000-\uFFFD\U00010000-\U0010FFFF]": // Builder gem uses this pattern
+                    hasGAnchor = false;
+                    warnings = null;
+                    return "[^\t\n\r\u0020-\uD7FF\uE000-\uFFFD\uD800-\uDBFF\uDC00-\uDFFF]";
             }
-            
-            RegexpTransformer transformer = new RegexpTransformer(rubyPattern);
+
+            RegexpTransformer transformer = new RegexpTransformer(rubyPattern, options);
             var result = transformer.Transform();
             hasGAnchor = transformer._hasGAnchor;
             warnings = transformer._warnings;
             return result;
         }
 
-        private RegexpTransformer(string/*!*/ rubyPattern) {
+        private RegexpTransformer(string/*!*/ rubyPattern, RubyRegexOptions options) {
+            _options = options;
             _rubyPattern = rubyPattern;
         }
 
@@ -72,7 +76,7 @@ namespace IronRuby.Builtins {
             _index--;
             Debug.Assert(_index >= 0);
         }
-        
+
         private void Skip(int n) {
             _index += n;
             Debug.Assert(_index <= _rubyPattern.Length);
@@ -183,7 +187,7 @@ namespace IronRuby.Builtins {
                             throw MakeError("end pattern in group");
                         }
                         return;
-                    
+
                     case '\\':
                         lastEntityIndex = _sb.Length;
                         ParseEscape();
@@ -214,7 +218,7 @@ namespace IronRuby.Builtins {
                         } else {
                             throw MakeError("unmatched close parenthesis");
                         }
-                    
+
                     case '[':
                         lastEntityIndex = _sb.Length;
                         ParseCharacterGroup(false).AppendTo(_sb, true);
@@ -226,8 +230,12 @@ namespace IronRuby.Builtins {
                         break;
 
                     default:
-                        lastEntityIndex = _sb.Length;
-                        Append((char)c);
+                        if (c == '.' && (_options & RubyRegexOptions.Multiline) == RubyRegexOptions.Multiline) {
+                            _sb.AppendFormat(@"(?:{0}|\n)", (char)c);
+                        } else {
+                            Append((char)c);
+                        }
+                        lastEntityIndex = _sb.Length - 1;
                         break;
                 }
             }
@@ -251,7 +259,7 @@ namespace IronRuby.Builtins {
                         // not a quantifier
                         return false;
                     }
-                    m = i;                    
+                    m = i;
                 } else if (c == '}') {
                     break;
                 } else if (!Tokenizer.IsDecimalDigit(c)) {
@@ -426,7 +434,7 @@ namespace IronRuby.Builtins {
                 throw MakeError("group name is empty");
             }
             while (true) {
-                Append((char)c); 
+                Append((char)c);
                 c = Read();
                 if (c == terminator || c == ')') {
                     Append((char)c);
@@ -446,7 +454,7 @@ namespace IronRuby.Builtins {
             }
             ParseEscape(c);
         }
-        
+
         // escape outside of character group
         private void ParseEscape(int escape) {
             switch (escape) {
@@ -468,7 +476,7 @@ namespace IronRuby.Builtins {
                 case 'g':
                     // TODO: this can be implemented by copying the pattern with removed groups
                     throw MakeError("\\g not supported");
-                
+
                 case 'k':
                     ParseBackreference();
                     break;
@@ -490,7 +498,7 @@ namespace IronRuby.Builtins {
                         AppendEscaped(ParseUnicodeEscape());
                     }
                     break;
-                    
+
                 default:
                     // \digit is a backreference to an indexed group or an octal escape
                     // In any case .NET Regex will decide for us, we don't need to distinguish between these cases.
@@ -521,11 +529,11 @@ namespace IronRuby.Builtins {
         // \k'name-n'
         private void ParseBackreference() {
             Debug.Assert(_rubyPattern[_index - 1] == 'k');
-            
+
             int terminator;
             int c = Read();
             if (c == '<') {
-                terminator = '>';                
+                terminator = '>';
             } else if (c == '\'') {
                 terminator = '\'';
             } else {
@@ -588,7 +596,7 @@ namespace IronRuby.Builtins {
         private int ParseSingleByteCharacterEscape(int escape, ref bool hasControlModifier, ref bool hasMetaModifier) {
             int c;
             switch (escape) {
-                case -1: 
+                case -1:
                     throw MakeError("too short escape sequence");
 
                 case '\\': return '\\';
@@ -600,7 +608,7 @@ namespace IronRuby.Builtins {
                 case 'a': return '\a';
                 case 'e': return 27;
                 case 'b': return '\b';
-                
+
                 case 'M':
                     if (!Read('-')) {
                         throw MakeError("too short meta escape");
@@ -617,7 +625,7 @@ namespace IronRuby.Builtins {
                     if (c == '\\') {
                         c = ParseSingleByteCharacterEscape(Read(), ref hasControlModifier, ref hasMetaModifier);
                     }
-                    
+
                     return (c & 0xff) | 0x80;
 
                 case 'C':
@@ -639,7 +647,7 @@ namespace IronRuby.Builtins {
                     if (c == '\\') {
                         c = ParseSingleByteCharacterEscape(Read(), ref hasControlModifier, ref hasMetaModifier);
                     }
-                    
+
                     return c & 0x9f;
 
                 case 'x':
@@ -659,7 +667,7 @@ namespace IronRuby.Builtins {
                     Skip();
 
                     return (d1 << 4) | d2;
-                
+
                 default:
                     // octal
                     int o1 = Tokenizer.ToDigit(escape);
@@ -688,12 +696,12 @@ namespace IronRuby.Builtins {
             if (result != -1) {
                 return new CharacterSet(Escape(result), true);
             }
-                    
+
             switch (escape) {
                 case 'h':
-                case 'H': 
+                case 'H':
                     return MakePosixCharacterClass(PosixCharacterClass.XDigit, escape == 'h');
-                    
+
                 case 'p':
                 case 'P':
                     return ParseCharacterCategoryName(escape);
@@ -820,7 +828,7 @@ namespace IronRuby.Builtins {
                 _exclude = this;
                 _isSingleCharacter = false;
             }
-            
+
             public CharacterSet(string/*!*/ include)
                 : this(false, include, Empty) {
             }
@@ -1223,26 +1231,26 @@ namespace IronRuby.Builtins {
             if (c == -1) {
                 throw MakeError("invalid Unicode property");
             }
-            
+
             string name = _rubyPattern.Substring(start, _index - start);
             Skip();
 
             switch (name) {
                 // CLR unsupported, any encoding:
-                case "Alnum": return MakePosixCharacterClass(PosixCharacterClass.Alnum, positive); 
-                case "Alpha": return MakePosixCharacterClass(PosixCharacterClass.Alpha, positive); 
-                case "Blank": return MakePosixCharacterClass(PosixCharacterClass.Blank, positive); 
-                case "Cntrl": return MakePosixCharacterClass(PosixCharacterClass.Cntrl, positive); 
-                case "Digit": return MakePosixCharacterClass(PosixCharacterClass.Digit, positive); 
-                case "Graph": return MakePosixCharacterClass(PosixCharacterClass.Graph, positive); 
-                case "Lower": return MakePosixCharacterClass(PosixCharacterClass.Lower, positive); 
-                case "Print": return MakePosixCharacterClass(PosixCharacterClass.Print, positive); 
-                case "Punct": return MakePosixCharacterClass(PosixCharacterClass.Punct, positive); 
-                case "Space": return MakePosixCharacterClass(PosixCharacterClass.Space, positive); 
-                case "Upper": return MakePosixCharacterClass(PosixCharacterClass.Upper, positive); 
+                case "Alnum": return MakePosixCharacterClass(PosixCharacterClass.Alnum, positive);
+                case "Alpha": return MakePosixCharacterClass(PosixCharacterClass.Alpha, positive);
+                case "Blank": return MakePosixCharacterClass(PosixCharacterClass.Blank, positive);
+                case "Cntrl": return MakePosixCharacterClass(PosixCharacterClass.Cntrl, positive);
+                case "Digit": return MakePosixCharacterClass(PosixCharacterClass.Digit, positive);
+                case "Graph": return MakePosixCharacterClass(PosixCharacterClass.Graph, positive);
+                case "Lower": return MakePosixCharacterClass(PosixCharacterClass.Lower, positive);
+                case "Print": return MakePosixCharacterClass(PosixCharacterClass.Print, positive);
+                case "Punct": return MakePosixCharacterClass(PosixCharacterClass.Punct, positive);
+                case "Space": return MakePosixCharacterClass(PosixCharacterClass.Space, positive);
+                case "Upper": return MakePosixCharacterClass(PosixCharacterClass.Upper, positive);
                 case "XDigit": return MakePosixCharacterClass(PosixCharacterClass.XDigit, positive);
                 case "ASCII": return MakePosixCharacterClass(PosixCharacterClass.Ascii, positive);
-                case "Word": return MakePosixCharacterClass(PosixCharacterClass.Word, positive); 
+                case "Word": return MakePosixCharacterClass(PosixCharacterClass.Word, positive);
 
                 // CLR unsupported, Unicode only:
                 case "Any":
@@ -1258,65 +1266,65 @@ namespace IronRuby.Builtins {
                     name = "Cn";
                     goto default;
 
-                case "Arabic": 
-                case "Armenian": 
-                case "Bengali": 
-                case "Bopomofo": 
-                case "Braille": 
+                case "Arabic":
+                case "Armenian":
+                case "Bengali":
+                case "Bopomofo":
+                case "Braille":
                 case "Buginese":
-                case "Buhid": 
-                case "Cherokee": 
-                case "Common": 
+                case "Buhid":
+                case "Cherokee":
+                case "Common":
                 case "Coptic":
-                case "Cypriot": 
-                case "Cyrillic": 
-                case "Deseret": 
-                case "Devanagari": 
-                case "Ethiopic": 
+                case "Cypriot":
+                case "Cyrillic":
+                case "Deseret":
+                case "Devanagari":
+                case "Ethiopic":
                 case "Georgian":
-                case "Glagolitic": 
-                case "Gothic": 
-                case "Greek": 
-                case "Gujarati": 
-                case "Gurmukhi": 
-                case "Han": 
+                case "Glagolitic":
+                case "Gothic":
+                case "Greek":
+                case "Gujarati":
+                case "Gurmukhi":
+                case "Han":
                 case "Hangul":
-                case "Hanunoo": 
-                case "Hebrew": 
-                case "Hiragana": 
+                case "Hanunoo":
+                case "Hebrew":
+                case "Hiragana":
                 case "Inherited":
-                case "Kannada": 
+                case "Kannada":
                 case "Katakana":
-                case "Kharoshthi": 
-                case "Khmer": 
-                case "Lao": 
-                case "Latin": 
-                case "Limbu": 
+                case "Kharoshthi":
+                case "Khmer":
+                case "Lao":
+                case "Latin":
+                case "Limbu":
                 case "Linear_B":
                 case "Malayalam":
-                case "Mongolian": 
-                case "Myanmar": 
+                case "Mongolian":
+                case "Myanmar":
                 case "New_Tai_Lue":
-                case "Ogham": 
+                case "Ogham":
                 case "Old_Italic":
                 case "Old_Persian":
-                case "Oriya": 
-                case "Osmanya": 
-                case "Runic": 
-                case "Shavian": 
-                case "Sinhala": 
-                case "Syloti_Nagri": 
+                case "Oriya":
+                case "Osmanya":
+                case "Runic":
+                case "Shavian":
+                case "Sinhala":
+                case "Syloti_Nagri":
                 case "Syriac":
-                case "Tagalog": 
-                case "Tagbanwa": 
-                case "TaiLe": 
-                case "Tamil": 
+                case "Tagalog":
+                case "Tagbanwa":
+                case "TaiLe":
+                case "Tamil":
                 case "Telugu":
-                case "Thaana": 
-                case "Thai": 
+                case "Thaana":
+                case "Thai":
                 case "Tibetan":
-                case "Tifinagh": 
-                case "Ugaritic": 
+                case "Tifinagh":
+                case "Ugaritic":
                 case "Yi":
                     // TODO: not all of the above are prefixed Is-
                     name = "Is" + name;
@@ -1374,69 +1382,69 @@ namespace IronRuby.Builtins {
                 case "upper": return PosixCharacterClass.Upper;
                 case "xdigit": return PosixCharacterClass.XDigit;
                 case "word": return PosixCharacterClass.Word;
-                default: 
+                default:
                     throw MakeError("invalid POSIX bracket type");
             }
         }
 
         private CharacterSet MakePosixCharacterClass(PosixCharacterClass charClass, bool positive) {
             switch (charClass) {
-                case PosixCharacterClass.Alnum: 
+                case PosixCharacterClass.Alnum:
                     if (positive) {
-                        return new CharacterSet(@"\p{L}\p{N}\p{M}"); 
+                        return new CharacterSet(@"\p{L}\p{N}\p{M}");
                     } else {
-                        return new CharacterSet(@"\P{L}", new CharacterSet(@"\p{N}\p{M}")); 
+                        return new CharacterSet(@"\P{L}", new CharacterSet(@"\p{N}\p{M}"));
                     }
 
                 case PosixCharacterClass.Alpha:
                     if (positive) {
-                        return new CharacterSet(@"\p{L}\p{M}"); 
+                        return new CharacterSet(@"\p{L}\p{M}");
                     } else {
-                        return new CharacterSet(@"\P{L}", new CharacterSet(@"\p{M}")); 
+                        return new CharacterSet(@"\P{L}", new CharacterSet(@"\p{M}"));
                     }
 
                 case PosixCharacterClass.Ascii:
                     if (positive) {
-                        return new CharacterSet(@"\p{IsBasicLatin}"); 
+                        return new CharacterSet(@"\p{IsBasicLatin}");
                     } else {
-                        return new CharacterSet(@"\P{IsBasicLatin}"); 
+                        return new CharacterSet(@"\P{IsBasicLatin}");
                     }
 
                 case PosixCharacterClass.Blank:
                     if (positive) {
-                        return new CharacterSet("\\p{Zs}\t"); 
+                        return new CharacterSet("\\p{Zs}\t");
                     } else {
-                        return new CharacterSet(@"\P{Zs}", new CharacterSet("\t")); 
+                        return new CharacterSet(@"\P{Zs}", new CharacterSet("\t"));
                     }
-                    
+
                 case PosixCharacterClass.Cntrl:
                     if (positive) {
-                        return new CharacterSet(@"\p{Cc}"); 
+                        return new CharacterSet(@"\p{Cc}");
                     } else {
-                        return new CharacterSet(@"\P{Cc}"); 
+                        return new CharacterSet(@"\P{Cc}");
                     }
 
                 case PosixCharacterClass.Digit:
                     if (positive) {
-                        return new CharacterSet(@"\p{Nd}"); 
+                        return new CharacterSet(@"\p{Nd}");
                     } else {
-                        return new CharacterSet(@"\P{Nd}"); 
+                        return new CharacterSet(@"\P{Nd}");
                     }
 
                 case PosixCharacterClass.Graph:
                     // TODO: there are some differences (Unicode version?)
                     if (positive) {
-                        return new CharacterSet(@"\P{Z}", new CharacterSet(@"\p{C}")); 
+                        return new CharacterSet(@"\P{Z}", new CharacterSet(@"\p{C}"));
                     } else {
-                        return new CharacterSet(@"\p{Z}\p{C}"); 
+                        return new CharacterSet(@"\p{Z}\p{C}");
                     }
 
                 case PosixCharacterClass.Lower:
                     // TODO: there are some differences (Unicode version?)
                     if (positive) {
-                        return new CharacterSet(@"\p{Ll}"); 
+                        return new CharacterSet(@"\p{Ll}");
                     } else {
-                        return new CharacterSet(@"\P{Ll}"); 
+                        return new CharacterSet(@"\P{Ll}");
                     }
 
                 case PosixCharacterClass.Print:
@@ -1448,29 +1456,29 @@ namespace IronRuby.Builtins {
 
                 case PosixCharacterClass.Punct:
                     if (positive) {
-                        return new CharacterSet(@"\p{P}"); 
+                        return new CharacterSet(@"\p{P}");
                     } else {
-                        return new CharacterSet(@"\P{P}"); 
+                        return new CharacterSet(@"\P{P}");
                     }
 
                 case PosixCharacterClass.Space:
                     if (positive) {
-                        return new CharacterSet("\\p{Z}\u0085\u0009-\u000d"); 
+                        return new CharacterSet("\\p{Z}\u0085\u0009-\u000d");
                     } else {
-                        return new CharacterSet(@"\P{Z}", new CharacterSet("\u0085\u0009-\u000d")); 
+                        return new CharacterSet(@"\P{Z}", new CharacterSet("\u0085\u0009-\u000d"));
                     }
 
                 case PosixCharacterClass.Upper:
                     // TODO: there are some differences (Unicode version?)
                     if (positive) {
-                        return new CharacterSet(@"\p{Lu}"); 
+                        return new CharacterSet(@"\p{Lu}");
                     } else {
-                        return new CharacterSet(@"\P{Lu}"); 
+                        return new CharacterSet(@"\P{Lu}");
                     }
 
                 case PosixCharacterClass.XDigit:
                     if (positive) {
-                        return new CharacterSet("a-fA-F0-9"); 
+                        return new CharacterSet("a-fA-F0-9");
                     } else {
                         return new CharacterSet(true, "a-fA-F0-9");
                     }
