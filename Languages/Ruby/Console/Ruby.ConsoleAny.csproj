@@ -7,7 +7,7 @@
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>IronRuby</RootNamespace>
-    <AssemblyName>ir64</AssemblyName>
+    <AssemblyName>iruby64</AssemblyName>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsNotAsErrors>618,1685</WarningsNotAsErrors>
   </PropertyGroup>

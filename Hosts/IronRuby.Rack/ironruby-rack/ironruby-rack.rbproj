@@ -48,7 +48,7 @@
     <None Include="D:\D3\Hosts\IronRuby.Rack\ironruby-rack\lib\rack\deploy\iis.rb" />
     <None Include="D:\D3\Hosts\IronRuby.Rack\ironruby-rack\lib\rack\deploy\template" />
     <None Include="D:\D3\Hosts\IronRuby.Rack\ironruby-rack\lib\rack\deploy\template\config.ru.erb" />
-    <None Include="D:\D3\Hosts\IronRuby.Rack\ironruby-rack\lib\rack\deploy\template\ir.exe.config.erb" />
+    <None Include="D:\D3\Hosts\IronRuby.Rack\ironruby-rack\lib\rack\deploy\template\iruby.exe.config.erb" />
     <None Include="D:\D3\Hosts\IronRuby.Rack\ironruby-rack\lib\rack\deploy\template\rails" />
     <None Include="D:\D3\Hosts\IronRuby.Rack\ironruby-rack\lib\rack\deploy\template\rails\config.ru.erb" />
     <None Include="D:\D3\Hosts\IronRuby.Rack\ironruby-rack\lib\rack\deploy\template\sinatra" />

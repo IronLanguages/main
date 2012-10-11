@@ -50,7 +50,7 @@ namespace Microsoft.IronRubyTools.Project {
             if (!String.IsNullOrEmpty(searchPath)) {
                 foreach (string path in searchPath.Split(Path.PathSeparator)) {
                     try {
-                        // the path is relative to the .rbproj file, not to the ir.exe file:
+                        // the path is relative to the .rbproj file, not to the iruby.exe file:
                         var fullPath = RubyUtils.CanonicalizePath(Path.GetFullPath(path));
 
                         commandLine.Append(" -I");

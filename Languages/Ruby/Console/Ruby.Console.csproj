@@ -7,7 +7,7 @@
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>IronRuby</RootNamespace>
-    <AssemblyName>ir</AssemblyName>
+    <AssemblyName>iruby</AssemblyName>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <PlatformTarget>x86</PlatformTarget>
     <CodeAnalysisRuleSet>Ruby.Console.ruleset</CodeAnalysisRuleSet>

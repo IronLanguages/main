@@ -9,8 +9,8 @@ cwd = File.dirname(__FILE__)
 
 require 'rbconfig'
 irbin = RbConfig::CONFIG['bindir']
-ir = "#{irbin}/ir.exe"
-raise "Could not find ir.exe" unless File.exist? ir
+ir = "#{irbin}/iruby.exe"
+raise "Could not find iruby.exe" unless File.exist? ir
 IR = ir
 
 # TODO: Mono support -- (jimmysch) Moonlight only as Mono doesn't support WPF

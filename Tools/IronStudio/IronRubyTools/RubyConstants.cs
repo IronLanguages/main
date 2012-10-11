@@ -19,8 +19,8 @@ namespace Microsoft.IronRubyTools {
     public static class RubyConstants {
         public const string FileExtension = ".rb";        
         public const string LanguageName = "IronRuby";
-        public const string IronRubyExecutable = "ir.exe";
-        public const string IronRubyWindowsExecutable = "irw.exe";
+        public const string IronRubyExecutable = "iruby.exe";
+        public const string IronRubyWindowsExecutable = "irubyw.exe";
         public const string ProjectImageList = "Microsoft.RubyImageList.bmp";
 
         public static class ProjectProperties {

@@ -25,9 +25,9 @@ class MSpecScript
 
   # The default implementation to run the specs.
   if ENV['DLR_BIN']
-    set :target, File.join(ENV['DLR_BIN'], "ir.exe")
+    set :target, File.join(ENV['DLR_BIN'], "iruby.exe")
   else
-    set :target, File.join(ENV['DLR_ROOT'], "bin", "Debug", "ir.exe")
+    set :target, File.join(ENV['DLR_ROOT'], "bin", "Debug", "iruby.exe")
   end
   # config[:prefix] must be set before filtered is used
   set :prefix, File.join(ENV['DLR_ROOT'], "Languages", "Ruby", "Tests", "mspec", "rubyspec")
