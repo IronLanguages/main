@@ -55,7 +55,7 @@ namespace IronRuby.Builtins {
         public const int CodePageUTF16LE = 1200;
         public const int CodePageUTF32BE = 12001;
         public const int CodePageUTF32LE = 12000;
-        
+
         // TODO: how does MRI sort encodings?
 
         public static readonly RubyEncoding/*!*/ Binary = new RubyEncoding(BinaryEncoding.Instance, BinaryEncoding.Instance, -4);
@@ -149,7 +149,7 @@ namespace IronRuby.Builtins {
         [Serializable]
         internal sealed class Deserializer : ISerializable, IObjectReference {
             private readonly int _codePage;
-            
+
             private Deserializer(SerializationInfo/*!*/ info, StreamingContext context) {
                 _codePage = info.GetInt32("CodePage");
             }
@@ -214,6 +214,29 @@ namespace IronRuby.Builtins {
             }
         }
 
+        public static int GetCodePage(string rubyEncodingName) {
+            switch (rubyEncodingName) {
+                case "UTF-8": return CodePageUTF8;
+                case "US-ASCII": return CodePageAscii;
+                case "UTF-16BE": return CodePageUTF16BE;
+                case "UTF-16LE": return CodePageUTF16LE;
+#if FEATURE_ENCODING
+                case "UTF-7": return CodePageUTF7;
+                case "UTF-32BE": return CodePageUTF32BE;
+                case "UTF-32LE": return CodePageUTF32LE;
+                case "Shift_JIS": return CodePageSJIS;
+
+                // disambiguates CP 20932 and CP 51932:
+                case "EUC-JP": return CodePageEUCJP;
+                case "CP20932": return 20932;
+
+                case "ISO-2022-JP": return 50220;
+                case "CP50222": return 50222;
+#endif
+                default: throw RubyExceptions.CreateArgumentError("Unknown encoding name: {0}", rubyEncodingName);
+            }
+        }
+
         public int CodePage {
             get { return GetCodePage(_encoding); }
         }
@@ -230,7 +253,7 @@ namespace IronRuby.Builtins {
             if (encoding == RubyEncoding.Binary) {
                 return RubyRegexOptions.FIXED;
             }
-            
+
             if (encoding == null) {
                 return RubyRegexOptions.NONE;
             }
@@ -286,13 +309,11 @@ namespace IronRuby.Builtins {
 
         private static ReadOnlyDictionary<string, string> _aliases;
 
-        public static ReadOnlyDictionary<string, string> Aliases
-        {
+        public static ReadOnlyDictionary<string, string> Aliases {
             get { return _aliases ?? (_aliases = CreateAliases()); }
         }
 
-        private static ReadOnlyDictionary<string, string> CreateAliases()
-        {
+        private static ReadOnlyDictionary<string, string> CreateAliases() {
             return new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) {
                 { "646", "US-ASCII" }, 
                 { "ASCII", "US-ASCII" }, 
@@ -364,8 +385,7 @@ namespace IronRuby.Builtins {
         private static Dictionary<int, RubyEncoding> _Encodings;
 
 
-        public static RubyEncoding/*!*/ GetRubyEncoding(Encoding/*!*/ encoding)
-        {
+        public static RubyEncoding/*!*/ GetRubyEncoding(Encoding/*!*/ encoding) {
             ContractUtils.RequiresNotNull(encoding, "encoding");
             return GetRubyEncoding(GetCodePage(encoding));
         }
@@ -382,7 +402,7 @@ namespace IronRuby.Builtins {
             }
 
             if (_Encodings == null) {
-                Interlocked.CompareExchange(ref _Encodings, new Dictionary<int, RubyEncoding>(), null); 
+                Interlocked.CompareExchange(ref _Encodings, new Dictionary<int, RubyEncoding>(), null);
             }
 
             RubyEncoding result;
@@ -541,7 +561,7 @@ namespace IronRuby.Builtins {
                     Debug.Assert(IsAsciiIdentityFallback(encoding));
                     return true;
 
-                default: 
+                default:
                     return IsAsciiIdentityFallback(encoding);
             }
         }
@@ -591,9 +611,9 @@ namespace IronRuby.Builtins {
                 return _isDoubleByteCharacterSet.Value;
             }
         }
-        
+
         private static int[] _sbsc;
-        private static int[] _dbsc; 
+        private static int[] _dbsc;
 
         private static bool IsSBCS(int codepage) {
             if (_sbsc == null) {
