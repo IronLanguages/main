@@ -18,6 +18,9 @@ using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
 #endif
+#if CLR45
+using System.Collections.ObjectModel;
+#endif
 
 using System;
 using System.Collections.Generic;
