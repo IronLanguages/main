@@ -29,6 +29,7 @@ using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime;
 using IronRuby.Compiler;
+using System.Collections.ObjectModel;
 
 namespace IronRuby.Builtins {
 
