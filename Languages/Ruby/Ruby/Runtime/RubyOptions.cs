@@ -45,6 +45,7 @@ namespace IronRuby.Runtime {
         public static bool UseThreadAbortForSyncRaise;
         public static bool CompileRegexps;
         public static bool ShowRules;
+        public static bool DisableDebugLog;
 #endif
 
         public ReadOnlyCollection<string>/*!*/ Arguments {

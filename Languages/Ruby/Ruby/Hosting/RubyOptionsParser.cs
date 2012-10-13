@@ -191,6 +191,10 @@ namespace IronRuby.Hosting {
                 case "-compileRegexps":
                     RubyOptions.CompileRegexps = true;
                     return;
+
+                case "-disableDebugLog":
+                    RubyOptions.DisableDebugLog = true;
+                    return;
 #endif
                 case "-trace":
                     LanguageSetup.Options["EnableTracing"] = ScriptingRuntimeHelpers.True;
