@@ -524,6 +524,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _ToBignumValidator;
         public static MethodInfo/*!*/ ToByteValidator { get { return _ToByteValidator ?? (_ToByteValidator = CallInstruction.CacheFunc<System.String, System.Object, System.Byte>(RubyOps.ToByteValidator)); } }
         private static MethodInfo _ToByteValidator;
+        public static MethodInfo/*!*/ ToClrStringValidator { get { return _ToClrStringValidator ?? (_ToClrStringValidator = CallInstruction.CacheFunc<System.String, System.Object, System.String>(RubyOps.ToClrStringValidator)); } }
+        private static MethodInfo _ToClrStringValidator;
         public static MethodInfo/*!*/ ToDoubleValidator { get { return _ToDoubleValidator ?? (_ToDoubleValidator = CallInstruction.CacheFunc<System.String, System.Object, System.Double>(RubyOps.ToDoubleValidator)); } }
         private static MethodInfo _ToDoubleValidator;
         public static MethodInfo/*!*/ ToFixnumValidator { get { return _ToFixnumValidator ?? (_ToFixnumValidator = CallInstruction.CacheFunc<System.String, System.Object, System.Int32>(RubyOps.ToFixnumValidator)); } }
