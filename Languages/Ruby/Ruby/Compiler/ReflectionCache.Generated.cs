@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if FEATURE_CORE_DLR
+#if !CLR2
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
@@ -478,6 +478,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _PropagateRetrySingleton;
         public static MethodInfo/*!*/ RegisterShutdownHandler { get { return _RegisterShutdownHandler ?? (_RegisterShutdownHandler = CallInstruction.CacheAction<IronRuby.Builtins.Proc>(RubyOps.RegisterShutdownHandler)); } }
         private static MethodInfo _RegisterShutdownHandler;
+        public static MethodInfo/*!*/ RubyModule_get_Context { get { return _RubyModule_get_Context ?? (_RubyModule_get_Context = GetMethod(typeof(RubyModule), "get_Context")); } }
+        private static MethodInfo _RubyModule_get_Context;
         public static MethodInfo/*!*/ RubyStruct_GetValue { get { return _RubyStruct_GetValue ?? (_RubyStruct_GetValue = CallInstruction.CacheFunc<IronRuby.Builtins.RubyStruct, System.Int32, System.Object>(RubyStruct.GetValue)); } }
         private static MethodInfo _RubyStruct_GetValue;
         public static MethodInfo/*!*/ RubyStruct_SetValue { get { return _RubyStruct_SetValue ?? (_RubyStruct_SetValue = CallInstruction.CacheFunc<IronRuby.Builtins.RubyStruct, System.Int32, System.Object, System.Object>(RubyStruct.SetValue)); } }
@@ -522,6 +524,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _ToBignumValidator;
         public static MethodInfo/*!*/ ToByteValidator { get { return _ToByteValidator ?? (_ToByteValidator = CallInstruction.CacheFunc<System.String, System.Object, System.Byte>(RubyOps.ToByteValidator)); } }
         private static MethodInfo _ToByteValidator;
+        public static MethodInfo/*!*/ ToClrStringValidator { get { return _ToClrStringValidator ?? (_ToClrStringValidator = CallInstruction.CacheFunc<System.String, System.Object, System.String>(RubyOps.ToClrStringValidator)); } }
+        private static MethodInfo _ToClrStringValidator;
         public static MethodInfo/*!*/ ToDoubleValidator { get { return _ToDoubleValidator ?? (_ToDoubleValidator = CallInstruction.CacheFunc<System.String, System.Object, System.Double>(RubyOps.ToDoubleValidator)); } }
         private static MethodInfo _ToDoubleValidator;
         public static MethodInfo/*!*/ ToFixnumValidator { get { return _ToFixnumValidator ?? (_ToFixnumValidator = CallInstruction.CacheFunc<System.String, System.Object, System.Int32>(RubyOps.ToFixnumValidator)); } }

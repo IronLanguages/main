@@ -99,6 +99,26 @@ namespace IronRuby.Runtime {
             }
         }
 
+        private UnaryOpSite PosSite {
+            get {
+                if (_posSite == null) {
+                    _posSite = UnaryOpSite.Create(RubyCallAction.Make(_context, "pos", RubyCallSignature.WithImplicitSelf(0)));
+                }
+
+                return _posSite;
+            }
+        }
+
+        private UnaryOpSite EofSite {
+            get {
+                if (_eofSite == null) {
+                    _eofSite = UnaryOpSite.Create(RubyCallAction.Make(_context, "eof?", RubyCallSignature.WithImplicitSelf(0)));
+                }
+
+                return _eofSite;
+            }
+        }
+
         #endregion
 
         private readonly object _io;
@@ -111,6 +131,8 @@ namespace IronRuby.Runtime {
         private int _writePos;
         private int _readPos;
         private int _readLen;
+        private UnaryOpSite _posSite;
+        private UnaryOpSite _eofSite;
 
         public IOWrapper(RubyContext/*!*/ context, object io, bool canRead, bool canWrite, bool canSeek, bool canFlush, bool canClose, int bufferSize) {
             Assert.NotNull(context);
@@ -146,27 +168,42 @@ namespace IronRuby.Runtime {
 
         public override long Length {
             get {
-                long currentPos = Position;
-                Seek(0, SeekOrigin.End);
-                long result = Position;
-                Position = currentPos;
-                return result;
+                if (_io is Stream) {
+                    return ((Stream)_io).Length;
+                } else {
+                    long currentPos = Position;
+                    Seek(0, SeekOrigin.End);
+                    long result = Position;
+                    Position = currentPos;
+                    return result;
+                }
             }
         }
 
         public override long Position {
             get {
-                if (!_canSeek) {
-                    throw new NotSupportedException();
+                if (_io is Stream) {
+                    return ((Stream)_io).Position;
                 }
-                // TODO: conversion
-                return (long)TellSite.Target(TellSite, _io);
+                if (_io is RubyObject && ((RubyObject)_io).ImmediateClass.GetMethod("pos") != null) {
+                    return Convert.ToInt64(this.PosSite.Target(this.PosSite, _io));
+                }
+                return Convert.ToInt64(this.TellSite.Target(this.TellSite, _io));
             }
             set {
                 if (!_canSeek) {
                     throw new NotSupportedException();
                 }
                 Seek(value, SeekOrigin.Begin);
+            }
+        }
+
+        public bool Eof {
+            get {
+                if (_io is RubyObject && ((RubyObject)_io).ImmediateClass.GetMethod("eof?") != null) {
+                    return Convert.ToBoolean(this.EofSite.Target(this.EofSite, _io));
+                }
+                return this.Position >= this.Length;
             }
         }
 

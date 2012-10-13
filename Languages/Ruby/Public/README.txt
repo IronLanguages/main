@@ -29,13 +29,13 @@ See http://ironruby.net/documentation/.net for more information.
 
 == Running
 
-bin/ir.exe rubyfile.rb
+bin/iruby.exe rubyfile.rb
 
 Will run rubyfile.rb with the IronRuby compiler.
 
 == Package
 
-  /bin                IronRuby binaries, ir.exe, iirb, irake, igem, iri, irdoc, etc.
+  /bin                IronRuby binaries, iruby.exe, iirb, irake, igem, iri, irdoc, etc.
   /lib                Ruby standard library, including RubyGems
   CHANGELOG.txt       Changes for each release
   RELEASE.txt         Release notes

@@ -39,7 +39,6 @@ using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using IronRuby.Compiler.Ast;
 using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Runtime {
@@ -47,7 +46,7 @@ namespace IronRuby.Runtime {
     public static partial class RubyOps {
         [Emitted]
         public static readonly object DefaultArgument = new object();
-        
+
         // Returned by a virtual site if a base call should be performed.
         [Emitted]
         public static readonly object ForwardToBase = new object();
@@ -100,7 +99,7 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static void InitializeScope(RubyScope/*!*/ scope, MutableTuple locals, string[] variableNames, 
+        public static void InitializeScope(RubyScope/*!*/ scope, MutableTuple locals, string[] variableNames,
             InterpretedFrame interpretedFrame) {
 
             if (!scope.LocalsInitialized) {
@@ -108,7 +107,7 @@ namespace IronRuby.Runtime {
             }
             scope.InterpretedFrame = interpretedFrame;
         }
-        
+
         [Emitted]
         public static void InitializeScopeNoLocals(RubyScope/*!*/ scope, InterpretedFrame interpretedFrame) {
             scope.InterpretedFrame = interpretedFrame;
@@ -130,7 +129,7 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static RubyModuleScope/*!*/ CreateModuleScope(MutableTuple locals, string[] variableNames, 
+        public static RubyModuleScope/*!*/ CreateModuleScope(MutableTuple locals, string[] variableNames,
             RubyScope/*!*/ parent, RubyModule/*!*/ module) {
 
             if (parent.RubyContext != module.Context) {
@@ -145,14 +144,14 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static RubyMethodScope/*!*/ CreateMethodScope(MutableTuple locals, string[] variableNames, int visibleParameterCount,
-            RubyScope/*!*/ parentScope, RubyModule/*!*/ declaringModule, string/*!*/ definitionName, 
+            RubyScope/*!*/ parentScope, RubyModule/*!*/ declaringModule, string/*!*/ definitionName,
             object selfObject, Proc blockParameter, InterpretedFrame interpretedFrame) {
 
             return new RubyMethodScope(
                 locals, variableNames ?? ArrayUtils.EmptyStrings, visibleParameterCount,
                 parentScope, declaringModule, definitionName, selfObject, blockParameter,
                 interpretedFrame
-            );            
+            );
         }
 
         [Emitted]
@@ -161,7 +160,7 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static RubyBlockScope/*!*/ CreateBlockScope(MutableTuple locals, string[] variableNames, 
+        public static RubyBlockScope/*!*/ CreateBlockScope(MutableTuple locals, string[] variableNames,
             BlockParam/*!*/ blockParam, object selfObject, InterpretedFrame interpretedFrame) {
 
             return new RubyBlockScope(locals, variableNames ?? ArrayUtils.EmptyStrings, blockParam, selfObject, interpretedFrame);
@@ -233,12 +232,12 @@ namespace IronRuby.Runtime {
         public static RubyContext/*!*/ GetContextFromModule(RubyModule/*!*/ module) {
             return module.Context;
         }
-        
+
         [Emitted]
         public static RubyContext/*!*/ GetContextFromIRubyObject(IRubyObject/*!*/ obj) {
             return obj.ImmediateClass.Context;
         }
-        
+
         [Emitted]
         public static RubyContext/*!*/ GetContextFromScope(RubyScope/*!*/ scope) {
             return scope.RubyContext;
@@ -321,13 +320,13 @@ namespace IronRuby.Runtime {
 
         #region Yield: TODO: generate
 
-        [Emitted] 
+        [Emitted]
         public static object Yield0(Proc procArg, object self, BlockParam/*!*/ blockParam) {
             object result;
             var proc = blockParam.Proc;
             try {
                 result = proc.Dispatcher.Invoke(blockParam, self, procArg);
-            } catch(EvalUnwinder evalUnwinder) {
+            } catch (EvalUnwinder evalUnwinder) {
                 result = blockParam.GetUnwinderResult(evalUnwinder);
             }
 
@@ -421,7 +420,7 @@ namespace IronRuby.Runtime {
                 case 2: return RubyOps.Yield2(args[0], args[1], procArg, self, blockParam);
                 case 3: return RubyOps.Yield3(args[0], args[1], args[2], procArg, self, blockParam);
                 case 4: return RubyOps.Yield4(args[0], args[1], args[2], args[3], procArg, self, blockParam);
-                default: return RubyOps.YieldN(args, procArg, self, blockParam); 
+                default: return RubyOps.YieldN(args, procArg, self, blockParam);
             }
         }
 
@@ -568,7 +567,7 @@ namespace IronRuby.Runtime {
                     singletonFlags = RubyMemberFlags.Invalid;
                 }
             }
-            
+
             RubyMethodInfo instanceMethod = null, singletonMethod = null;
 
             if (instanceOwner != null) {
@@ -676,7 +675,7 @@ namespace IronRuby.Runtime {
             return scope.RubyContext.GetOrCreateSingletonClass(obj);
         }
 
-        [Emitted] 
+        [Emitted]
         public static RubyModule/*!*/ DefineGlobalClass(RubyScope/*!*/ scope, string/*!*/ name, object superClassObject) {
             return DefineClass(scope, scope.Top.TopModuleOrObject, name, superClassObject);
         }
@@ -808,7 +807,7 @@ namespace IronRuby.Runtime {
 
             using (context.ClassHierarchyLocker()) {
                 int newVersion = context.ConstantAccessVersion;
-                
+
                 ConstantStorage storage;
                 bool anyMissing;
                 RubyModule topModule = isGlobal ? context.ObjectClass : null;
@@ -850,7 +849,7 @@ namespace IronRuby.Runtime {
 
             using (context.ClassHierarchyLocker()) {
                 int newVersion = context.ConstantAccessVersion;
-                
+
                 ConstantStorage storage;
                 bool anyMissing;
                 object result = ResolveQualifiedConstant(scope, qualifiedName, module, true, out storage, out anyMissing);
@@ -873,7 +872,7 @@ namespace IronRuby.Runtime {
             var context = scope.RubyContext;
             using (context.ClassHierarchyLocker()) {
                 int newVersion = context.ConstantAccessVersion;
-                
+
                 ConstantStorage storage;
                 bool exists = scope.TryResolveConstantNoLock(null, name, out storage) == null;
                 cache.Update(exists, newVersion);
@@ -920,10 +919,10 @@ namespace IronRuby.Runtime {
                     scope.RubyContext.SetCurrentException(null);
                     return false;
                 }
-                
+
                 // Note that the owner could be another runtime's module:
                 bool exists = owner != null && owner.TryResolveConstant(context, null, qualifiedName[qualifiedName.Length - 1], out storage);
-                
+
                 // cache result only if no constant was missing:
                 if (!anyMissing) {
                     cache.Update(exists, newVersion);
@@ -978,7 +977,7 @@ namespace IronRuby.Runtime {
                     // cache result only if no constant was missing:
                     if (anyMissing) {
                         return exists;
-                    } 
+                    }
                 }
 
                 cache.Update(exists, newVersion, module);
@@ -1022,13 +1021,13 @@ namespace IronRuby.Runtime {
                 // Note that the owner could be another runtime's module:
                 name = qualifiedName[i];
                 if (owner.TryResolveConstant(context, globalScope, name, out storage)) {
-                    
+
                     // Constant write updates constant version in a single runtime only. 
                     // Therefore if the chain mixes modules from different runtimes we cannot cache the result.
                     if (owner.Context != context) {
                         anyMissing = true;
                     }
-                    
+
                     result = storage.Value;
                 } else {
                     anyMissing = true;
@@ -1074,9 +1073,9 @@ namespace IronRuby.Runtime {
 
         // MakeArray*
         public const int OptimizedOpCallParamCount = 5;
-        
+
         #region MakeArray
-        
+
         [Emitted]
         public static RubyArray/*!*/ MakeArray0() {
             return new RubyArray(0);
@@ -1143,7 +1142,7 @@ namespace IronRuby.Runtime {
         public static Hash/*!*/ MakeHash0(RubyScope/*!*/ scope) {
             return new Hash(scope.RubyContext.EqualityComparer, 0);
         }
-        
+
         [Emitted]
         public static Hash/*!*/ MakeHash(RubyScope/*!*/ scope, object[]/*!*/ items) {
             return RubyUtils.SetHashElements(scope.RubyContext, new Hash(scope.RubyContext.EqualityComparer, items.Length / 2), items);
@@ -1219,7 +1218,7 @@ namespace IronRuby.Runtime {
                 }
                 return false;
             } else {
-                return IsTrue(comparisonSite.Target(comparisonSite, splattee, value)); 
+                return IsTrue(comparisonSite.Target(comparisonSite, splattee, value));
             }
         }
 
@@ -1272,8 +1271,8 @@ namespace IronRuby.Runtime {
 
         [Emitted, RubyConstructor]
         public static object/*!*/ CreateVector<TElement>(
-            ConversionStorage<TElement>/*!*/ elementConversion, 
-            ConversionStorage<Union<IList, int>>/*!*/ toAryToInt, 
+            ConversionStorage<TElement>/*!*/ elementConversion,
+            ConversionStorage<Union<IList, int>>/*!*/ toAryToInt,
             BlockParam block, RubyClass/*!*/ self, [NotNull]object/*!*/ arrayOrSize) {
 
             Debug.Assert(typeof(TElement) == self.GetUnderlyingSystemType().GetElementType());
@@ -1396,7 +1395,7 @@ namespace IronRuby.Runtime {
                 stringDict.Dictionary[name] = value;
                 return;
             }
-            
+
             throw new NotImplementedException();
         }
 
@@ -1511,8 +1510,8 @@ namespace IronRuby.Runtime {
         #region CreateRegex
 
         private static RubyRegex/*!*/ CreateRegexWorker(
-            RubyRegexOptions options, 
-            StrongBox<RubyRegex> regexpCache, 
+            RubyRegexOptions options,
+            StrongBox<RubyRegex> regexpCache,
             bool isLiteralWithoutSubstitutions,
             Func<RubyRegex> createRegex) {
 
@@ -1551,7 +1550,7 @@ namespace IronRuby.Runtime {
             Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringL(str1, encoding), options); };
             return CreateRegexWorker(options, regexpCache, true, createRegex);
         }
-        
+
         [Emitted]
         public static RubyRegex/*!*/ CreateRegexM(MutableString str1, RubyEncoding/*!*/ encoding, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
             Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringM(str1, encoding), options); };
@@ -1647,7 +1646,7 @@ namespace IronRuby.Runtime {
         public static RubySymbol/*!*/ CreateSymbolML(MutableString str1, string/*!*/ str2, RubyEncoding/*!*/ encoding, RubyScope/*!*/ scope) {
             return scope.RubyContext.CreateSymbol(CreateMutableStringML(str1, str2, encoding), false);
         }
-        
+
         [Emitted]
         public static RubySymbol/*!*/ CreateSymbolMM(MutableString str1, MutableString str2, RubyEncoding/*!*/ encoding, RubyScope/*!*/ scope) {
             return scope.RubyContext.CreateSymbol(CreateMutableStringMM(str1, str2, encoding), false);
@@ -1749,7 +1748,7 @@ namespace IronRuby.Runtime {
         public static void LeaveMethodFrame(RuntimeFlowControl/*!*/ rfc) {
             rfc.LeaveMethod();
         }
-        
+
         /// <summary>
         /// Filters exceptions raised from EH-body, EH-rescue and EH-else clauses.
         /// </summary>
@@ -1786,13 +1785,13 @@ namespace IronRuby.Runtime {
         /// <summary>
         /// Sets $!. Used in EH finally clauses to restore exception stored in oldExceptionVariable local.
         /// </summary>
-        [Emitted] 
+        [Emitted]
         public static void SetCurrentException(RubyScope/*!*/ scope, Exception exception) {
             scope.RubyContext.CurrentException = exception;
         }
 
         [Emitted] //RescueClause:
-        public static bool CompareException(BinaryOpStorage/*!*/ comparisonStorage, RubyScope/*!*/ scope, object classObject) {            
+        public static bool CompareException(BinaryOpStorage/*!*/ comparisonStorage, RubyScope/*!*/ scope, object classObject) {
             var context = scope.RubyContext;
             var site = comparisonStorage.GetCallSite("===");
             bool result = IsTrue(site.Target(site, classObject, context.CurrentException));
@@ -1898,7 +1897,7 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static Exception/*!*/ MakeConstructorUndefinedError(RubyClass/*!*/ classObj) {
-            return RubyExceptions.CreateTypeError(String.Format("`{0}' doesn't have a visible CLR constructor", 
+            return RubyExceptions.CreateTypeError(String.Format("`{0}' doesn't have a visible CLR constructor",
                 classObj.Context.GetTypeName(classObj.TypeTracker.Type, true)
             ));
         }
@@ -2103,7 +2102,7 @@ namespace IronRuby.Runtime {
         public static string/*!*/ ToSymbolValidator(string/*!*/ className, object obj) {
             var str = obj as MutableString;
             if (str == null) {
-                throw RubyExceptions.CreateReturnTypeError(className, "to_str", "String"); 
+                throw RubyExceptions.CreateReturnTypeError(className, "to_str", "String");
             }
             return str.ConvertToString();
         }
@@ -2135,7 +2134,7 @@ namespace IronRuby.Runtime {
             // TODO: this is used for DefaultProtocol conversions; we might avoid clonning in some (many?) cases
             return value.String.Clone();
         }
-        
+
         [Emitted] // ProtocolConversionAction
         public static RubyRegex/*!*/ ToRegexValidator(string/*!*/ className, object obj) {
             return new RubyRegex(RubyRegex.Escape(ToStringValidator(className, obj)), RubyRegexOptions.NONE);
@@ -2309,6 +2308,22 @@ namespace IronRuby.Runtime {
             throw RubyExceptions.CreateReturnTypeError(className, "to_f", "System::Single");
         }
 
+        [Emitted] // ProtocolConversionAction
+        public static string ToClrStringValidator(string/*!*/ className, object obj) {
+            if (obj is MutableString) {
+                return ((MutableString)obj).ConvertToString();
+            }
+
+            if (obj is string) {
+                return (string)obj;
+            }
+            string fromType = obj.GetType().FullName;
+            if (obj is IRubyObject) {
+                fromType = ((IRubyObject)obj).ImmediateClass.Name;
+            }
+            throw RubyExceptions.CreateTypeConversionError(fromType, "System::String");
+        }
+
         [Emitted]
         public static double ConvertBignumToFloat(BigInteger/*!*/ value) {
             double result;
@@ -2360,7 +2375,7 @@ namespace IronRuby.Runtime {
         }
 
         #endregion
-        
+
         #region Instance variable support
 
         [Emitted]
@@ -2626,7 +2641,7 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static void X(string marker) {
         }
-        
+
         [Emitted]
         public static object CreateDefaultInstance() {
             // nop (stub)

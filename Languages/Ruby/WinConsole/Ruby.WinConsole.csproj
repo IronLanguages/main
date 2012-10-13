@@ -7,7 +7,7 @@
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>IronRuby</RootNamespace>
-    <AssemblyName>irw</AssemblyName>
+    <AssemblyName>irubyw</AssemblyName>
     <PlatformTarget>x86</PlatformTarget>
     <CodeAnalysisRuleSet>Ruby.Console.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>

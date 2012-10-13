@@ -1,1 +1,1 @@
-taskkill /IM ir.exe /F
+taskkill /IM iruby.exe /F

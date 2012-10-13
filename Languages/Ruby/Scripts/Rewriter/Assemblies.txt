@@ -1,4 +1,4 @@
-ir.exe
+iruby.exe
 #IronRuby.dll
 #IronRuby.Libraries.dll
 #IronRuby.Libraries.Yaml.dll

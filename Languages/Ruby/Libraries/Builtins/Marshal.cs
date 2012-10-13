@@ -14,22 +14,18 @@
  * ***************************************************************************/
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 using IronRuby.Runtime;
-using Microsoft.Scripting;
+using IronRuby.Runtime.Calls;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Generation;
-using IronRuby.Runtime.Calls;
-using System.Globalization;
-using System.Text;
-using System.Reflection;
 
 namespace IronRuby.Builtins {
 
@@ -38,7 +34,7 @@ namespace IronRuby.Builtins {
 
         public sealed class WriterSites : RubyCallSiteStorage {
             public WriterSites(RubyContext/*!*/ context) : base(context) { }
-            
+
             private CallSite<Func<CallSite, object, object>> _marshalDump;
             private CallSite<Func<CallSite, object, int, object>> _dump;
 
@@ -53,7 +49,7 @@ namespace IronRuby.Builtins {
 
         public sealed class ReaderSites : RubyCallSiteStorage {
             public ReaderSites(RubyContext/*!*/ context) : base(context) { }
-           
+
             private CallSite<Func<CallSite, object, object, object>> _marshalLoad;
             private CallSite<Func<CallSite, object, MutableString, object>> _load;
             public CallSite<Func<CallSite, Proc, object, object>> _procCall;
@@ -71,7 +67,7 @@ namespace IronRuby.Builtins {
             }
         }
 
-            
+
         #region Constants
 
         private static readonly MutableString _positiveInfinityString = MutableString.CreateAscii("inf").Freeze();
@@ -196,7 +192,7 @@ namespace IronRuby.Builtins {
                 }
             }
 
-            
+
             private void WriteSubclassData(object/*!*/ obj, Type type) {
                 RubyClass libClass = _context.GetClass(type);
                 RubyClass theClass = _context.GetClassOf(obj);
@@ -289,7 +285,7 @@ namespace IronRuby.Builtins {
                 } else {
                     WriteSymbol("encoding", RubyEncoding.Binary);
                     MutableString encodingName;
-                    if(!_encodingNames.TryGetValue(value, out encodingName)) { // we can't pass the encoding's name directly to WriteAnObject as it's a CLR string
+                    if (!_encodingNames.TryGetValue(value, out encodingName)) { // we can't pass the encoding's name directly to WriteAnObject as it's a CLR string
                         encodingName = MutableString.Create(value.Name, RubyEncoding.Binary);
                         _encodingNames.Add(value, encodingName);
                     }
@@ -302,11 +298,11 @@ namespace IronRuby.Builtins {
                     return null;
 
                 var result = new List<KeyValuePair<string, object>>();
-                result.Add(new KeyValuePair<string,object>("mesg",  MutableString.Create(ex.Message, RubyEncoding.Ascii)));
+                result.Add(new KeyValuePair<string, object>("mesg", MutableString.Create(ex.Message, RubyEncoding.Ascii)));
 
                 var bt = ExceptionOps.GetBacktrace(ex);
                 if (bt != null)
-                    result.Add(new KeyValuePair<string,object>("bt", bt));
+                    result.Add(new KeyValuePair<string, object>("bt", bt));
 
                 if (ex is MemberAccessException) { // NameError and Descendents have a name and args attribute in MRI 1.9. IronRuby doesn't currently support them, but we marshal dump for compatibility
                     result.Add(new KeyValuePair<string, object>("name", null));
@@ -321,8 +317,8 @@ namespace IronRuby.Builtins {
 
             private void TestForAnonymous(RubyModule/*!*/ theModule) {
                 if (theModule.Name == null) {
-                    throw RubyExceptions.CreateTypeError("can't dump anonymous {0} {1}", 
-                        theModule.IsClass ? "class" : "module", 
+                    throw RubyExceptions.CreateTypeError("can't dump anonymous {0} {1}",
+                        theModule.IsClass ? "class" : "module",
                         theModule.GetDisplayName(_context, false)
                     );
                 }
@@ -445,9 +441,9 @@ namespace IronRuby.Builtins {
                             // Neither "_dump" nor "marshal_dump" writes instance vars separately
                             instanceNames = _context.GetInstanceVariableNames(obj);
 
-                            if(obj is MutableString) // TODO maybe add an IHasEncoding interface instead of checking for string/regex explicitly
+                            if (obj is MutableString) // TODO maybe add an IHasEncoding interface instead of checking for string/regex explicitly
                                 objEncoding = ((MutableString)obj).Encoding;
-                            else if(obj is RubyRegex)
+                            else if (obj is RubyRegex)
                                 objEncoding = ((RubyRegex)obj).Encoding;
 
                             if (objEncoding == RubyEncoding.Binary)
@@ -497,15 +493,15 @@ namespace IronRuby.Builtins {
                             WriteStruct((RubyStruct)obj);
                         } else if (obj is Range) {
                             WriteRange((Range)obj);
-                        } else if(obj is RubyMethod) {
+                        } else if (obj is RubyMethod) {
                             throw RubyExceptions.CreateTypeError("no marshal_dump is defined for class Method");
-                        } else if(obj is Proc) {
+                        } else if (obj is Proc) {
                             throw RubyExceptions.CreateTypeError("no marshal_dump is defined for class Proc");
-                        } else if(obj is RubyFile) {
+                        } else if (obj is RubyFile) {
                             throw RubyExceptions.CreateTypeError("can't dump File");
-                        } else if(obj is RubyIO) {
+                        } else if (obj is RubyIO) {
                             throw RubyExceptions.CreateTypeError("can't dump IO");
-                        } else if(obj is MatchData) {
+                        } else if (obj is MatchData) {
                             throw RubyExceptions.CreateTypeError("can't dump MatchData");
                         } else {
                             if (writeInstanceData) {
@@ -515,7 +511,7 @@ namespace IronRuby.Builtins {
                                 writeInstanceData = true;
                             }
                             WriteObject(obj);
-                        }  
+                        }
 
                         if (writeInstanceData) {
                             var ivarCount = instanceNames.Length;
@@ -528,9 +524,9 @@ namespace IronRuby.Builtins {
                             } else {
                                 WriteInt32(ivarCount);
                             }
-                            
+
                             var encoding = _context.GetIdentifierEncoding();
-                            if(exceptionData != null){
+                            if (exceptionData != null) {
                                 foreach (var kv in exceptionData) {
                                     WriteSymbol(kv.Key, encoding);
                                     WriteAnObject(kv.Value);
@@ -588,14 +584,14 @@ namespace IronRuby.Builtins {
             private readonly ReaderSites/*!*/ _sites;
             private readonly RubyGlobalScope/*!*/ _globalScope;
             private readonly Proc _proc;
-            private readonly Dictionary<int, Symbol>/*!*/ _symbols; 
+            private readonly Dictionary<int, Symbol>/*!*/ _symbols;
             private readonly Dictionary<int, object>/*!*/ _objects;
 
             private RubyContext/*!*/ Context {
                 get { return _globalScope.Context; }
             }
 
-            internal MarshalReader(ReaderSites/*!*/ sites, BinaryReader/*!*/ reader, 
+            internal MarshalReader(ReaderSites/*!*/ sites, BinaryReader/*!*/ reader,
                 RubyGlobalScope/*!*/ globalScope, Proc proc) {
                 _sites = sites;
                 _reader = reader;
@@ -612,12 +608,12 @@ namespace IronRuby.Builtins {
                     throw RubyExceptions.CreateTypeError(
                         "incompatible marshal file format (can't be read)\n\tformat version {0}.{1} required; {2}.{3} given",
                         MAJOR_VERSION, MINOR_VERSION, major, minor
-                    );                
+                    );
                 }
 
                 if (minor < MINOR_VERSION) {
                     Context.ReportWarning(
-                        String.Format(CultureInfo.InvariantCulture, 
+                        String.Format(CultureInfo.InvariantCulture,
                             "incompatible marshal file format (can be read)\n\tformat version {0}.{1} required; {2}.{3} given",
                             MAJOR_VERSION, MINOR_VERSION, major, minor
                         )
@@ -700,7 +696,6 @@ namespace IronRuby.Builtins {
             }
 
             private MutableString/*!*/ ReadString() {
-                // TODO: encoding
                 int count = ReadInt32();
                 byte[] data = _reader.ReadBytes(count);
                 return MutableString.CreateBinary(data, RubyEncoding.Binary);
@@ -780,7 +775,7 @@ namespace IronRuby.Builtins {
 
             private object/*!*/ ReadObject(int objectRef = -1) {
                 RubyClass theClass = ReadType();
-                
+
                 if (objectRef != -1) { // put a proxy object object in our _objects cache before loading children for self-referential objects
                     _objects[objectRef] = new Utils.SelfRefId { Id = objectRef };
                 }
@@ -807,7 +802,7 @@ namespace IronRuby.Builtins {
 
                 return result;
             }
-            
+
             private object/*!*/ ReadUsingLoad() {
                 RubyClass theClass = ReadType();
                 return _sites.Load.Target(_sites.Load, theClass, ReadString());
@@ -869,11 +864,50 @@ namespace IronRuby.Builtins {
                 int count = ReadInt32();
                 for (int i = 0; i < count; i++) {
                     string name = ReadIdentifier();
-                    Context.SetInstanceVariable(obj, name, ReadAnObject(false));
+                    if (!ReadEncoding(obj, name)) {
+                        Context.SetInstanceVariable(obj, name, ReadAnObject(false));
+                    }
                 }
                 return obj;
             }
 
+            private bool ReadEncoding(object obj, string identifier) {
+                RubyEncoding encoding = null;
+                if (obj is MutableString || obj is RubyRegex) {
+                    if (identifier == "E") {
+                        char encodingType = (char)_reader.ReadByte();
+                        if (encodingType == 'F') {
+                            encoding = RubyEncoding.Ascii;
+                        } else if (encodingType == 'T') {
+                            encoding = RubyEncoding.UTF8;
+                        } else {
+                            throw RubyExceptions.CreateArgumentError("Invalid byte for encoding: {0:X} '{0}'.", encodingType);
+                        }
+                    } else if (identifier == "encoding") {
+                        MutableString encodingName = ReadString();
+                        encoding = RubyEncoding.GetRubyEncoding(RubyEncoding.GetCodePage(encodingName.ConvertToString()));
+                    }
+                    if (encoding != null) {
+                        MutableString mutableString = obj as MutableString;
+                        RubyRegex rubyRegex = obj as RubyRegex;
+                        if (rubyRegex != null) {
+                            mutableString = rubyRegex.Pattern.Clone();
+                        }
+                        if (mutableString == null) {
+                            string typeName = obj.GetType().FullName;
+                            if (obj is IRubyObject) {
+                                typeName = ((IRubyObject)obj).ImmediateClass.Name ?? "<anonymous>";
+                            }
+                            throw RubyExceptions.CreateNotImplementedError("Unknown type with Encoding property: {0}.", typeName);
+                        }
+                        mutableString.ForceEncoding(encoding);
+                        if (rubyRegex != null) {
+                            rubyRegex.Set(mutableString, rubyRegex.Options);
+                        }
+                    }
+                }
+                return encoding != null;
+            }
 
             private object/*!*/ ReadExtended() {
                 string extensionName = ReadIdentifier();
@@ -1076,7 +1110,7 @@ namespace IronRuby.Builtins {
 
         // TODO: Use DefaultValue attribute when it works with the binder
         [RubyMethod("dump", RubyMethodAttributes.PublicSingleton)]
-        public static object Dump(WriterSites/*!*/ sites, RespondToStorage/*!*/ respondToStorage, 
+        public static object Dump(WriterSites/*!*/ sites, RespondToStorage/*!*/ respondToStorage,
             RubyModule/*!*/ self, object obj, object io, [Optional]int? limit) {
             Stream stream = null;
             if (io != null) {
@@ -1110,7 +1144,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("load", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("restore", RubyMethodAttributes.PublicSingleton)]
-        public static object Load(ReaderSites/*!*/ sites, RespondToStorage/*!*/ respondToStorage, 
+        public static object Load(ReaderSites/*!*/ sites, RespondToStorage/*!*/ respondToStorage,
             RubyScope/*!*/ scope, RubyModule/*!*/ self, object source, [Optional]Proc proc) {
 
             Stream stream = null;
@@ -1170,7 +1204,7 @@ namespace IronRuby.Builtins {
 
             public static object/*!*/ CreateRange(RubyClass theClass, Type baseType, IDictionary<string, object> attributes = null) {
                 object begin = null, end = null, excludeEnd = null;
-                
+
                 BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
                 ConstructorInfo ci = null;
 
@@ -1178,10 +1212,10 @@ namespace IronRuby.Builtins {
                     if (attributes.TryGetValue("begin", out begin))
                         attributes.Remove("begin");
 
-                    if(attributes.TryGetValue("end", out end))
+                    if (attributes.TryGetValue("end", out end))
                         attributes.Remove("end");
 
-                    if(attributes.TryGetValue("excl", out excludeEnd))
+                    if (attributes.TryGetValue("excl", out excludeEnd))
                         attributes.Remove("excl");
 
                     if (begin is int && end is int && IsAvailable(ci = baseType.GetDeclaredConstructors().WithBindingFlags(bindingFlags).WithSignature(_ccRangeTypes1).SingleOrDefault())) {
@@ -1210,7 +1244,7 @@ namespace IronRuby.Builtins {
                 ConstructorInfo ci = null;
 
                 Exception result = null;
-                
+
                 if (attributes != null) {
                     if (attributes.TryGetValue("mesg", out mesg))
                         attributes.Remove("mesg");
@@ -1219,9 +1253,9 @@ namespace IronRuby.Builtins {
                         attributes.Remove("bt");
                     }
 
-                    if(mesg is MutableString)
+                    if (mesg is MutableString)
                         mesg = ((MutableString)mesg).ToString();
-               }
+                }
 
                 if (mesg is string && IsAvailable(ci = baseType.GetDeclaredConstructors().WithBindingFlags(bindingFlags).WithSignature(_ccExceptionTypes1).SingleOrDefault())) {
                     result = (Exception)ci.Invoke(new object[] { mesg });

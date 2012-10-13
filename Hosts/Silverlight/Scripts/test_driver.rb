@@ -248,7 +248,7 @@ if __FILE__ == $0
     }
     
     opts = OptionParser.new do |opts|
-      opts.banner = "Usage: ir.exe test_driver.rb [options]"
+      opts.banner = "Usage: iruby.exe test_driver.rb [options]"
       
       opts.separator ""
       opts.separator "Specific options:"

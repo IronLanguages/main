@@ -348,7 +348,7 @@ tutorial "IronRuby Hosting tutorial" do
 
             task(:body => %{
                     To be able to host a language, you need to have a config file. This tutorial
-                    runs using ir.exe, which normally includes a config file ir.exe.config with
+                    runs using iruby.exe, which normally includes a config file iruby.exe.config with
                     a section like this (taken from the IronRuby 0.6 release).
                     
                       <microsoft.scripting>

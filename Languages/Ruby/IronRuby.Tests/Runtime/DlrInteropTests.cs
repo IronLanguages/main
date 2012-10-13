@@ -318,7 +318,7 @@ module DynamicAttributes
 end
 
 #------------------------------------------------------------------------------
-# If the file is run from the command-line as 'ir.exe test.rb',
+# If the file is run from the command-line as 'iruby.exe test.rb',
 # some extra initialization needs to be done so that the rest of the code
 # works both from the command-line and in a hosted ScriptRuntime.
 
