@@ -220,6 +220,9 @@ def test_get_set_locale():
     loc = locale.getlocale(locale.LC_ALL)
     AreEqual(loc, (None,None))
 
+    Assert(locale.setlocale(locale.LC_ALL, '') != None)
+    Assert(locale.getlocale() != None)
+
 def test_cp17819():
     import xml.sax
     AreEqual(xml.sax._false, 0)
