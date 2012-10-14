@@ -64,12 +64,12 @@ namespace IronPython.Modules {
         [Documentation("gets the default locale tuple")]
         public static object _getdefaultlocale() {            
             return PythonTuple.MakeTuple(
-                CultureInfo.CurrentCulture.Name.Replace('-', '_').Replace(' ', '_'), 
+                GetDefaultLocale(), 
                 PreferredEncoding
             );
         }
 
-        [Documentation(@"gets the locale's convetions table.  
+        [Documentation(@"gets the locale's conventions table.  
 
 The conventions table is a dictionary that contains information on how to use 
 the locale for numeric and monetary formatting")]
@@ -92,6 +92,10 @@ If locale is None then the current setting is returned.
             LocaleInfo li = GetLocaleInfo(context);
             if (locale == null) {
                 return li.GetLocale(context, category);
+            }
+            //  An empty string specifies the user’s default settings.
+            if (locale == "") {
+                locale = GetDefaultLocale();
             }
 
             return li.SetLocale(context, category, locale);
@@ -116,6 +120,10 @@ Currently returns the string unmodified")]
             Monetary = 3,
             Numeric = 4,
             Time = 5,
+        }
+
+        private static string GetDefaultLocale() {
+            return CultureInfo.CurrentCulture.Name.Replace('-', '_').Replace(' ', '_');
         }
 
         internal class LocaleInfo {
@@ -240,7 +248,7 @@ Currently returns the string unmodified")]
             }
 
             /// <summary>
-            /// Popupates the given directory w/ the locale information from the given
+            /// Populates the given directory w/ the locale information from the given
             /// CultureInfo.
             /// </summary>
             private void CreateConventionsDict() {
