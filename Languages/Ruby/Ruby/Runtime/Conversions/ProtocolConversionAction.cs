@@ -501,9 +501,29 @@ namespace IronRuby.Runtime.Conversions {
         }
     }
 
-    public sealed class ConvertToClrStringAction : ConvertToFloatingPointAction<ConvertToClrStringAction> {
+    public sealed class ConvertToClrStringAction : ConvertToReferenceTypeAction<ConvertToClrStringAction, string> {
+        protected override string/*!*/ ToMethodName { get { return Symbols.ToStr; } }
         protected override string/*!*/ TargetTypeName { get { return "System::String"; } }
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToClrStringValidator; } }
+
+        protected internal override bool TryImplicitConversion(MetaObjectBuilder metaBuilder, CallArguments args) {
+            if (base.TryImplicitConversion(metaBuilder, args)) {
+                return true;
+            }
+
+            if (args.Target is RubySymbol) {
+                metaBuilder.Result = Methods.ConvertSymbolToClrString.OpCall(AstUtils.Convert(args.TargetExpression, typeof(RubySymbol)));
+                return true;
+            }
+
+            return false;
+        }
+
+        protected override DynamicMetaObjectBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, IList<DynamicMetaObject/*!*/>/*!*/ args,
+            out MethodInfo postConverter) {
+            postConverter = Methods.ObjectToString;
+            return context.MetaBinderFactory.InteropConvert(typeof(string), true);
+        }
     }
 
     #endregion
