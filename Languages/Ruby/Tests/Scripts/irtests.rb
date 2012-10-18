@@ -346,7 +346,7 @@ class IRTest
         \\n or \\r\\n. See http://www.kernel.org/pub/software/scm/git/docs/git-config.html for details
         
       }.gsub(/  +/, "")
-      abort(message) if autocrlf.chomp != "true"
+      puts(message) if autocrlf.chomp != "true"
     end
   end 
   
