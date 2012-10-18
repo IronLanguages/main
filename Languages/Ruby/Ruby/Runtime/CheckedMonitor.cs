@@ -14,8 +14,6 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using Microsoft.Scripting.Utils;
 
@@ -32,7 +30,7 @@ namespace IronRuby.Runtime {
                 MonitorUtils.Enter(this, ref lockTaken);
             } finally {
                 if (lockTaken) {
-                        _locked++;
+                    Interlocked.Increment(ref _locked);
                 }
             }
         }
@@ -42,13 +40,13 @@ namespace IronRuby.Runtime {
                 MonitorUtils.Exit(this, ref lockTaken);
             } finally {
                 if (!lockTaken) {
-                    _locked--;
+                    Interlocked.Decrement(ref _locked);
                 }
             }
         }
 
         public bool IsLocked {
-            get { return _locked > 0; }
+            get { return !Interlocked.Equals(_locked, 0); }
         }
 
         public IDisposable/*!*/ CreateLocker() {
