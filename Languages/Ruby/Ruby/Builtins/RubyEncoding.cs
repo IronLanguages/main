@@ -93,7 +93,7 @@ namespace IronRuby.Builtins {
 
         public static string GetEncodingName(int codePage) {
             if (codePage == 0) {
-                return "Binary";
+                return "ASCII-8BIT";
             }
             EncodingInfo encodingInfo = g_encodingsInfo.SingleOrDefault(info => info.CodePage == codePage);
             if (encodingInfo == null) {
