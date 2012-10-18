@@ -15,6 +15,7 @@
 
 #if FEATURE_CORE_DLR
 using System.Linq.Expressions;
+using System.Linq;
 #else
 using Microsoft.Scripting.Ast;
 #endif
@@ -31,7 +32,6 @@ using IronRuby.Runtime;
 using IronRuby.Compiler;
 
 namespace IronRuby.Builtins {
-
     /// <summary>
     /// All encodings in Ruby are represented by instances of a single class. Therefore we need to wrap .NET Encoding class in RubyEncoding.
     /// Instances of this class are app-domain singletons. That's all right as far as the class is readonly and doesn't implement IRubyObject.
@@ -40,6 +40,67 @@ namespace IronRuby.Builtins {
     [Serializable]
     public class RubyEncoding : ISerializable, IExpressionSerializable {
         #region Singletons
+        ///<summary>
+        /// The following table lists the supported encodings and their associated code pages.
+        /// An asterisk in the last column indicates that the code page is natively supported by the .NET Framework, regardless of the underlying platform.
+        /// </summary>
+        /// <remarks>http://msdn.microsoft.com/en-us/library/system.text.encoding.aspx</remarks>
+        private static EncodingInfo[] g_encodingsInfo = Encoding.GetEncodings();
+
+        private static readonly IDictionary<string, string> g_encodingsNameMap = new ReadOnlyDictionary<string, string>(new SortedDictionary<string, string> {
+            { "utf-8", "UTF-8" },
+            { "us-ascii", "US-ASCII" },
+            { "unicodeFFFE", "UTF-16BE"},
+            { "utf-16", "UTF-16LE"},
+            { "utf-7", "UTF-7"},
+            { "utf-32BE", "UTF-32BE"},
+            { "utf-32", "UTF-32LE"},
+            { "shift_jis", "Shift_JIS"},
+            { "euc-jp", "EUC-JP"},
+            //{ "EUC-JP", "CP20932"}, // MEMO: treated in GetCLREncodingName
+            { "iso-2022-jp", "ISO-2022-JP"},
+            // { "iso-2022-jp", "CP50222"}, // MEMO: treated in GetCLREncodingName, not treated in GetRubyEncodingName :(
+        });
+
+        private static string GetCLREncodingName(string rubyEncodingName) {
+            string clrEncodingName = g_encodingsNameMap.SingleOrDefault(mapClrRuby => mapClrRuby.Value == rubyEncodingName).Key;
+            if (string.IsNullOrEmpty(clrEncodingName)) {
+                if (rubyEncodingName.StartsWith("CP")) {
+                    int codePage;
+                    if (Int32.TryParse(rubyEncodingName.Substring(2), out codePage)) {
+                        clrEncodingName = GetEncodingName(codePage);
+                    }
+                }
+            }
+            if (string.IsNullOrEmpty(clrEncodingName)) {
+                // MEMO: ensure encoding exists.
+                clrEncodingName = GetEncodingName(GetEncodingCodePage(rubyEncodingName));
+            }
+            return clrEncodingName;
+        }
+
+        private static string GetRubyEncodingName(string clrEncodingName) {
+            return g_encodingsNameMap.SingleOrDefault(pairKeyValue => pairKeyValue.Key == clrEncodingName).Value ?? clrEncodingName;
+        }
+
+        public static int GetEncodingCodePage(string name) {
+            EncodingInfo encodingInfo = g_encodingsInfo.FirstOrDefault(info => info.Name == name);
+            if (encodingInfo == null) {
+                throw RubyExceptions.CreateArgumentError("Unknown encoding name: {0}", name);
+            }
+            return encodingInfo.CodePage;
+        }
+
+        public static string GetEncodingName(int codePage) {
+            if (codePage == 0) {
+                return "Binary";
+            }
+            EncodingInfo encodingInfo = g_encodingsInfo.SingleOrDefault(info => info.CodePage == codePage);
+            if (encodingInfo == null) {
+                throw RubyExceptions.CreateArgumentError("Unknown encoding code page: {0}", codePage);
+            }
+            return encodingInfo.Name;
+        }
 
         public const int CodePageBinary = 0;
         public const int CodePageSJIS = 932;
@@ -68,7 +129,6 @@ namespace IronRuby.Builtins {
 #else
         public static readonly RubyEncoding/*!*/ Ascii = new RubyEncoding(AsciiEncoding.Instance, AsciiEncoding.Instance, -2);
 #endif
-
         #endregion
 
         private readonly Encoding/*!*/ _encoding;
@@ -192,49 +252,11 @@ namespace IronRuby.Builtins {
         }
 
         public static string GetRubySpecificName(int codepage) {
-            switch (codepage) {
-                case CodePageUTF8: return "UTF-8";
-                case CodePageAscii: return "US-ASCII";
-                case CodePageUTF16BE: return "UTF-16BE";
-                case CodePageUTF16LE: return "UTF-16LE";
-#if FEATURE_ENCODING
-                case CodePageUTF7: return "UTF-7";
-                case CodePageUTF32BE: return "UTF-32BE";
-                case CodePageUTF32LE: return "UTF-32LE";
-                case CodePageSJIS: return "Shift_JIS";
-
-                // disambiguates CP 20932 and CP 51932:
-                case CodePageEUCJP: return "EUC-JP";
-                case 20932: return "CP20932";
-
-                case 50220: return "ISO-2022-JP";
-                case 50222: return "CP50222";
-#endif
-                default: return null;
-            }
+            return GetRubyEncodingName(GetEncodingName(codepage));
         }
 
         public static int GetCodePage(string rubyEncodingName) {
-            switch (rubyEncodingName) {
-                case "UTF-8": return CodePageUTF8;
-                case "US-ASCII": return CodePageAscii;
-                case "UTF-16BE": return CodePageUTF16BE;
-                case "UTF-16LE": return CodePageUTF16LE;
-#if FEATURE_ENCODING
-                case "UTF-7": return CodePageUTF7;
-                case "UTF-32BE": return CodePageUTF32BE;
-                case "UTF-32LE": return CodePageUTF32LE;
-                case "Shift_JIS": return CodePageSJIS;
-
-                // disambiguates CP 20932 and CP 51932:
-                case "EUC-JP": return CodePageEUCJP;
-                case "CP20932": return 20932;
-
-                case "ISO-2022-JP": return 50220;
-                case "CP50222": return 50222;
-#endif
-                default: throw RubyExceptions.CreateArgumentError("Unknown encoding name: {0}", rubyEncodingName);
-            }
+            return GetEncodingCodePage(GetCLREncodingName(rubyEncodingName));
         }
 
         public int CodePage {

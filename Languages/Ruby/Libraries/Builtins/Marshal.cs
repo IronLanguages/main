@@ -884,8 +884,12 @@ namespace IronRuby.Builtins {
                             throw RubyExceptions.CreateArgumentError("Invalid byte for encoding: {0:X} '{0}'.", encodingType);
                         }
                     } else if (identifier == "encoding") {
-                        MutableString encodingName = ReadString();
-                        encoding = RubyEncoding.GetRubyEncoding(RubyEncoding.GetCodePage(encodingName.ConvertToString()));
+                        MutableString encodingName = ReadAnObject(false) as MutableString;
+                        if (encodingName != null) {
+                            encoding = RubyEncoding.GetRubyEncoding(RubyEncoding.GetCodePage(encodingName.ConvertToString()));
+                        } else {
+                            throw RubyExceptions.CreateNotImplementedError("Unknown encoding: {0}.", encodingName);
+                        }
                     }
                     if (encoding != null) {
                         MutableString mutableString = obj as MutableString;
