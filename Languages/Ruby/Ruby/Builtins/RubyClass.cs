@@ -1530,6 +1530,10 @@ namespace IronRuby.Builtins {
                 type = typeof(RubyObject);
             }
 
+            if (type == typeof(string)) {
+                type = typeof(MutableString);
+            }
+
             if (_structInfo != null) {
                 return Methods.AllocateStructInstance.OpCall(AstUtils.Convert(args.TargetExpression, typeof(RubyClass)));
             }
