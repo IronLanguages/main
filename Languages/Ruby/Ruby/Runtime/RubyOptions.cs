@@ -40,6 +40,7 @@ namespace IronRuby.Runtime {
         private readonly bool _profile;
         private readonly bool _hasSearchPaths;
         private readonly bool _noAssemblyResolveHook;
+        private static bool _checkSyntaxOnly;
 
 #if DEBUG
         public static bool UseThreadAbortForSyncRaise;
@@ -113,6 +114,15 @@ namespace IronRuby.Runtime {
         /// </summary>
         public bool DebugVariable {
             get { return _debugVariable; }
+        }
+
+        public static bool CheckSyntaxOnly {
+            get {
+                return _checkSyntaxOnly;
+            }
+            internal set {
+                _checkSyntaxOnly = value;
+            }
         }
 
         public RubyOptions(IDictionary<string, object>/*!*/ options)

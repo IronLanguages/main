@@ -138,7 +138,6 @@ namespace IronRuby.Hosting {
                 #region Ruby Options
 
                 case "-a":
-                case "-c":
                 case "--copyright":
                 case "-l":
                 case "-n":
@@ -146,6 +145,9 @@ namespace IronRuby.Hosting {
                 case "-s":
                     throw new InvalidOptionException(String.Format("Option `{0}' not supported", arg));
 
+                case "-c":
+                    RubyOptions.CheckSyntaxOnly = true;
+                    return;
                 case "--version":
                     ConsoleOptions.PrintVersion = true;
                     ConsoleOptions.Exit = true;
@@ -388,7 +390,7 @@ namespace IronRuby.Hosting {
             options = new string[,] {
              // { "-0[octal]",                   "specify record separator (\0, if no argument)" },
              // { "-a",                          "autosplit mode with -n or -p (splits $_ into $F)" },
-             // { "-c",                          "check syntax only" },
+                { "-c",                          "check syntax only" },
                 { "-Cdirectory",                 "cd to directory, before executing your script" },
                 { "-d",                          "set debugging flags (set $DEBUG to true)" },
                 { "-D",                          "emit debugging information (PDBs) for Visual Studio debugger" },

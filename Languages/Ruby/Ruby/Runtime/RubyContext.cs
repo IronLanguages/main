@@ -2596,7 +2596,12 @@ namespace IronRuby.Runtime {
                     FactoryKind = TopScopeFactoryKind.Main
                 };
 
-                CompileSourceCode(program, options, _runtimeErrorSink).Run();
+                ScriptCode scriptCode = CompileSourceCode(program, options, _runtimeErrorSink);
+                if (!RubyOptions.CheckSyntaxOnly) {
+                    scriptCode.Run();
+                } else {
+                    Console.Write("Syntax OK\n");
+                }
             } catch (SystemExit e) {
                 return e.Status;
             }
