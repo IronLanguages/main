@@ -1304,7 +1304,6 @@ namespace IronPython.Modules
             internal override AstExpression Revert() {
                 AstExpression target = expr.Revert(func);
                 List<Arg> newArgs = new List<Arg>();
-                int i = 0;
                 foreach (expr ex in args)
                     newArgs.Add(new Arg(expr.Revert(ex)));
                 if (null != starargs)
