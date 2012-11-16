@@ -33,7 +33,7 @@ namespace IronRuby.Builtins {
             protected byte[] _data;
             protected int _count;
 
-            internal BinaryContent(byte[]/*!*/ data, MutableString owner) 
+            internal BinaryContent(byte[]/*!*/ data, MutableString owner)
                 : this(data, data.Length, owner) {
             }
 
@@ -98,7 +98,7 @@ namespace IronRuby.Builtins {
                     return String.Empty;
                 } else {
                     return _owner._encoding.StrictEncoding.GetString(_data, 0, _count);
-                } 
+                }
             }
 
             internal void AppendBytes(string/*!*/ str, int start, int count) {
@@ -337,7 +337,7 @@ namespace IronRuby.Builtins {
             }
 
             public override Content/*!*/ GetSlice(int start, int count) {
-                return Create(_data.GetSlice(_count, start, count), _owner);
+                return Create(_owner.Encoding.StrictEncoding.GetBytes(GetStringSlice(start, count)), _owner);
             }
 
             public override CharacterEnumerator/*!*/ GetCharacters() {
@@ -368,7 +368,7 @@ namespace IronRuby.Builtins {
                 }
 
                 if (_owner.HasByteCharacters || c < 0x80 && _owner._encoding.IsAsciiIdentity) {
-                    return _data[0] == c;    
+                    return _data[0] == c;
                 }
 
                 byte[] bytes = new byte[_owner.Encoding.MaxBytesPerChar];
@@ -557,7 +557,7 @@ namespace IronRuby.Builtins {
                 if (start > _count - count) {
                     throw new ArgumentOutOfRangeException("start");
                 }
-                
+
                 content.Append(_data, start, count);
             }
 
