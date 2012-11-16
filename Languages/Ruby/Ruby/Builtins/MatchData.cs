@@ -38,29 +38,23 @@ namespace IronRuby.Builtins {
         /// </summary>
         public RubyEncoding/*!*/ Encoding { get { return _originalString.Encoding; } }
 
-        public int GroupCount {
-            get {
-                return _match.Groups.Count;
-            }
+        public int GroupCount { 
+            get { return _match.Groups.Count; } 
         }
 
         public int Index {
-            get {
-                return GetGroupStart(0);
-            }
+            get { return GetGroupStart(0); } 
         }
 
         public int Length {
-            get {
-                return GetGroupLength(0);
-            }
+            get { return GetGroupLength(0); } 
         }
 
         #region Construction
 
         private MatchData(Match/*!*/ match, MutableString/*!*/ originalString) {
             Debug.Assert(match.Success);
-
+            
             _match = match;
 
             // TODO (opt): create groups instead?
@@ -88,7 +82,7 @@ namespace IronRuby.Builtins {
         protected virtual MatchData/*!*/ CreateInstance() {
             return new MatchData();
         }
-
+        
         public void InitializeFrom(MatchData/*!*/ other) {
             _match = other._match;
             _originalString = other._originalString;
@@ -104,7 +98,7 @@ namespace IronRuby.Builtins {
             }
             return new MatchData(match, input);
         }
-
+        
         #endregion
 
         #region IRubyObjectState Members
@@ -134,33 +128,30 @@ namespace IronRuby.Builtins {
         }
 
         public MutableString GetValue() {
-            return _match.Success ? GetGroupMatch(0).TaintBy(this) : null;
+            return _match.Success ? _originalString.GetSlice(Index, Length).TaintBy(this) : null;
         }
 
         public MutableString GetGroupValue(int index) {
             // we don't need to check index range, Groups indexer returns an unsuccessful group if out of range:
-            return GroupSuccess(index) ? GetGroupMatch(index).TaintBy(this) : null;
+            return GroupSuccess(index) ? _originalString.GetSlice(GetGroupStart(index), GetGroupLength(index)).TaintBy(this) : null;
         }
 
         public MutableString AppendGroupValue(int index, MutableString/*!*/ result) {
             // we don't need to check index range, Groups indexer returns an unsuccessful group if out of range:
-            return GroupSuccess(index) ? result.Append(GetGroupMatch(index)).TaintBy(this) : null;
+            return GroupSuccess(index) ? result.Append(_originalString, GetGroupStart(index), GetGroupLength(index)).TaintBy(this) : null;
         }
 
         public int GetGroupStart(int groupIndex) {
-            // TODO: this are not correct if we use UTF-8 in witch the index can be different according with the number of byte for character
             ContractUtils.Requires(groupIndex >= 0);
             return _match.Groups[groupIndex].Index;
         }
 
         public int GetGroupLength(int groupIndex) {
-            // TODO: this are not correct if we use UTF-8 in witch the index can be different according with the number of byte for character
             ContractUtils.Requires(groupIndex >= 0);
             return _match.Groups[groupIndex].Length;
         }
-
+        
         public int GetGroupEnd(int groupIndex) {
-            // TODO: this are not correct if we use UTF-8 in witch the index can be different according with the number of byte for character
             ContractUtils.Requires(groupIndex >= 0);
             return GetGroupStart(groupIndex) + GetGroupLength(groupIndex);
         }
@@ -172,16 +163,11 @@ namespace IronRuby.Builtins {
         }
 
         public MutableString/*!*/ GetPreMatch() {
-            return MutableString.CreateMutable(_match.Groups[0].Value.Substring(0, _match.Groups[0].Length), this.Encoding).TaintBy(this);
+            return _originalString.GetSlice(0, GetGroupStart(0)).TaintBy(this);
         }
-
+        
         public MutableString/*!*/ GetPostMatch() {
-            return MutableString.CreateMutable(_match.Groups[0].Value.Substring(_match.Groups[0].Length), this.Encoding).TaintBy(this);
-        }
-
-        private MutableString GetGroupMatch(int groupIndex) {
-            ContractUtils.Requires(groupIndex >= 0);
-            return MutableString.CreateMutable(_match.Groups[groupIndex].Value, this.Encoding);
+            return _originalString.GetSlice(GetGroupEnd(0)).TaintBy(this);
         }
     }
 }
