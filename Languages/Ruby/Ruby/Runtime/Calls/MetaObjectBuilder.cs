@@ -263,7 +263,7 @@ namespace IronRuby.Runtime.Calls {
                 // Ruby objects (get the method directly to avoid interface dispatch):
                 MethodInfo classGetter = type.GetInheritedMethods(Methods.IRubyObject_get_ImmediateClass.Name)
                     .Where(m => m.IsPublic && !m.IsStatic)
-                    .SingleOrDefault();
+                    .FirstOrDefault();
 
                 if (type.IsVisible() && classGetter != null && classGetter.ReturnType == typeof(RubyClass)) {
                     AddCondition(

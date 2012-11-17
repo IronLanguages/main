@@ -196,6 +196,10 @@ module Gem
     return false
   end
 
+  # To support gem updates.
+  def self.unresolved_deps
+    {}
+  end
 end
 
 begin

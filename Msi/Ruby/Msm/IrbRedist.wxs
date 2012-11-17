@@ -55,14 +55,14 @@
               </File>
             </Component>
 
-            <!-- Ngen'd binaries for for entry points (ir.exe/irw.exe) and config -->
+            <!-- Ngen'd binaries for for entry points (irubyuby.exe/irubyubyw.exe) and config -->
             <Component Id="CNG32Bins" DiskId="1" Guid="6A04E63B-1CC3-451B-B299-88E8085F2497">
               <Condition>NOT VersionNT64</Condition>
-              <File Id="NGENFile_ir.exe" Name="ir.exe">
-                <netfx:NativeImage Id="NGEN_File_ir.exe" Priority="1"/>
+              <File Id="NGENFile_iruby.exe" Name="iruby.exe">
+                <netfx:NativeImage Id="NGEN_File_iruby.exe" Priority="1"/>
               </File>
-              <File Id="NGENFile_irw.exe" Name="irw.exe">
-                <netfx:NativeImage Id="NGEN_File_irw.exe" Priority="1"/>
+              <File Id="NGENFile_irubyw.exe" Name="irubyw.exe">
+                <netfx:NativeImage Id="NGEN_File_irubyw.exe" Priority="1"/>
               </File>
               <RegistryValue Root='HKCU' Key='SOFTWARE\Microsoft\IronRuby\1.1' Type='string' Value='ir' KeyPath='yes' />
             </Component>
@@ -90,17 +90,17 @@
 
             <Component Id="CNG64Bins" DiskId="1" Guid="9E9E3CA3-90EA-48D3-B290-4C12C6F2AE00">
               <Condition>VersionNT64</Condition>
-              <File Id="NGEN64File_ir.exe" Name="ir.exe">
-                <netfx:NativeImage Id="NGEN64_File_ir.exe" Priority="1" Platform="32bit" />
+              <File Id="NGEN64File_iruby.exe" Name="iruby.exe">
+                <netfx:NativeImage Id="NGEN64_File_iruby.exe" Priority="1" Platform="32bit" />
               </File>
-              <File Id="NGEN64File_irw.exe" Name="irw.exe" >
-                <netfx:NativeImage Id="NGEN64_File_irw.exe" Priority="1" Platform="32bit"/>
+              <File Id="NGEN64File_irubyw.exe" Name="irubyw.exe" >
+                <netfx:NativeImage Id="NGEN64_File_irubyw.exe" Priority="1" Platform="32bit"/>
               </File>
-              <File Id="NGEN64File_ir64.exe" Name="ir64.exe" >
-                <netfx:NativeImage Id="NGEN64_File_ir64.exe" Priority="1" Platform="64bit"/>
+              <File Id="NGEN64File_iruby64.exe" Name="iruby64.exe" >
+                <netfx:NativeImage Id="NGEN64_File_iruby64.exe" Priority="1" Platform="64bit"/>
               </File>
-              <File Id="NGEN64File_irw64.exe" Name="irw64.exe" >
-                <netfx:NativeImage Id="NGEN64_File_irw64.exe" Priority="1" Platform="64bit"/>
+              <File Id="NGEN64File_irubyw64.exe" Name="irubyw64.exe" >
+                <netfx:NativeImage Id="NGEN64_File_irubyw64.exe" Priority="1" Platform="64bit"/>
               </File>
               <RegistryValue Root='HKCU' Key='SOFTWARE\Microsoft\IronRuby\1.1' Type='string' Value='ir64' KeyPath='yes' />
             </Component>

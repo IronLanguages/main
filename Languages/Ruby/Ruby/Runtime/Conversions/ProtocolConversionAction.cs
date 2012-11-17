@@ -38,7 +38,7 @@ namespace IronRuby.Runtime.Conversions {
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public abstract class RubyConversionAction : RubyMetaBinder {
-        protected RubyConversionAction() 
+        protected RubyConversionAction()
             : base(null) {
         }
 
@@ -102,7 +102,7 @@ namespace IronRuby.Runtime.Conversions {
                 case TypeCode.UInt64: return (factory) => factory.Conversion<ConvertToUInt64Action>();
                 case TypeCode.Single: return (factory) => factory.Conversion<ConvertToSingleAction>();
                 case TypeCode.Double: return (factory) => factory.Conversion<ConvertToFAction>();
-                case TypeCode.String: return (factory) => factory.Conversion<ConvertToSymbolAction>();
+                case TypeCode.String: return (factory) => factory.Conversion<ConvertToClrStringAction>();
             }
 
             if (parameterType == typeof(MutableString)) {
@@ -176,8 +176,8 @@ namespace IronRuby.Runtime.Conversions {
         protected abstract string/*!*/ TargetTypeName { get; }
 
         public override Type/*!*/ ReturnType {
-            get { 
-                return (ConversionResultValidator != null) ? ConversionResultValidator.ReturnType : typeof(object); 
+            get {
+                return (ConversionResultValidator != null) ? ConversionResultValidator.ReturnType : typeof(object);
             }
         }
 
@@ -250,7 +250,7 @@ namespace IronRuby.Runtime.Conversions {
 
                     if (!metaBuilder.Error) {
                         metaBuilder.Result = ConvertResult(
-                            selectedConversion.MakeValidatorCall(args, targetClassNameConstant, metaBuilder.Result), 
+                            selectedConversion.MakeValidatorCall(args, targetClassNameConstant, metaBuilder.Result),
                             resultType
                         );
                     }
@@ -261,7 +261,7 @@ namespace IronRuby.Runtime.Conversions {
             // slow path: invoke respond_to?, to_xxx and result validation:
             for (int i = conversions.Length - 1; i >= 0; i--) {
                 string toMethodName = conversions[i].ToMethodName;
-                
+
                 var conversionCallSite = AstUtils.LightDynamic(
                     RubyCallAction.Make(args.RubyContext, toMethodName, RubyCallSignature.WithImplicitSelf(0)),
                     args.TargetExpression
@@ -274,7 +274,7 @@ namespace IronRuby.Runtime.Conversions {
                     Methods.IsTrue.OpCall(
                         AstUtils.LightDynamic(
                             RubyCallAction.Make(args.RubyContext, Symbols.RespondTo, RubyCallSignature.WithImplicitSelf(1)),
-                            args.TargetExpression, 
+                            args.TargetExpression,
                             Ast.Constant(args.RubyContext.CreateSymbol(toMethodName, RubyEncoding.Binary))
                         )
                     ),
@@ -289,7 +289,7 @@ namespace IronRuby.Runtime.Conversions {
 
                     // Else
 
-                    (i < conversions.Length - 1) ? metaBuilder.Result : 
+                    (i < conversions.Length - 1) ? metaBuilder.Result :
                         conversions[i].MakeErrorExpression(args, targetClassNameConstant, resultType)
                 );
             }
@@ -305,7 +305,7 @@ namespace IronRuby.Runtime.Conversions {
         }
 
         protected virtual void SetError(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant, Type/*!*/ resultType) {
-            metaBuilder.SetError(Methods.CreateTypeConversionError.OpCall(targetClassNameConstant, AstUtils.Constant(TargetTypeName)));            
+            metaBuilder.SetError(Methods.CreateTypeConversionError.OpCall(targetClassNameConstant, AstUtils.Constant(TargetTypeName)));
         }
 
         protected virtual Expression/*!*/ MakeValidatorCall(CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant, Expression/*!*/ result) {
@@ -331,7 +331,7 @@ namespace IronRuby.Runtime.Conversions {
 
     public abstract class ProtocolConversionAction<TSelf> : ProtocolConversionAction
         where TSelf : ProtocolConversionAction<TSelf>, new() {
-        
+
         public static TSelf/*!*/ Make(RubyContext/*!*/ context) {
             return context.MetaBinderFactory.Conversion<TSelf>();
         }
@@ -414,7 +414,7 @@ namespace IronRuby.Runtime.Conversions {
             return false;
         }
 
-        protected override DynamicMetaObjectBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, IList<DynamicMetaObject/*!*/>/*!*/ args, 
+        protected override DynamicMetaObjectBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, IList<DynamicMetaObject/*!*/>/*!*/ args,
             out MethodInfo postConverter) {
             postConverter = Methods.StringToMutableString;
             return context.MetaBinderFactory.InteropConvert(typeof(string), true);
@@ -425,7 +425,7 @@ namespace IronRuby.Runtime.Conversions {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToPath; } }
         protected override string/*!*/ TargetTypeName { get { return "String"; } }
         protected override MethodInfo ConversionResultValidator { get { return null; } }
-        
+
         protected override Expression/*!*/ MakeValidatorCall(CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant, Expression/*!*/ result) {
             return AstUtils.LightDynamic(ConvertToStrAction.Make(args.RubyContext), AstUtils.Box(result));
         }
@@ -498,6 +498,31 @@ namespace IronRuby.Runtime.Conversions {
             }
 
             return false;
+        }
+    }
+
+    public sealed class ConvertToClrStringAction : ConvertToReferenceTypeAction<ConvertToClrStringAction, string> {
+        protected override string/*!*/ ToMethodName { get { return Symbols.ToStr; } }
+        protected override string/*!*/ TargetTypeName { get { return "System::String"; } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToClrStringValidator; } }
+
+        protected internal override bool TryImplicitConversion(MetaObjectBuilder metaBuilder, CallArguments args) {
+            if (base.TryImplicitConversion(metaBuilder, args)) {
+                return true;
+            }
+
+            if (args.Target is RubySymbol) {
+                metaBuilder.Result = Methods.ConvertSymbolToClrString.OpCall(AstUtils.Convert(args.TargetExpression, typeof(RubySymbol)));
+                return true;
+            }
+
+            return false;
+        }
+
+        protected override DynamicMetaObjectBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, IList<DynamicMetaObject/*!*/>/*!*/ args,
+            out MethodInfo postConverter) {
+            postConverter = Methods.ObjectToString;
+            return context.MetaBinderFactory.InteropConvert(typeof(string), true);
         }
     }
 
@@ -662,7 +687,7 @@ namespace IronRuby.Runtime.Conversions {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToInt; } }
         public override Type/*!*/ ReturnType { get { return typeof(int?); } }
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToFixnumValidator; } }
-        
+
         internal protected override bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             object target = args.Target;
             return target != null && (metaBuilder.Result = Convert(ReturnType, args)) != null;
@@ -739,7 +764,7 @@ namespace IronRuby.Runtime.Conversions {
                 return true;
             }
 
-            metaBuilder.Result = 
+            metaBuilder.Result =
                 ImplicitConvert(typeof(int), args) ??
                 ImplicitConvert(typeof(BigInteger), args);
 

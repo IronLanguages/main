@@ -32,7 +32,7 @@ On Silverlight:
 Running the app interactively
 -----------------------------
 
-Launch ir.exe:
+Launch iruby.exe:
 
     load "wpf_tutorial.rb"
     #=> true

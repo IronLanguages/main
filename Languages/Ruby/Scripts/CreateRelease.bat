@@ -25,10 +25,10 @@ copy %SRC_BIN%\Microsoft.Dynamic.dll bin
 copy %SRC_BIN%\Microsoft.Scripting.dll bin
 copy %SRC_BIN%\Microsoft.Scripting.Metadata.dll bin
 
-copy %SRC_BIN%\ir.exe bin
-copy %SRC_BIN%\ir64.exe bin
-copy %SRC_BIN%\irw.exe bin
-copy %SRC_BIN%\irw64.exe bin
+copy %SRC_BIN%\iruby.exe bin
+copy %SRC_BIN%\iruby64.exe bin
+copy %SRC_BIN%\irubyw.exe bin
+copy %SRC_BIN%\irubyw64.exe bin
 copy %SRC_BIN%\IronRuby.dll bin
 copy %SRC_BIN%\IronRuby.Libraries.dll bin
 copy %SRC_BIN%\IronRuby.Libraries.Yaml.dll bin

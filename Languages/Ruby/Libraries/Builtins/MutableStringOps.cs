@@ -2894,6 +2894,22 @@ namespace IronRuby.Builtins {
 
         #endregion
 
+        #region try_convert
+        [RubyMethod("try_convert", RubyMethodAttributes.PublicSingleton)]
+        public static MutableString TryConvert(RubyContext/*!*/ context, RubyClass/*!*/ self, [DefaultProtocol]object/*!*/ obj) {
+            if (obj == null) {
+                return null;
+            } else if (obj is IRubyObject) {
+                return ((dynamic)obj).to_str();
+            } else {
+                string objString = obj.ToString();
+                MutableString mutableString = MutableString.Create(objString);
+                mutableString.TaintBy(mutableString);
+                return mutableString;
+            }
+        }
+        #endregion
+
         private static void RequireNoVersionChange(MutableString/*!*/ self) {
             if (self.HasChanged) {
                 throw RubyExceptions.CreateRuntimeError("string modified");

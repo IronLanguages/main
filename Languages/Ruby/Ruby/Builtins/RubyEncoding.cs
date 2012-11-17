@@ -15,6 +15,7 @@
 
 #if FEATURE_CORE_DLR
 using System.Linq.Expressions;
+using System.Linq;
 #else
 using Microsoft.Scripting.Ast;
 #endif
@@ -31,7 +32,6 @@ using IronRuby.Runtime;
 using IronRuby.Compiler;
 
 namespace IronRuby.Builtins {
-
     /// <summary>
     /// All encodings in Ruby are represented by instances of a single class. Therefore we need to wrap .NET Encoding class in RubyEncoding.
     /// Instances of this class are app-domain singletons. That's all right as far as the class is readonly and doesn't implement IRubyObject.
@@ -40,6 +40,67 @@ namespace IronRuby.Builtins {
     [Serializable]
     public class RubyEncoding : ISerializable, IExpressionSerializable {
         #region Singletons
+        ///<summary>
+        /// The following table lists the supported encodings and their associated code pages.
+        /// An asterisk in the last column indicates that the code page is natively supported by the .NET Framework, regardless of the underlying platform.
+        /// </summary>
+        /// <remarks>http://msdn.microsoft.com/en-us/library/system.text.encoding.aspx</remarks>
+        private static EncodingInfo[] g_encodingsInfo = Encoding.GetEncodings();
+
+        private static readonly IDictionary<string, string> g_encodingsNameMap = new ReadOnlyDictionary<string, string>(new SortedDictionary<string, string> {
+            { "utf-8", "UTF-8" },
+            { "us-ascii", "US-ASCII" },
+            { "unicodeFFFE", "UTF-16BE"},
+            { "utf-16", "UTF-16LE"},
+            { "utf-7", "UTF-7"},
+            { "utf-32BE", "UTF-32BE"},
+            { "utf-32", "UTF-32LE"},
+            { "shift_jis", "Shift_JIS"},
+            { "euc-jp", "EUC-JP"},
+            //{ "EUC-JP", "CP20932"}, // MEMO: treated in GetCLREncodingName
+            { "iso-2022-jp", "ISO-2022-JP"},
+            // { "iso-2022-jp", "CP50222"}, // MEMO: treated in GetCLREncodingName, not treated in GetRubyEncodingName :(
+        });
+
+        private static string GetCLREncodingName(string rubyEncodingName) {
+            string clrEncodingName = g_encodingsNameMap.SingleOrDefault(mapClrRuby => mapClrRuby.Value == rubyEncodingName).Key;
+            if (string.IsNullOrEmpty(clrEncodingName)) {
+                if (rubyEncodingName.StartsWith("CP")) {
+                    int codePage;
+                    if (Int32.TryParse(rubyEncodingName.Substring(2), out codePage)) {
+                        clrEncodingName = GetEncodingName(codePage);
+                    }
+                }
+            }
+            if (string.IsNullOrEmpty(clrEncodingName)) {
+                // MEMO: ensure encoding exists.
+                clrEncodingName = GetEncodingName(GetEncodingCodePage(rubyEncodingName));
+            }
+            return clrEncodingName;
+        }
+
+        private static string GetRubyEncodingName(string clrEncodingName) {
+            return g_encodingsNameMap.SingleOrDefault(pairKeyValue => pairKeyValue.Key == clrEncodingName).Value ?? clrEncodingName;
+        }
+
+        public static int GetEncodingCodePage(string name) {
+            EncodingInfo encodingInfo = g_encodingsInfo.FirstOrDefault(info => info.Name == name);
+            if (encodingInfo == null) {
+                throw RubyExceptions.CreateArgumentError("Unknown encoding name: {0}", name);
+            }
+            return encodingInfo.CodePage;
+        }
+
+        public static string GetEncodingName(int codePage) {
+            if (codePage == 0) {
+                return "ASCII-8BIT";
+            }
+            EncodingInfo encodingInfo = g_encodingsInfo.SingleOrDefault(info => info.CodePage == codePage);
+            if (encodingInfo == null) {
+                throw RubyExceptions.CreateArgumentError("Unknown encoding code page: {0}", codePage);
+            }
+            return encodingInfo.Name;
+        }
 
         public const int CodePageBinary = 0;
         public const int CodePageSJIS = 932;
@@ -55,7 +116,7 @@ namespace IronRuby.Builtins {
         public const int CodePageUTF16LE = 1200;
         public const int CodePageUTF32BE = 12001;
         public const int CodePageUTF32LE = 12000;
-        
+
         // TODO: how does MRI sort encodings?
 
         public static readonly RubyEncoding/*!*/ Binary = new RubyEncoding(BinaryEncoding.Instance, BinaryEncoding.Instance, -4);
@@ -68,7 +129,6 @@ namespace IronRuby.Builtins {
 #else
         public static readonly RubyEncoding/*!*/ Ascii = new RubyEncoding(AsciiEncoding.Instance, AsciiEncoding.Instance, -2);
 #endif
-
         #endregion
 
         private readonly Encoding/*!*/ _encoding;
@@ -91,6 +151,14 @@ namespace IronRuby.Builtins {
             _strictEncoding = strictEncoding;
             _maxBytesPerChar = strictEncoding.GetMaxByteCount(1);
             _isAsciiIdentity = AsciiIdentity(encoding);
+        }
+
+        /// <summary>
+        /// Default construtor (ASCII)
+        /// MEMO: exists mainly for Marshal.load.
+        /// </summary>
+        protected RubyEncoding()
+            : this(CreateEncoding(CodePageAscii, false), CreateEncoding(CodePageAscii, true), -2) {
         }
 
         public override int GetHashCode() {
@@ -141,7 +209,7 @@ namespace IronRuby.Builtins {
         [Serializable]
         internal sealed class Deserializer : ISerializable, IObjectReference {
             private readonly int _codePage;
-            
+
             private Deserializer(SerializationInfo/*!*/ info, StreamingContext context) {
                 _codePage = info.GetInt32("CodePage");
             }
@@ -184,26 +252,11 @@ namespace IronRuby.Builtins {
         }
 
         public static string GetRubySpecificName(int codepage) {
-            switch (codepage) {
-                case CodePageUTF8: return "UTF-8";
-                case CodePageAscii: return "US-ASCII";
-                case CodePageUTF16BE: return "UTF-16BE";
-                case CodePageUTF16LE: return "UTF-16LE";
-#if FEATURE_ENCODING
-                case CodePageUTF7: return "UTF-7";
-                case CodePageUTF32BE: return "UTF-32BE";
-                case CodePageUTF32LE: return "UTF-32LE";
-                case CodePageSJIS: return "Shift_JIS";
+            return GetRubyEncodingName(GetEncodingName(codepage));
+        }
 
-                // disambiguates CP 20932 and CP 51932:
-                case CodePageEUCJP: return "EUC-JP";
-                case 20932: return "CP20932";
-
-                case 50220: return "ISO-2022-JP";
-                case 50222: return "CP50222";
-#endif
-                default: return null;
-            }
+        public static int GetCodePage(string rubyEncodingName) {
+            return GetEncodingCodePage(GetCLREncodingName(rubyEncodingName));
         }
 
         public int CodePage {
@@ -222,7 +275,7 @@ namespace IronRuby.Builtins {
             if (encoding == RubyEncoding.Binary) {
                 return RubyRegexOptions.FIXED;
             }
-            
+
             if (encoding == null) {
                 return RubyRegexOptions.NONE;
             }
@@ -278,13 +331,11 @@ namespace IronRuby.Builtins {
 
         private static ReadOnlyDictionary<string, string> _aliases;
 
-        public static ReadOnlyDictionary<string, string> Aliases
-        {
+        public static ReadOnlyDictionary<string, string> Aliases {
             get { return _aliases ?? (_aliases = CreateAliases()); }
         }
 
-        private static ReadOnlyDictionary<string, string> CreateAliases()
-        {
+        private static ReadOnlyDictionary<string, string> CreateAliases() {
             return new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) {
                 { "646", "US-ASCII" }, 
                 { "ASCII", "US-ASCII" }, 
@@ -356,8 +407,7 @@ namespace IronRuby.Builtins {
         private static Dictionary<int, RubyEncoding> _Encodings;
 
 
-        public static RubyEncoding/*!*/ GetRubyEncoding(Encoding/*!*/ encoding)
-        {
+        public static RubyEncoding/*!*/ GetRubyEncoding(Encoding/*!*/ encoding) {
             ContractUtils.RequiresNotNull(encoding, "encoding");
             return GetRubyEncoding(GetCodePage(encoding));
         }
@@ -374,7 +424,7 @@ namespace IronRuby.Builtins {
             }
 
             if (_Encodings == null) {
-                Interlocked.CompareExchange(ref _Encodings, new Dictionary<int, RubyEncoding>(), null); 
+                Interlocked.CompareExchange(ref _Encodings, new Dictionary<int, RubyEncoding>(), null);
             }
 
             RubyEncoding result;
@@ -533,7 +583,7 @@ namespace IronRuby.Builtins {
                     Debug.Assert(IsAsciiIdentityFallback(encoding));
                     return true;
 
-                default: 
+                default:
                     return IsAsciiIdentityFallback(encoding);
             }
         }
@@ -583,9 +633,9 @@ namespace IronRuby.Builtins {
                 return _isDoubleByteCharacterSet.Value;
             }
         }
-        
+
         private static int[] _sbsc;
-        private static int[] _dbsc; 
+        private static int[] _dbsc;
 
         private static bool IsSBCS(int codepage) {
             if (_sbsc == null) {

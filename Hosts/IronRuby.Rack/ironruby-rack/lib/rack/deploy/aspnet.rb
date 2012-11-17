@@ -16,7 +16,7 @@ module Rack
         Microsoft.Dynamic.dll
         Microsoft.Scripting.dll
         Microsoft.Scripting.Metadata.dll
-        ir.exe
+        iruby.exe
       )
       IRONRUBY_BINARIES_CLR2 = %W(
         Microsoft.Scripting.Core.dll 
@@ -99,8 +99,8 @@ module Rack
       end
       
       def write_ir_exe_config(app_bin_dir)
-        ::File.open("#{app_bin_dir}/ir.exe.config", 'w') do |f|
-          f.write "<?xml version=\"1.0\"?><configuration>#{erb template('ir.exe.config')}</configuration>"
+        ::File.open("#{app_bin_dir}/iruby.exe.config", 'w') do |f|
+          f.write "<?xml version=\"1.0\"?><configuration>#{erb template('iruby.exe.config')}</configuration>"
         end
       end
 

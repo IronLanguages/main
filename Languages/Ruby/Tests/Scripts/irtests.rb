@@ -67,7 +67,7 @@ class IRTest
     
     ENV['HOME'] ||= ENV["USERPROFILE"]
     
-    @ir = "#{vm_shim} #{dlr_path("bin/#@config/ir.exe")}" 
+    @ir = "#{vm_shim} #{dlr_path("bin/#@config/iruby.exe")}" 
     
     if options[:selftest]
       @all_tasks = {
@@ -346,7 +346,7 @@ class IRTest
         \\n or \\r\\n. See http://www.kernel.org/pub/software/scm/git/docs/git-config.html for details
         
       }.gsub(/  +/, "")
-      abort(message) if autocrlf.chomp != "true"
+      puts(message) if autocrlf.chomp != "true"
     end
   end 
   

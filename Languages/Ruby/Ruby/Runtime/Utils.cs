@@ -20,7 +20,6 @@ using Microsoft.Scripting.Ast;
 #endif
 
 using System;
-using System.Globalization;
 using System.Diagnostics;
 using System.Text;
 using System.Reflection;
@@ -38,7 +37,7 @@ namespace IronRuby.Runtime {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
         public static readonly char[] EmptyChars = new char[0];
-        
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
         public static readonly MemberInfo[] EmptyMemberInfos = new MemberInfo[0];
 
@@ -312,7 +311,7 @@ namespace IronRuby.Runtime {
 
             encoding.GetBytes(chars, 0, 1, array, itemCount);
             Fill(array, itemCount, array, itemCount + charSize, charSize, repeatCount - 1);
-            
+
             return newCount;
         }
 
@@ -889,10 +888,14 @@ namespace IronRuby.Runtime {
 
         [Conditional("DEBUG")]
         public static void Log(string/*!*/ message, string/*!*/ category) {
+#if DEBUG
+            if (!RubyOptions.DisableDebugLog) {
 #if WIN8 || ANDROID || WP75
-            Debug.WriteLine(category + ": " + message);
+                Debug.WriteLine(category + ": " + message);
 #elif !SILVERLIGHT
-            Debug.WriteLine((object)message, category);
+                Debug.WriteLine((object)message, category);
+#endif
+            }
 #endif
         }
 
