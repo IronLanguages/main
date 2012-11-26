@@ -207,6 +207,9 @@ namespace Microsoft.Scripting {
         // TODO: better APIs
         public virtual Stream OpenInputFileStream(string path, FileMode mode, FileAccess access, FileShare share) {
 #if FEATURE_FILESYSTEM
+            if (string.Equals("nul", path, StringComparison.InvariantCultureIgnoreCase)) {
+                return Stream.Null;
+            }
             return new FileStream(path, mode, access, share);
 #else
             throw new NotImplementedException();
@@ -216,6 +219,9 @@ namespace Microsoft.Scripting {
         // TODO: better APIs
         public virtual Stream OpenInputFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize) {
 #if FEATURE_FILESYSTEM
+            if (string.Equals("nul", path, StringComparison.InvariantCultureIgnoreCase)) {
+                return Stream.Null;
+            }
             return new FileStream(path, mode, access, share, bufferSize);
 #else
             throw new NotImplementedException();
@@ -225,6 +231,9 @@ namespace Microsoft.Scripting {
         // TODO: better APIs
         public virtual Stream OpenInputFileStream(string path) {
 #if FEATURE_FILESYSTEM
+            if (string.Equals("nul", path, StringComparison.InvariantCultureIgnoreCase)) {
+                return Stream.Null;
+            }
             return new FileStream(path, FileMode.Open, FileAccess.Read);
 #else
             throw new NotImplementedException();
@@ -234,6 +243,9 @@ namespace Microsoft.Scripting {
         // TODO: better APIs
         public virtual Stream OpenOutputFileStream(string path) {
 #if FEATURE_FILESYSTEM
+            if (string.Equals("nul", path, StringComparison.InvariantCultureIgnoreCase)) {
+                return Stream.Null;
+            }
             return new FileStream(path, FileMode.Create, FileAccess.Write);
 #else
             throw new NotImplementedException();
