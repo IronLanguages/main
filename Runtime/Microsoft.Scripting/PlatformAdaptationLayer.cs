@@ -137,20 +137,34 @@ namespace Microsoft.Scripting {
         public virtual Assembly LoadAssembly(string name) {
 #if WIN8
             throw new NotImplementedException();
-#elif !SILVERLIGHT
-            return Assembly.Load(name);
 #else
-            return Assembly.Load(LookupFullName(name));
+#if SILVERLIGHT
+            name = LookupFullName(name);
+#endif
+            return FindLoadedAssembly(assembly => {
+                return assembly.FullName.StartsWith(name, StringComparison.InvariantCultureIgnoreCase);
+            }) ?? Assembly.Load(name);
 #endif
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadFile")]
         public virtual Assembly LoadAssemblyFromPath(string path) {
 #if FEATURE_FILESYSTEM
-            return Assembly.LoadFile(path);
+            return FindLoadedAssembly(assembly => {
+                return assembly.CodeBase.EndsWith(new Uri(path).AbsoluteUri, StringComparison.InvariantCultureIgnoreCase);
+            }) ?? Assembly.LoadFile(path);
 #else
             throw new NotImplementedException();
 #endif
+        }
+
+        private Assembly FindLoadedAssembly(Func<Assembly, bool> predicate) {
+            foreach (Assembly appDomainAssembly in AppDomain.CurrentDomain.GetAssemblies()) {
+                if (!appDomainAssembly.IsDynamic && predicate(appDomainAssembly)) {
+                    return appDomainAssembly;
+                }
+            }
+            return null;
         }
 
         public virtual void TerminateScriptExecution(int exitCode) {
@@ -448,8 +462,7 @@ namespace Microsoft.Scripting {
 #if FEATURE_PROCESS
             var result = new Dictionary<string, string>();
 
-            foreach (DictionaryEntry entry in Environment.GetEnvironmentVariables())
-            {
+            foreach (DictionaryEntry entry in Environment.GetEnvironmentVariables()) {
                 result.Add((string)entry.Key, (string)entry.Value);
             }
 
