@@ -1930,6 +1930,11 @@ namespace IronRuby.Builtins {
             );
             
             #endif
+            DefineLibraryMethod(module, "realpath", 0x61, 
+                0x00000000U, 
+                new Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Builtins.RubyClass, System.Object, System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyFileOps.Realpath)
+            );
+            
             DefineLibraryMethod(module, "rename", 0x61, 
                 0x00000000U, 
                 new Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Builtins.RubyClass, System.Object, System.Object, System.Int32>(IronRuby.Builtins.RubyFileOps.Rename)
