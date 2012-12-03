@@ -13,17 +13,20 @@
  *
  * ***************************************************************************/
 
+using System;
+using System.Collections;
+using System.Diagnostics;
+using System.IO;
 #if !SILVERLIGHT && !WIN8 && !WP75
 using System.IO.Compression;
 #endif
-
-using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
+
+using Microsoft.Scripting.Runtime;
+
 using IronRuby.Builtins;
 using IronRuby.Runtime;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
+
 using zlib = ComponentAce.Compression.Libs.ZLib;
 
 namespace IronRuby.StandardLibrary.Zlib {
@@ -92,7 +95,7 @@ namespace IronRuby.StandardLibrary.Zlib {
         private const int Z_STREAM_END = (int)zlib.ZLibResultCode.Z_STREAM_END;
         private const int Z_BUF_ERROR = (int)zlib.ZLibResultCode.Z_BUF_ERROR;
         private const int Z_STREAM_ERROR = (int)zlib.ZLibResultCode.Z_STREAM_ERROR;
-        
+
         #endregion
 
         #region CRC32
@@ -214,7 +217,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             internal const bool compress = true;
             internal const bool decompress = false;
 
-            protected ZStream(RubyClass/*!*/ cls, zlib.ZStream/*!*/ stream) 
+            protected ZStream(RubyClass/*!*/ cls, zlib.ZStream/*!*/ stream)
                 : base(cls) {
                 Debug.Assert(stream != null);
                 _stream = stream;
@@ -228,7 +231,7 @@ namespace IronRuby.StandardLibrary.Zlib {
                 return _stream;
             }
 
-            internal static int Process(zlib.ZStream/*!*/ zst, MutableString str, zlib.FlushStrategy flush, bool compress, 
+            internal static int Process(zlib.ZStream/*!*/ zst, MutableString str, zlib.FlushStrategy flush, bool compress,
                 out MutableString/*!*/ result, ref MutableString trailingUncompressedData) {
 
                 result = MutableString.CreateBinary();
@@ -358,7 +361,7 @@ namespace IronRuby.StandardLibrary.Zlib {
                     zst.avail_in = 0;
 #endif
                     result = Z_STREAM_END;
-                } 
+                }
 
                 return result;
             }
@@ -534,8 +537,8 @@ namespace IronRuby.StandardLibrary.Zlib {
 
             [RubyMethod("params")]
             public static void SetParams(
-                Deflate/*!*/ self, 
-                [DefaultParameterValue(DEFAULT_COMPRESSION)]int level, 
+                Deflate/*!*/ self,
+                [DefaultParameterValue(DEFAULT_COMPRESSION)]int level,
                 [DefaultParameterValue(DEFAULT_STRATEGY)]int strategy) {
 
                 var zst = self.GetStream();
@@ -556,8 +559,8 @@ namespace IronRuby.StandardLibrary.Zlib {
             }
 
             [RubyMethod("deflate", RubyMethodAttributes.PublicSingleton)]
-            public static MutableString/*!*/ DeflateString(RubyClass/*!*/ self, 
-                [DefaultProtocol, NotNull]MutableString/*!*/ str, 
+            public static MutableString/*!*/ DeflateString(RubyClass/*!*/ self,
+                [DefaultProtocol, NotNull]MutableString/*!*/ str,
                 [DefaultParameterValue(DEFAULT_COMPRESSION)]int level) {
 
                 zlib.ZStream zst = CreateDeflateStream(level);
@@ -603,7 +606,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             public static Inflate/*!*/ AppendData(Inflate/*!*/ self, [DefaultProtocol]MutableString str) {
                 var zst = self.GetStream();
                 int result = Process(zst, str, zlib.FlushStrategy.Z_NO_FLUSH, decompress, ref self.trailingUncompressedData);
-                
+
                 if (result != Z_OK && result != Z_STREAM_END) {
                     throw MakeError(result, zst.msg);
                 }
@@ -691,18 +694,18 @@ namespace IronRuby.StandardLibrary.Zlib {
         // TODO: implement spec:
         // http://www.gzip.org/zlib/rfc-gzip.html#specification
 
-        [RubyClass("GzipFile", BuildConfig="!SILVERLIGHT && !WIN8 && !WP75")]
+        [RubyClass("GzipFile", BuildConfig = "!SILVERLIGHT && !WIN8 && !WP75")]
         public abstract class GZipFile : RubyObject, IDisposable {
             private GZipStream _stream;
             private const int BufferSize = 2048;
 
-            internal GZipFile(RubyClass/*!*/ cls, object io, CompressionMode mode) 
+            internal GZipFile(RubyClass/*!*/ cls, object io, CompressionMode mode)
                 : base(cls) {
 
                 var underlyingStream = new IOWrapper(
-                    cls.Context, 
-                    io, 
-                    canRead: mode == CompressionMode.Decompress, 
+                    cls.Context,
+                    io,
+                    canRead: mode == CompressionMode.Decompress,
                     canWrite: mode == CompressionMode.Compress,
                     canSeek: false,
                     canFlush: true,
@@ -714,7 +717,7 @@ namespace IronRuby.StandardLibrary.Zlib {
 
             internal IOWrapper/*!*/ GetWrapper() {
                 RequireOpen();
-                return (IOWrapper)_stream.BaseStream; 
+                return (IOWrapper)_stream.BaseStream;
             }
 
             private void RequireOpen() {
@@ -738,7 +741,7 @@ namespace IronRuby.StandardLibrary.Zlib {
 
                     // doesn't close base stream due to leaveOpen == true:
                     _stream.Close();
-                    
+
                     if (closeUnderlyingObject) {
                         wrapper.Close();
                     } else {
@@ -754,7 +757,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             }
 
             [RubyMethod("wrap", RubyMethodAttributes.PublicSingleton)]
-            public static object Wrap(BinaryOpStorage/*!*/ newStorage, UnaryOpStorage/*!*/ closeStorage, 
+            public static object Wrap(BinaryOpStorage/*!*/ newStorage, UnaryOpStorage/*!*/ closeStorage,
                 BlockParam block, RubyClass/*!*/ self, object io) {
 
                 var newSite = newStorage.GetCallSite("new");
@@ -833,15 +836,25 @@ namespace IronRuby.StandardLibrary.Zlib {
         #region GzipReader class
 
         // TODO: Includes(typeof(Enumerable)
-        [RubyClass("GzipReader", BuildConfig="!SILVERLIGHT && !WIN8 && !WP75")]
+        [RubyClass("GzipReader", BuildConfig = "!SILVERLIGHT && !WIN8 && !WP75")]
         public class GZipReader : GZipFile {
-            private GZipReader(RubyClass/*!*/ cls, object io)
+            private RubyEncoding _encoding = null;
+
+            private GZipReader(RubyClass/*!*/ cls, object io, IDictionary options)
                 : base(cls, io, CompressionMode.Decompress) {
+                if (options != null) {
+                    // TODO: _encoding = options[:external_encoding];
+                }
+            }
+
+            [RubyConstructor]
+            public static GZipReader/*!*/ Create(RubyClass/*!*/ self, object io, [DefaultParameterValue(null), DefaultProtocol]IDictionary options) {
+                return new GZipReader(self, io, options);
             }
 
             [RubyConstructor]
             public static GZipReader/*!*/ Create(RubyClass/*!*/ self, object io) {
-                return new GZipReader(self, io);
+                return Create(self, io, null);
             }
 
             [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
@@ -859,7 +872,7 @@ namespace IronRuby.StandardLibrary.Zlib {
                 }
 
                 var stream = self.GetStream();
-                MutableString result = MutableString.CreateBinary();
+                MutableString result = MutableString.CreateBinary(self._encoding ?? RubyEncoding.Binary);
                 if (bytes.HasValue) {
                     int bytesRead = result.Append(stream, bytes.Value);
                     if (bytesRead == 0 && bytes.Value != 0) {
@@ -871,16 +884,28 @@ namespace IronRuby.StandardLibrary.Zlib {
 
                 return result;
             }
+
+            [RubyMethod("pos")]
+            [RubyMethod("tell")]
+            public static long Pos(GZipReader/*!*/ self) {
+                return self.GetWrapper().Position;
+            }
+
+            [RubyMethod("eof?")]
+            [RubyMethod("eof")]
+            public static bool Eof(GZipReader/*!*/ self) {
+                return self.GetWrapper().Eof;
+            }
         }
 
         #endregion
 
         #region GzipWriter class
-         
-        [RubyClass("GzipWriter", BuildConfig="!SILVERLIGHT && !WIN8 && !WP75")]
+
+        [RubyClass("GzipWriter", BuildConfig = "!SILVERLIGHT && !WIN8 && !WP75")]
         // TODO: [Includes(typeof(PrintOps), Copy = true)]
         public class GzipWriter : GZipFile {
-            private GzipWriter(RubyClass/*!*/ cls, object io) 
+            private GzipWriter(RubyClass/*!*/ cls, object io)
                 : base(cls, io, CompressionMode.Compress) {
             }
 
@@ -925,7 +950,7 @@ namespace IronRuby.StandardLibrary.Zlib {
                 var buffer = val.ToByteArray();
                 stream.Write(buffer, 0, buffer.Length);
                 return buffer.Length;
-            } 
+            }
 
             // printops:
 
@@ -934,8 +959,14 @@ namespace IronRuby.StandardLibrary.Zlib {
                 Write(tosConversion, self, value);
                 return self;
             }
+
+            [RubyMethod("pos")]
+            [RubyMethod("tell")]
+            public static long Pos(GzipWriter/*!*/ self) {
+                return self.GetWrapper().Position;
+            }
         }
-  
+
         #endregion
 #endif
         #region Exceptions
