@@ -94,6 +94,14 @@ namespace IronRuby.Builtins {
             _isAsciiIdentity = AsciiIdentity(encoding);
         }
 
+        /// <summary>
+        /// Default construtor (ASCII)
+        /// MEMO: exists mainly for Marshal.load.
+        /// </summary>
+        protected RubyEncoding()
+            : this(CreateEncoding(CodePageAscii, false), CreateEncoding(CodePageAscii, true), -2) {
+        }
+
         public override int GetHashCode() {
             return _ordinal;
         }
