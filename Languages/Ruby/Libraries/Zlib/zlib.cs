@@ -843,7 +843,13 @@ namespace IronRuby.StandardLibrary.Zlib {
             private GZipReader(RubyClass/*!*/ cls, object io, IDictionary options)
                 : base(cls, io, CompressionMode.Decompress) {
                 if (options != null) {
-                    // TODO: _encoding = options[:external_encoding];
+                    foreach (var key in options.Keys) {
+                        switch (cls.Context.Operations.ImplicitConvertTo<RubySymbol>(key).String.ToString()) {
+                            case "external_encoding":
+                                _encoding = cls.Context.Operations.ImplicitConvertTo<RubyEncoding>(options[key]);
+                                break;
+                        }
+                    }
                 }
             }
 
