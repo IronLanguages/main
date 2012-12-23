@@ -719,8 +719,43 @@ print >> cap, f(1, two=42, one=13),
         exec c
         self.assertEquals(cap.getvalue(), "42")
 
+    def test_compile_from_ast_131(self):
+        cap = StringIO()
+        tc = """
+def deco(fx):
+    def wrap():
+        print >> cap, "wrapped"
+        fx()
+    return wrap
+@deco
+def f():
+    print >> cap, "f"
+f()
+            """
+        p = ast.parse( tc, mode="exec") # function decorator
+        c = compile(p,"<unknown>", mode="exec")
+        exec c in {"cap": cap}
+        self.assertEquals(cap.getvalue(), "wrapped\nf\n")
+
+    def test_compile_from_ast_132(self):
+        cap = StringIO()
+        tc = """
+def deco(k):
+    k.foo = 42
+    return k
+@deco
+class C:
+    pass
+c=C()
+print >> cap, c.foo,
+            """
+        p = ast.parse( tc, mode="exec") # function decorator
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+        self.assertEquals(cap.getvalue(), "42")
+
     def test_compile_from_ast_200(self):
-        p = ast.parse("a=1; b=2", mode="single") # somthing with single
+        p = ast.parse("a=1; b=2", mode="single") # something with single
         c = compile(p,"<unknown>", mode="single")
         exec c
         self.assertEqual(a,1)
