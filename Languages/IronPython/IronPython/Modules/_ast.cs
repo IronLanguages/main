@@ -1372,12 +1372,19 @@ namespace IronPython.Modules
                 foreach (AstExpression expr in def.Bases)
                     _bases.Add(Convert(expr));
                 _body = ConvertStatements(def.Body);
-                _decorator_list = new PythonList(); // TODO Actually fill in the decorators here
+                if (def.Decorators != null) {
+                    _decorator_list = PythonOps.MakeEmptyList(def.Decorators.Count);
+                    foreach (AstExpression expr in def.Decorators)
+                        _decorator_list.Add(Convert(expr));
+                } else
+                    _decorator_list = PythonOps.MakeEmptyList(0);
             }
 
             internal override Statement Revert() {
-                // TODO: once decorators are fixed in compile, fix it here as well
-                return new ClassDefinition(name, expr.RevertExprs(bases), RevertStmts(body));
+                ClassDefinition cd = new ClassDefinition(name, expr.RevertExprs(bases), RevertStmts(body));
+                if (decorator_list.Count != 0) 
+                    cd.Decorators = expr.RevertExprs(decorator_list);
+                return cd;
             }
 
             public string name {
@@ -1950,14 +1957,11 @@ namespace IronPython.Modules
             }
 
             internal override Statement Revert() {
-                IList<AstExpression> decos = null;
-                if (decorators.Count != 0)
-                    decos = expr.RevertExprs(decorators);
-                //SourceUnit su = new SourceUnit();
                 FunctionDefinition fd = new FunctionDefinition(name, args.Revert(), RevertStmts(body));
                 fd.IsGenerator = _containsYield;
                 _containsYield = false;
-                fd.Decorators = decos;
+                if (decorators.Count != 0)
+                    fd.Decorators = expr.RevertExprs(decorators);
                 return fd;
             }
 
