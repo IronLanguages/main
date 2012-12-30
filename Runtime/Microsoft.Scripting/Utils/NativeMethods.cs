@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-#if !SILVERLIGHT
+#if FEATURE_NATIVE
 
 using System;
 using System.Runtime.InteropServices;
