@@ -169,7 +169,7 @@ def get_explicit_caching(cw):
         for i in xrange(MAX_HELPERS):
             type_params = type_params_maker(s + i)
             cw.enter_block('public static MethodInfo Cache%s%s(%s%s method)' % (delegate, type_params, delegate, type_params))
-            cw.write('var info = method.GetMethod();')
+            cw.write('var info = method.GetMethodInfo();')
             cw.enter_block('lock (_cache)')
             cw.write('_cache[info] = new %sCallInstruction%s(method);' % (delegate, type_params))            
             cw.exit_block()
@@ -238,7 +238,7 @@ def gen_func_call_instruction(cw, i):
     cw.write('private readonly Func%s _target;' % type_params)
     
     # properties
-    cw.write('public override MethodInfo Info { get { return _target.GetMethod(); } }')
+    cw.write('public override MethodInfo Info { get { return _target.GetMethodInfo(); } }')
     cw.write('public override int ArgumentCount { get { return %d; } }' % (i - 1))
     cw.write('')
     
