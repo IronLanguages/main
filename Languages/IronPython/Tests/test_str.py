@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #####################################################################################
 #
 #  Copyright (c) Microsoft Corporation. All rights reserved.
@@ -375,5 +376,31 @@ def test_subclass_ctor():
         AreEqual(myunicode2(x), unicode(x))
     AreEqual(myunicode('foo', 'ascii'), unicode('foo', 'ascii'))
     AreEqual(myunicode2('foo', 'ascii'), unicode('foo', 'ascii'))
+
+def test_upper_lower():
+    # CodePlex work item #33133
+    AreEqual("a".upper(),"A")
+    AreEqual("A".lower(),"a")
+    AreEqual("A".upper(),"A")
+    AreEqual("a".lower(),"a")
+
+    AreEqual("z".upper(),"Z")
+    AreEqual("Z".lower(),"z")
+    AreEqual("Z".upper(),"Z")
+    AreEqual("z".lower(),"z")
+
+    AreEqual("-".lower(),"-")
+    AreEqual("-".upper(),"-")
+
+    AreEqual("ä".upper(),"Ä")
+    AreEqual("Ä".lower(),"ä")
+    AreEqual("ö".upper(),"Ö")
+    AreEqual("Ö".lower(),"ö")
+    AreEqual("ü".upper(),"Ü")
+    AreEqual("U".lower(),"u")
+
+    AreEqual("ą".upper(),"Ą")
+    AreEqual("Ą".lower(),"ą")
+
 
 run_test(__name__)
