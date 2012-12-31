@@ -148,7 +148,7 @@ namespace IronPython.Runtime.Types {
             if (bmd == null) {
                 return false;
             }
-            if (0 != PythonOps.Id(__objclass__) - PythonOps.Id(bmd.__objclass__)) {
+            if (PythonOps.Id(__objclass__) != PythonOps.Id(bmd.__objclass__)) {
                 return false;
             }
             return __name__ == bmd.__name__;
