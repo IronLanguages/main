@@ -181,7 +181,7 @@ namespace IronPython.Runtime.Operations {
             if (exponent.Success) {
                 int exponentVal = 0;
                 if (!Int32.TryParse(exponent.Value.Substring(1), out exponentVal)) {
-                    if (exponent.Value.lower().StartsWith("p-") || finalBits == BigInteger.Zero) {
+                    if (exponent.Value.ToLowerAsciiTriggered().StartsWith("p-") || finalBits == BigInteger.Zero) {
                         double zeroRes = isNegative ? NegativeZero : PositiveZero;
 
                         if (cls == TypeCache.Double) {

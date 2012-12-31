@@ -886,6 +886,10 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static string lower(this string self) {
+            return self.ToLower(CultureInfo.InvariantCulture);
+        }
+
+        internal static string ToLowerAsciiTriggered(this string self) {
             for (int i = 0; i < self.Length; i++) {
                 if (self[i] >= 'A' && self[i] <= 'Z') {
                     return self.ToLower(CultureInfo.InvariantCulture);
