@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #####################################################################################
 #
 #  Copyright (c) Microsoft Corporation. All rights reserved.
@@ -375,5 +376,68 @@ def test_subclass_ctor():
         AreEqual(myunicode2(x), unicode(x))
     AreEqual(myunicode('foo', 'ascii'), unicode('foo', 'ascii'))
     AreEqual(myunicode2('foo', 'ascii'), unicode('foo', 'ascii'))
+
+def test_upper_lower():
+    # CodePlex work item #33133
+    AreEqual("a".upper(),"A")
+    AreEqual("A".lower(),"a")
+    AreEqual("A".upper(),"A")
+    AreEqual("a".lower(),"a")
+
+    AreEqual("z".upper(),"Z")
+    AreEqual("Z".lower(),"z")
+    AreEqual("Z".upper(),"Z")
+    AreEqual("z".lower(),"z")
+
+    AreEqual("-".lower(),"-")
+    AreEqual("-".upper(),"-")
+
+    # explicit unicode is required for cpython 2.7
+    AreEqual(u"ä".upper(),u"Ä")
+    AreEqual(u"Ä".lower(),u"ä")
+    AreEqual(u"ö".upper(),u"Ö")
+    AreEqual(u"Ö".lower(),u"ö")
+    AreEqual(u"ü".upper(),u"Ü")
+    AreEqual(u"U".lower(),u"u")
+
+    AreEqual(u"ą".upper(),u"Ą")
+    AreEqual(u"Ą".lower(),u"ą")
+
+def test_turkish_upper_lower():
+    AreEqual(u"ı".upper(),u"I")
+    AreEqual(u"İ".lower(),u"i")
+
+    # as defined in http://www.unicode.org/Public/UNIDATA/SpecialCasing.txt
+    PERFECT_UNICODE_CASING=False
+   
+    import locale
+    lang,encoding = locale.getlocale()
+
+    if sys.platform == "win32":
+        locale.setlocale(locale.LC_ALL, "turkish")
+    else:
+        locale.setlocale(locale.LC_ALL,"tr_TR")
+
+    if PERFECT_UNICODE_CASING:
+        AreEqual(u"I".lower(),u"ı")
+        AreEqual(u"i".upper(),u"İ")
+    else:
+        # cpython compatibility
+        AreEqual(u"I".lower(),u"i")
+        AreEqual(u"i".upper(),u"I")
+
+    locale.setlocale(locale.LC_ALL, (lang,encoding))
+
+    # Note:
+    # IronPython casing matches cpython implementation (linux and windows)
+    # In order to take advantage of better build-in unicode support in Windows 
+    # ToUpper/ToLower can be called directly
+    if sys.platform == "cli":
+        import System.Globalization.CultureInfo as CultureInfo
+        AreEqual(u"I".ToLower(CultureInfo("tr-TR")),u"ı")
+        AreEqual(u"i".ToUpper(CultureInfo("tr-TR")),u"İ")
+
+
+
 
 run_test(__name__)

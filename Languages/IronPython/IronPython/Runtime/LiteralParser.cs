@@ -560,7 +560,7 @@ namespace IronPython.Runtime {
 
         private static double ParseFloatNoCatch(string text) {
             string s = ReplaceUnicodeDigits(text);
-            switch (s.lower().lstrip()) {
+            switch (s.ToLowerAsciiTriggered().lstrip()) {
                 case "nan":
                 case "+nan":
                 case "-nan":
