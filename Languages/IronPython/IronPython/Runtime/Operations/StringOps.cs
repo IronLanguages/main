@@ -885,8 +885,11 @@ namespace IronPython.Runtime.Operations {
             return ret.ToString();
         }
 
+        // required for better match with cpython upper/lower
+        private static CultureInfo CasingCultureInfo = new CultureInfo("en");
+
         public static string lower(this string self) {
-            return self.ToLower(CultureInfo.InvariantCulture);
+            return self.ToLower(CasingCultureInfo);
         }
 
         internal static string ToLowerAsciiTriggered(this string self) {
@@ -1280,7 +1283,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static string upper(this string self) {
-            return self.ToUpper(CultureInfo.InvariantCulture);
+            return self.ToUpper(CasingCultureInfo);
         }
 
         public static string zfill(this string self, int width) {
