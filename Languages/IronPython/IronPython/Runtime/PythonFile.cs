@@ -1791,12 +1791,12 @@ namespace IronPython.Runtime {
 
         private bool isRedirected() {
             if (_consoleStreamType == ConsoleStreamType.Output) {
-                return IsOutputRedirected;
+                return StreamRedirectionInfo.IsOutputRedirected;
             }
             if (_consoleStreamType == ConsoleStreamType.Input) {
-                return IsInputRedirected;
+                return StreamRedirectionInfo.IsInputRedirected;
             }
-            return IsErrorRedirected;
+            return StreamRedirectionInfo.IsErrorRedirected;
         }
 
         public object __enter__() {
@@ -1866,9 +1866,12 @@ namespace IronPython.Runtime {
         }
 
         #endregion
+    }
 
-        #region dotnet45 backport
-        // http://msdn.microsoft.com/en-us/library/system.console.isoutputredirected%28v=VS.110%29.aspx
+    #region dotnet45 backport
+    // http://msdn.microsoft.com/en-us/library/system.console.isoutputredirected%28v=VS.110%29.aspx
+
+    internal static class StreamRedirectionInfo {
 
         private enum FileType { Unknown, Disk, Char, Pipe };
         private enum StdHandle { Stdin = -10, Stdout = -11, Stderr = -12 };
@@ -1909,7 +1912,7 @@ namespace IronPython.Runtime {
 
         private static bool _isStdInRedirected = false;
 
-        private static bool IsInputRedirected {
+        internal static bool IsInputRedirected {
             get {
                 if (_stdInRedirectQueried) {
                     return _isStdInRedirected;
@@ -1929,7 +1932,7 @@ namespace IronPython.Runtime {
 
         private static bool _isStdOutRedirected = false;
 
-        private static bool IsOutputRedirected {
+        internal static bool IsOutputRedirected {
             get {
                 if (_stdOutRedirectQueried) {
                     return _isStdOutRedirected;
@@ -1949,7 +1952,7 @@ namespace IronPython.Runtime {
 
         private static bool _isStdErrRedirected = false;
 
-        private static bool IsErrorRedirected {
+        internal static bool IsErrorRedirected {
             get {
                 if (_stdErrRedirectQueried) {
                     return _isStdErrRedirected;
@@ -1964,8 +1967,6 @@ namespace IronPython.Runtime {
                 }
             }
         }
-
-        #endregion
-
     }
+    #endregion
 }
