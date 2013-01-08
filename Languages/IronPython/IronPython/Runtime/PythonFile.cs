@@ -17,10 +17,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-
+using System.Threading;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -31,6 +32,8 @@ using IronPython.Runtime.Types;
 
 #if FEATURE_NUMERICS
 using System.Numerics;
+using Microsoft.Win32.SafeHandles;
+
 #else
 using Microsoft.Scripting.Math;
 #endif
@@ -1783,7 +1786,17 @@ namespace IronPython.Runtime {
         }
 
         public bool isatty() {
-            return IsConsole;
+            return IsConsole && !isRedirected();
+        }
+
+        private bool isRedirected() {
+            if (_consoleStreamType == ConsoleStreamType.Output) {
+                return StreamRedirectionInfo.IsOutputRedirected;
+            }
+            if (_consoleStreamType == ConsoleStreamType.Input) {
+                return StreamRedirectionInfo.IsInputRedirected;
+            }
+            return StreamRedirectionInfo.IsErrorRedirected;
         }
 
         public object __enter__() {
@@ -1854,4 +1867,106 @@ namespace IronPython.Runtime {
 
         #endregion
     }
+
+    #region dotnet45 backport
+    // http://msdn.microsoft.com/en-us/library/system.console.isoutputredirected%28v=VS.110%29.aspx
+
+    internal static class StreamRedirectionInfo {
+
+        private enum FileType { Unknown, Disk, Char, Pipe };
+        private enum StdHandle { Stdin = -10, Stdout = -11, Stderr = -12 };
+        [DllImport("kernel32.dll")]
+        private static extern FileType GetFileType(SafeFileHandle hdl);
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr GetStdHandle(StdHandle std);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out int mode);
+
+        private static bool IsHandleRedirected(IntPtr ioHandle) {
+            SafeFileHandle safeIOHandle = new SafeFileHandle(ioHandle, false);
+            // console, printer, com port are Char
+            var fileType = GetFileType(safeIOHandle);
+            if (fileType != FileType.Char) {
+                return true;
+            }
+            // narrow down to console only
+            int mode;
+            bool success = GetConsoleMode(ioHandle, out mode);
+            return !success;
+        }
+
+        private static Object s_InternalSyncObject;
+
+        private static Object InternalSyncObject {
+            get {
+                if (s_InternalSyncObject == null) {
+                    Contract.Ensures(Contract.Result<Object>() != null);
+                    Object o = new Object();
+                    Interlocked.CompareExchange<Object>(ref s_InternalSyncObject, o, null);
+                }
+                return s_InternalSyncObject;
+            }
+        }
+
+        private static bool _stdInRedirectQueried = false;
+
+        private static bool _isStdInRedirected = false;
+
+        internal static bool IsInputRedirected {
+            get {
+                if (_stdInRedirectQueried) {
+                    return _isStdInRedirected;
+                }
+                lock (InternalSyncObject) {
+                    if (_stdInRedirectQueried) {
+                        return _isStdInRedirected;
+                    }
+                    _isStdInRedirected = IsHandleRedirected(GetStdHandle(StdHandle.Stdin));
+                    _stdInRedirectQueried = true;
+                    return _isStdInRedirected;
+                }
+            }
+        }
+
+        private static bool _stdOutRedirectQueried = false;
+
+        private static bool _isStdOutRedirected = false;
+
+        internal static bool IsOutputRedirected {
+            get {
+                if (_stdOutRedirectQueried) {
+                    return _isStdOutRedirected;
+                }
+                lock (InternalSyncObject) {
+                    if (_stdOutRedirectQueried) {
+                        return _isStdOutRedirected;
+                    }
+                    _isStdOutRedirected = IsHandleRedirected(GetStdHandle(StdHandle.Stdout));
+                    _stdOutRedirectQueried = true;
+                    return _isStdOutRedirected;
+                }
+            }
+        }
+
+        private static bool _stdErrRedirectQueried = false;
+
+        private static bool _isStdErrRedirected = false;
+
+        internal static bool IsErrorRedirected {
+            get {
+                if (_stdErrRedirectQueried) {
+                    return _isStdErrRedirected;
+                }
+                lock (InternalSyncObject) {
+                    if (_stdErrRedirectQueried) {
+                        return _isStdErrRedirected;
+                    }
+                    _isStdErrRedirected = IsHandleRedirected(GetStdHandle(StdHandle.Stderr));
+                    _stdErrRedirectQueried = true;
+                    return _isStdErrRedirected;
+                }
+            }
+        }
+    }
+    #endregion
 }

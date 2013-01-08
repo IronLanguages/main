@@ -360,5 +360,35 @@ def test_logo():
     x = i.EatToPrompt()
     Assert(x.find('\r\r\n') == -1)
 
+def test_isatty():
+    # cp33123
+    # this test assumes to be run from cmd.exe without redirecting stdout/stderr/stdin
+    isattycmd="import sys; print sys.stdout.isatty(),; print sys.stderr.isatty(),; print sys.stdin.isatty(),"
+    isattycmd2="import sys; print >> sys.stderr, sys.stdout.isatty(),; print >> sys.stderr, sys.stderr.isatty(),; print >> sys.stderr, sys.stdin.isatty(),"
+    # batch file used by TestCommandLine redirects stdout and stderr
+    TestCommandLine(("-c", isattycmd), "False False True", 0)
+
+    hideDefaultBatch = batfile
+    try:
+        global batfile
+        batfile = IO.Path.Combine(tmpdir, "__runconsole-isatty.bat")
+
+        f = file(batfile, "w")
+        f.write("@" + sys.executable + " >" + tmpfile + " 2>&1 <nul %*\n")
+        f.close()
+        TestCommandLine(("-c", isattycmd), "False False False", 0)
+
+        f = file(batfile, "w")
+        f.write("@" + sys.executable + " >" + tmpfile + " %*\n")
+        f.close()
+        TestCommandLine(("-c", isattycmd), "False True True", 0)
+
+        f = file(batfile, "w")
+        f.write("@" + sys.executable + " 2>" + tmpfile + " %*\n")
+        f.close()
+        TestCommandLine(("-c", isattycmd2), "True False True", 0)
+    finally:
+        batfile = hideDefaultBatch
+
 run_test(__name__)
 
