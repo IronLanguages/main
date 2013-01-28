@@ -171,6 +171,8 @@ namespace IronPython.Runtime {
         private PythonType DescriptorContext {
             get {
                 if (!DynamicHelpers.GetPythonType(_self).IsSubclassOf(_thisClass)) {
+                    if(_self == _selfClass) // Using @classmethod
+                        return _selfClass as PythonType ?? _thisClass;
                     return _thisClass;
                 }
 
