@@ -46,6 +46,8 @@ exec_tests = [
     "while v:pass",
     # If
     "if v:pass",
+    # If elif else
+    "if v:pass\nelif u:pass\nelse: pass",
     # Raise
     "raise Exception, 'string'",
     # TryExcept
@@ -1282,6 +1284,7 @@ exec_results = [
 ('Module', [('For', (1, 0), ('Name', (1, 4), 'v', ('Store',)), ('Name', (1, 9), 'v', ('Load',)), [('Pass', (1, 11))], [])]),
 ('Module', [('While', (1, 0), ('Name', (1, 6), 'v', ('Load',)), [('Pass', (1, 8))], [])]),
 ('Module', [('If', (1, 0), ('Name', (1, 3), 'v', ('Load',)), [('Pass', (1, 5))], [])]),
+('Module', [('If', (1, 0), ('Name', (1, 3), 'v', ('Load',)), [('Pass', (1, 5))], [('If', (2, 0), ('Name', (2, 5), 'u', ('Load',)), [('Pass', (2, 7))], [('Pass', (3, 6))])])]),
 ('Module', [('Raise', (1, 0), ('Name', (1, 6), 'Exception', ('Load',)), ('Str', (1, 17), 'string'), None)]),
 ('Module', [('TryExcept', (1, 0), [('Pass', (2, 2))], [('ExceptHandler', (3, 0), ('Name', (3, 7), 'Exception', ('Load',)), None, [('Pass', (4, 2))])], [])]),
 ('Module', [('TryFinally', (1, 0), [('Pass', (2, 2))], [('Pass', (4, 2))])]),
