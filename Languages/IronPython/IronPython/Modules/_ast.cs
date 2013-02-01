@@ -2181,6 +2181,8 @@ namespace IronPython.Modules
                     _orelse = new PythonList();
                 else
                     _orelse = orelse;
+                _lineno = lineno;
+                _col_offset = col_offset;
             }
 
             internal If(IfStatement stmt)
@@ -2203,6 +2205,7 @@ namespace IronPython.Modules
             internal void Initialize(IfStatementTest ifTest) {
                 _test = Convert(ifTest.Test);
                 _body = ConvertStatements(ifTest.Body);
+                GetSourceLocation(ifTest);
             }
 
             internal override Statement Revert() {
