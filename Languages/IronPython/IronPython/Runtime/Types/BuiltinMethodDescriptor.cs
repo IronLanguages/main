@@ -143,6 +143,17 @@ namespace IronPython.Runtime.Types {
             }
         }
 
+        public bool __eq__(object other) {
+            BuiltinMethodDescriptor bmd = other as BuiltinMethodDescriptor;
+            if (bmd == null) {
+                return false;
+            }
+            if (PythonOps.Id(__objclass__) != PythonOps.Id(bmd.__objclass__)) {
+                return false;
+            }
+            return __name__ == bmd.__name__;
+        }
+
         public int __cmp__(object other) {
             BuiltinMethodDescriptor bmd = other as BuiltinMethodDescriptor;
             if (bmd == null) {

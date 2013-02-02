@@ -3718,5 +3718,11 @@ def test_object_delattr():
     object.__delattr__(x, 'abc')
     AreEqual(hasattr(x, 'abc'), False)
 
+def test_cp33622():
+    AreEqual(object.__repr__ in (None,), False)
+    AreEqual(object.__repr__ in (None,object.__repr__), True)
+    AreEqual(object.__repr__ in (None,object.__cmp__), False)
+    AreEqual(object.__repr__ in (None,object.__str__), False)
+
 #--MAIN------------------------------------------------------------------------
 run_test(__name__)
