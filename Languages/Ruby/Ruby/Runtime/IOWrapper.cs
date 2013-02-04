@@ -99,6 +99,36 @@ namespace IronRuby.Runtime {
             }
         }
 
+        private UnaryOpSite PosSite {
+            get {
+                if (_posSite == null) {
+                    _posSite = UnaryOpSite.Create(RubyCallAction.Make(_context, "pos", RubyCallSignature.WithImplicitSelf(0)));
+                }
+
+                return _posSite;
+            }
+        }
+
+        private UnaryOpSite EofQSite {
+            get {
+                if (_eofQSite == null) {
+                    _eofQSite = UnaryOpSite.Create(RubyCallAction.Make(_context, "eof?", RubyCallSignature.WithImplicitSelf(0)));
+                }
+
+                return _eofQSite;
+            }
+        }
+
+        private UnaryOpSite EofSite {
+            get {
+                if (_eofSite == null) {
+                    _eofSite = UnaryOpSite.Create(RubyCallAction.Make(_context, "eof", RubyCallSignature.WithImplicitSelf(0)));
+                }
+
+                return _eofSite;
+            }
+        }
+
         #endregion
 
         private readonly object _io;
@@ -111,11 +141,17 @@ namespace IronRuby.Runtime {
         private int _writePos;
         private int _readPos;
         private int _readLen;
+        private UnaryOpSite _posSite;
+        private UnaryOpSite _eofQSite;
+        private UnaryOpSite _eofSite;
+        private RespondToStorage _respondToStorage;
 
         public IOWrapper(RubyContext/*!*/ context, object io, bool canRead, bool canWrite, bool canSeek, bool canFlush, bool canClose, int bufferSize) {
             Assert.NotNull(context);
 
             _context = context;
+            _respondToStorage = new RespondToStorage(_context);
+
             _io = io;
             _canRead = canRead;
             _canWrite = canWrite;
@@ -146,27 +182,50 @@ namespace IronRuby.Runtime {
 
         public override long Length {
             get {
-                long currentPos = Position;
-                Seek(0, SeekOrigin.End);
-                long result = Position;
-                Position = currentPos;
-                return result;
+                if (_io is Stream) {
+                    return ((Stream)_io).Length;
+                } else {
+                    long currentPos = this.Position;
+                    Seek(0, SeekOrigin.End);
+                    long result = this.Position;
+                    this.Position = currentPos;
+                    return result;
+                }
             }
         }
 
         public override long Position {
             get {
-                if (!_canSeek) {
-                    throw new NotSupportedException();
+                if (_io is Stream) {
+                    return ((Stream)_io).Position;
                 }
                 // TODO: conversion
-                return (long)TellSite.Target(TellSite, _io);
+                if (Protocols.RespondTo(_respondToStorage, _io, "pos")) {
+                    return (long)this.PosSite.Target(this.PosSite, _io);
+                } else {
+                    if (!_canSeek) {
+                        throw new NotSupportedException();
+                    }
+                    return (long)this.TellSite.Target(this.TellSite, _io);
+                }
             }
             set {
                 if (!_canSeek) {
                     throw new NotSupportedException();
                 }
                 Seek(value, SeekOrigin.Begin);
+            }
+        }
+
+        public bool Eof {
+            get {
+                if (Protocols.RespondTo(_respondToStorage, _io, "eof?")) {
+                    return (bool)this.EofQSite.Target(this.EofQSite, _io);
+                } else if (Protocols.RespondTo(_respondToStorage, _io, "eof")) {
+                    return (bool)this.EofSite.Target(this.EofSite, _io);
+                } else {
+                    return this.Position >= this.Length;
+                }
             }
         }
 
