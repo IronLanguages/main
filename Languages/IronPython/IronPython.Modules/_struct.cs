@@ -95,7 +95,11 @@ namespace IronPython.Modules {
                 _formatString = fmt;
 
                 Struct s;
-                if (_cache.TryGetValue(_formatString, out s)) {
+                bool gotIt;
+                lock (_cache) {
+                    gotIt = _cache.TryGetValue(_formatString, out s);
+                }
+                if (gotIt) {
                     Initialize(s);
                 } else {
                     Compile(context, fmt);
@@ -536,8 +540,9 @@ namespace IronPython.Modules {
 
                     _encodingSize += GetNativeSize(_formats[i].Type) * _formats[i].Count;
                 }
-
-                _cache.Add(fmt, this);
+                lock (_cache) {
+                    _cache.Add(fmt, this);
+                }
             }
 
             #endregion
@@ -641,6 +646,18 @@ namespace IronPython.Modules {
         private const int MAX_CACHE_SIZE = 1024;
         private static CacheDict<string, Struct> _cache = new CacheDict<string, Struct>(MAX_CACHE_SIZE);
 
+        private static Struct GetStructFromCache(CodeContext/*!*/ context, [NotNull] string fmt/*!*/) {
+            Struct s;
+            bool gotIt;
+            lock (_cache) {
+                gotIt = _cache.TryGetValue(fmt, out s);
+            }
+            if (!gotIt) {
+                s = new Struct(context, fmt);
+            }
+            return s;
+        }
+
         [Documentation("Clear the internal cache.")]
         public static void _clearcache() {
             _cache = new CacheDict<string, Struct>(MAX_CACHE_SIZE);
@@ -648,83 +665,47 @@ namespace IronPython.Modules {
 
         [Documentation("int(x[, base]) -> integer\n\nConvert a string or number to an integer, if possible.  A floating point\nargument will be truncated towards zero (this does not include a string\nrepresentation of a floating point number!)  When converting a string, use\nthe optional base.  It is an error to supply a base when converting a\nnon-string.  If base is zero, the proper base is guessed based on the\nstring content.  If the argument is outside the integer range a\nlong object will be returned instead.")]
         public static int calcsize(CodeContext/*!*/ context, [NotNull]string fmt) {
-            Struct s;
-            if (!_cache.TryGetValue(fmt, out s)) {
-                s = new Struct(context, fmt);
-            }
-            return s.size;
+            return GetStructFromCache(context, fmt).size;
         }
 
         [Documentation("Return string containing values v1, v2, ... packed according to fmt.")]
         public static string/*!*/ pack(CodeContext/*!*/ context, [NotNull]string fmt/*!*/, params object[] values) {
-            Struct s;
-            if (!_cache.TryGetValue(fmt, out s)) {
-                s = new Struct(context, fmt);
-            }
-            return s.pack(context, values);
+            return GetStructFromCache(context, fmt).pack(context, values);
         }
 
         [Documentation("Pack the values v1, v2, ... according to fmt.\nWrite the packed bytes into the writable buffer buf starting at offset.")]
         public static void pack_into(CodeContext/*!*/ context, [NotNull]string/*!*/ fmt, [NotNull]ArrayModule.array/*!*/ buffer, int offset, params object[] args) {
-            Struct s;
-            if (!_cache.TryGetValue(fmt, out s)) {
-                s = new Struct(context, fmt);
-            }
-            s.pack_into(context, buffer, offset, args);
+            GetStructFromCache(context, fmt).pack_into(context, buffer, offset, args);
         }
 
         [Documentation("Unpack the string containing packed C structure data, according to fmt.\nRequires len(string) == calcsize(fmt).")]
         public static PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [NotNull]string/*!*/ fmt, [NotNull]string/*!*/ @string) {
-            Struct s;
-            if (!_cache.TryGetValue(fmt, out s)) {
-                s = new Struct(context, fmt);
-            }
-            return s.unpack(context, @string);
+            return GetStructFromCache(context, fmt).unpack(context, @string);
         }
 
         [Documentation("Unpack the string containing packed C structure data, according to fmt.\nRequires len(string) == calcsize(fmt).")]
         public static PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [NotNull]string/*!*/ fmt, [NotNull]ArrayModule.array/*!*/ buffer) {
-            Struct s;
-            if (!_cache.TryGetValue(fmt, out s)) {
-                s = new Struct(context, fmt);
-            }
-            return s.unpack(context, buffer);
+            return GetStructFromCache(context, fmt).unpack(context, buffer);
         }
 
         [Documentation("Unpack the string containing packed C structure data, according to fmt.\nRequires len(string) == calcsize(fmt).")]
         public static PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [NotNull]string fmt/*!*/, [NotNull]PythonBuffer/*!*/ buffer) {
-            Struct s;
-            if (!_cache.TryGetValue(fmt, out s)) {
-                s = new Struct(context, fmt);
-            }
-            return s.unpack(context, buffer);
+            return GetStructFromCache(context, fmt).unpack(context, buffer);
         }
 
         [Documentation("Unpack the buffer, containing packed C structure data, according to\nfmt, starting at offset. Requires len(buffer[offset:]) >= calcsize(fmt).")]
         public static PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [NotNull]string fmt/*!*/, [NotNull]ArrayModule.array/*!*/ buffer, [DefaultParameterValue(0)] int offset) {
-            Struct s;
-            if (!_cache.TryGetValue(fmt, out s)) {
-                s = new Struct(context, fmt);
-            }
-            return s.unpack_from(context, buffer, offset);
+            return GetStructFromCache(context, fmt).unpack_from(context, buffer, offset);
         }
 
         [Documentation("Unpack the buffer, containing packed C structure data, according to\nfmt, starting at offset. Requires len(buffer[offset:]) >= calcsize(fmt).")]
         public static PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [NotNull]string fmt/*!*/, [NotNull]string/*!*/ buffer, [DefaultParameterValue(0)] int offset) {
-            Struct s;
-            if (!_cache.TryGetValue(fmt, out s)) {
-                s = new Struct(context, fmt);
-            }
-            return s.unpack_from(context, buffer, offset);
+            return GetStructFromCache(context, fmt).unpack_from(context, buffer, offset);
         }
 
         [Documentation("Unpack the buffer, containing packed C structure data, according to\nfmt, starting at offset. Requires len(buffer[offset:]) >= calcsize(fmt).")]
         public static PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [NotNull]string fmt/*!*/, [NotNull]PythonBuffer/*!*/ buffer, [DefaultParameterValue(0)] int offset) {
-            Struct s;
-            if (!_cache.TryGetValue(fmt, out s)) {
-                s = new Struct(context, fmt);
-            }
-            return s.unpack_from(context, buffer, offset);
+            return GetStructFromCache(context, fmt).unpack_from(context, buffer, offset);
         }
 
         #endregion
