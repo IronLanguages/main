@@ -1456,6 +1456,17 @@
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
+        <Test>
+          <Name>test_struct_threadsafe_20</Name>
+          <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
+          <Arguments>test_struct_threadsafe.py</Arguments>
+          <MaxDuration>1200000</MaxDuration>
+          <LongRunning>true</LongRunning>
+          <Disabled>false</Disabled>
+          <RequiresAdmin>false</RequiresAdmin>
+          <NotParallelSafe>false</NotParallelSafe>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
+        </Test>
       </Tests>
     </TestCategory>
     <TestCategory>
