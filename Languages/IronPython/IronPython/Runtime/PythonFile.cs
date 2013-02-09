@@ -17,7 +17,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -25,6 +24,7 @@ using System.Threading;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using Microsoft.Win32.SafeHandles;
 
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
@@ -32,7 +32,6 @@ using IronPython.Runtime.Types;
 
 #if FEATURE_NUMERICS
 using System.Numerics;
-using Microsoft.Win32.SafeHandles;
 
 #else
 using Microsoft.Scripting.Math;
@@ -1785,6 +1784,7 @@ namespace IronPython.Runtime {
             return this;
         }
 
+#if FEATURE_NATIVE
         public bool isatty() {
             return IsConsole && !isRedirected();
         }
@@ -1798,6 +1798,11 @@ namespace IronPython.Runtime {
             }
             return StreamRedirectionInfo.IsErrorRedirected;
         }
+#else
+        public bool isatty() {
+            return IsConsole;
+        }
+#endif
 
         public object __enter__() {
             ThrowIfClosed();
@@ -1868,7 +1873,8 @@ namespace IronPython.Runtime {
         #endregion
     }
 
-    #region dotnet45 backport
+#if FEATURE_NATIVE
+    // dotnet45 backport
     // http://msdn.microsoft.com/en-us/library/system.console.isoutputredirected%28v=VS.110%29.aspx
 
     internal static class StreamRedirectionInfo {
@@ -1900,7 +1906,6 @@ namespace IronPython.Runtime {
         private static Object InternalSyncObject {
             get {
                 if (s_InternalSyncObject == null) {
-                    Contract.Ensures(Contract.Result<Object>() != null);
                     Object o = new Object();
                     Interlocked.CompareExchange<Object>(ref s_InternalSyncObject, o, null);
                 }
@@ -1968,5 +1973,5 @@ namespace IronPython.Runtime {
             }
         }
     }
-    #endregion
+#endif
 }
