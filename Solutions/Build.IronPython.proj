@@ -31,12 +31,13 @@
     <BuildProject Include="$(Solution)">
       <Properties>Configuration=v2$(BaseConfiguration)</Properties>
     </BuildProject>
-    <BuildProject Include="$(Solution)" Condition=" '$(Mono)' != 'true' ">
+    <!-- Removed because of obsolesence. -->
+    <!--<BuildProject Include="$(Solution)" Condition=" '$(Mono)' != 'true' ">
       <Properties>Configuration=WP7$(BaseConfiguration)</Properties>
     </BuildProject>
     <BuildProject Include="$(Solution)" Condition=" '$(Mono)' != 'true' ">
       <Properties>Configuration=Silverlight4$(BaseConfiguration)</Properties>
-    </BuildProject>
+    </BuildProject>-->
     <BuildProject Include="$(Solution)" Condition=" '$(Mono)' != 'true' ">
       <Properties>Configuration=Silverlight5$(BaseConfiguration)</Properties>
     </BuildProject>
