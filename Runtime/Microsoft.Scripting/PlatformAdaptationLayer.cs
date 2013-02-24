@@ -204,18 +204,13 @@ namespace Microsoft.Scripting {
 #endif
         }
 
+#if !CLR2
         // TODO: better APIs
-        public virtual Stream OpenInputFileStream(string path, FileMode mode, FileAccess access, FileShare share) {
+        public virtual Stream OpenFileStream(string path, FileMode mode = FileMode.OpenOrCreate, FileAccess access = FileAccess.ReadWrite, FileShare share = FileShare.Read, int bufferSize = 8192) {
 #if FEATURE_FILESYSTEM
-            return new FileStream(path, mode, access, share);
-#else
-            throw new NotImplementedException();
-#endif
-        }
-
-        // TODO: better APIs
-        public virtual Stream OpenInputFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize) {
-#if FEATURE_FILESYSTEM
+            if (string.Equals("nul", path, StringComparison.InvariantCultureIgnoreCase)) {
+                return Stream.Null;
+            }
             return new FileStream(path, mode, access, share, bufferSize);
 #else
             throw new NotImplementedException();
@@ -223,22 +218,46 @@ namespace Microsoft.Scripting {
         }
 
         // TODO: better APIs
-        public virtual Stream OpenInputFileStream(string path) {
+        public virtual Stream OpenInputFileStream(string path, FileMode mode = FileMode.Open, FileAccess access = FileAccess.Read, FileShare share = FileShare.Read, int bufferSize = 8192) {
+            return OpenFileStream(path, mode, access, share, bufferSize);
+        }
+
+        // TODO: better APIs
+        public virtual Stream OpenOutputFileStream(string path) {
+            return OpenFileStream(path, FileMode.Create, FileAccess.Write);
+        }
+#else
+        public virtual Stream OpenFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize) {
 #if FEATURE_FILESYSTEM
-            return new FileStream(path, FileMode.Open, FileAccess.Read);
+            if (string.Equals("nul", path, StringComparison.InvariantCultureIgnoreCase)) {
+                return Stream.Null;
+            }
+            return new FileStream(path, mode, access, share, bufferSize);
 #else
             throw new NotImplementedException();
 #endif
         }
 
         // TODO: better APIs
-        public virtual Stream OpenOutputFileStream(string path) {
-#if FEATURE_FILESYSTEM
-            return new FileStream(path, FileMode.Create, FileAccess.Write);
-#else
-            throw new NotImplementedException();
-#endif
+        public virtual Stream OpenInputFileStream(string path, FileMode mode, FileAccess access, FileShare share) {
+            return OpenFileStream(path, mode, access, share, 8912);
         }
+
+        // TODO: better APIs
+        public virtual Stream OpenInputFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize) {
+            return OpenFileStream(path, mode, access, share, bufferSize);
+        }
+
+        // TODO: better APIs
+        public virtual Stream OpenInputFileStream(string path) {
+            return OpenFileStream(path, FileMode.Open, FileAccess.Read, FileShare.None, 8912);
+        }
+
+        // TODO: better APIs
+        public virtual Stream OpenOutputFileStream(string path) {
+            return OpenFileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, 8912);
+        }
+#endif
 
         public virtual void DeleteFile(string path, bool deleteReadOnly) {
 #if FEATURE_FILESYSTEM
