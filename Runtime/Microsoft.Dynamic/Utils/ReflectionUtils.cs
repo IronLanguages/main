@@ -987,7 +987,7 @@ namespace Microsoft.Scripting.Utils {
         #endregion
 
 #if FEATURE_REFEMIT
-#if WIN8 || CLR45
+#if FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access) {
             return AssemblyBuilder.DefineDynamicAssembly(name, access);
         }
