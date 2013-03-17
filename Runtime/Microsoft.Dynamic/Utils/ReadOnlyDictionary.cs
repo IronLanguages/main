@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 
+#if !CLR45
 namespace Microsoft.Scripting.Utils {
 
     // Like ReadOnlyCollection<T>: wraps an IDictionary<TKey, TValue> in a read-only wrapper
@@ -194,3 +195,4 @@ namespace Microsoft.Scripting.Utils {
         #endregion
     }
 }
+#endif

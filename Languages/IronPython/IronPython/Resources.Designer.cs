@@ -10,6 +10,7 @@
 
 namespace IronPython {
     using System;
+    using System.Reflection;
     
     
     /// <summary>

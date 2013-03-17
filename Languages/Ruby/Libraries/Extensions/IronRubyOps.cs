@@ -23,6 +23,7 @@ using System.Collections.Generic;
 using Microsoft.Scripting.Utils;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Collections.ObjectModel;
 
 namespace IronRuby.Builtins {
     [RubyModule("IronRuby", Extends = typeof(Ruby), Restrictions = ModuleRestrictions.NotPublished)]

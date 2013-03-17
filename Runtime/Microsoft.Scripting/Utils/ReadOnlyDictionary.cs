@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-#if !CLR45
+#if !FEATURE_READONLY_DICTIONARY
 
 using System;
 using System.Collections.Generic;
