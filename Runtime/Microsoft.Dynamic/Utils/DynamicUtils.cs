@@ -34,7 +34,7 @@ using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
 
-#if !WIN8
+#if !FEATURE_DYNAMIC_EXPRESSION_VISITOR
 #if FEATURE_CORE_DLR
 namespace System.Linq.Expressions {
 #else
