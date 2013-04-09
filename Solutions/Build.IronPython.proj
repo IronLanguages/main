@@ -37,9 +37,10 @@
     <BuildProject Include="$(Solution)" Condition=" '$(Mono)' != 'true' ">
       <Properties>Configuration=Silverlight5$(BaseConfiguration)</Properties>
     </BuildProject>
-    <BuildProject Include="$(Solution)">
+    <!-- Removed because it doesn't currently work. -->
+    <!--<BuildProject Include="$(Solution)">
       <Properties>Configuration=Android$(BaseConfiguration)</Properties>
-    </BuildProject>
+    </BuildProject>-->
     <!--<BuildProject Include="$(Solution)" Condition=" '$(Mono)' != 'true' ">
       <Properties>Configuration=Win8$(BaseConfiguration)</Properties>
     </BuildProject>-->
@@ -192,10 +193,10 @@
     <Copy SourceFiles="@(IronPythonModules->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4-WP71" />
 
     <!-- Mono for Android -->
-    <Copy SourceFiles="@(DlrLibs->'$(AndroidBuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Android" />
+    <!--<Copy SourceFiles="@(DlrLibs->'$(AndroidBuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Android" />
     <Copy SourceFiles="@(v2DlrLibs->'$(AndroidBuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Android" />
     <Copy SourceFiles="@(IronPythonLibs->'$(AndroidBuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Android" />
-    <Copy SourceFiles="@(IronPythonModules->'$(AndroidBuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Android" />
+    <Copy SourceFiles="@(IronPythonModules->'$(AndroidBuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Android" />-->
 
     <!-- Silverlight 5 -->
     <Copy SourceFiles="@(DlrLibs->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl5" />
