@@ -190,7 +190,9 @@ namespace IronPython.Runtime {
 
         [PythonHidden]
         public bool Contains(KeyValuePair<object, object> item) {
-            return _storage.Contains(item.Key);
+            object result;
+            return _storage.TryGetValue(item.Key, out result) &&
+                PythonOps.EqualRetBool(result, item.Value);
         }
 
         [PythonHidden]
