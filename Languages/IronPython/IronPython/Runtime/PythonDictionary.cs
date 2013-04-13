@@ -274,7 +274,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        private void SetItem(object key, object value) {
+        internal void SetItem(object key, object value) {
             _storage.Add(ref _storage, key, value);
         }
 

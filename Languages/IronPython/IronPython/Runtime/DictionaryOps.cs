@@ -145,7 +145,7 @@ namespace IronPython.Runtime {
         public static object setdefault(PythonDictionary self, object key, object defaultValue) {
             object ret;
             if (self.TryGetValueNoMissing(key, out ret)) return ret;
-            self[key] = defaultValue;
+            self.SetItem(key, defaultValue);
             return defaultValue;
         }
 
