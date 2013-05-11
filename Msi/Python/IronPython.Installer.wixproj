@@ -40,23 +40,14 @@
     <WixConstant Include="StdLibDir">
       <Value>Lib</Value>
     </WixConstant>
-    <WixConstant Include="PlatformsAndroidDir">
-      <Value>Platforms\Android</Value>
-    </WixConstant>
     <WixConstant Include="PlatformsNet35Dir">
       <Value>Platforms\Net35</Value>
     </WixConstant>
     <WixConstant Include="PlatformsNet40Dir">
       <Value>Platforms\Net40</Value>
     </WixConstant>
-    <WixConstant Include="PlatformsSl4Dir">
-      <Value>Platforms\Sl4</Value>
-    </WixConstant>
     <WixConstant Include="PlatformsSl5Dir">
       <Value>Platforms\Sl5</Value>
-    </WixConstant>
-    <WixConstant Include="PlatformsWP7Dir">
-      <Value>Platforms\Sl4-WP71</Value>
     </WixConstant>
     <WixConstant Include="SilverlightToolsDir">
       <Value>Silverlight</Value>
@@ -116,12 +107,6 @@
       <PreprocessorVariable>var.StdLibDir</PreprocessorVariable>
     </HarvestDirectory>
     
-    <HarvestDirectory Include="$(BaseInputPaths)\Platforms\Android">
-      <DirectoryRefId>IronPythonPlatformsDir</DirectoryRefId>
-      <ComponentGroupName>IronPythonPlatformsAndroid</ComponentGroupName>
-      <PreprocessorVariable>var.PlatformsAndroidDir</PreprocessorVariable>
-    </HarvestDirectory>
-
     <HarvestDirectory Include="$(BaseInputPaths)\Platforms\Net35">
       <DirectoryRefId>IronPythonPlatformsDir</DirectoryRefId>
       <ComponentGroupName>IronPythonPlatformsNet35</ComponentGroupName>
@@ -134,24 +119,12 @@
       <PreprocessorVariable>var.PlatformsNet40Dir</PreprocessorVariable>
     </HarvestDirectory>
     
-    <HarvestDirectory Include="$(BaseInputPaths)\Platforms\Sl4">
-      <DirectoryRefId>IronPythonPlatformsDir</DirectoryRefId>
-      <ComponentGroupName>IronPythonPlatformsSl4</ComponentGroupName>
-      <PreprocessorVariable>var.PlatformsSl4Dir</PreprocessorVariable>
-    </HarvestDirectory>
-    
     <HarvestDirectory Include="$(BaseInputPaths)\Platforms\Sl5">
       <DirectoryRefId>IronPythonPlatformsDir</DirectoryRefId>
       <ComponentGroupName>IronPythonPlatformsSl5</ComponentGroupName>
       <PreprocessorVariable>var.PlatformsSl5Dir</PreprocessorVariable>
     </HarvestDirectory>
     
-    <HarvestDirectory Include="$(BaseInputPaths)\Platforms\Sl4-WP71">
-      <DirectoryRefId>IronPythonPlatformsDir</DirectoryRefId>
-      <ComponentGroupName>IronPythonPlatformsWP7</ComponentGroupName>
-      <PreprocessorVariable>var.PlatformsWP7Dir</PreprocessorVariable>
-    </HarvestDirectory>
-
     <HarvestDirectory Include="$(BaseInputPaths)\Silverlight">
       <DirectoryRefId>INSTALLDIR</DirectoryRefId>
       <ComponentGroupName>IronPythonSilverlightTools</ComponentGroupName>
