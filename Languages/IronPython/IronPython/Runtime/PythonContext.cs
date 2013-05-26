@@ -1966,7 +1966,8 @@ namespace IronPython.Runtime {
             dict["implementation"] = implementation;
             dict["version_info"] = implementation.version;
             dict["hexversion"] = implementation.hexversion;
-            dict["version"] = implementation.version.GetVersionString(_initialVersionString);
+            dict["version"] = implementation.version.GetVersionString(
+                    _initialVersionString ?? GetVersionString());
         }
 #pragma warning restore 429
 
