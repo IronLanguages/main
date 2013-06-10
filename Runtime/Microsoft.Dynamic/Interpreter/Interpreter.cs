@@ -128,6 +128,7 @@ namespace Microsoft.Scripting.Interpreter {
                     }
                     return;
                 } catch (Exception exception) {
+                    Debug.WriteLine(exception.Message);
                     switch (HandleException(frame, exception)) {
                         case ExceptionHandlingResult.Rethrow: throw;
                         case ExceptionHandlingResult.Continue: continue;

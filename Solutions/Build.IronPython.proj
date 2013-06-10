@@ -43,9 +43,9 @@
     <BuildProject Include="$(Solution)">
       <Properties>Configuration=Android$(BaseConfiguration)</Properties>
     </BuildProject>
-    <!--<BuildProject Include="$(Solution)" Condition=" '$(Mono)' != 'true' ">
+    <BuildProject Include="$(Solution)" Condition=" '$(Mono)' != 'true' ">
       <Properties>Configuration=Win8$(BaseConfiguration)</Properties>
-    </BuildProject>-->
+    </BuildProject>
 
     <InstallerProject Include="$(BaseDir)\Msi\Python\IronPython.Installer.wixproj">
       <Properties>Configuration=$(BaseConfiguration);BaseInputPaths=$(StageDir);WixToolPath=$(UtilDir)\Wix35\;OutputPath=$(PackageDir)</Properties>
@@ -206,8 +206,10 @@
     <Copy SourceFiles="@(IronPythonModules->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl5" />
 
     <!-- Windows 8 "Metro" -->
-    <!--<Copy SourceFiles="@(DlrLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Metro" />
-    <Copy SourceFiles="@(IronPythonLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Metro" />-->
+    <Copy SourceFiles="@(DlrLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Metro" />
+    <Copy SourceFiles="@(v2DlrLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Metro" />
+    <Copy SourceFiles="@(IronPythonLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Metro" />
+    <Copy SourceFiles="@(IronPythonModules->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Metro" />
   </Target>
   
   <Target Name="NuGetPackage" DependsOnTargets="Stage" Condition="'$(OS)' == 'Windows_NT'">

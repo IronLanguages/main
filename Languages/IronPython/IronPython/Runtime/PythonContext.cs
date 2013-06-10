@@ -2014,6 +2014,7 @@ namespace IronPython.Runtime {
         internal object GetSystemStateValue(string name) {
             object val;
             if (SystemState.__dict__.TryGetValue(name, out val)) {
+                //Debug.WriteLine("System state Value: " + val);
                 return val;
             }
             return null;

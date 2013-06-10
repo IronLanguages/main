@@ -27,6 +27,7 @@ using IronPython.Runtime.Operations;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Providers;
 using Microsoft.Scripting.Utils;
+using System.Diagnostics;
 
 namespace IronPython.Hosting {
     /// <summary>
@@ -92,8 +93,11 @@ namespace IronPython.Hosting {
         }
 
         public ScriptScope/*!*/ ImportModule(ScriptEngine/*!*/ engine, string/*!*/ name) {
+            //Debug.WriteLine("Importing step 2: " + name);
+
             PythonModule module = Importer.ImportModule(_context.SharedClsContext, _context.SharedClsContext.GlobalDict, name, false, -1) as PythonModule;
             if (module != null) {
+                //Debug.WriteLine("Module not null: " + name);
                 return HostingHelpers.CreateScriptScope(engine, module.Scope);
             }
 

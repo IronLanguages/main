@@ -2,6 +2,7 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Diagnostics;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
@@ -89,6 +90,8 @@ to Zip archives.";
                 PlatformAdaptationLayer pal = context.LanguageContext.DomainManager.Platform;
                 string prefix, input, path;
 
+                Debug.WriteLine(pathObj.ToString());
+
                 if (pathObj == null) {
                     throw PythonOps.TypeError("must be string, not None");
                 }
@@ -137,6 +140,7 @@ to Zip archives.";
                     }
                 } else {
                     throw MakeError("not a Zip file");
+                    //throw new Exception("not a Zip file");
                 }
 
                 _prefix = input.Replace(path, string.Empty);

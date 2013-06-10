@@ -2438,6 +2438,8 @@ namespace IronPython.Runtime.Operations {
                 return val;
             }
 
+            Debug.WriteLine("Name: " + name);
+
             throw PythonOps.TypeError("{0}() takes exactly {1} arguments ({2} given)",
                 function.__name__,
                 function.NormalArgumentCount,
@@ -4210,6 +4212,7 @@ namespace IronPython.Runtime.Operations {
         // If a method is called with an incorrect number of arguments
         // You should use TypeErrorForUnboundMethodCall() for unbound methods called with 0 arguments
         public static Exception TypeErrorForArgumentCountMismatch(string methodName, int expectedArgCount, int actualArgCount) {
+            Debug.WriteLine("Name: " + methodName);
             return TypeError("{0}() takes exactly {1} argument{2} ({3} given)",
                              methodName, expectedArgCount, expectedArgCount == 1 ? "" : "s", actualArgCount);
         }

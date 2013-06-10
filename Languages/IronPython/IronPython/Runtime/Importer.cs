@@ -176,6 +176,8 @@ namespace IronPython.Runtime {
                 throw PythonOps.ImportError("Import by filename is not supported.", modName);
             }
 
+            //Debug.WriteLine("Importing: " + modName);
+
             string package = null;
             object attribute;
             PythonDictionary pyGlobals = globals as PythonDictionary;
@@ -213,6 +215,7 @@ namespace IronPython.Runtime {
 
             if (level != 0) {
                 // try a relative import
+                //Debug.WriteLine("Trying a relative import");
 
                 // if importing a.b.c, import "a" first and then import b.c from a
                 string name;    // name of the module we are to import in relation to the current module
@@ -221,13 +224,16 @@ namespace IronPython.Runtime {
                 if (TryGetNameAndPath(context, globals, firstName, level, package, out name, out path, out parentModule)) {
                     finalName = name;
                     // import relative
+                    //Debug.WriteLine("Importing relative");
                     if (!TryGetExistingOrMetaPathModule(context, name, path, out newmod)) {
                         newmod = ImportFromPath(context, firstName, name, path);
                         if (newmod == null) {
+                            //Debug.WriteLine("Adding an indirection entry saying this module does not exist");
                             // add an indirection entry saying this module does not exist
                             // see http://www.python.org/doc/essays/packages.html "Dummy Entries"
                             context.LanguageContext.SystemStateModules[name] = null;
                         } else if (parentModule != null) {
+                            //Debug.WriteLine("Setting newmod in dcit");
                             parentModule.__dict__[modName] = newmod;
                         }
                         
@@ -235,8 +241,10 @@ namespace IronPython.Runtime {
                         // if we imported before having the assembly
                         // loaded and then loaded the assembly we want
                         // to make the assembly available now.
+                        //Debug.WriteLine("If imported before having assembly then making assembly now");
 
                         if (newmod is NamespaceTracker) {
+                            //Debug.WriteLine("Newmod is NamespaceTracker");
                             context.ShowCls = true;
                         }
                     }
@@ -245,7 +253,9 @@ namespace IronPython.Runtime {
 
             if (level <= 0) {
                 // try an absolute import
+                //Debug.WriteLine("Trying an absolute import");
                 if (newmod == null) {
+                    //Debug.WriteLine("newmod is null");
                     object parentPkg;
                     if (!String.IsNullOrEmpty(package) && !PythonContext.GetContext(context).SystemStateModules.TryGetValue(package, out parentPkg)) {
                         PythonModule warnModule = new PythonModule();
@@ -259,6 +269,7 @@ namespace IronPython.Runtime {
                             package);
                     }
 
+                    //Debug.WriteLine("ImportTopAbsolute: " + context.ToString() + ", " + firstName);
                     newmod = ImportTopAbsolute(context, firstName);
                     finalName = firstName;
                     if (newmod == null) {
@@ -594,12 +605,17 @@ namespace IronPython.Runtime {
         #region Private Implementation Details
 
         private static object ImportTopAbsolute(CodeContext/*!*/ context, string/*!*/ name) {
+            //Debug.WriteLine("Importing step 4: " + name);
+
             object ret;
+            //Debug.WriteLine("TryGetExistingModule");
             if (TryGetExistingModule(context, name, out ret)) {
+                //Debug.WriteLine("Getting existing module");
                 if (IsReflected(ret)) {
                     // Even though we found something in sys.modules, we need to check if a
                     // clr.AddReference has invalidated it. So try ImportReflected again.
                     ret = ImportReflected(context, name) ?? ret;
+                    //Debug.WriteLine("Import refelected");
                 }
 
                 NamespaceTracker rp = ret as NamespaceTracker;
@@ -607,25 +623,33 @@ namespace IronPython.Runtime {
                     context.ShowCls = true;
                 }
 
+                //Debug.WriteLine("Got existing module");
                 return ret;
             }
 
+            //Debug.WriteLine("TryLoadMetaPathModule");
             if (TryLoadMetaPathModule(context, name, null, out ret)) {
+                //Debug.WriteLine("LoadMetaPathModule");
                 return ret;
             }
 
+            //Debug.WriteLine("Importing builtin");
             ret = ImportBuiltin(context, name);
-            if (ret != null) return ret;
+            if (ret != null) { return ret; /*Debug.WriteLine("Imported builtin");*/ }
 
             List path;
+            //Debug.WriteLine("Trygetsyspath");
             if (PythonContext.GetContext(context).TryGetSystemPath(out path)) {
+                //Debug.WriteLine("Importing from path");
                 ret = ImportFromPath(context, name, name, path);
-                if (ret != null) return ret;
+                if (ret != null) { return ret; /*Debug.WriteLine("Imported from path");*/ }
             }
 
+            //Debug.WriteLine("Importing refelcted");
             ret = ImportReflected(context, name);
-            if (ret != null) return ret;
+            if (ret != null) { return ret; /*Debug.WriteLine("Imported reflected");*/ }
 
+            //Debug.WriteLine("Returning null");
             return null;
         }
 
@@ -821,33 +845,47 @@ namespace IronPython.Runtime {
         private static object ImportFromPathHook(CodeContext/*!*/ context, string/*!*/ name, string/*!*/ fullName, List/*!*/ path, Func<CodeContext, string, string, string, object> defaultLoader) {
             Assert.NotNull(context, name, fullName, path);
 
+            //Debug.WriteLine("Importing step 4: " + fullName);
+
             IDictionary<object, object> importCache = PythonContext.GetContext(context).GetSystemStateValue("path_importer_cache") as IDictionary<object, object>;
 
             if (importCache == null) {
+                //Debug.WriteLine("importcache is null");
                 return null;
             }
 
             foreach (object dirname in (IEnumerable)path) {
                 string str = dirname as string;
 
+                //Debug.WriteLine(str);
+
                 if (str != null || (Converter.TryConvertToString(dirname, out str) && str != null)) {  // ignore non-string
+                    //Debug.WriteLine("String not null");
+
                     object importer;
+                    //Debug.WriteLine("TryGetValue from importcache");
                     if (!importCache.TryGetValue(str, out importer)) {
+                        //Debug.WriteLine("Did not get value from importercache");
                         importCache[str] = importer = FindImporterForPath(context, str);
                     }
 
                     if (importer != null) {
+                        //Debug.WriteLine("Importer not null");
                         // user defined importer object, get the loader and use it.
                         object ret;
+                        //Debug.WriteLine("FindAndLoadModuleFromImporter");
                         if (FindAndLoadModuleFromImporter(context, importer, fullName, null, out ret)) {
+                            //Debug.WriteLine("Returning FindAndLoadModuleFromImporter");
                             return ret;
                         }
                     } else if (defaultLoader != null) {
+                        //Debug.WriteLine("Importer is null but defualtLoader is not");
                         object res = defaultLoader(context, name, fullName, str);
                         if (res != null) {
                             return res;
                         }
                     }
+                    //Debug.WriteLine("importer and defualtloader are null");
                 }
             }
 
@@ -877,18 +915,33 @@ namespace IronPython.Runtime {
         /// handles this path.
         /// </summary>
         private static object FindImporterForPath(CodeContext/*!*/ context, string dirname) {
+            //Debug.WriteLine("Importing from: " + dirname);
+
+            /*if (dirname == ".")
+                return null;*/
+
             List pathHooks = PythonContext.GetContext(context).GetSystemStateValue("path_hooks") as List;
 
             foreach (object hook in (IEnumerable)pathHooks) {
-                try {
+                //Debug.WriteLine(hook);
+                try
+                {
                     object handler = PythonCalls.Call(context, hook, dirname);
 
-                    if (handler != null) {
+                    if (handler != null)
+                    {
                         return handler;
                     }
-                } catch (ImportException) {
-                    // we can't handle the path
                 }
+                catch (Exception ex1)
+                {
+                    Debug.WriteLine(ex1.Message);
+                }
+                /*catch (ImportException ex)
+                {
+                    // we can't handle the path
+                    Debug.WriteLine(ex.Message);
+                }*/
             }
 
 #if !SILVERLIGHT    // DirectoryExists isn't implemented on Silverlight

@@ -140,6 +140,7 @@ namespace IronPython.Runtime {
         [PythonHidden]
         public bool TryGetValue(object key, out object value) {
             if (_storage.TryGetValue(key, out value)) {
+                //Debug.WriteLine("Got value from storage");
                 return true;
             }
 

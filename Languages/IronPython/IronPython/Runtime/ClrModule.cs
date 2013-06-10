@@ -128,7 +128,7 @@ import Namespace.")]
         }
 #endif
 
-#if FEATURE_FILESYSTEM
+#if FEATURE_FILESYSTEM && !WP75
         [Documentation(@"Adds a reference to a .NET assembly.  Parameters are a full path to an. 
 assembly on disk. After the load the assemblies namespaces and top-level types 
 will be available via import Namespace.")]
@@ -161,6 +161,14 @@ the assembly object.")]
             }
 
             return context.LanguageContext.LoadAssemblyFromFile(file);
+        }
+#else
+        public static Assembly/*!*/ LoadAssemblyFromFileWithPath(CodeContext/*!*/ context, string/*!*/ file)
+        {
+            throw new NotImplementedException();
+        }
+        public static Assembly/*!*/ LoadAssemblyFromFile(CodeContext/*!*/ context, string/*!*/ file) {
+            throw new NotImplementedException();
         }
 #endif
 
@@ -374,7 +382,7 @@ the assembly object.")]
         private static void AddReferenceToFile(CodeContext/*!*/ context, string file) {
             if (file == null) throw new TypeErrorException("Expected string, got NoneType");
 
-#if !FEATURE_FILESYSTEM
+#if !FEATURE_FILESYSTEM || WP75
             Assembly asm = context.LanguageContext.DomainManager.Platform.LoadAssemblyFromPath(file);
 #else
             Assembly asm = LoadAssemblyFromFile(context, file);
@@ -452,7 +460,7 @@ the assembly object.")]
 
         #region Runtime Type Checking support
 
-#if FEATURE_FILESYSTEM
+#if FEATURE_FILESYSTEM && !WP75
         [Documentation(@"Adds a reference to a .NET assembly.  One or more assembly names can
 be provided which are fully qualified names to the file on disk.  The 
 directory is added to sys.path and AddReferenceToFile is then called. After the 
@@ -485,7 +493,15 @@ import Namespace.")]
             if (asm == null) throw PythonOps.IOError("file does not exist: {0}", file);
             AddReference(context, asm);
         }
-
+#else
+        public static void AddReferenceToFileAndPath(CodeContext/*!*/ context, params string[] files)
+        {
+            throw new NotImplementedException();
+        }
+        private static void AddReferenceToFileAndPath(CodeContext/*!*/ context, string file)
+        {
+            throw new NotImplementedException();
+        }
 #endif
 
         /// <summary>

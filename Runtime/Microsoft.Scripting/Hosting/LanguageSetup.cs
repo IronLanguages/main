@@ -180,7 +180,7 @@ namespace Microsoft.Scripting.Hosting {
 
             _names = new ReadOnlyCollection<string>(ArrayUtils.MakeArray(_names));
             _fileExtensions = new ReadOnlyCollection<string>(ArrayUtils.MakeArray(_fileExtensions));
-            _options = new ReadOnlyDictionary<string, object>(new Dictionary<string, object>(_options));
+            _options = new Microsoft.Scripting.Utils.ReadOnlyDictionary<string, object>(new Dictionary<string, object>(_options));
         }
 
         private void CheckFrozen() {

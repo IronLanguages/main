@@ -64,7 +64,7 @@ namespace Microsoft.Scripting.Runtime {
                         String.Format(
                             "Failed to load language '{0}': assembly '{1}' does not contain type '{2}'",
                             _displayName, 
-#if FEATURE_FILESYSTEM
+#if FEATURE_FILESYSTEM && !WP75 && !WIN8
                             assembly.Location,
 #else
                             assembly.FullName,

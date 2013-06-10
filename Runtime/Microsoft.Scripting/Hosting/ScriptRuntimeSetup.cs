@@ -130,7 +130,7 @@ namespace Microsoft.Scripting.Hosting {
             // prepare
             ReadOnlyCollection<LanguageSetup> setups = new ReadOnlyCollection<LanguageSetup>(ArrayUtils.MakeArray(_languageSetups));
             var hostArguments = new ReadOnlyCollection<object>(ArrayUtils.MakeArray(_hostArguments));
-            var options = new ReadOnlyDictionary<string, object>(new Dictionary<string, object>(_options));            
+            var options = new Scripting.Utils.ReadOnlyDictionary<string, object>(new Dictionary<string, object>(_options));            
             var config = new DlrConfiguration(_debugMode, _privateBinding, options);
 
             // validate

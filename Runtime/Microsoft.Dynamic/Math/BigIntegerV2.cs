@@ -631,10 +631,10 @@ namespace Microsoft.Scripting.Math {
 
         public static int Compare(BigInteger x, BigInteger y) {
             if (object.ReferenceEquals(x, null)) {
-                throw new ArgumentNullException("x");
+                throw new ArgumentNullException("Compare argument x");
             }
             if (object.ReferenceEquals(y, null)) {
-                throw new ArgumentNullException("y");
+                throw new ArgumentNullException("Compare argument y");
             }
             if (x.sign == y.sign) {
                 int xl = x.GetLength();
@@ -688,24 +688,63 @@ namespace Microsoft.Scripting.Math {
             return !(x == y);
         }
 
-
+         
         public static bool operator ==(BigInteger x, BigInteger y) {
+            //Debug.WriteLine("\n Doing == \n");
+            if (object.ReferenceEquals(x, null) || object.ReferenceEquals(y, null))
+                return false;
+
             return Compare(x, y) == 0;
         }
 
         public static bool operator !=(BigInteger x, BigInteger y) {
+            if (object.ReferenceEquals(x, null) || object.ReferenceEquals(y, null))
+                return true;
+
             return Compare(x, y) != 0;
         }
         public static bool operator <(BigInteger x, BigInteger y) {
+            //Debug.WriteLine("\n Doing < \n");
+            if (object.ReferenceEquals(x, null) && !object.ReferenceEquals(y, null))
+                return true;
+            else if (object.ReferenceEquals(y, null) && !object.ReferenceEquals(x, null))
+                return false;
+            else if (object.ReferenceEquals(x, null) && object.ReferenceEquals(y, null))
+                return false;
+
             return Compare(x, y) < 0;
         }
         public static bool operator <=(BigInteger x, BigInteger y) {
+            //Debug.WriteLine("\n Doing <= \n");
+            if (object.ReferenceEquals(x, null) && !object.ReferenceEquals(y, null))
+                return true;
+            else if (object.ReferenceEquals(y, null) && !object.ReferenceEquals(x, null))
+                return false;
+            else if (object.ReferenceEquals(x, null) && object.ReferenceEquals(y, null))
+                return true;
+
             return Compare(x, y) <= 0;
         }
         public static bool operator >(BigInteger x, BigInteger y) {
+            //Debug.WriteLine("\n Doing > \n");
+            if (object.ReferenceEquals(x, null) && !object.ReferenceEquals(y, null))
+                return false;
+            else if (object.ReferenceEquals(y, null) && !object.ReferenceEquals(x, null))
+                return true;
+            else if (object.ReferenceEquals(x, null) && object.ReferenceEquals(y, null))
+                return false;
+
             return Compare(x, y) > 0;
         }
         public static bool operator >=(BigInteger x, BigInteger y) {
+            //Debug.WriteLine("\n Doing >= \n");
+            if (object.ReferenceEquals(x, null) && !object.ReferenceEquals(y, null))
+                return false;
+            else if (object.ReferenceEquals(y, null) && !object.ReferenceEquals(x, null))
+                return true;
+            else if (object.ReferenceEquals(x, null) && object.ReferenceEquals(y, null))
+                return true;
+
             return Compare(x, y) >= 0;
         }
 

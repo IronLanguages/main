@@ -2348,13 +2348,13 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             PythonTuple newBases = PythonTypeOps.EnsureBaseType(bases);
             for (int i = 0; i < newBases.__len__(); i++) {
 
-#if !FEATURE_REFEMIT
+/*#if !FEATURE_REFEMIT
                 PythonType pt = newBases[i] as PythonType;
                 if (pt != null && pt.IsSystemType && pt != TypeCache.Object) {
                     // The only supported CLR base class w/o refemit is object
                     throw new NotSupportedException(string.Format("{0} is not a valid CLR base class. Only object is supported w/o refemit.", pt.UnderlyingSystemType.FullName));
                 }
-#endif
+#endif*/
 
                 for (int j = 0; j < newBases.__len__(); j++) {
                     if (i != j && newBases[i] == newBases[j]) {

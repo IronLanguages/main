@@ -811,7 +811,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             dict["path_hooks"] = new List(0);
 
             // add zipimport to the path hooks for importing from zip files.
-            try {
+            /*try {
                 PythonModule zipimport = Importer.ImportModule(
                     context.SharedClsContext, context.SharedClsContext.GlobalDict,
                     "zipimport", false, -1) as PythonModule;
@@ -825,7 +825,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
                 }
             } catch {
                 // this is not a fatal error, so we don't do anything.
-            }
+            }*/
 
             dict["path_importer_cache"] = new PythonDictionary();
         }

@@ -71,7 +71,7 @@ namespace IronPython.Modules {
                 return context.LanguageContext.DomainManager.Platform.FileExists(path) ||
             context.LanguageContext.DomainManager.Platform.DirectoryExists(path);
             }
-#if FEATURE_FILESYSTEM
+#if FEATURE_FILESYSTEM && !WP75
             // match the behavior of the VC C Runtime
             FileAttributes fa = File.GetAttributes(path);
             if ((fa & FileAttributes.Directory) != 0) {
@@ -321,18 +321,18 @@ namespace IronPython.Modules {
             try {
                 FileMode fileMode = FileModeFromFlags(flag);
                 FileAccess access = FileAccessFromFlags(flag);
-                FileOptions options = FileOptionsFromFlags(flag);
+                //FileOptions options = FileOptionsFromFlags(flag);
                 FileStream fs;
                 if (access == FileAccess.Read && (fileMode == FileMode.CreateNew || fileMode == FileMode.Create || fileMode == FileMode.Append)) {
                     // .NET doesn't allow Create/CreateNew w/ access == Read, so create the file, then close it, then
                     // open it again w/ just read access.
                     fs = new FileStream(filename, fileMode, FileAccess.Write, FileShare.None);
                     fs.Close();
-                    fs = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, DefaultBufferSize, options);
+                    fs = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, DefaultBufferSize/*, options*/);
                 } else if(access == FileAccess.ReadWrite && fileMode == FileMode.Append) {
-                    fs = new FileStream(filename, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, DefaultBufferSize, options);
+                    fs = new FileStream(filename, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, DefaultBufferSize/*, options*/);
                 } else {
-                    fs = new FileStream(filename, fileMode, access, FileShare.ReadWrite, DefaultBufferSize, options);
+                    fs = new FileStream(filename, fileMode, access, FileShare.ReadWrite, DefaultBufferSize/*, options*/);
                 }
                 
                 string mode2;
@@ -350,7 +350,7 @@ namespace IronPython.Modules {
             }
         }
 
-        private static FileOptions FileOptionsFromFlags(int flag) {
+        /*private static FileOptions FileOptionsFromFlags(int flag) {
             FileOptions res = FileOptions.None;
             if ((flag & O_TEMPORARY) != 0) {
                 res |= FileOptions.DeleteOnClose;
@@ -363,7 +363,7 @@ namespace IronPython.Modules {
             }
 
             return res;
-        }
+        }*/
 #endif
 
 #if FEATURE_PROCESS
@@ -1282,12 +1282,12 @@ namespace IronPython.Modules {
             try {
                 dir = Path.GetTempPath(); // Reasonably consistent with CPython behavior under Windows
 
-                return Path.GetFullPath(Path.Combine(dir, prefix ?? String.Empty) + Path.GetRandomFileName());
+                return Path.GetFullPath(Path.Combine(dir, prefix ?? String.Empty) + Path.GetTempFileName());
             } catch (Exception e) {
                 throw ToPythonException(e, dir);
             }
         }
-
+#if !WP75
         public static object times() {
             System.Diagnostics.Process p = System.Diagnostics.Process.GetCurrentProcess();
 
@@ -1297,10 +1297,16 @@ namespace IronPython.Modules {
                 0,  // child process os time
                 DateTime.Now.Subtract(p.StartTime).TotalSeconds);
         }
+#else
+        public static object times()
+        {
+            throw new NotImplementedException();
+        }
+#endif
 
         public static PythonFile/*!*/ tmpfile(CodeContext/*!*/ context) {
             try {
-                FileStream sw = new FileStream(Path.GetTempFileName(), FileMode.Open, FileAccess.ReadWrite, FileShare.None, 4096, FileOptions.DeleteOnClose);
+                FileStream sw = new FileStream(Path.GetTempFileName(), FileMode.Open, FileAccess.ReadWrite, FileShare.None, 4096/*, FileOptions.DeleteOnClose*/);
 
                 PythonFile res = PythonFile.Create(context, sw, sw.Name, "w+b");
                 return res;
@@ -1311,7 +1317,7 @@ namespace IronPython.Modules {
 
         public static string/*!*/ tmpnam(CodeContext/*!*/ context) {
             PythonOps.Warn(context, PythonExceptions.RuntimeWarning, "tmpnam is a potential security risk to your program");
-            return Path.GetFullPath(Path.GetTempPath() + Path.GetRandomFileName());
+            return Path.GetFullPath(Path.GetTempPath() + Path.GetTempFileName());
         }
 
         public static void remove(string path) {
@@ -1325,8 +1331,10 @@ namespace IronPython.Modules {
         private static void UnlinkWorker(string path) {
             if (path == null) {
                 throw new ArgumentNullException("path");
+#if !WP75
             } else if (path.IndexOfAny(Path.GetInvalidPathChars()) != -1 || Path.GetFileName(path).IndexOfAny(Path.GetInvalidFileNameChars()) != -1) {
                 throw PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_INVALID_NAME, "The file could not be found for deletion: " + path);
+#endif
             } else if (!File.Exists(path)) {
                 throw PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_FILE_NOT_FOUND, "The file could not be found for deletion: " + path);
             }
@@ -1373,7 +1381,7 @@ namespace IronPython.Modules {
             }
         }
 
-#if FEATURE_FILESYSTEM
+#if FEATURE_FILESYSTEM && !WP75
         public static void utime(string path, PythonTuple times) {
             try {
                 // Create a DirectoryInfo or FileInfo depending on what it is
@@ -1394,6 +1402,11 @@ namespace IronPython.Modules {
             } catch (Exception e) {
                 throw ToPythonException(e, path);
             }
+        }
+#else
+        public static void utime(string path, PythonTuple times)
+        {
+            throw new NotImplementedException();
         }
 #endif
 

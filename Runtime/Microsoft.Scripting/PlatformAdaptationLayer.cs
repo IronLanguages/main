@@ -146,7 +146,7 @@ namespace Microsoft.Scripting {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadFile")]
         public virtual Assembly LoadAssemblyFromPath(string path) {
-#if FEATURE_FILESYSTEM
+#if FEATURE_FILESYSTEM && !WP75 && !WIN8
             return Assembly.LoadFile(path);
 #else
             throw new NotImplementedException();
@@ -167,7 +167,7 @@ namespace Microsoft.Scripting {
 
         public virtual bool IsSingleRootFileSystem {
             get {
-#if FEATURE_FILESYSTEM
+#if FEATURE_FILESYSTEM && !WP75 && !WIN8
                 return Environment.OSVersion.Platform == PlatformID.Unix
                     || Environment.OSVersion.Platform == PlatformID.MacOSX;
 #elif WIN8
@@ -180,7 +180,7 @@ namespace Microsoft.Scripting {
 
         public virtual StringComparer PathComparer {
             get {
-#if FEATURE_FILESYSTEM
+#if FEATURE_FILESYSTEM && !WIN8
                 return Environment.OSVersion.Platform == PlatformID.Unix ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
 #else
                 return StringComparer.OrdinalIgnoreCase;
@@ -189,7 +189,7 @@ namespace Microsoft.Scripting {
         }
 
         public virtual bool FileExists(string path) {
-#if FEATURE_FILESYSTEM
+#if FEATURE_FILESYSTEM 
             return File.Exists(path);
 #else
             throw new NotImplementedException();
@@ -260,7 +260,7 @@ namespace Microsoft.Scripting {
 #endif
 
         public virtual void DeleteFile(string path, bool deleteReadOnly) {
-#if FEATURE_FILESYSTEM
+#if FEATURE_FILESYSTEM && !WP75
             FileInfo info = new FileInfo(path);
 #if !ANDROID
             if (deleteReadOnly && info.IsReadOnly) {

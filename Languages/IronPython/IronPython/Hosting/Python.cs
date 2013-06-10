@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Hosting;
@@ -204,6 +205,8 @@ namespace IronPython.Hosting {
         public static ScriptScope/*!*/ ImportModule(this ScriptEngine/*!*/ engine, string/*!*/ moduleName) {
             ContractUtils.RequiresNotNull(engine, "engine");
             ContractUtils.RequiresNotNull(moduleName, "moduleName");
+
+            //Debug.WriteLine("Importing: " + moduleName);
 
             return GetPythonService(engine).ImportModule(engine, moduleName);
         }

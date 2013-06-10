@@ -68,6 +68,7 @@ namespace Microsoft.Scripting.Ast {
         //The following method does not check the validaity of the span
         public static Expression AddDebugInfo(Expression expression, SymbolDocumentInfo document, int startLine, int startColumn, int endLine, int endColumn) {
             if (expression == null) {
+                Debug.WriteLine("Null error ding: " + expression.ToString());
                 throw new System.ArgumentNullException("expression");
             }
 
