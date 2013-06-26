@@ -22,6 +22,6 @@ namespace IronPython.Runtime {
     /// Marks a member as being hidden from Python code.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Event | AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
-    internal sealed class PythonHiddenAttribute : Attribute {
+    public sealed class PythonHiddenAttribute : Attribute {
     }
 }
