@@ -326,7 +326,7 @@ namespace IronPython.Runtime.Types {
                 paramDoc.Add(
                     new ParameterDoc(
                         pi.Name ?? "",  // manufactured methods, such as string[].ctor(int) can have no parameter names.
-                        GetPythonTypeName(pi.ParameterType),
+                        pi.ParameterType.IsGenericParameter ? pi.ParameterType.Name : GetPythonTypeName(pi.ParameterType),
                         paramDocString,
                         flags
                     )
