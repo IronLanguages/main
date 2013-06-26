@@ -138,6 +138,14 @@ namespace IronPython.Runtime {
         }
 
         [PythonHidden]
+        public bool RemoveDirect(object key) {
+            // Directly remove the value, without calling __delitem__
+            // This is used to implement pop() in a manner consistent with CPython, which does
+            // not call __delitem__ on pop().
+            return _storage.Remove(ref _storage, key);
+        }
+
+        [PythonHidden]
         public bool TryGetValue(object key, out object value) {
             if (_storage.TryGetValue(key, out value)) {
                 return true;
@@ -291,7 +299,7 @@ namespace IronPython.Runtime {
 
 
         public virtual void __delitem__(object key) {
-            if (!_storage.Remove(ref _storage, key)) {
+            if (!this.RemoveDirect(key)) {
                 throw PythonOps.KeyError(key);
             }
         }

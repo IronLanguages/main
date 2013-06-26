@@ -109,7 +109,7 @@ namespace IronPython.Runtime {
             //??? perf won't match expected Python perf
             object ret;
             if (self.TryGetValueNoMissing(key, out ret)) {
-                self.Remove(key);
+                self.RemoveDirect(key);
                 return ret;
             } else {
                 throw PythonOps.KeyError(key);
@@ -120,7 +120,7 @@ namespace IronPython.Runtime {
             //??? perf won't match expected Python perf
             object ret;
             if (self.TryGetValueNoMissing(key, out ret)) {
-                self.Remove(key);
+                self.RemoveDirect(key);
                 return ret;
             } else {
                 return defaultValue;
