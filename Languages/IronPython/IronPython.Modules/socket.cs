@@ -251,12 +251,12 @@ namespace IronPython.Modules {
 
             [Documentation("close() -> None\n\nClose the socket. It cannot be used after being closed.")]
             public void close() {
+                var refs = System.Threading.Interlocked.Decrement(ref _referenceCount);
+
                 // Don't actually close the socket if other file objects are
-                // still referring to this socket.
-                if (_referenceCount < 1) {
+                // still referring to this socket.                
+                if (refs < 1) {
                     _close();
-                } else {
-                    var refs = System.Threading.Interlocked.Decrement(ref _referenceCount);
                 }
             }
 
