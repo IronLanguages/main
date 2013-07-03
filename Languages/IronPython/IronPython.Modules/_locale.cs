@@ -106,11 +106,11 @@ If locale is None then the current setting is returned.
             return GetLocaleInfo(context).Collate.CompareInfo.Compare(string1, string2, CompareOptions.None);
         }
 
-        [Documentation(@"returns a transformed string that can be compared using the built-in cmp.
-        
-Currently returns the string unmodified")]
-        public static object strxfrm(string @string) {
-            return @string;
+        [Documentation(@"returns a System.Globalization.SortKey that can be compared using the built-in cmp.
+
+Note: Return value diverts from python specification - it is not a string.")]
+        public static object strxfrm(CodeContext/*!*/ context, string @string) {
+            return GetLocaleInfo(context).Collate.CompareInfo.GetSortKey(@string);
         }
 
         private enum LocaleCategories {

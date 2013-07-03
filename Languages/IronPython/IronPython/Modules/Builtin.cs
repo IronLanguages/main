@@ -36,6 +36,7 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 #if FEATURE_NUMERICS
 using System.Numerics;
+using System.Globalization;
 #else
 using Microsoft.Scripting.Math;
 using Complex = Microsoft.Scripting.Math.Complex64;
@@ -393,6 +394,10 @@ namespace IronPython.Modules {
             }
 
             return 0;
+        }
+
+        public static int cmp(CodeContext/*!*/ context, [NotNull]SortKey x, [NotNull]SortKey y) {
+            return SortKey.Compare(x, y);
         }
 
         public static int cmp(CodeContext/*!*/ context, [NotNull]PythonTuple x, [NotNull]PythonTuple y) {
