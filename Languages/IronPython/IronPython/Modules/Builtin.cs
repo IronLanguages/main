@@ -17,6 +17,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -36,7 +37,6 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 #if FEATURE_NUMERICS
 using System.Numerics;
-using System.Globalization;
 #else
 using Microsoft.Scripting.Math;
 using Complex = Microsoft.Scripting.Math.Complex64;
@@ -396,9 +396,11 @@ namespace IronPython.Modules {
             return 0;
         }
 
+#if FEATURE_SORTKEY
         public static int cmp(CodeContext/*!*/ context, [NotNull]SortKey x, [NotNull]SortKey y) {
             return SortKey.Compare(x, y);
         }
+#endif
 
         public static int cmp(CodeContext/*!*/ context, [NotNull]PythonTuple x, [NotNull]PythonTuple y) {
             if ((object)x == (object)y) {
