@@ -443,7 +443,7 @@ static int getLastErrorMsg(int nBuf, ref string zBuf){
 //#define winLogError(a,b,c)     winLogErrorAtLine(a,b,c,__LINE__)
 static int winLogError( int a, string b, string c )
 {
-#if !SQLITE_WINRT 
+#if !SQLITE_WINRT && !SILVERLIGHT
   StackTrace st = new StackTrace( new StackFrame( true ) );
   StackFrame sf = st.GetFrame( 0 );
   
