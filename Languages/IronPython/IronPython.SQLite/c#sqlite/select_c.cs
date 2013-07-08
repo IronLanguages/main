@@ -207,7 +207,7 @@ namespace Community.CsharpSqlite
         for ( j = 0; j < ArraySize( aKeyword ); j++ )
         {
           if ( p.n == aKeyword[j].nChar
-          && p.z.StartsWith( zKeyText.Substring( aKeyword[j].i, aKeyword[j].nChar ), StringComparison.InvariantCultureIgnoreCase ) )
+          && p.z.StartsWith( zKeyText.Substring( aKeyword[j].i, aKeyword[j].nChar ), StringComparison.OrdinalIgnoreCase ) )
           {
             jointype |= aKeyword[j].code;
             break;
@@ -254,7 +254,7 @@ namespace Community.CsharpSqlite
       int i;
       for ( i = 0; i < pTab.nCol; i++ )
       {
-        if ( pTab.aCol[i].zName.Equals( zCol, StringComparison.InvariantCultureIgnoreCase ) )
+        if ( pTab.aCol[i].zName.Equals( zCol, StringComparison.OrdinalIgnoreCase ) )
           return i;
       }
       return -1;
@@ -1538,7 +1538,7 @@ static void explainComposite(Parse v, int w,int x,int y,bool z) {}
         nName = sqlite3Strlen30( zName );
         for ( j = cnt = 0; j < i; j++ )
         {
-          if ( aCol[j].zName.Equals( zName, StringComparison.InvariantCultureIgnoreCase ) )
+          if ( aCol[j].zName.Equals( zName, StringComparison.OrdinalIgnoreCase ) )
           {
             string zNewName;
             //zName[nName] = 0;
@@ -1584,7 +1584,7 @@ static void explainComposite(Parse v, int w,int x,int y,bool z) {}
     Select pSelect        /* SELECT used to determine types and collations */
     )
     {
-      sqlite3 db = pParse.db;
+      //sqlite3 db = pParse.db;
       NameContext sNC;
       Column pCol;
       CollSeq pColl;
@@ -3547,11 +3547,11 @@ break;
       if ( pEList.a[0].pExpr.op != TK_AGG_COLUMN )
         return WHERE_ORDERBY_NORMAL;
       Debug.Assert( !ExprHasProperty( pExpr, EP_IntValue ) );
-      if ( pExpr.u.zToken.Equals( "min", StringComparison.InvariantCultureIgnoreCase ) )
+      if ( pExpr.u.zToken.Equals( "min", StringComparison.OrdinalIgnoreCase ) )
       {
         return WHERE_ORDERBY_MIN;
       }
-      else if ( pExpr.u.zToken.Equals( "max", StringComparison.InvariantCultureIgnoreCase ) )
+      else if ( pExpr.u.zToken.Equals( "max", StringComparison.OrdinalIgnoreCase ) )
       {
         return WHERE_ORDERBY_MAX;
       }
@@ -3613,7 +3613,7 @@ break;
         string zIndex = pFrom.zIndex;
         Index pIdx;
         for ( pIdx = pTab.pIndex;
-        pIdx != null && !pIdx.zName.Equals( zIndex, StringComparison.InvariantCultureIgnoreCase );
+        pIdx != null && !pIdx.zName.Equals( zIndex, StringComparison.OrdinalIgnoreCase );
         pIdx = pIdx.pNext
         )
           ;
@@ -3828,7 +3828,7 @@ break;
                 zTabName = pTab.zName;
               }
               ///if ( db.mallocFailed != 0 ) break;
-              if ( zTName != null && !zTName.Equals( zTabName, StringComparison.InvariantCultureIgnoreCase ) )
+              if ( zTName != null && !zTName.Equals( zTabName, StringComparison.OrdinalIgnoreCase ) )
               {
                 continue;
               }
@@ -4041,10 +4041,9 @@ break;
     NameContext pOuterNC  /* Name context for container */
     )
     {
-      sqlite3 db;
       if ( NEVER( p == null ) )
         return;
-      db = pParse.db;
+      //sqlite3 db = pParse.db;
       if ( ( p.selFlags & SF_HasTypeInfo ) != 0 )
         return;
       sqlite3SelectExpand( pParse, p );

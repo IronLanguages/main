@@ -1121,9 +1121,9 @@ pOp.cnt = 0;
       else if ( n == P4_KEYINFO )
       {
         KeyInfo pKeyInfo;
-        int nField, nByte;
+        int nByte;
 
-        nField = _p4.pKeyInfo.nField;
+        //int nField = _p4.pKeyInfo.nField;
         //nByte = sizeof(*pKeyInfo) + (nField-1)*sizeof(pKeyInfo.aColl[0]) + nField;
         pKeyInfo = new KeyInfo();//sqlite3DbMallocRaw(0, nByte);
         pOp.p4.pKeyInfo = pKeyInfo;
@@ -1551,7 +1551,7 @@ void sqlite3VdbeLeave(Vdbe *p){
       if ( p != null && p.Length > starting && p[starting] != null && N != 0 )
       {
         Mem pEnd;
-        sqlite3 db = p[starting].db;
+        //sqlite3 db = p[starting].db;
         //u8 malloc_failed =  db.mallocFailed;
         //if ( db != null ) //&&  db.pnBytesFreed != 0 )
         //{
@@ -2132,7 +2132,7 @@ sqlite3IoTrace( "SQL %s\n", z.Trim() );
         //  memset(pParse->azVar, 0, pParse->nzVar*sizeof(pParse->azVar[0]));
         //}
         p.nzVar = (i16)pParse.nzVar;
-        p.azVar = new string[p.nzVar == 0 ? (i16)1 : p.nzVar]; //p.azVar = (char*)p.apArg[nArg];
+        p.azVar = new string[(int)p.nzVar == 0 ? 1 : (int)p.nzVar]; //p.azVar = (char*)p.apArg[nArg];
         for ( n = 0; n < p.nzVar; n++ )
         {
           p.azVar[n] = pParse.azVar[n];
@@ -3987,7 +3987,7 @@ swapMixedEndianFloat(x);
       int nField;
       int rc = 0;
 
-      byte[] aKey1 = new byte[pKey1.Length - offset];
+      //byte[] aKey1 = new byte[pKey1.Length - offset];
       //Buffer.BlockCopy( pKey1, offset, aKey1, 0, aKey1.Length );
       KeyInfo pKeyInfo;
 

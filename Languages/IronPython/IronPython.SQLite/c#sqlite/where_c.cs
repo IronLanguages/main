@@ -456,7 +456,7 @@ public WhereTerm[] aStatic = new WhereTerm[1];    /* Initial static space for a[
       if ( pWC.nTerm >= pWC.nSlot )
       {
         //WhereTerm pOld = pWC.a;
-        sqlite3 db = pWC.pParse.db;
+        //sqlite3 db = pWC.pParse.db;
         Array.Resize( ref pWC.a, pWC.nSlot * 2 );
         //pWC.a = sqlite3DbMallocRaw(db, sizeof(pWC.a[0])*pWC.nSlot*2 );
         //if( pWC.a==null ){
@@ -761,7 +761,7 @@ public WhereTerm[] aStatic = new WhereTerm[1];    /* Initial static space for a[
               if ( NEVER( j >= pIdx.nColumn ) )
                 return null;
             }
-            if ( pColl != null && !pColl.zName.Equals( pIdx.azColl[j], StringComparison.InvariantCultureIgnoreCase ) )
+            if ( pColl != null && !pColl.zName.Equals( pIdx.azColl[j], StringComparison.OrdinalIgnoreCase ) )
               continue;
           }
           return pTerm;
@@ -918,7 +918,7 @@ ExprList pList;
 if( pExpr.op!=TK_FUNCTION ){
 return 0;
 }
-if( !pExpr.u.zToken.Equals("match", StringComparison.InvariantCultureIgnoreCase ) ){
+if( !pExpr.u.zToken.Equals("match", StringComparison.OrdinalIgnoreCase ) ){
 return 0;
 }
 pList = pExpr.x.pList;
@@ -1742,7 +1742,7 @@ return 1;
           iSortOrder = 0;
           zColl = pColl.zName;
         }
-        if ( pExpr.iColumn != iColumn || !pColl.zName.Equals( zColl, StringComparison.InvariantCultureIgnoreCase ) )
+        if ( pExpr.iColumn != iColumn || !pColl.zName.Equals( zColl, StringComparison.OrdinalIgnoreCase ) )
         {
           /* Term j of the ORDER BY clause does not match column i of the index */
           if ( i < nEqCol )

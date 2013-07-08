@@ -217,17 +217,17 @@ namespace Community.CsharpSqlite
               if ( pItem.zAlias != null )
               {
                 string zTabName = pItem.zAlias;
-                if ( !zTabName.Equals( zTab, StringComparison.InvariantCultureIgnoreCase ) )
+                if ( !zTabName.Equals( zTab, StringComparison.OrdinalIgnoreCase ) )
                   continue;
               }
               else
               {
                 string zTabName = pTab.zName;
-                if ( NEVER( zTabName == null ) || !zTabName.Equals( zTab ,StringComparison.InvariantCultureIgnoreCase )  )
+                if ( NEVER( zTabName == null ) || !zTabName.Equals( zTab ,StringComparison.OrdinalIgnoreCase )  )
                 {
                   continue;
                 }
-                if ( zDb != null && !db.aDb[iDb].zName.Equals( zDb ,StringComparison.InvariantCultureIgnoreCase )  )
+                if ( zDb != null && !db.aDb[iDb].zName.Equals( zDb ,StringComparison.OrdinalIgnoreCase )  )
                 {
                   continue;
                 }
@@ -243,7 +243,7 @@ namespace Community.CsharpSqlite
             for ( j = 0; j < pTab.nCol; j++ )//, pCol++ )
             {
               pCol = pTab.aCol[j];
-              if ( pCol.zName.Equals( zCol, StringComparison.InvariantCultureIgnoreCase ) )
+              if ( pCol.zName.Equals( zCol, StringComparison.OrdinalIgnoreCase ) )
               {
                 IdList pUsing;
                 cnt++;
@@ -270,7 +270,7 @@ namespace Community.CsharpSqlite
                     int k;
                     for ( k = 0; k < pUsing.nId; k++ )
                     {
-                      if ( pUsing.a[k].zName.Equals( zCol ,StringComparison.InvariantCultureIgnoreCase )  )
+                      if ( pUsing.a[k].zName.Equals( zCol ,StringComparison.OrdinalIgnoreCase )  )
                       {
                         //pItem++;
                         i++;
@@ -294,12 +294,12 @@ namespace Community.CsharpSqlite
           int op = pParse.eTriggerOp;
           Table pTab = null;
           Debug.Assert( op == TK_DELETE || op == TK_UPDATE || op == TK_INSERT );
-          if ( op != TK_DELETE && "new".Equals( zTab ,StringComparison.InvariantCultureIgnoreCase )  )
+          if ( op != TK_DELETE && "new".Equals( zTab ,StringComparison.OrdinalIgnoreCase )  )
           {
             pExpr.iTable = 1;
             pTab = pParse.pTriggerTab;
           }
-          else if ( op != TK_INSERT && "old".Equals( zTab ,StringComparison.InvariantCultureIgnoreCase )  )
+          else if ( op != TK_INSERT && "old".Equals( zTab ,StringComparison.OrdinalIgnoreCase )  )
           {
             pExpr.iTable = 0;
             pTab = pParse.pTriggerTab;
@@ -313,7 +313,7 @@ namespace Community.CsharpSqlite
             for ( iCol = 0; iCol < pTab.nCol; iCol++ )
             {
               Column pCol = pTab.aCol[iCol];
-              if ( pCol.zName.Equals( zCol ,StringComparison.InvariantCultureIgnoreCase )  )
+              if ( pCol.zName.Equals( zCol ,StringComparison.OrdinalIgnoreCase )  )
               {
                 if ( iCol == pTab.iPKey )
                 {
@@ -380,7 +380,7 @@ namespace Community.CsharpSqlite
           for ( j = 0; j < pEList.nExpr; j++ )
           {
             string zAs = pEList.a[j].zName;
-            if ( zAs != null && zAs.Equals( zCol ,StringComparison.InvariantCultureIgnoreCase )  )
+            if ( zAs != null && zAs.Equals( zCol ,StringComparison.OrdinalIgnoreCase )  )
             {
               Expr pOrig;
               Debug.Assert( pExpr.pLeft == null && pExpr.pRight == null );
@@ -774,7 +774,7 @@ return WRC_Prune;
         for ( i = 0; i < pEList.nExpr; i++ )
         {
           string zAs = pEList.a[i].zName;
-          if ( zAs != null && zAs.Equals( zCol ,StringComparison.InvariantCultureIgnoreCase )  )
+          if ( zAs != null && zAs.Equals( zCol ,StringComparison.OrdinalIgnoreCase )  )
           {
             return i + 1;
           }
@@ -1116,8 +1116,6 @@ return WRC_Prune;
       int i;                 /* Loop counter */
       ExprList pGroupBy;     /* The GROUP BY clause */
       Select pLeftmost;      /* Left-most of SELECT of a compound */
-      sqlite3 db;            /* Database connection */
-
 
       Debug.Assert( p != null );
       if ( ( p.selFlags & SF_Resolved ) != 0 )
@@ -1126,7 +1124,7 @@ return WRC_Prune;
       }
       pOuterNC = pWalker.u.pNC;
       pParse = pWalker.pParse;
-      db = pParse.db;
+      //sqlite3 db = pParse.db;
 
       /* Normally sqlite3SelectExpand() will be called first and will have
       ** already expanded this SELECT.  However, if this is a subquery within

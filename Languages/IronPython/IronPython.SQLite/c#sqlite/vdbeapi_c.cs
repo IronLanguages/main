@@ -806,8 +806,8 @@ end_of_step:
       if ( null == pVdbeFunc || pVdbeFunc.nAux <= iArg )
       {
         int nAux = ( pVdbeFunc != null ? pVdbeFunc.nAux : 0 );
-        int nMalloc = iArg;
-        ;//VdbeFunc+ sizeof(struct AuxData)*iArg;
+        ////int nMalloc = iArg;
+        ////VdbeFunc+ sizeof(struct AuxData)*iArg;
         if ( pVdbeFunc == null )
         {
           //pVdbeFunc = (VdbeFunc)sqlite3DbRealloc( pCtx.s.db, pVdbeFunc, nMalloc );

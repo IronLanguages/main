@@ -10,8 +10,10 @@ namespace Community.CsharpSqlite
 {
   using sqlite3_int64 = System.Int64;
   using sqlite3_stmt = Sqlite3.Vdbe;
+#if !SQLITE_WINRT 
   using System.Security.Cryptography;
   using System.IO;
+#endif
 
   public partial class Sqlite3
   {
@@ -546,7 +548,7 @@ static void CODEC_TRACE( string T, params object[] ap ) { if ( sqlite3PagerTrace
 #endif
         codec_ctx ctx;
         int rc;
-        Pager pPager = pDb.pBt.pBt.pPager;
+        ////Pager pPager = pDb.pBt.pBt.pPager;
         sqlite3_file fd;
 
         ctx = new codec_ctx();//sqlite3Malloc(sizeof(codec_ctx);
@@ -644,7 +646,7 @@ static void CODEC_TRACE( string T, params object[] ap ) { if ( sqlite3PagerTrace
     ** Note: this will require modifications to the sqlite3Codec to support rekey
     **
     */
-    static int sqlite3_rekey( sqlite3 db, string pKey, int nKey )
+    public static int sqlite3_rekey( sqlite3 db, string pKey, int nKey )
     {
       CODEC_TRACE( "sqlite3_rekey: entered db=%d pKey=%s, nKey=%d\n", db, pKey, nKey );
       //activate_openssl();

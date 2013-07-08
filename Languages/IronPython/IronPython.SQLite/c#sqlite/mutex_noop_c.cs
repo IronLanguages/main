@@ -59,7 +59,7 @@ static void noopMutexEnter(sqlite3_mutex p){  }
 static int noopMutexTry(sqlite3_mutex p){ return SQLITE_OK; }
 static void noopMutexLeave(sqlite3_mutex p){  }
 
-sqlite3_mutex_methods sqlite3DefaultMutex(){
+sqlite3_mutex_methods sqlite3NoopMutex(){
 sqlite3_mutex_methods sMutex = new sqlite3_mutex_methods(
 (dxMutexInit)noopMutexInit,
 (dxMutexEnd)noopMutexEnd,

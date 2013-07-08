@@ -82,7 +82,7 @@ namespace Community.CsharpSqlite
         {
           Trigger pTrig = (Trigger)sqliteHashData( p );
           if ( pTrig.pTabSchema == pTab.pSchema
-          && pTrig.table.Equals( pTab.zName, StringComparison.InvariantCultureIgnoreCase ) )
+          && pTrig.table.Equals( pTab.zName, StringComparison.OrdinalIgnoreCase ) )
           {
             pTrig.pNext = ( pList != null ? pList : pTab.pTrigger );
             pList = pTrig;
@@ -238,7 +238,7 @@ namespace Community.CsharpSqlite
       }
 
       /* Do not create a trigger on a system table */
-      if ( pTab.zName.StartsWith( "sqlite_", System.StringComparison.InvariantCultureIgnoreCase ) )
+      if ( pTab.zName.StartsWith( "sqlite_", System.StringComparison.OrdinalIgnoreCase ) )
       {
         sqlite3ErrorMsg( pParse, "cannot create trigger on system table" );
         pParse.nErr++;
@@ -604,7 +604,7 @@ triggerfinish_cleanup:
       for ( i = OMIT_TEMPDB; i < db.nDb; i++ )
       {
         int j = ( i < 2 ) ? i ^ 1 : i;  /* Search TEMP before MAIN */
-        if ( zDb != null && !db.aDb[j].zName.Equals( zDb ,StringComparison.InvariantCultureIgnoreCase )  )
+        if ( zDb != null && !db.aDb[j].zName.Equals( zDb ,StringComparison.OrdinalIgnoreCase )  )
           continue;
         Debug.Assert( sqlite3SchemaMutexHeld( db, j, null ) );
         pTrigger = sqlite3HashFind( ( db.aDb[j].pSchema.trigHash ), zName, nName, (Trigger)null );

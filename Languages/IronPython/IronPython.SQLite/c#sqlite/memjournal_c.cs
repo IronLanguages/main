@@ -218,16 +218,16 @@ namespace Community.CsharpSqlite
     static int memjrnlTruncate( sqlite3_file pJfd, sqlite3_int64 size )
     {
       MemJournal p = (MemJournal)pJfd;
-      FileChunk pChunk;
+      ////FileChunk pChunk;
       Debug.Assert( size == 0 );
       UNUSED_PARAMETER( size );
-      pChunk = p.pFirst;
-      while ( pChunk != null )
-      {
-        FileChunk pTmp = pChunk;
-        pChunk = pChunk.pNext;
-        //sqlite3_free( ref pTmp );
-      }
+      ////pChunk = p.pFirst;
+      ////while ( pChunk != null )
+      ////{
+        ////FileChunk pTmp = pChunk;
+        ////pChunk = pChunk.pNext;
+        ////sqlite3_free( ref pTmp );
+      ////}
       sqlite3MemJournalOpen( pJfd );
       return SQLITE_OK;
     }
@@ -240,7 +240,6 @@ namespace Community.CsharpSqlite
       memjrnlTruncate( pJfd, 0 );
       return SQLITE_OK;
     }
-
 
     /*
     ** Sync the file.

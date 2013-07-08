@@ -134,7 +134,7 @@ sqlite3_value[] argv
   {
     string z = db.aDb[i].zName;
     Debug.Assert( z != null && zName != null );
-    if ( z.Equals( zName, StringComparison.InvariantCultureIgnoreCase ) )
+    if ( z.Equals( zName, StringComparison.OrdinalIgnoreCase ) )
     {
       zErrDyn = sqlite3MPrintf( db, "database %s is already in use", zName );
       goto attach_error;
@@ -325,7 +325,7 @@ sqlite3_value[] argv
     pDb = db.aDb[i];
     if ( pDb.pBt == null )
       continue;
-    if ( pDb.zName.Equals( zName, StringComparison.InvariantCultureIgnoreCase ) )
+    if ( pDb.zName.Equals( zName, StringComparison.OrdinalIgnoreCase ) )
       break;
   }
 
@@ -375,7 +375,6 @@ Expr pDbname,       /* Name of the database to use internally */
 Expr pKey           /* Database key for encryption extension */
 )
 {
-  int rc;
   NameContext sName;
   Vdbe v;
   sqlite3 db = pParse.db;
@@ -385,9 +384,9 @@ Expr pKey           /* Database key for encryption extension */
   sName.pParse = pParse;
 
   if (
-  SQLITE_OK != ( rc = resolveAttachExpr( sName, pFilename ) ) ||
-  SQLITE_OK != ( rc = resolveAttachExpr( sName, pDbname ) ) ||
-  SQLITE_OK != ( rc = resolveAttachExpr( sName, pKey ) )
+  SQLITE_OK != resolveAttachExpr( sName, pFilename ) ||
+  SQLITE_OK != resolveAttachExpr( sName, pDbname ) ||
+  SQLITE_OK != resolveAttachExpr( sName, pKey )
   )
   {
     pParse.nErr++;
@@ -402,7 +401,7 @@ if( pAuthArg->op==TK_STRING ){
 }else{
   zAuthArg = 0;
 }
-rc = sqlite3AuthCheck(pParse, type, zAuthArg, 0, 0);
+int rc = sqlite3AuthCheck(pParse, type, zAuthArg, 0, 0);
 if(rc!=SQLITE_OK ){
 goto attach_end;
 }
@@ -544,7 +543,7 @@ SrcList pList       /* The Source list to check and modify */
     {
       pItem.zDatabase = zDb;// sqlite3DbStrDup( pFix.pParse.db, zDb );
     }
-    else if ( !pItem.zDatabase.Equals( zDb ,StringComparison.InvariantCultureIgnoreCase )  )
+    else if ( !pItem.zDatabase.Equals( zDb ,StringComparison.OrdinalIgnoreCase )  )
     {
       sqlite3ErrorMsg( pFix.pParse,
       "%s %T cannot reference objects in database %s",

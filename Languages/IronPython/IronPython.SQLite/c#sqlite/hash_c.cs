@@ -206,7 +206,7 @@ if( new_size==pH->htsize ) return false;
       }
       while ( count-- > 0 && ALWAYS( elem ) )
       {
-        if ( elem.nKey == nKey && elem.pKey.Equals( pKey, StringComparison.InvariantCultureIgnoreCase ) )
+        if ( elem.nKey == nKey && elem.pKey.Equals( pKey, StringComparison.OrdinalIgnoreCase ) )
         {
           return elem;
         }

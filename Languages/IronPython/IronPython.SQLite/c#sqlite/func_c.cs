@@ -1260,8 +1260,6 @@ break;
       string zRep;        /* The replacement string C */
       string zOut = null; /* The output */
       int nStr;           /* Size of zStr */
-      int nPattern;       /* Size of zPattern */
-      int nRep;           /* Size of zRep */
       int nOut;           /* Maximum size of zOut */
       //int loopLimit;    /* Last zStr[] that might match zPattern[] */
       int i, j = 0;       /* Loop counters */
@@ -1287,17 +1285,19 @@ break;
         sqlite3_result_value( context, argv[0] );
         return;
       }
-      nPattern = sqlite3_value_bytes( argv[1] );
+      ////nPattern = sqlite3_value_bytes( argv[1] );
       Debug.Assert( zPattern == sqlite3_value_text( argv[1] ) );  /* No encoding change */
       zRep = sqlite3_value_text( argv[2] );
       if ( zRep == null )
         return;
-      nRep = sqlite3_value_bytes( argv[2] );
+      ////nRep = sqlite3_value_bytes( argv[2] );
       Debug.Assert( zRep == sqlite3_value_text( argv[2] ) );
       nOut = nStr + 1;
       Debug.Assert( nOut < SQLITE_MAX_LENGTH );
       if ( nOut <= sqlite3_context_db_handle( context ).aLimit[SQLITE_LIMIT_LENGTH] )
       {
+        //int nPattern;       /* Size of zPattern */
+        //int nRep;           /* Size of zRep */
         //zOut = contextMalloc(context, (i64)nOut);
         //if( zOut==0 ){
         //  return;

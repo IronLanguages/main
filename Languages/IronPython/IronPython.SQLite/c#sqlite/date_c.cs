@@ -446,7 +446,7 @@ zulu_time:
       {
         return 0;
       }
-      else if ( zDate.Equals( "now", StringComparison.InvariantCultureIgnoreCase ) )
+      else if ( zDate.Equals( "now", StringComparison.OrdinalIgnoreCase ) )
       {
         setDateTimeToCurrent( context, p );
         return 0;
@@ -557,7 +557,7 @@ zulu_time:
     ** If the sqlite3GlobalConfig.bLocaltimeFault variable is true then this
     ** routine will always fail.
     */
-    static int osLocaltime( time_t t, tm pTm )
+    static int osLocaltime( time_t t, ref tm pTm )
     {
       int rc;
 #if (!(HAVE_LOCALTIME_R) || !HAVE_LOCALTIME_R) && (!(HAVE_LOCALTIME_S) || !HAVE_LOCALTIME_S)
@@ -631,7 +631,7 @@ zulu_time:
       x.validJD = 0;
       computeJD( x );
       t = (long)( x.iJD / 1000 - 210866760000L );// (time_t)(x.iJD/1000 - 21086676*(i64)10000);
-      if ( osLocaltime( t, sLocal ) != 0 )
+      if ( osLocaltime( t, ref sLocal ) != 0 )
       {
         sqlite3_result_error( pCtx, "local time unavailable", -1 );
         pRc = SQLITE_ERROR;

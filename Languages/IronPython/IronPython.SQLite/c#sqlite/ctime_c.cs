@@ -386,7 +386,7 @@ namespace Community.CsharpSqlite
       if ( zOptName.EndsWith( "=" ) )
         return 0;
       int i, n = 0;
-      if ( zOptName.StartsWith( "SQLITE_", System.StringComparison.InvariantCultureIgnoreCase ) )
+      if ( zOptName.StartsWith( "SQLITE_", System.StringComparison.OrdinalIgnoreCase ) )
         n = 7;
       //n = sqlite3Strlen30(zOptName);
 
@@ -396,7 +396,7 @@ namespace Community.CsharpSqlite
         for ( i = 0; i < ArraySize( azCompileOpt ); i++ )
         {
           int n1 = ( zOptName.Length-n < azCompileOpt[i].Length ) ? zOptName.Length-n : azCompileOpt[i].Length;
-          if ( String.Compare( zOptName, n, azCompileOpt[i], 0, n1, StringComparison.InvariantCultureIgnoreCase ) == 0 )
+          if ( String.Compare( zOptName, n, azCompileOpt[i], 0, n1, StringComparison.OrdinalIgnoreCase ) == 0 )
             return 1;
         }
       return 0;
