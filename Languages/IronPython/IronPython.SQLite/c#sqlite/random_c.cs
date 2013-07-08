@@ -137,7 +137,7 @@ struct sqlite3PrngType *p = &GLOBAL(struct sqlite3PrngType, sqlite3Prng);
     */
     static void sqlite3_randomness( int N, ref i64 pBuf )
     {
-      u8[] zBuf = new u8[N];
+      //u8[] zBuf = new u8[N];
       pBuf = 0;
 #if SQLITE_THREADSAFE
       sqlite3_mutex mutex = sqlite3MutexAlloc( SQLITE_MUTEX_STATIC_PRNG );

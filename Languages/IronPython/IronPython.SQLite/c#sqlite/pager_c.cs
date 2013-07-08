@@ -4252,7 +4252,6 @@ static void assertTruncateConstraint(Pager pPager) { }
     */
     static int sqlite3PagerClose( Pager pPager )
     {
-      u8[] pTmp = pPager.pTmpSpace;
 #if SQLITE_TEST
       disable_simulated_io_errors();
 #endif
@@ -4260,17 +4259,16 @@ static void assertTruncateConstraint(Pager pPager) { }
       /* pPager.errCode = 0; */
       pPager.exclusiveMode = false;
 #if !SQLITE_OMIT_WAL
-sqlite3WalClose(pPager->pWal, pPager->ckptSyncFlags, pPager->pageSize, pTmp);
-pPager.pWal = 0;
+      u8[] pTmp = pPager.pTmpSpace;
+      sqlite3WalClose(pPager->pWal, pPager->ckptSyncFlags, pPager->pageSize, pTmp);
+      pPager.pWal = 0;
 #endif
       pager_reset( pPager );
-      if (
 #if SQLITE_OMIT_MEMORYDB
-1==MEMDB
+      if ( 1 == MEMDB )
 #else
- 1 == pPager.memDb
+      if ( 1 == pPager.memDb )
 #endif
- )
       {
         pager_unlock( pPager );
       }
@@ -4924,7 +4922,6 @@ static Pgno sqlite3PagerPagenumber( DbPage pPg )    {      return pPg.pgno;    }
       */
       if ( !String.IsNullOrEmpty( zFilename ) )
       {
-        string z;
         nPathname = pVfs.mxPathname + 1;
         zPathname = new StringBuilder( nPathname * 2 );// sqlite3Malloc( nPathname * 2 );
         //if ( zPathname == null )
@@ -4935,13 +4932,14 @@ static Pgno sqlite3PagerPagenumber( DbPage pPg )    {      return pPg.pgno;    }
         rc = sqlite3OsFullPathname( pVfs, zFilename, nPathname, zPathname );
 
         nPathname = sqlite3Strlen30( zPathname );
-        z = zUri = zFilename;//.Substring(sqlite3Strlen30( zFilename ) );
+        zUri = zFilename;
+        //string z = zUri = zFilename;//.Substring(sqlite3Strlen30( zFilename ) );
         //while ( *z )
         //{
         //  z += sqlite3Strlen30( z ) + 1;
         //  z += sqlite3Strlen30( z ) + 1;
         //}
-        nUri = zUri.Length;//        &z[1] - zUri;
+        //nUri = zUri.Length;//        &z[1] - zUri;
         if ( rc == SQLITE_OK && nPathname + 8 > pVfs.mxPathname )
         {
           /* This branch is taken when the journal path required by

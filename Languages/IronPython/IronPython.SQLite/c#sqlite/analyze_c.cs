@@ -183,7 +183,7 @@ int iMem         /* Available memory locations begin here */
     /* Do not gather statistics on views or virtual tables */
     return;
   }
-  if ( pTab.zName.StartsWith( "sqlite_", StringComparison.InvariantCultureIgnoreCase ) )
+  if ( pTab.zName.StartsWith( "sqlite_", StringComparison.OrdinalIgnoreCase ) )
   {
     /* Do not gather statistics on system tables */
     return;

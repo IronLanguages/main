@@ -3132,7 +3132,6 @@ op_column_out:
             {
               int p1;                         /* Value of P1 operand */
               string zName;                   /* Name of savepoint */
-              int nName;
               Savepoint pNew;
               Savepoint pSavepoint;
               Savepoint pTmp;
@@ -3163,7 +3162,7 @@ op_column_out:
                 }
                 else
                 {
-                  nName = sqlite3Strlen30( zName );
+                  ////nName = sqlite3Strlen30( zName );
 
 #if !SQLITE_OMIT_VIRTUALTABLE
                   /* This call is Ok even if this savepoint is actually a transaction
@@ -3212,7 +3211,7 @@ op_column_out:
                 ** an error is returned to the user.  */
                 for (
                 pSavepoint = db.pSavepoint;
-                pSavepoint != null && !pSavepoint.zName.Equals( zName, StringComparison.InvariantCultureIgnoreCase );
+                pSavepoint != null && !pSavepoint.zName.Equals( zName, StringComparison.OrdinalIgnoreCase );
                 pSavepoint = pSavepoint.pNext
                 )
                 {
@@ -6870,7 +6869,7 @@ break;
                   }
                   else
                   {
-                    p.errorAction = (byte)( ( pOp.p5 == OE_Replace ) ? (byte) OE_Abort : pOp.p5 );
+                    p.errorAction = pOp.p5 == (u8)OE_Replace ? (u8)OE_Abort : pOp.p5;
                   }
                 }
                 else

@@ -76,6 +76,10 @@ namespace Community.CsharpSqlite
 #error  Cannot compile with both SQLITE_SILVERLIGHT and SQLITE_THREADSAFE
 #endif
 
+#if SQLITE_WINRT && SQLITE_THREADSAFE
+#error  Cannot compile with both SQLITE_WINRT and SQLITE_THREADSAFE
+#endif
+
 #if SQLITE_THREADSAFE && SQLITE_MUTEX_NOOP
 #error  Cannot compile with both SQLITE_THREADSAFE and SQLITE_MUTEX_NOOP
 #endif

@@ -2666,7 +2666,7 @@ static int lockBtree( BtShared pBt )
   MemPage pPage1 = null; /* Page 1 of the database file */
   Pgno nPage;            /* Number of pages in the database */
   Pgno nPageFile = 0;    /* Number of pages in the database file */
-  Pgno nPageHeader;      /* Number of pages in the database according to hdr */
+  ////Pgno nPageHeader;      /* Number of pages in the database according to hdr */
 
   Debug.Assert( sqlite3_mutex_held( pBt.mutex ) );
   Debug.Assert( pBt.pPage1 == null );
@@ -2680,7 +2680,7 @@ static int lockBtree( BtShared pBt )
   /* Do some checking to help insure the file we opened really is
   ** a valid database file.
   */
-  nPage = nPageHeader = sqlite3Get4byte( pPage1.aData, 28 );//get4byte(28+(u8*)pPage1->aData);
+  nPage = sqlite3Get4byte( pPage1.aData, 28 );//get4byte(28+(u8*)pPage1->aData);
   sqlite3PagerPagecount( pBt.pPager, out nPageFile );
   if ( nPage == 0 || memcmp( pPage1.aData, 24, pPage1.aData, 92, 4 ) != 0 )//memcmp(24 + (u8*)pPage1.aData, 92 + (u8*)pPage1.aData, 4) != 0)
   {
@@ -7755,7 +7755,7 @@ int balance_deeper_called = 0;
           ** copied either into the body of a database page or into the new
           ** pSpace buffer passed to the latter call to balance_nonroot().
           */
-          u8[] pSpace = new u8[pCur.pBt.pageSize];// u8 pSpace = sqlite3PageMalloc( pCur.pBt.pageSize );
+          ////u8[] pSpace = new u8[pCur.pBt.pageSize];// u8 pSpace = sqlite3PageMalloc( pCur.pBt.pageSize );
           rc = balance_nonroot( pParent, iIdx, null, iPage == 1 ? 1 : 0 );
           //if (pFree != null)
           //{
@@ -9201,7 +9201,6 @@ ref int pnErr  /* Write number of errors seen to this variable */
   int nRef;
   IntegrityCk sCheck = new IntegrityCk();
   BtShared pBt = p.pBt;
-  StringBuilder zErr = new StringBuilder( 100 );//char zErr[100];
 
   sqlite3BtreeEnter( p );
   Debug.Assert( p.inTrans > TRANS_NONE && pBt.inTransaction > TRANS_NONE );

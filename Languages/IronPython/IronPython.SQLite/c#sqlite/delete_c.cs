@@ -259,7 +259,6 @@ return null;
     {
       Vdbe v;                /* The virtual database engine */
       Table pTab;            /* The table from which records will be deleted */
-      string zDb;            /* Name of database holding pTab */
       int end, addr = 0;     /* A couple addresses of generated code */
       int i;                 /* Loop counter */
       WhereInfo pWInfo;      /* Information about the WHERE clause */
@@ -323,9 +322,9 @@ isView = false;
       }
       iDb = sqlite3SchemaToIndex( db, pTab.pSchema );
       Debug.Assert( iDb < db.nDb );
-      zDb = db.aDb[iDb].zName;
 #if !SQLITE_OMIT_AUTHORIZATION
-rcauth = sqlite3AuthCheck(pParse, SQLITE_DELETE, pTab->zName, 0, zDb);
+      string zDb = db.aDb[iDb].zName; /* Name of database holding pTab */
+      rcauth = sqlite3AuthCheck(pParse, SQLITE_DELETE, pTab->zName, 0, zDb);
 #else
       rcauth = SQLITE_OK;
 #endif
@@ -381,7 +380,6 @@ sqlite3AuthContextPush(pParse, sContext, pTab.zName);
       {
         goto delete_from_cleanup;
       }
-
 
       /* Initialize the counter of the number of rows deleted, if
 ** we are counting rows.

@@ -376,9 +376,9 @@ namespace Community.CsharpSqlite
       if ( pParse.sArg.z != null && ALWAYS( pParse.pNewTable ) )
       {
         string z = pParse.sArg.z.Substring( 0, pParse.sArg.n );
-        int n = pParse.sArg.n;
+        ////int n = pParse.sArg.n;
         sqlite3 db = pParse.db;
-        addModuleArgument( db, pParse.pNewTable, z );///sqlite3DbStrNDup( db, z, n ) );
+        addModuleArgument( db, pParse.pNewTable, z );////sqlite3DbStrNDup( db, z, n ) );
       }
     }
 

@@ -256,7 +256,7 @@ FuncDefHash *pHash = GLOBAL(FuncDefHash, sqlite3GlobalFunctions);
 memset( pHash, 0, sizeof( sqlite3GlobalFunctions ) );
 #else
           sqlite3GlobalFunctions = new FuncDefHash();
-          FuncDefHash pHash = sqlite3GlobalFunctions;
+          ////FuncDefHash pHash = sqlite3GlobalFunctions;
 #endif
           sqlite3RegisterGlobalFunctions();
           if ( sqlite3GlobalConfig.isPCacheInit == 0 )
@@ -859,7 +859,7 @@ break;
     int nKey2, string pKey2
     )
     {
-      int n = ( nKey1 < nKey2 ) ? nKey1 : nKey2;
+      ////int n = ( nKey1 < nKey2 ) ? nKey1 : nKey2;
       int r = sqlite3StrNICmp( pKey1, pKey2, ( nKey1 < nKey2 ) ? nKey1 : nKey2 );
       UNUSED_PARAMETER( NotUsed );
       if ( 0 == r )
@@ -1314,7 +1314,7 @@ return 1;
     /*
     ** Cause any pending operation to stop at its earliest opportunity.
     */
-    static void sqlite3_interrupt( sqlite3 db )
+    public static void sqlite3_interrupt( sqlite3 db )
     {
       db.u1.isInterrupted = true;
     }
@@ -1586,7 +1586,7 @@ return rc;
 ** If the invoked function returns non-zero, then the commit becomes a
 ** rollback.
 */
-    static object sqlite3_commit_hook(
+    public static object sqlite3_commit_hook(
     sqlite3 db,             /* Attach the hook to this database */
     dxCommitCallback xCallback,   //int (*xCallback)(void),  /* Function to invoke on each commit */
     object pArg             /* Argument to the function */
@@ -1605,7 +1605,7 @@ return rc;
     ** Register a callback to be invoked each time a row is updated,
     ** inserted or deleted using this database connection.
     */
-    static object sqlite3_update_hook(
+    public static object sqlite3_update_hook(
     sqlite3 db,             /* Attach the hook to this database */
     dxUpdateCallback xCallback,   //void (*xCallback)(void*,int,char const *,char const *,sqlite_int64),
     object pArg             /* Argument to the function */
@@ -1624,7 +1624,7 @@ return rc;
     ** Register a callback to be invoked each time a transaction is rolled
     ** back by this database connection.
     */
-    static object sqlite3_rollback_hook(
+    public static object sqlite3_rollback_hook(
     sqlite3 db,             /* Attach the hook to this database */
     dxRollbackCallback xCallback,   //void (*xCallback)(void), /* Callback function */
     object pArg             /* Argument to the function */
@@ -2232,7 +2232,7 @@ static int sqlite3ParseUri(
       while ( iIn < nUri && zUri[iIn] != '/' )
         iIn++;
 
-      if ( iIn != 7 && ( iIn != 16 || String.Compare( "localhost", zUri.Substring( 7, 9 ), StringComparison.InvariantCultureIgnoreCase ) != 0 ) )//memcmp("localhost", &zUri[7], 9)) )
+      if ( iIn != 7 && ( iIn != 16 || String.Compare( "localhost", zUri.Substring( 7, 9 ), StringComparison.OrdinalIgnoreCase ) != 0 ) )//memcmp("localhost", &zUri[7], 9)) )
       {
         pzErrMsg = sqlite3_mprintf("invalid uri authority: %.*s", 
             iIn-7, zUri.Substring(7));
@@ -2752,7 +2752,7 @@ return sqlite3ApiExit(0, rc);
     /*
 ** Register a new collation sequence with the database handle db.
 */
-    static int sqlite3_create_collation(
+    public static int sqlite3_create_collation(
     sqlite3 db,
     string zName,
     int enc,
@@ -2931,7 +2931,7 @@ void sqlite3_thread_cleanup()
 */
 #if SQLITE_ENABLE_COLUMN_METADATA
 
-    static int sqlite3_table_column_metadata(
+    public static int sqlite3_table_column_metadata(
     sqlite3 db,            /* Connection handle */
     string zDbName,        /* Database name or NULL */
     string zTableName,     /* Table name */
@@ -2986,7 +2986,7 @@ void sqlite3_thread_cleanup()
         for ( iCol = 0; iCol < pTab.nCol; iCol++ )
         {
           pCol = pTab.aCol[iCol];
-          if ( pCol.zName.Equals( zColumnName, StringComparison.InvariantCultureIgnoreCase ) )
+          if ( pCol.zName.Equals( zColumnName, StringComparison.OrdinalIgnoreCase ) )
           {
             break;
           }
@@ -3122,7 +3122,7 @@ error_out:
           Debug.Assert( fd != null );
           if ( op == SQLITE_FCNTL_FILE_POINTER )
           {
-#if (SQLITE_SILVERLIGHT || WINDOWS_MOBILE)
+#if (SQLITE_SILVERLIGHT || WINDOWS_MOBILE || SQLITE_WINRT)
               pArg = (long)-1; // not supported
 #else
             pArg = (long)fd.fs.Handle;

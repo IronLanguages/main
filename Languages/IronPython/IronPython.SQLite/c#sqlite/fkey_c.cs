@@ -238,7 +238,7 @@ namespace Community.CsharpSqlite
         {
           if ( null == zKey )
             return 0;
-          if ( pParent.aCol[pParent.iPKey].zName.Equals( zKey ,StringComparison.InvariantCultureIgnoreCase ) )
+          if ( pParent.aCol[pParent.iPKey].zName.Equals( zKey ,StringComparison.OrdinalIgnoreCase ) )
             return 0;
         }
       }
@@ -295,13 +295,13 @@ namespace Community.CsharpSqlite
               {
                 zDfltColl = "BINARY";
               }
-              if ( !pIdx.azColl[i].Equals( zDfltColl ,StringComparison.InvariantCultureIgnoreCase )  )
+              if ( !pIdx.azColl[i].Equals( zDfltColl ,StringComparison.OrdinalIgnoreCase )  )
                 break;
 
               zIdxCol = pParent.aCol[iCol].zName;
               for ( j = 0; j < nCol; j++ )
               {
-                if ( pFKey.aCol[j].zCol.Equals( zIdxCol ,StringComparison.InvariantCultureIgnoreCase )  )
+                if ( pFKey.aCol[j].zCol.Equals( zIdxCol ,StringComparison.OrdinalIgnoreCase )  )
                 {
                   if ( aiCol != null )
                     aiCol[i] = pFKey.aCol[j].iFrom;
@@ -1041,7 +1041,7 @@ namespace Community.CsharpSqlite
               for ( iKey = 0; iKey < pTab.nCol; iKey++ )
               {
                 Column pCol = pTab.aCol[iKey];
-                if ( ( !String.IsNullOrEmpty( zKey ) ? pCol.zName.Equals( zKey, StringComparison.InvariantCultureIgnoreCase ) : pCol.isPrimKey != 0 ) )
+                if ( ( !String.IsNullOrEmpty( zKey ) ? pCol.zName.Equals( zKey, StringComparison.OrdinalIgnoreCase ) : pCol.isPrimKey != 0 ) )
                 {
                   if ( aChange[iKey] >= 0 )
                     return 1;

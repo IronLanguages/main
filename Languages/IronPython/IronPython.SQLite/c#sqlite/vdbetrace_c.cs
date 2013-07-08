@@ -98,7 +98,6 @@ namespace Community.CsharpSqlite
       int i;                   /* Loop counter */
       Mem pVar;                /* Value of a host parameter */
       StrAccum _out = new StrAccum( 1000 );               /* Accumulate the _output here */
-      StringBuilder zBase = new StringBuilder( 100 ); /* Initial working space */
       int izRawSql = 0;
 
       db = p.db;

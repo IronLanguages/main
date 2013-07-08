@@ -160,7 +160,7 @@ static void renameParentFunc(
       if ( String.IsNullOrEmpty( zParent ) )
         break;
       sqlite3Dequote( ref zParent );
-      if ( zOld.Equals( zParent, StringComparison.InvariantCultureIgnoreCase ) )
+      if ( zOld.Equals( zParent, StringComparison.OrdinalIgnoreCase) )
       {
         string zOut = sqlite3MPrintf( db, "%s%.*s\"%w\"",
             zOutput, zIdx - zLeft, zInput.Substring( zLeft ), zNew
@@ -447,7 +447,7 @@ static void reloadTableSchema( Parse pParse, Table pTab, string zName )
 */
 static int isSystemTable( Parse pParse, string zName )
 {
-  if ( zName.StartsWith( "sqlite_", System.StringComparison.InvariantCultureIgnoreCase ) )
+    if (zName.StartsWith("sqlite_", System.StringComparison.OrdinalIgnoreCase))
   {
     sqlite3ErrorMsg( pParse, "table %s may not be altered", zName );
     return 1;

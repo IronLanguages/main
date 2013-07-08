@@ -166,7 +166,7 @@ static int keywordCode( string z, int iOffset, int n )
       n ) % 127;
       for ( i = ( aHash[h] ) - 1; i >= 0; i = ( aNext[i] ) - 1 )
       {
-        if ( aLen[i] == n && String.Compare( zText, aOffset[i], z, iOffset, n, StringComparison.InvariantCultureIgnoreCase ) == 0 )
+        if ( aLen[i] == n && String.Compare( zText, aOffset[i], z, iOffset, n, StringComparison.OrdinalIgnoreCase ) == 0 )
         {
           testcase( i == 0 ); /* REINDEX */
           testcase( i == 1 ); /* INDEXED */
