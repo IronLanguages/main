@@ -59,7 +59,7 @@ namespace IronPython.Compiler {
         private bool _fromFutureAllowed;
         private string _privatePrefix;
         private bool _parsingStarted, _allowIncomplete;
-        private bool _inLoop, _inFinally, _isGenerator, _returnWithValue;
+        private bool _inLoop, _inFinally, _inFinallyLoop, _isGenerator, _returnWithValue;
         private SourceCodeReader _sourceReader;
         private int _errorCode;
         private readonly CompilerContext _context;
@@ -507,7 +507,7 @@ namespace IronPython.Compiler {
                 case TokenKind.KeywordContinue:
                     if (!_inLoop) {
                         ReportSyntaxError("'continue' not properly in loop");
-                    } else if (_inFinally) {
+                    } else if (_inFinally && !_inFinallyLoop) {
                         ReportSyntaxError("'continue' not supported inside 'finally' clause");
                     }
                     return FinishSmallStmt(new ContinueStatement());
@@ -1581,28 +1581,36 @@ namespace IronPython.Compiler {
 
         private Statement ParseLoopSuite() {
             Statement body;
-            bool inLoop = _inLoop;
+            bool inLoop = _inLoop, inFinallyLoop = _inFinallyLoop;
             try {
                 _inLoop = true;
+                _inFinallyLoop = _inFinally;
                 body = ParseSuite();
             } finally {
                 _inLoop = inLoop;
+                _inFinallyLoop = inFinallyLoop;
             }
             return body;
         }
 
         private Statement ParseClassOrFuncBody() {
             Statement body;
-            bool inLoop = _inLoop, inFinally = _inFinally, isGenerator = _isGenerator, returnWithValue = _returnWithValue;
+            bool inLoop = _inLoop, 
+                 inFinally = _inFinally, 
+                 inFinallyLoop = _inFinallyLoop,
+                 isGenerator = _isGenerator, 
+                 returnWithValue = _returnWithValue;
             try {
                 _inLoop = false;
                 _inFinally = false;
+                _inFinallyLoop = false;
                 _isGenerator = false;
                 _returnWithValue = false;
                 body = ParseSuite();
             } finally {
                 _inLoop = inLoop;
                 _inFinally = inFinally;
+                _inFinallyLoop = inFinallyLoop;
                 _isGenerator = isGenerator;
                 _returnWithValue = returnWithValue;
             }
@@ -1710,12 +1718,14 @@ namespace IronPython.Compiler {
 
         private Statement ParseFinallySuite(Statement finallySuite) {
             MarkFunctionContainsFinally();
-            bool inFinally = _inFinally;
+            bool inFinally = _inFinally, inFinallyLoop = _inFinallyLoop;
             try {
                 _inFinally = true;
+                _inFinallyLoop = false;
                 finallySuite = ParseSuite();
             } finally {
                 _inFinally = inFinally;
+                _inFinallyLoop = inFinallyLoop;
             }
             return finallySuite;
         }

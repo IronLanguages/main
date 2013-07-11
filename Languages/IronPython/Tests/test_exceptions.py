@@ -54,7 +54,49 @@ if is_cli or is_silverlight:
              AreEqual(e.__str__(), e.args[0])
         else:
             Fail("Expected exception")
-        
+
+def test_finally_continue_fails():
+    t = '''
+try:
+    pass
+finally:
+    continue
+'''
+    try:
+        compile(t, '<test>', 'exec')
+        Fail("Should raise SyntaxError")
+    except SyntaxError:
+        pass
+
+def test_finally_continue_in_loop_allowed():
+    t = '''
+try:
+    pass
+finally:
+    for i in range(1):
+        continue
+'''
+    try:
+        compile(t, '<test>', 'exec')
+    except SyntaxError:
+        Fail("Should not raise SyntaxError")
+
+def test_finally_continue_nested_finally_fails():
+    t = '''
+try:
+    pass
+finally:
+    for i in range(1):
+        try:
+            pass
+        finally:
+            continue
+'''
+    try:
+        compile(t, '<test>', 'exec')
+        Fail("Should raise SyntaxError")
+    except SyntaxError:
+        pass
 
 def test_bigint_division():
     def divide(a, b):
