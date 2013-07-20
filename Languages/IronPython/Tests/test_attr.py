@@ -109,6 +109,20 @@ def test_non_string_attrs():
     # reload(me)
     # CheckObjectKeys(me)
 
+# CP#34257: __getattr__ on a module subclass
+
+def test_ModuleType_getattr():
+    from types import ModuleType
+    class ApiModule(ModuleType):
+        def __init__(self, name="", importspec="", implprefix=None, attr=None):
+            pass
+        def __makeattr(self, name):
+            return name
+        __getattr__ = __makeattr
+
+    t = ApiModule()
+    AreEqual(t.Std, 'Std')
+
 ##########################################################################
 # Decorators starting with Bug #993
 def test_decorators():

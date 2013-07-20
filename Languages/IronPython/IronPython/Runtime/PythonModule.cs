@@ -138,6 +138,9 @@ namespace IronPython.Runtime {
                 return res;
             } else if (DynamicHelpers.GetPythonType(this).TryGetNonCustomMember(context, this, name, out res)) {
                 return res;
+            } else if (DynamicHelpers.GetPythonType(this).TryResolveMixedSlot(context, "__getattr__", out slot) &&
+                slot.TryGetValue(context, this, DynamicHelpers.GetPythonType(this), out res)) {
+                return PythonCalls.Call(context, res, name);
             }
 
             return OperationFailed.Value;
