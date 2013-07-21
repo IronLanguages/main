@@ -271,7 +271,11 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
         // path is set by PythonContext and only on the initial load
 
+#if !SILVERLIGHT
         public const string platform = "cli";
+#else
+        public const string platform = "silverlight";
+#endif
 
         public static readonly string prefix = GetPrefix();
 
