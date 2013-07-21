@@ -164,6 +164,14 @@ static bool sqlite3_mutex_held(sqlite3_mutex p){
     static bool sqlite3_mutex_notheld(sqlite3_mutex p){
   return p == null || sqlite3GlobalConfig.mutex.xMutexNotheld( p );
 }
+#else
+static bool sqlite3_mutex_held(sqlite3_mutex p) {
+    return true;
+}
+
+static bool sqlite3_mutex_notheld(sqlite3_mutex p) {
+    return true;
+}
 #endif
 
 #endif //* SQLITE_MUTEX_OMIT */

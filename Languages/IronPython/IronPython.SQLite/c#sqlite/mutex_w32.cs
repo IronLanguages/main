@@ -339,9 +339,7 @@ new sqlite3_mutex( SQLITE_W32_MUTEX_INITIALIZER, 0, 0, (DWORD)0
 
     static int winMutexTry( sqlite3_mutex p )
     {
-#if !NDEBUG
       DWORD tid = GetCurrentThreadId();
-#endif
       int rc = SQLITE_BUSY;
       Debug.Assert( p.id == SQLITE_MUTEX_RECURSIVE || winMutexNotheld2( p, tid ) );
       /*
@@ -381,9 +379,7 @@ rc = SQLITE_OK;
     */
     static void winMutexLeave( sqlite3_mutex p )
     {
-#if !NDEBUG
       DWORD tid = GetCurrentThreadId();
-#endif
       Debug.Assert( p.nRef > 0 );
       Debug.Assert( p.owner == tid );
       p.nRef--;
