@@ -747,7 +747,20 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             }
         }
 
-        public static floatinfo float_info = new floatinfo(Double.MaxValue, 1024, 308, Double.MinValue, -1021, -307, 15, 53, Double.Epsilon, 2, 1);
+        public static floatinfo float_info = new floatinfo(
+            Double.MaxValue,    // DBL_MAX
+            1024,               // DBL_MAX_EXP
+            308,                // DBL_MAX_10_EXP
+            // DBL_MIN
+            BitConverter.Int64BitsToDouble(BitConverter.IsLittleEndian ? 0x0010000000000000 : 0x0000000000001000),
+            -1021,              // DBL_MIN_EXP
+            -307,               // DBL_MIN_10_EXP
+            15,                 // DBL_DIG
+            53,                 // DBL_MANT_DIG
+           // DBL_EPSILON
+            BitConverter.Int64BitsToDouble(BitConverter.IsLittleEndian ? 0x3cb0000000000000 : 0x000000000000b03c),
+            2,                  // FLT_RADIX
+            1);                 // FLT_ROUNDS
 
         [PythonType("sys.float_info"), PythonHidden]
         public class floatinfo : PythonTuple {
@@ -788,8 +801,8 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             public const int n_unnamed_fields = 0;
 
             public override string __repr__(CodeContext context) {
-                return string.Format("sys.float_info(max={0}, max_exp={1}, max_10_exp={2}," +
-                                     "min={3}, min_exp={4}, min_10_exp={5}," +
+                return string.Format("sys.float_info(max={0}, max_exp={1}, max_10_exp={2}, " +
+                                     "min={3}, min_exp={4}, min_10_exp={5}, " +
                                      "dig={6}, mant_dig={7}, epsilon={8}, radix={9}, rounds={10})",
                     max, max_exp, max_10_exp,
                     min, min_exp, min_10_exp,
