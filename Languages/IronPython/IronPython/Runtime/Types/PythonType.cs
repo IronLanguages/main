@@ -1955,12 +1955,12 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                     if (TryLookupSlot(context, x, out dts)) {
                         //??? why check for DTVS?
                         object val;
-                        if (dts.TryGetValue(context, null, this, out val)) {
-                            if (dts is PythonTypeUserDescriptorSlot) {
-                                dict[x] = val;
-                            } else {
-                                dict[x] = dts;
-                            }
+                        if (dts is PythonTypeUserDescriptorSlot) {
+                            dict[x] = ((PythonTypeUserDescriptorSlot) dts).Value;
+                        } else if (dts.TryGetValue(context, null, this, out val)) {
+                            dict[x] = val;
+                        } else {
+                            dict[x] = dts;
                         }
                     }
                 }
