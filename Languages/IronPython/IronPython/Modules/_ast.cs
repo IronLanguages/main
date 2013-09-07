@@ -293,9 +293,11 @@ namespace IronPython.Modules
             internal static stmt Convert(TryStatement stmt) {
                 if (stmt.Finally != null) {
                     PythonList body;
-                    if (stmt.Handlers != null && stmt.Handlers.Count != 0)
-                        body = PythonOps.MakeListNoCopy(new TryExcept(stmt));
-                    else
+                    if (stmt.Handlers != null && stmt.Handlers.Count != 0) {
+                        stmt tryExcept = new TryExcept(stmt);
+                        tryExcept.GetSourceLocation(stmt);
+                        body = PythonOps.MakeListNoCopy(tryExcept);
+                    } else
                         body = ConvertStatements(stmt.Body);
 
                     return new TryFinally(body, ConvertStatements(stmt.Finally));
