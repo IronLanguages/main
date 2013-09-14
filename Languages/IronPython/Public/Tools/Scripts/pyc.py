@@ -24,6 +24,7 @@ Options:
     /target:exe                               Generate console executable stub for startup in addition to dll.
     /target:winexe                            Generate windows executable stub for startup in addition to dll.
     @<file>                                   Specifies a response file to be parsed for input files and command line options (one per line)
+    /file_version:<version>                   Set the file/assembly version
     /? /h                                     This message    
 
 EXE/WinEXE specific options:
@@ -33,6 +34,11 @@ EXE/WinEXE specific options:
     /embed                                    Embeds the generated DLL as a resource into the executable which is loaded at runtime
     /standalone                               Embeds the IronPython assemblies into the stub executable.
     /mta                                      Set MTAThreadAttribute on Main instead of STAThreadAttribute, only valid for /target:winexe
+    /file_info_product:<name>                 Set product name in executable meta information
+    /file_info_product_version:<version>      Set product version in executable meta information
+    /file_info_company:<name>                 Set company name in executable meta information
+    /file_info_copyright:<info>               Set copyright information in executable meta information
+    /file_info_trademark:<info>               Set trademark information in executable meta information
 
 Example:
     ipy.exe pyc.py /main:Program.py Form.py /target:winexe
@@ -46,6 +52,7 @@ from System.Collections.Generic import List
 import IronPython.Hosting as Hosting
 from IronPython.Runtime.Operations import PythonOps
 import System
+from System import Version
 from System.Reflection import Emit, Assembly
 from System.Reflection.Emit import OpCodes, AssemblyBuilderAccess
 from System.Reflection import AssemblyName, TypeAttributes, MethodAttributes, ResourceAttributes, CallingConventions
@@ -53,7 +60,11 @@ from System.Reflection import AssemblyName, TypeAttributes, MethodAttributes, Re
 def GenerateExe(config):
     """generates the stub .EXE file for starting the app"""
     aName = AssemblyName(System.IO.FileInfo(config.output).Name)
+    if config.file_version is not None:
+        aName.Version = Version(config.file_version)
+    
     ab = PythonOps.DefineDynamicAssembly(aName, AssemblyBuilderAccess.RunAndSave)
+    ab.DefineVersionInfoResource(config.file_info_product, config.file_info_product_version, config.file_info_company, config.file_info_company, config.file_info_trademark)
     mb = ab.DefineDynamicModule(config.output,  aName.Name + ".exe")
     tb = mb.DefineType("PythonMain", TypeAttributes.Public)
     assemblyResolveMethod = None
@@ -185,6 +196,12 @@ class Config(object):
         self.platform = System.Reflection.PortableExecutableKinds.ILOnly
         self.machine = System.Reflection.ImageFileMachine.I386
         self.files = []
+        self.file_info_product = None
+        self.file_info_product_version = None
+        self.file_info_company = None
+        self.file_info_copyright = None
+        self.file_info_trademark = None
+        self.file_version = None
 
     def ParseArgs(self, args, respFiles=[]):
         for arg in args:
@@ -218,6 +235,20 @@ class Config(object):
                 else:
                     self.platform = System.Reflection.PortableExecutableKinds.ILOnly
                     self.machine  = System.Reflection.ImageFileMachine.I386
+
+            elif arg.startswith("/file_info_product:"):
+                self.file_info_product = arg[19:]
+            elif arg.startswith("/file_info_product_version:"):
+                self.file_info_product_version = arg[27:]
+            elif arg.startswith("/file_info_company:"):
+                self.file_info_company = arg[19:]
+            elif arg.startswith("/file_info_copyright:"):
+                self.file_info_copyright = arg[21:]
+            elif arg.startswith("/file_info_trademark:"):
+                self.file_info_trademark = arg[21:]
+
+            elif arg.startswith("/file_version:"):
+                self.file_version = arg[14:]
 
             elif arg.startswith("/embed"):
                 self.embed = True
