@@ -1022,6 +1022,42 @@ def test_multiple_relative_imports_and_package():
         nt.unlink(_f_bar_py)
         nt.unlink(_f_init)
 
+@skip("silverlight")
+def test_cp34551():
+    try:
+        mod_backup = dict(sys.modules)
+        print testpath.public_testdir
+        _f_dir      = path_combine(testpath.public_testdir, 'test_dir6')
+        _f_init     = path_combine(_f_dir, '__init__.py')
+        _f_subdir   = path_combine(_f_dir, 'sub')
+        _f_subinit  = path_combine(_f_subdir, '__init__.py')
+        _f_foo_py   = path_combine(_f_subdir, 'foo.py')
+                
+        # write the files
+        ensure_directory_present(_f_dir)
+        ensure_directory_present(_f_subdir)
+
+        write_to_file(_f_init,  """
+from .sub.foo import bar
+def baz():
+    pass
+""")
+        write_to_file(_f_subinit, '')
+        write_to_file(_f_foo_py, """
+def bar():
+    pass
+""")
+
+        from test_dir6 import baz
+        import test_dir6
+        Assert(getattr(test_dir6, 'sub', None) != None)
+
+    finally:
+        sys.modules = mod_backup
+        nt.unlink(_f_foo_py)
+        nt.unlink(_f_subinit)
+        nt.unlink(_f_init)
+
 
 #--MAIN------------------------------------------------------------------------
 run_test(__name__)

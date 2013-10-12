@@ -228,7 +228,7 @@ namespace IronPython.Runtime {
                             // see http://www.python.org/doc/essays/packages.html "Dummy Entries"
                             context.LanguageContext.SystemStateModules[name] = null;
                         } else if (parentModule != null) {
-                            parentModule.__dict__[modName] = newmod;
+                            parentModule.__dict__[firstName] = newmod;
                         }
                         
                     } else if (firstDot == -1) {
