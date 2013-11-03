@@ -1720,7 +1720,7 @@ namespace IronPython.Runtime.Operations {
             if (encoding == null) {
                 e = encodingType as Encoding;
                 if (e == null) {
-                    if (encodingType == Missing.Value) {
+                    if (encodingType == null || encodingType == Missing.Value) {
                         encoding = pc.GetDefaultEncodingName();
                     } else {
                         throw PythonOps.TypeError("decode() expected string, got '{0}'", DynamicHelpers.GetPythonType(encodingType).Name);
