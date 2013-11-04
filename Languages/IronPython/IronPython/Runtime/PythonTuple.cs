@@ -54,6 +54,9 @@ namespace IronPython.Runtime {
         IValueEquality,
 #endif
         IStructuralEquatable, IStructuralComparable
+#if FEATURE_READONLY_COLLECTION_INTERFACE
+        , IReadOnlyList<object>
+#endif
     {
         internal readonly object[] _data;
         

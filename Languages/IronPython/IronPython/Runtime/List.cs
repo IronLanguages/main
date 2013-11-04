@@ -46,6 +46,9 @@ namespace IronPython.Runtime {
 #if CLR2
         , IValueEquality
 #endif
+#if FEATURE_READONLY_COLLECTION_INTERFACE
+        , IReadOnlyList<object>
+#endif
     {
         private const int INITIAL_SIZE = 20;
 
