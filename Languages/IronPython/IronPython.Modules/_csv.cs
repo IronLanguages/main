@@ -321,11 +321,12 @@ The Dialect type records CSV parsing and generation options.")]
                     {
                         string dialectName = (string)dialect;
                         if (dialects.ContainsKey(dialectName))
-                            return dialects[dialectName];
+                            dialect = dialects[dialectName];
                         else
                             throw MakeError("unknown dialect");
                     }
-                    else if (dialect is Dialect &&
+                    
+                    if (dialect is Dialect &&
                         delimiter == null &&
                         doublequote == null &&
                         escapechar == null &&
