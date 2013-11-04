@@ -404,12 +404,6 @@ class UncompressedZipImportTestCase(ImportHooksBaseTestCase):
 class CompressedZipImportTestCase(UncompressedZipImportTestCase):
     compression = ZIP_DEFLATED
 
-    @unittest.skipIf(sys.platform == 'cli', 'Issue: http://ironpython.codeplex.com/workitem/31976')
-    def testEmptyPy(self):
-	# we are overriding this method because the compressed version does not work
-        pass
-
-
 class BadFileZipImportTestCase(unittest.TestCase):
     def assertZipFailure(self, filename):
         self.assertRaises(zipimport.ZipImportError,

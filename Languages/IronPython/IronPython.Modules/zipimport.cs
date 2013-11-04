@@ -288,7 +288,7 @@ the file wasn't found.")]
                 }
 
                 var data = GetData(_archive, __files[path] as PythonTuple);
-                return PythonAsciiEncoding.Instance.GetString(data, 0, data.Length);
+                return PythonAsciiEncoding.UTF8.GetString(data, 0, data.Length);
             }
 
             [Documentation(@"get_code(fullname) -> code object.
@@ -449,7 +449,7 @@ contain the module, but has no source for it.")]
                     if (isbytecode) {
                         // would put in code to unmarshal the bytecode here...                                     
                     } else {
-                        code = context.LanguageContext.DefaultEncoding.GetString(data, 0, data.Length);
+                        code = PythonAsciiEncoding.UTF8.GetString(data, 0, data.Length);
                     }
                 }
                 return code;
