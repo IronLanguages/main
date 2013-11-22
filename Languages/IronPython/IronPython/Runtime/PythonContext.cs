@@ -1960,7 +1960,6 @@ namespace IronPython.Runtime {
             SetVersionVariables(dict);
         }
 
-#pragma warning disable 429 // unreachable code detected
         private void SetVersionVariables(PythonDictionary dict) {
             var implementation = new Implementation();
             dict["implementation"] = implementation;
@@ -1969,7 +1968,6 @@ namespace IronPython.Runtime {
             dict["version"] = implementation.version.GetVersionString(
                     _initialVersionString ?? GetVersionString());
         }
-#pragma warning restore 429
 
         internal static string GetVersionString() {
             string configuration = BuildInfo.IsDebug ? " DEBUG" : "";
