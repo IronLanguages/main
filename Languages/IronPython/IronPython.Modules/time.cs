@@ -192,6 +192,10 @@ namespace IronPython.Modules {
         }
 
         public static object strptime(CodeContext/*!*/ context, string @string, string format) {
+            return _strptime(context, @string, format, false);
+        }
+
+        public static object _strptime(CodeContext/*!*/ context, string @string, string format, bool isDatetime) {
             bool postProc;
             FoundDateComponents foundDateComp;
             List<FormatInfo> formatInfo = PythonFormatToCLIFormat(format, true, out postProc, out foundDateComp);
@@ -231,7 +235,6 @@ namespace IronPython.Modules {
                             break;
                     }
                 }
-
                 try {
                     if (!StringUtils.TryParseDateTimeExact(@string,
                         String.Join("", formats),
@@ -254,7 +257,9 @@ namespace IronPython.Modules {
             if ((foundDateComp & FoundDateComponents.Year) == 0) {
                 res = new DateTime(1900, res.Month, res.Day, res.Hour, res.Minute, res.Second, res.Millisecond, res.Kind);
             }
-
+            if (isDatetime) {
+                return new PythonDateTime.datetime(res);
+            } 
             return GetDateTimeTuple(res, dayOfWeek);
         }
 
@@ -473,8 +478,12 @@ namespace IronPython.Modules {
                             postProcess = true; 
                             break;
                         case 'f':
-                            postProcess = true;
-                            newFormat.Add(new FormatInfo(FormatInfoType.UserText, "%f")); 
+                            if (forParse) {
+                                newFormat.Add(new FormatInfo(FormatInfoType.CustomFormat, "ffffff")); 
+                            } else {
+                                postProcess = true;
+                                newFormat.Add(new FormatInfo(FormatInfoType.UserText, "%f"));
+                            }
                             break;
                         case 'W': newFormat.Add(new FormatInfo("\\%W")); postProcess = true; break;
                         case 'U': newFormat.Add(new FormatInfo("\\%U")); postProcess = true; break; // week number
@@ -538,7 +547,6 @@ namespace IronPython.Modules {
                     last = delta.__nonzero__() ? 1 : 0;
                 }
             }
-
             return new struct_time(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, dt.Second, Weekday(dayOfWeek ?? dt.DayOfWeek), dt.DayOfYear, last);
         }
 
