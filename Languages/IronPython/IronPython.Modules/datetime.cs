@@ -1105,10 +1105,8 @@ namespace IronPython.Modules {
             }
 
             public static datetime strptime(CodeContext/*!*/ context, string date_string, string format) {
-                var res = PythonTime._strptime(context, date_string, format, true) as datetime;
-                if(res == null)
-                    throw PythonOps.ValueError("time.strptime returned an invalid value.");
-                return res;
+                var packed = PythonTime._strptime(context, date_string, format);
+                return new datetime((DateTime)packed[0]);
             }
 
             #region IRichComparable Members
