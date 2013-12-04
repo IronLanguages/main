@@ -226,6 +226,10 @@ namespace Microsoft.Scripting.Utils {
             return DateTime.TryParseExact(s, format, provider, style, out result);
         }
 
+        public static bool TryParseDateTimeExact(string s, string[] formats, IFormatProvider provider, DateTimeStyles style, out DateTime result) {
+            return DateTime.TryParseExact(s, formats, provider, style, out result);
+        }
+
         public static bool TryParseDate(string s, IFormatProvider provider, DateTimeStyles style, out DateTime result) {
             return DateTime.TryParse(s, provider, style, out result);
         }
