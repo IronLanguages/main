@@ -4,10 +4,8 @@ all: ironpython
 
 ironpython:
 	xbuild Build.proj /t:Build /p:Mono=true;BaseConfiguration=Debug
-	xbuild Build.proj /t:Build /p:Mono=true;BaseConfiguration=Debug
 
 ironpython-release:
-	xbuild Build.proj /t:Build /p:Mono=true;BaseConfiguration=Release
 	xbuild Build.proj /t:Build /p:Mono=true;BaseConfiguration=Release
 
 testrunner:
