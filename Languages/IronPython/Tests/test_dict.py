@@ -954,7 +954,27 @@ def test_update():
             raise e
         
         AreEqual(start_dict, expected)
-        
+
+def test_update_argnames():
+    expected = {"b": 1}
+    result = {}
+    result.update(b=1)
+
+    AreEqual(result, expected)
+
+    expected = {"other": 1}
+    result = {}
+    result.update(other=1)
+
+    AreEqual(result, expected)
+
+    expected = {"other": 1, "otherArgs": 2}
+    result = {}
+    result.update({"other": 1}, otherArgs=2)
+
+    AreEqual(result, expected)
+
+def test_update_no_setitem():
     # update doesn't call __setitem__
     class mydict(dict):
         def __init__(self, *args, **kwargs):
