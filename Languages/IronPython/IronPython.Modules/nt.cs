@@ -32,7 +32,6 @@ using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-
 #if FEATURE_NUMERICS
 using System.Numerics;
 #else
@@ -368,18 +367,7 @@ namespace IronPython.Modules {
 
 #if FEATURE_PROCESS
         public static PythonTuple pipe(CodeContext context) {
-            IntPtr hRead, hWrite;
-
-            PythonSubprocess.SECURITY_ATTRIBUTES secAttrs = new PythonSubprocess.SECURITY_ATTRIBUTES();
-            secAttrs.nLength = Marshal.SizeOf(secAttrs);
-
-            // TODO: handle unsuccessful call?
-            PythonSubprocess.CreatePipePI(out hRead, out hWrite, ref secAttrs, 0);
-
-            return PythonTuple.MakeTuple(
-                PythonMsvcrt.open_osfhandle(context, new BigInteger(hRead.ToInt64()), 0),
-                PythonMsvcrt.open_osfhandle(context, new BigInteger(hWrite.ToInt64()), 0)
-            );
+            return PythonFile.CreatePipeAsFd(context);
         }
 
         public static PythonFile popen(CodeContext/*!*/ context, string command) {
@@ -494,7 +482,7 @@ namespace IronPython.Modules {
             try {
                 PythonContext pythonContext = PythonContext.GetContext(context);
                 PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
-                return pf.read();
+                return pf.read(buffersize);
             } catch (Exception e) {
                 throw ToPythonException(e);
             }
@@ -1695,3 +1683,4 @@ are defined in the signal module.")]
         #endregion
     }
 }
+ 

@@ -16,8 +16,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -38,7 +40,6 @@ using Microsoft.Scripting.Math;
 #endif
 
 namespace IronPython.Runtime {
-
     #region Readers
 
     // The following set of classes is used to translate between pythonic file stream semantics and those of
@@ -158,7 +159,6 @@ namespace IronPython.Runtime {
         // Read until the end of the stream and return the result as a single string.
         public override String ReadToEnd() {
             StringBuilder sb = new StringBuilder();
-            int totalcount = 0;
             if (_buffer == null)
                 _buffer = new byte[BufferSize];
             while (true) {
@@ -166,7 +166,6 @@ namespace IronPython.Runtime {
                 if (count == 0)
                     break;
                 sb.Append(PackDataIntoString(_buffer, count));
-                totalcount += count;
             }
             if (sb.Length == 0)
                 return String.Empty;
@@ -882,6 +881,9 @@ namespace IronPython.Runtime {
         }
 
         public bool TryGetFileFromId(PythonContext context, int id, out PythonFile pf) {
+            // TODO:
+            // the meaning of 0, 1 and 2 can be changed by open/close/dup
+            // stdin/out/err should be also in the dynamic mapping
             switch (id) {
                 case 0:
                     pf = (context.GetSystemStateValue("__stdin__") as PythonFile);
@@ -910,6 +912,7 @@ namespace IronPython.Runtime {
         }
 
         public int GetIdFromFile(PythonFile pf) {
+            // TODO: again logic fixed on 0, 1 and 2
             if (pf.IsConsole) {
                 for (int i = 0; i < 3; i++) {
                     if (pf == GetFileFromId(pf.Context, i)) {
@@ -988,6 +991,36 @@ namespace IronPython.Runtime {
             return res;
         }
 
+        internal static PythonFile[] CreatePipe(CodeContext/*!*/ context, SafePipeHandle hRead, SafePipeHandle hWrite) {
+            var pythonContext = PythonContext.GetContext(context);
+            var encoding = pythonContext.DefaultEncoding;
+
+            var inPipe = new AnonymousPipeStream(PipeDirection.In, hRead);
+            var inPipeFile = new PythonFile(context);
+            inPipeFile.InitializePipe(inPipe, "r", encoding);
+
+            var outPipe = new AnonymousPipeStream(PipeDirection.Out, hWrite);
+            var outPipeFile = new PythonFile(context);
+            outPipeFile.InitializePipe(outPipe, "w", encoding);
+            return new [] {inPipeFile, outPipeFile};
+        }
+
+        public static PythonTuple CreatePipeAsFd(CodeContext context) {
+                    SafePipeHandle hRead, hWrite;
+            var secAttrs = new NativeMethods.SECURITY_ATTRIBUTES();
+            secAttrs.nLength = Marshal.SizeOf(secAttrs);
+
+            if (!NativeMethods.CreatePipe(out hRead, out hWrite, ref secAttrs, 0)) {
+                var err = Marshal.GetLastWin32Error();
+                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, err,
+                    new Win32Exception(err).Message);
+            }
+            var pipeFiles = CreatePipe(context, hRead, hWrite);
+            return PythonTuple.MakeTuple(
+                PythonContext.GetContext(context).FileManager.AddToStrongMapping(pipeFiles[0]),
+                PythonContext.GetContext(context).FileManager.AddToStrongMapping(pipeFiles[1]));
+        }
+
         ~PythonFile() {
             try {
                 Dispose(false);
@@ -1018,7 +1051,7 @@ namespace IronPython.Runtime {
                 throw PythonOps.TypeError("mode must be string, not None");
             }
 
-            if (String.IsNullOrEmpty(mode)) {
+            if (mode == "") {
                 throw PythonOps.ValueError("empty mode string");
             }
 
@@ -1292,6 +1325,18 @@ namespace IronPython.Runtime {
             } else {
                 _writer = CreateTextWriter(_io.GetWriter(type));
             }
+        }
+
+        internal void InitializePipe(Stream stream, string mode, Encoding encoding) {
+            _stream = stream;
+            _io = null;
+            _name = "<pipe>";
+            _mode = mode;
+            _fileMode = PythonFileMode.Binary;
+            _encoding = StringOps.GetEncodingName(encoding);
+            _isOpen = true;
+            InitializeReaderAndWriter(stream, encoding);
+
         }
 
         internal void InternalInitialize(Stream stream, Encoding encoding, string name, string mode) {
@@ -1872,6 +1917,15 @@ namespace IronPython.Runtime {
 
         #endregion
     }
+
+
+    internal class AnonymousPipeStream : PipeStream {
+        public AnonymousPipeStream(PipeDirection direction, SafePipeHandle sph) : base(direction, 0) {
+            InitializeHandle(sph, true, false);
+            IsConnected = true;
+        }
+    }
+
 
 #if FEATURE_NATIVE
     // dotnet45 backport
