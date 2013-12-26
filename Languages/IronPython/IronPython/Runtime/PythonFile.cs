@@ -855,12 +855,12 @@ namespace IronPython.Runtime {
         private HybridMapping<PythonFile> fileMapping = new HybridMapping<PythonFile>(3);
         private HybridMapping<object> objMapping = new HybridMapping<object>(3);
 
-        public int AddToStrongMapping(PythonFile pf) {
-            return fileMapping.StrongAdd(pf);
+        public int AddToStrongMapping(PythonFile pf, int pos = -1) {
+            return fileMapping.StrongAdd(pf, pos);
         }
 
-        public int AddToStrongMapping(object o) {
-            return objMapping.StrongAdd(o);
+        public int AddToStrongMapping(object o, int pos = -1) {
+            return objMapping.StrongAdd(o, pos);
         }
 
         public void Remove(PythonFile pf) {
@@ -900,6 +900,11 @@ namespace IronPython.Runtime {
             }
 
             return pf != null;
+        }
+
+        public bool TryGetObjectFromId(PythonContext context, int id, out Object o) {
+            o = objMapping.GetObjectFromId(id);
+            return o != null;
         }
 
         public object GetObjectFromId(int id) {

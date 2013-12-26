@@ -116,6 +116,65 @@ namespace IronPython.Modules {
         }
 #endif
 
+        public static int dup(CodeContext/*!*/ context, int fd) {
+            PythonContext pythonContext = PythonContext.GetContext(context);
+            PythonFile file;
+            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out file)) {
+                return pythonContext.FileManager.AddToStrongMapping(file);
+            } else {
+                Stream stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
+                if (stream == null) {
+                    throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+                }
+                return pythonContext.FileManager.AddToStrongMapping(stream);
+            }
+        }
+
+        private static bool IsValidFd(CodeContext/*!*/ context, int fd) {
+            PythonContext pythonContext = PythonContext.GetContext(context);
+            PythonFile file;
+            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out file)) {
+                return true;
+            }
+            Object o;
+            if (pythonContext.FileManager.TryGetObjectFromId(pythonContext, fd, out o)) {
+                var stream = o as Stream;
+                if (stream != null) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public static int dup2(CodeContext/*!*/ context, int fd, int fd2) {
+            PythonContext pythonContext = PythonContext.GetContext(context);
+            PythonFile file;
+
+            bool fd2Valid = IsValidFd(context, fd2);
+
+            if (fd == fd2) {
+                if (fd2Valid) {
+                    return fd2;
+                }
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+            }
+
+            if (fd2Valid) {
+                close(context, fd2);
+            }
+
+            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out file)) {
+                return pythonContext.FileManager.AddToStrongMapping(file, fd2);
+            } else {
+                Stream stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
+                if (stream == null) {
+                    throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+                }
+                return pythonContext.FileManager.AddToStrongMapping(stream, fd2);
+            }
+        }
+
+
         public static void close(CodeContext/*!*/ context, int fd) {
             PythonContext pythonContext = PythonContext.GetContext(context);
             PythonFile file;
@@ -126,7 +185,6 @@ namespace IronPython.Modules {
                 if (stream == null) {
                     throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
                 }
-
                 stream.Close();
             }
         }

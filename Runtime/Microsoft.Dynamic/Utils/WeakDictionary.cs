@@ -347,16 +347,23 @@ namespace Microsoft.Scripting.Utils {
             }
         }
 
-        public int StrongAdd(T value) {
+        public int StrongAdd(T value, int pos) {
             lock (_synchObject) {
-                int saved = _current;
-                while (_dict.ContainsKey(_current)) {
-                    NextKey();
-                    if (_current == saved)
-                        throw new InvalidOperationException("HybridMapping is full");
+                if (pos == -1) {
+                    int saved = _current;
+                    while (_dict.ContainsKey(_current)) {
+                        NextKey();
+                        if (_current == saved)
+                            throw new InvalidOperationException("HybridMapping is full");
+                    }
+                    _dict.Add(_current, value);
+                    return _current;
                 }
-                _dict.Add(_current, value);
-                return _current;
+                if (_dict.ContainsKey(pos)) {
+                    throw new InvalidOperationException("HybridMapping at pos:" + pos + " is not empty");
+                }
+                _dict.Add(pos, value);
+                return pos;
             }
         }
 
