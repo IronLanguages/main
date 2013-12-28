@@ -3780,7 +3780,10 @@ namespace IronPython.Runtime.Operations {
             byte[] ret = new byte[s.Length];
             for (int i = 0; i < s.Length; i++) {
                 if (s[i] < 0x100) ret[i] = (byte)s[i];
-                else throw PythonOps.UnicodeEncodeError("'ascii' codec can't decode byte {0:X} in position {1}: ordinal not in range", (int)ret[i], i);
+                else {
+                    throw PythonOps.UnicodeEncodeError("ascii", s[i], i,
+                        "'ascii' codec can't decode byte {0:X} in position {1}: ordinal not in range", (int)s[i], i);
+                }
             }
             return ret;
         }
@@ -4053,6 +4056,16 @@ namespace IronPython.Runtime.Operations {
         public static Exception UnicodeEncodeError(string format, params object[] args) {
             return new System.Text.EncoderFallbackException(string.Format(format, args));
         }
+
+        public static Exception UnicodeEncodeError(string encoding, char charUnkown, int index,
+            string format, params object[] args) {
+            var ctor = typeof (EncoderFallbackException).GetConstructor(
+                BindingFlags.NonPublic | BindingFlags.Instance, null, new [] { typeof(string), typeof(char), typeof(int) } , null);
+            var ex = (EncoderFallbackException)ctor.Invoke(new object[] { string.Format(format, args), charUnkown, index });
+            ex.Data["encoding"] = encoding;
+            return ex;
+        }
+
 
         public static Exception IOError(Exception inner) {
             return new System.IO.IOException(inner.Message, inner);

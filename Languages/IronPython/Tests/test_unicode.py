@@ -66,5 +66,21 @@ def test_cp19005():
     foo = u'\xef\xbb\xbf'
     AreEqual(repr(foo), r"u'\xef\xbb\xbf'")
 
+def test_cpcp34689():
+    xx_full_width_a = u'xx\uff21'
+    caught = False
+    try:
+        dummy = str(xx_full_width_a)
+    except UnicodeEncodeError as ex:
+        caught = True
+        AreEqual(ex.encoding, 'ascii')
+        AreEqual(ex.start, 2)
+        AreEqual(ex.end, 3)
+        AreEqual(ex.object, u'\uff21')
+        Assert(ex.reason != None)
+        Assert(len(ex.reason) > 0)
+
+    Assert(caught)
+
 #--MAIN------------------------------------------------------------------------
 run_test(__name__)
