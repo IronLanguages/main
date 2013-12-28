@@ -875,7 +875,8 @@ for k, v in toError.iteritems():
             protected internal override void InitializeFromClr(System.Exception/*!*/ exception) {
                 EncoderFallbackException ex = exception as EncoderFallbackException;
                 if (ex != null) {
-                    __init__("unknown", new string(ex.CharUnknown, 1), ex.Index, ex.Index + 1, "");
+                    __init__((exception.Data.Contains("encoding")) ? exception.Data["encoding"] : "unknown",
+                        new string(ex.CharUnknown, 1), ex.Index, ex.Index + 1, exception.Message);
                 } else {
                     base.InitializeFromClr(exception);
                 }
