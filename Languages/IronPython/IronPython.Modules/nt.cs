@@ -180,7 +180,7 @@ namespace IronPython.Modules {
             if (pf.IsConsole) {
                 return new stat_result(8192);
             }
-            return lstat(pf.name);
+            return lstat(context, pf.name);
         }
 
         public static string getcwd(CodeContext/*!*/ context) {
@@ -284,8 +284,9 @@ namespace IronPython.Modules {
         /// Like stat(path), but do not follow symbolic links.
         /// </summary>
         [LightThrowing]
-        public static object lstat(string path) {
-            return stat(path);
+        public static object lstat(CodeContext context, object path) {
+            // TODO: detect links
+            return stat(context, path);
         }
 
 #if FEATURE_FILESYSTEM
@@ -1146,29 +1147,41 @@ namespace IronPython.Modules {
 
         [Documentation("stat(path) -> stat result\nGathers statistics about the specified file or directory")]
         [LightThrowing]
-        public static object stat(string path) {            
+        public static object stat(CodeContext context, object path) {
             if (path == null) {
                 return LightExceptions.Throw(PythonOps.TypeError("expected string, got NoneType"));
             }
 
             stat_result sr;
 
+            string strPath;
+            if (path is string) {
+                strPath = (string)path;
+            } else if (path is ExtensibleString) {
+                strPath = ((ExtensibleString)path).Value;
+            } else if (path is Bytes) {
+                var tmp = (Bytes)path;
+                strPath = tmp.decode(context, (string)SysModule.getfilesystemencoding(), "strict");
+            } else {
+                return LightExceptions.Throw(PythonOps.TypeError("can not convert path to string: " + path.GetType()));
+            }
+
             try {
-                FileInfo fi = new FileInfo(path);
+                FileInfo fi = new FileInfo(strPath);
                 int mode = 0;
                 long size;
 
-                if (Directory.Exists(path)) {
+                if (Directory.Exists(strPath)) {
                     size = 0;
                     mode = 0x4000 | S_IEXEC;
-                } else if (File.Exists(path)) {
+                } else if (File.Exists(strPath)) {
                     size = fi.Length;
                     mode = 0x8000;
-                    if (HasExecutableExtension(path)) {
+                    if (HasExecutableExtension(strPath)) {
                         mode |= S_IEXEC;
                     }
                 } else {
-                    return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_PATH_NOT_FOUND, "file does not exist: " + path));
+                    return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_PATH_NOT_FOUND, "file does not exist: " + strPath));
                 }
 
                 long st_atime = (long)PythonTime.TicksToTimestamp(fi.LastAccessTime.ToUniversalTime().Ticks);
@@ -1181,9 +1194,9 @@ namespace IronPython.Modules {
 
                 sr = new stat_result(mode, size, st_atime, st_mtime, st_ctime);
             } catch (ArgumentException) {
-                return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_INVALID_NAME, "The path is invalid: " + path));
+                return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_INVALID_NAME, "The path is invalid: " + strPath));
             } catch (Exception e) {
-                return LightExceptions.Throw(ToPythonException(e, path));
+                return LightExceptions.Throw(ToPythonException(e, strPath));
             }
 
             return sr;
