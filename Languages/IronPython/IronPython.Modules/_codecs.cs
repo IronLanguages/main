@@ -639,18 +639,19 @@ namespace IronPython.Modules {
             }
 
 #if FEATURE_ENCODING    // DecoderFallback
+            var utf8Workaround = encoding == Encoding.UTF8 && DotNet;
             encoding = (Encoding)encoding.Clone();
-
             ExceptionFallBack fallback = null;
             if (fAlwaysThrow) {
                 encoding.DecoderFallback = DecoderFallback.ExceptionFallback;
             } else {
-                fallback = new ExceptionFallBack(bytes);
+                fallback = new ExceptionFallBack(bytes, utf8Workaround);
                 encoding.DecoderFallback = fallback;
             }
 #endif
             string decoded = encoding.GetString(bytes, 0, bytes.Length);
             int badByteCount = 0;
+
 
 #if FEATURE_ENCODING    // DecoderFallback
             if (!fAlwaysThrow) {
@@ -664,6 +665,14 @@ namespace IronPython.Modules {
             PythonTuple tuple = PythonTuple.MakeTuple(decoded, bytes.Length - badByteCount);
             return tuple;
         }
+
+
+        internal static readonly bool DotNet;
+
+        static PythonCodecs() {
+            DotNet = Type.GetType("Mono.Runtime") == null;
+        }
+
 
         private static int CheckPreamble(Encoding enc, string buffer) {
             byte[] preamble = enc.GetPreamble();
@@ -722,8 +731,8 @@ namespace IronPython.Modules {
     class ExceptionFallBack : DecoderFallback {
         internal ExceptionFallbackBuffer buffer;
 
-        public ExceptionFallBack(byte[] bytes) {
-            buffer = new ExceptionFallbackBuffer(bytes);
+        public ExceptionFallBack(byte[] bytes, bool workaround) {
+            buffer = new ExceptionFallbackBuffer(bytes, workaround);
         }
 
         public override DecoderFallbackBuffer CreateFallbackBuffer() {
@@ -738,17 +747,34 @@ namespace IronPython.Modules {
     class ExceptionFallbackBuffer : DecoderFallbackBuffer {
         internal byte[] badBytes;
         private byte[] inputBytes;
-        public ExceptionFallbackBuffer(byte[] bytes) {
+        private bool ignoreNext = false;
+        private bool _dotNetUtf8 = false;
+
+        public ExceptionFallbackBuffer(byte[] bytes, bool dotNetUtf8) {
             inputBytes = bytes;
+            _dotNetUtf8 = dotNetUtf8;
         }
 
         public override bool Fallback(byte[] bytesUnknown, int index) {
+            if (_dotNetUtf8) {
+                // in case of dot net and utf-8 value index does not conform to spec
+                if (ignoreNext) {
+                    // dot net sometimes calls second time after this method returns false
+                    // if this is the case, do nothing
+                    return false;
+                }
+                // adjust index, adjustment value was discovered experimentally
+                index = index + bytesUnknown.Length;
+            }
+
             if (index > 0 && index + bytesUnknown.Length != inputBytes.Length) {
-                throw PythonOps.UnicodeEncodeError("failed to decode bytes at index {0}", index);
+                throw PythonOps.UnicodeDecodeError(
+                    String.Format("failed to decode bytes at index: {0}", index), bytesUnknown, index);
             }
 
             // just some bad bytes at the end
             badBytes = bytesUnknown;
+            ignoreNext = true;
             return false;
         }
 
