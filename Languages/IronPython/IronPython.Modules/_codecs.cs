@@ -639,12 +639,12 @@ namespace IronPython.Modules {
             }
 
 #if FEATURE_ENCODING    // DecoderFallback
-            var utf8Workaround = encoding == Encoding.UTF8 && DotNet;
             encoding = (Encoding)encoding.Clone();
             ExceptionFallBack fallback = null;
             if (fAlwaysThrow) {
                 encoding.DecoderFallback = DecoderFallback.ExceptionFallback;
             } else {
+                var utf8Workaround = encoding == Encoding.UTF8 && DotNet;
                 fallback = new ExceptionFallBack(bytes, utf8Workaround);
                 encoding.DecoderFallback = fallback;
             }
