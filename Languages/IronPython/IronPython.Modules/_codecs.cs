@@ -644,8 +644,11 @@ namespace IronPython.Modules {
             if (fAlwaysThrow) {
                 encoding.DecoderFallback = DecoderFallback.ExceptionFallback;
             } else {
-                var utf8Workaround = encoding == Encoding.UTF8 && DotNet;
-                fallback = new ExceptionFallBack(bytes, utf8Workaround);
+                fallback = (encoding is UTF8Encoding && DotNet) ?
+                    // This is a workaround for a bug, see ExceptionFallbackBufferUtf8DotNet
+                    // for more details.
+                    new ExceptionFallBackUtf8DotNet(bytes):
+                    new ExceptionFallBack(bytes);
                 encoding.DecoderFallback = fallback;
             }
 #endif
@@ -731,8 +734,13 @@ namespace IronPython.Modules {
     class ExceptionFallBack : DecoderFallback {
         internal ExceptionFallbackBuffer buffer;
 
-        public ExceptionFallBack(byte[] bytes, bool workaround) {
-            buffer = new ExceptionFallbackBuffer(bytes, workaround);
+        // This ctor can be removed as soon as workaround for utf8 encoding in .net is
+        // no longer necessary.
+        protected ExceptionFallBack() {
+        }
+
+        public ExceptionFallBack(byte[] bytes) {
+            buffer = new ExceptionFallbackBuffer(bytes);
         }
 
         public override DecoderFallbackBuffer CreateFallbackBuffer() {
@@ -746,35 +754,19 @@ namespace IronPython.Modules {
 
     class ExceptionFallbackBuffer : DecoderFallbackBuffer {
         internal byte[] badBytes;
-        private byte[] inputBytes;
-        private bool ignoreNext = false;
-        private bool _dotNetUtf8 = false;
+        protected byte[] inputBytes;
 
-        public ExceptionFallbackBuffer(byte[] bytes, bool dotNetUtf8) {
+        public ExceptionFallbackBuffer(byte[] bytes) {
             inputBytes = bytes;
-            _dotNetUtf8 = dotNetUtf8;
         }
 
         public override bool Fallback(byte[] bytesUnknown, int index) {
-            if (_dotNetUtf8) {
-                // in case of dot net and utf-8 value index does not conform to spec
-                if (ignoreNext) {
-                    // dot net sometimes calls second time after this method returns false
-                    // if this is the case, do nothing
-                    return false;
-                }
-                // adjust index, adjustment value was discovered experimentally
-                index = index + bytesUnknown.Length;
-            }
-
             if (index > 0 && index + bytesUnknown.Length != inputBytes.Length) {
                 throw PythonOps.UnicodeDecodeError(
                     String.Format("failed to decode bytes at index: {0}", index), bytesUnknown, index);
             }
-
             // just some bad bytes at the end
             badBytes = bytesUnknown;
-            ignoreNext = true;
             return false;
         }
 
@@ -789,6 +781,40 @@ namespace IronPython.Modules {
         public override int Remaining {
             get { return 0; }
         }
+    }
+
+    // This class can be removed as soon as workaround for utf8 encoding in .net is
+    // no longer necessary.
+    class ExceptionFallBackUtf8DotNet : ExceptionFallBack {
+        public ExceptionFallBackUtf8DotNet(byte[] bytes) {
+            buffer = new ExceptionFallbackBufferUtf8DotNet(bytes);
+        }
+    }
+
+    // This class can be removed as soon as workaround for utf8 encoding in .net is
+    // no longer necessary.
+    class ExceptionFallbackBufferUtf8DotNet : ExceptionFallbackBuffer {
+        private bool ignoreNext = false;
+
+        public ExceptionFallbackBufferUtf8DotNet(byte[] bytes) : base(bytes) {
+        }
+
+        public override bool Fallback(byte[] bytesUnknown, int index) {
+            // In case of dot net and utf-8 value of index does not conform to documentation provided by
+            // Microsoft. Tested on Windows 7 64, .NET 4.0.30319.18408, all recommended patches as of 06.02.2014
+            // http://msdn.microsoft.com/en-us/library/System.Text.EncoderFallbackBuffer%28v=vs.110%29.aspx
+            // The value of index is mysteriously decreased by the size of bytesUnknown
+            if (ignoreNext) {
+                // dot net sometimes calls second time after this method returns false
+                // if this is the case, do nothing
+                return false;
+            }
+            // adjust index
+            index = index + bytesUnknown.Length;
+            ignoreNext = true;
+            return base.Fallback(bytesUnknown, index);
+        }
+
     }
 #endif
 
