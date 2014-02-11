@@ -801,9 +801,9 @@ namespace IronPython.Modules {
 
         public override bool Fallback(byte[] bytesUnknown, int index) {
             // In case of dot net and utf-8 value of index does not conform to documentation provided by
-            // Microsoft. Tested on Windows 7 64, .NET 4.0.30319.18408, all recommended patches as of 06.02.2014
-            // http://msdn.microsoft.com/en-us/library/System.Text.EncoderFallbackBuffer%28v=vs.110%29.aspx
+            // Microsoft http://msdn.microsoft.com/en-us/library/bdftay9c%28v=vs.100%29.aspx
             // The value of index is mysteriously decreased by the size of bytesUnknown
+            // Tested on Windows 7 64, .NET 4.0.30319.18408, all recommended patches as of 06.02.2014
             if (ignoreNext) {
                 // dot net sometimes calls second time after this method returns false
                 // if this is the case, do nothing
