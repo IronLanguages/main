@@ -313,7 +313,7 @@ namespace Microsoft.Scripting.Utils {
         private readonly int _offset;
         private int _current;
 
-        private const int SIZE = 4096;
+        public const int SIZE = 4096;
         private const int MIN_RANGE = SIZE / 2;
 
         public HybridMapping()
@@ -348,6 +348,9 @@ namespace Microsoft.Scripting.Utils {
         }
 
         public int StrongAdd(T value, int pos) {
+            if (pos >= SIZE) {
+                throw new InvalidOperationException("Size of HybridMapping Exceeded (" + SIZE + ")");
+            }
             lock (_synchObject) {
                 if (pos == -1) {
                     int saved = _current;
@@ -404,6 +407,9 @@ namespace Microsoft.Scripting.Utils {
         public void RemoveOnId(int id) {
             lock (_synchObject) {
                 _dict.Remove(id);
+                if (id >= _offset && id < _current) {
+                    _current = id;
+                }
             }
         }
 

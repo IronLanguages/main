@@ -115,21 +115,30 @@ namespace IronPython.Modules {
             }
         }
 #endif
-
-        public static int dup(CodeContext/*!*/ context, int fd) {
+        public static void close(CodeContext/*!*/ context, int fd) {
             PythonContext pythonContext = PythonContext.GetContext(context);
+            PythonFileManager fileManager = pythonContext.FileManager;
             PythonFile file;
-            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out file)) {
-                return pythonContext.FileManager.AddToStrongMapping(file);
+            if (fileManager.TryGetFileFromId(pythonContext, fd, out file)) {
+                fileManager.CloseIfLast(fd, file);
             } else {
-                Stream stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
+                Stream stream = fileManager.GetObjectFromId(fd) as Stream;
                 if (stream == null) {
                     throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
                 }
-                return pythonContext.FileManager.AddToStrongMapping(stream);
+                fileManager.CloseIfLast(fd, stream);
             }
         }
 
+        public static void closerange(CodeContext/*!*/ context, int fd_low, int fd_high) {
+            for (var fd = fd_low; fd <= fd_high; fd++) {
+                try {
+                    close(context, fd);
+                } catch (OSException) {
+                    // ignore errors on close
+                }
+            }
+        }
         private static bool IsValidFd(CodeContext/*!*/ context, int fd) {
             PythonContext pythonContext = PythonContext.GetContext(context);
             PythonFile file;
@@ -146,9 +155,32 @@ namespace IronPython.Modules {
             return false;
         }
 
+        public static int dup(CodeContext/*!*/ context, int fd) {
+            PythonContext pythonContext = PythonContext.GetContext(context);
+            PythonFile file;
+            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out file)) {
+                return pythonContext.FileManager.AddToStrongMapping(file);
+            } else {
+                Stream stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
+                if (stream == null) {
+                    throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+                }
+                return pythonContext.FileManager.AddToStrongMapping(stream);
+            }
+        }
+
+
         public static int dup2(CodeContext/*!*/ context, int fd, int fd2) {
             PythonContext pythonContext = PythonContext.GetContext(context);
             PythonFile file;
+
+            if (!IsValidFd(context, fd)) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+            }
+
+            if (! pythonContext.FileManager.ValidateFdRange(fd2)) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+            }
 
             bool fd2Valid = IsValidFd(context, fd2);
 
@@ -165,29 +197,15 @@ namespace IronPython.Modules {
 
             if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out file)) {
                 return pythonContext.FileManager.AddToStrongMapping(file, fd2);
-            } else {
-                Stream stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
-                if (stream == null) {
-                    throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
-                }
-                return pythonContext.FileManager.AddToStrongMapping(stream, fd2);
             }
+            var stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
+            if (stream == null) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+            }
+            return pythonContext.FileManager.AddToStrongMapping(stream, fd2);
         }
 
 
-        public static void close(CodeContext/*!*/ context, int fd) {
-            PythonContext pythonContext = PythonContext.GetContext(context);
-            PythonFile file;
-            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out file)) {
-                file.close();
-            } else {
-                Stream stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
-                if (stream == null) {
-                    throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
-                }
-                stream.Close();
-            }
-        }
         
 #if FEATURE_PROCESS
         /// <summary>
@@ -379,14 +397,16 @@ namespace IronPython.Modules {
                 FileMode fileMode = FileModeFromFlags(flag);
                 FileAccess access = FileAccessFromFlags(flag);
                 FileOptions options = FileOptionsFromFlags(flag);
-                FileStream fs;
-                if (access == FileAccess.Read && (fileMode == FileMode.CreateNew || fileMode == FileMode.Create || fileMode == FileMode.Append)) {
+                Stream fs;
+                if (Environment.OSVersion.Platform == PlatformID.Win32NT && filename == "nul") {
+                    fs = Stream.Null;
+                } else if (access == FileAccess.Read && (fileMode == FileMode.CreateNew || fileMode == FileMode.Create || fileMode == FileMode.Append)) {
                     // .NET doesn't allow Create/CreateNew w/ access == Read, so create the file, then close it, then
                     // open it again w/ just read access.
                     fs = new FileStream(filename, fileMode, FileAccess.Write, FileShare.None);
                     fs.Close();
                     fs = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, DefaultBufferSize, options);
-                } else if(access == FileAccess.ReadWrite && fileMode == FileMode.Append) {
+                } else if (access == FileAccess.ReadWrite && fileMode == FileMode.Append) {
                     fs = new FileStream(filename, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, DefaultBufferSize, options);
                 } else {
                     fs = new FileStream(filename, fileMode, access, FileShare.ReadWrite, DefaultBufferSize, options);
@@ -1538,6 +1558,7 @@ are defined in the signal module.")]
             }
             
             int error = Marshal.GetLastWin32Error();
+
             string message = e.Message;
             int errorCode = 0;
 
@@ -1573,6 +1594,7 @@ are defined in the signal module.")]
 
 #if !SILVERLIGHT5
                 errorCode = System.Runtime.InteropServices.Marshal.GetHRForException(e);
+
                 if ((errorCode & ~0xfff) == (unchecked((int)0x80070000))) {
                     // Win32 HR, translate HR to Python error code if possible, otherwise
                     // report the HR.
