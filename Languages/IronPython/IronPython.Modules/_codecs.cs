@@ -151,7 +151,8 @@ namespace IronPython.Modules {
                     if (errors == "strict" && isDecode) {
                         throw PythonOps.UnicodeDecodeError("'charmap' codec can't decode characters at index {0} because charmap maps to None", i);
                     } else if (!isDecode) {
-                        throw PythonOps.UnicodeEncodeError("'charmap' codec can't encode characters at index {0} because charmap maps to None", i);
+                        throw PythonOps.UnicodeEncodeError("charmap", input[i], i,
+                            "'charmap' codec can't encode characters at index {0} because charmap maps to None", i);
                     }
                     res.Append("\ufffd");
                 } else if (val is string) {
