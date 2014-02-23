@@ -80,6 +80,17 @@ REM SN_UTIL should be defined even if we can't find sn.exe.
 set SN_UTIL="sn.exe"
 
 :SnDone
+REM VS2013
+if exist "%PROGRAM_FILES_32%\Microsoft Visual Studio 12.0\Common7\Tools\vsvars32.bat" (
+    call "%PROGRAM_FILES_32%\Microsoft Visual Studio 12.0\Common7\Tools\vsvars32.bat"
+    goto EnvDone
+)
+
+REM VS2012
+if exist "%PROGRAM_FILES_32%\Microsoft Visual Studio 11.0\Common7\Tools\vsvars32.bat" (
+    call "%PROGRAM_FILES_32%\Microsoft Visual Studio 11.0\Common7\Tools\vsvars32.bat"
+    goto EnvDone
+)
 
 if exist "%PROGRAM_FILES_32%\Microsoft Visual Studio 11.0\Common7\Tools\vsvars32.bat" (
     call "%PROGRAM_FILES_32%\Microsoft Visual Studio 11.0\Common7\Tools\vsvars32.bat"
