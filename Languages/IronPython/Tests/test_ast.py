@@ -21,7 +21,7 @@ def to_tuple(t):
 
 
 # These tests are compiled through "exec"
-# There should be atleast one test per statement
+# There should be at least one test per statement
 exec_tests = [
     # FunctionDef
     "def f(): pass",
@@ -78,6 +78,10 @@ exec_tests = [
     "for a,b in c: pass",
     "[(a,b) for a,b in c]",
     "((a,b) for a,b in c)",
+    # yield makes no sense outside function
+    "def f(): yield 1",
+    # CP35001
+    "def f(): yield",
 
 ]
 
@@ -754,6 +758,26 @@ print >> cap, c.foo,
         exec c
         self.assertEquals(cap.getvalue(), "42")
 
+    def test_compile_from_ast_133(self):
+        cap = StringIO()
+        tc = """
+def f1():
+    yield 1
+
+def fNone():
+    yield
+
+for v in f1():
+    print >> cap, v
+for v in fNone():
+    print >> cap, v
+
+            """
+        p = ast.parse( tc, mode="exec") # yield
+        c = compile(p,"<unknown>", mode="exec")
+        exec c
+        self.assertEquals(cap.getvalue(), "1\nNone\n")
+
     def test_compile_from_ast_200(self):
         p = ast.parse("a=1; b=2", mode="single") # something with single
         c = compile(p,"<unknown>", mode="single")
@@ -1300,6 +1324,8 @@ exec_results = [
 ('Module', [('For', (1, 0), ('Tuple', (1, 4), [('Name', (1, 4), 'a', ('Store',)), ('Name', (1, 6), 'b', ('Store',))], ('Store',)), ('Name', (1, 11), 'c', ('Load',)), [('Pass', (1, 14))], [])]),
 ('Module', [('Expr', (1, 0), ('ListComp', (1, 0), ('Tuple', (1, 1), [('Name', (1, 2), 'a', ('Load',)), ('Name', (1, 4), 'b', ('Load',))], ('Load',)), [('comprehension', ('Tuple', (1, 11), [('Name', (1, 11), 'a', ('Store',)), ('Name', (1, 13), 'b', ('Store',))], ('Store',)), ('Name', (1, 18), 'c', ('Load',)), [])]))]),
 ('Module', [('Expr', (1, 0), ('GeneratorExp', (1, 0), ('Tuple', (1, 1), [('Name', (1, 2), 'a', ('Load',)), ('Name', (1, 4), 'b', ('Load',))], ('Load',)), [('comprehension', ('Tuple', (1, 11), [('Name', (1, 11), 'a', ('Store',)), ('Name', (1, 13), 'b', ('Store',))], ('Store',)), ('Name', (1, 18), 'c', ('Load',)), [])]))]),
+('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, None, []), [('Expr', (1, 9), ('Yield', (1, 9), ('Num', (1, 15), 1)))], [])]),
+('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, None, []), [('Expr', (1, 9), ('Yield', (1, 9), ('Name', (1, 9), 'None', ('Load',))))], [])]),
 ]
 single_results = [
 ('Interactive', [('Expr', (1, 0), ('BinOp', (1, 0), ('Num', (1, 0), 1), ('Add',), ('Num', (1, 2), 2)))]),
