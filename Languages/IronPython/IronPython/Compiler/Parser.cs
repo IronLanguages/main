@@ -637,6 +637,8 @@ namespace IronPython.Compiler {
             if (l.Count == 0) {
                 // Check empty expression and convert to 'none'
                 yieldResult = new ConstantExpression(null);
+                // location set to match yield location (consistent with cpython)
+                yieldResult.SetLoc(_globalParent, start, GetEnd());
             } else if (l.Count != 1) {
                 // make a tuple
                 yieldResult = MakeTupleOrExpr(l, trailingComma);
