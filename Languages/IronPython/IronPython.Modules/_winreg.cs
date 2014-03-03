@@ -66,7 +66,8 @@ namespace IronPython.Modules {
         public const int KEY_EXECUTE = 0X20019;
         public const int KEY_READ = 0X20019;
         public const int KEY_WRITE = 0X20006;
-
+        public const int KEY_WOW64_64KEY = 0x0100;
+        public const int KEY_WOW64_32KEY = 0x0200;
         public const int REG_CREATED_NEW_KEY = 0X1;
         public const int REG_OPENED_EXISTING_KEY = 0X2;
 
@@ -101,6 +102,12 @@ namespace IronPython.Modules {
         public const int REG_LEGAL_OPTION = 0XF;
         public const int REG_WHOLE_HIVE_VOLATILE = 0X1;
 
+#endregion
+
+#region internal data
+        private static string _computerName;
+        private static BigInteger _rootKey;
+        private static RegistryView _rv = RegistryView.Default,_rvTemp = RegistryView.Default; //RegistryView
 #endregion
 
 #region Module Methods
@@ -311,6 +318,19 @@ namespace IronPython.Modules {
         }
 
         public static HKEYType OpenKey(object key, string subKeyName, [DefaultParameterValue(0)]int res, [DefaultParameterValue(KEY_READ)]int sam) {
+            if ((RegistryView)(sam & (int)RegistryView.Registry32) == RegistryView.Registry32)
+            {
+                _rvTemp = RegistryView.Registry32;
+            }
+            else if ((RegistryView)(sam & (int)RegistryView.Registry64) == RegistryView.Registry64)
+            {
+                _rvTemp = RegistryView.Registry64;
+            }
+            else
+            {
+                _rvTemp = RegistryView.Default;
+            }
+
             HKEYType rootKey = GetRootKey(key);
             RegistryKey newKey = null;
 
@@ -426,9 +446,13 @@ namespace IronPython.Modules {
 
         }
 
+        
         public static HKEYType ConnectRegistry(string computerName, BigInteger key) {
             if (string.IsNullOrEmpty(computerName))
                 computerName = string.Empty;
+
+            _computerName = computerName;
+            _rootKey = key;
 
             RegistryKey newKey;
             try {
@@ -445,12 +469,24 @@ namespace IronPython.Modules {
 #region Helpers
         private static HKEYType GetRootKey(object key) {
             HKEYType rootKey;
-            rootKey = key as HKEYType;
-            if (rootKey == null) {
-                if (key is BigInteger) {
-                    rootKey = new HKEYType(RegistryKey.OpenRemoteBaseKey(MapSystemKey((BigInteger)key), string.Empty));
-                } else {
-                    throw new InvalidCastException("The object is not a PyHKEY object");
+            if (_rv != _rvTemp)
+            {
+                _rv = _rvTemp;
+                rootKey = new HKEYType(RegistryKey.OpenRemoteBaseKey(MapSystemKey(_rootKey), _computerName, _rv));
+            }
+            else
+            {
+                rootKey = key as HKEYType;
+                if (rootKey == null)
+                {
+                    if (key is BigInteger)
+                    {
+                        rootKey = new HKEYType(RegistryKey.OpenRemoteBaseKey(MapSystemKey((BigInteger)key), string.Empty));
+                    }
+                    else
+                    {
+                        throw new InvalidCastException("The object is not a PyHKEY object");
+                    }
                 }
             }
             return rootKey;
