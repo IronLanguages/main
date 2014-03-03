@@ -155,12 +155,18 @@ namespace IronPython.Modules {
             return null;
         }
 
+        private static readonly byte[] FakeZeroLength = { 42 };
+
         public static byte[] TryCheckBytes(object o) {
             Bytes bytes = o as Bytes;
             if (bytes != null) {
+                if (bytes._bytes.Length == 0) {
+                    // OpCodes.Ldelema refuses to get address of empty array
+                    // So we feed it with a fake one (cp34892)
+                    return FakeZeroLength;
+                }
                 return bytes._bytes;
             }
-
             return null;
         }
 
