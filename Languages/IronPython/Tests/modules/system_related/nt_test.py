@@ -1124,6 +1124,15 @@ def test_strerror():
     for key, value in test_dict.iteritems():
         AreEqual(nt.strerror(key), value)
 
+
+def test_popen_cp34837():
+    import subprocess
+    import os
+    p = subprocess.Popen("whoami", env=os.environ)
+    Assert(p!=None)
+    p.wait()
+
+
 #------------------------------------------------------------------------------
 try:
     run_test(__name__)

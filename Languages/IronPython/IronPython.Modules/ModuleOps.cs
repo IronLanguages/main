@@ -309,6 +309,10 @@ namespace IronPython.Modules {
                 return new IntPtr((long)(BigInteger)value);
             }
 
+            if (value is Int64) {
+                return new IntPtr((Int64) value);
+            }
+
             if (value == null) {
                 return IntPtr.Zero;
             }
