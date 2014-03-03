@@ -65,6 +65,11 @@ def test_stat():
 
     AssertErrorWithNumber(WindowsError, 2, nt.stat, 'doesnotexist.txt')
     AssertErrorWithNumber(WindowsError, 22, nt.stat, 'bad?path.txt')
+
+# stat should accept bytes as argument
+def test_stat_cp34910():
+    AreEqual(nt.stat('/'), nt.stat(b'/'))
+    AreEqual(nt.lstat('/'), nt.lstat(b'/'))
  
     
 # getcwdu test

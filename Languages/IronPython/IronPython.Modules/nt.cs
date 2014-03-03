@@ -284,7 +284,8 @@ namespace IronPython.Modules {
         /// Like stat(path), but do not follow symbolic links.
         /// </summary>
         [LightThrowing]
-        public static object lstat(string path) {
+        public static object lstat([BytesConversion]string path) {
+            // TODO: detect links
             return stat(path);
         }
 
@@ -1146,7 +1147,7 @@ namespace IronPython.Modules {
 
         [Documentation("stat(path) -> stat result\nGathers statistics about the specified file or directory")]
         [LightThrowing]
-        public static object stat(string path) {            
+        public static object stat([BytesConversion]string path) {
             if (path == null) {
                 return LightExceptions.Throw(PythonOps.TypeError("expected string, got NoneType"));
             }
