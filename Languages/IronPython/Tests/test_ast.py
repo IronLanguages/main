@@ -82,6 +82,8 @@ exec_tests = [
     "def f(): yield 1",
     # CP35001
     "def f(): yield",
+    # comment
+    "#"
 
 ]
 
@@ -1159,6 +1161,8 @@ for v in fNone():
                     ast2 = mod.loads(mod.dumps(ast, protocol))
                     self.assertEquals(to_tuple(ast2), to_tuple(ast))
 
+    def test_compile_comment(self):
+        self.assertRaisesRegexp( SyntaxError, "unexpected EOF while parsing", compile, "#", "string", "single" )
 
 class ASTHelpers_Test(unittest.TestCase):
 
@@ -1326,6 +1330,7 @@ exec_results = [
 ('Module', [('Expr', (1, 0), ('GeneratorExp', (1, 0), ('Tuple', (1, 1), [('Name', (1, 2), 'a', ('Load',)), ('Name', (1, 4), 'b', ('Load',))], ('Load',)), [('comprehension', ('Tuple', (1, 11), [('Name', (1, 11), 'a', ('Store',)), ('Name', (1, 13), 'b', ('Store',))], ('Store',)), ('Name', (1, 18), 'c', ('Load',)), [])]))]),
 ('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, None, []), [('Expr', (1, 9), ('Yield', (1, 9), ('Num', (1, 15), 1)))], [])]),
 ('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, None, []), [('Expr', (1, 9), ('Yield', (1, 9), ('Name', (1, 9), 'None', ('Load',))))], [])]),
+('Module', []),
 ]
 single_results = [
 ('Interactive', [('Expr', (1, 0), ('BinOp', (1, 0), ('Num', (1, 0), 1), ('Add',), ('Num', (1, 2), 2)))]),
