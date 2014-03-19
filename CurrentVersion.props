@@ -3,9 +3,9 @@
   <PropertyGroup>
     <MajorVersion>2</MajorVersion>
     <MinorVersion>7</MinorVersion>
-    <MicroVersion>4</MicroVersion>
-    <ReleaseLevel>final</ReleaseLevel>
-    <ReleaseSerial>0</ReleaseSerial>
+    <MicroVersion>5</MicroVersion>
+    <ReleaseLevel>beta</ReleaseLevel>
+    <ReleaseSerial>1</ReleaseSerial>
 
     <AssemblyRevision>40</AssemblyRevision>
   </PropertyGroup>
