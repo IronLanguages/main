@@ -65,6 +65,11 @@
       </Component>
       
       <Component>
+        <RegistryValue Id='VSNet45ReferenceAssemblyKey'
+          Root='HKLM' Key='SOFTWARE\Microsoft\.NETFramework\v4.5.50709\AssemblyFoldersEx\$(var.ProductShortName)$(var.ReleaseSeries)' Type='string' Value='[INSTALLDIR]$(var.PlatformsNet45Dir)' />
+      </Component>
+      
+      <Component>
         <RegistryValue Id='VSNet40ReferenceAssemblyKey'
           Root='HKLM' Key='SOFTWARE\Microsoft\.NETFramework\v4.0.30319\AssemblyFoldersEx\$(var.ProductShortName)$(var.ReleaseSeries)' Type='string' Value='[INSTALLDIR]$(var.PlatformsNet40Dir)' />
       </Component>
@@ -104,6 +109,7 @@
       <ComponentRef Id="Readme.html"/>
       <ComponentRef Id="License.txt"/>
       <ComponentRef Id="InstallationKey"/>
+      <ComponentRef Id="VSNet45ReferenceAssemblyKey"/>
       <ComponentRef Id="VSNet40ReferenceAssemblyKey"/>
       <ComponentRef Id="VSNet20ReferenceAssemblyKey"/>
       <ComponentRef Id="VSSl5ReferenceAssemblyKey"/>

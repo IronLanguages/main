@@ -105,6 +105,10 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
         <Feature Id='IronPython_Platforms_Net40' AllowAdvertise='no' Level='1' Title='.NET 4' Description='Development assemblies for .NET 4.'>
           <ComponentGroupRef Id='IronPythonPlatformsNet40'/>
         </Feature>
+        
+        <Feature Id='IronPython_Platforms_Net45' AllowAdvertise='no' Level='1' Title='.NET 4.5' Description='Development assemblies for .NET 4.5.'>
+          <ComponentGroupRef Id='IronPythonPlatformsNet45'/>
+        </Feature>
 
         <Feature Id='IronPython_Platforms_Sl5' AllowAdvertise='no' Level='1' Title='Silverlight 5' Description='Development assemblies for Silverlight 5.'>
           <ComponentGroupRef Id='IronPythonPlatformsSl5'/>

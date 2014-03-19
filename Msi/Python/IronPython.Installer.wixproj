@@ -47,6 +47,9 @@
     <WixConstant Include="PlatformsNet40Dir">
       <Value>Platforms\Net40</Value>
     </WixConstant>
+    <WixConstant Include="PlatformsNet45Dir">
+      <Value>Platforms\Net45</Value>
+    </WixConstant>
     <WixConstant Include="PlatformsSl5Dir">
       <Value>Platforms\Sl5</Value>
     </WixConstant>
@@ -118,6 +121,12 @@
       <DirectoryRefId>IronPythonPlatformsDir</DirectoryRefId>
       <ComponentGroupName>IronPythonPlatformsNet40</ComponentGroupName>
       <PreprocessorVariable>var.PlatformsNet40Dir</PreprocessorVariable>
+    </HarvestDirectory>
+    
+    <HarvestDirectory Include="$(BaseInputPaths)\Platforms\Net45">
+      <DirectoryRefId>IronPythonPlatformsDir</DirectoryRefId>
+      <ComponentGroupName>IronPythonPlatformsNet45</ComponentGroupName>
+      <PreprocessorVariable>var.PlatformsNet45Dir</PreprocessorVariable>
     </HarvestDirectory>
     
     <HarvestDirectory Include="$(BaseInputPaths)\Platforms\Sl5">
