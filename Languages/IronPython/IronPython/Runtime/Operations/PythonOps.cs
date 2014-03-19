@@ -4053,6 +4053,10 @@ namespace IronPython.Runtime.Operations {
             return new System.Text.DecoderFallbackException(string.Format(format, args));
         }
 
+        public static Exception UnicodeDecodeError(string message, byte[] bytesUnknown, int index) {
+            return new System.Text.DecoderFallbackException(message, bytesUnknown, index);
+        }
+
         public static Exception UnicodeEncodeError(string format, params object[] args) {
             return new System.Text.EncoderFallbackException(string.Format(format, args));
         }

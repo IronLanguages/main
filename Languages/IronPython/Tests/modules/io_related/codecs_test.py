@@ -347,6 +347,26 @@ def test_utf_8_decode():
     AreEqual(new_str, u'abc')
     AreEqual(size, 3)
 
+
+def test_cp34951():
+    def internal_cp34951(sample1):
+        AreEqual(codecs.utf_8_decode(sample1), (u'12\u20ac\x0a', 6))
+        sample1 = sample1[:-1] # 12<euro>
+        AreEqual(codecs.utf_8_decode(sample1), (u'12\u20ac', 5))
+        sample1 = sample1[:-1] # 12<uncomplete euro>
+        AreEqual(codecs.utf_8_decode(sample1), (u'12', 2))
+
+        sample1 = sample1 + 'x7f' # makes it invalid
+        try:
+            r = codecs.utf_8_decode(sample1)
+            Assert(False, "expected UncodeDecodeError not raised")
+        except Exception as e:
+            AreEqual(type(e), UnicodeDecodeError)
+
+    internal_cp34951(b'\x31\x32\xe2\x82\xac\x0a') # 12<euro><cr>
+    internal_cp34951(b'\xef\xbb\xbf\x31\x32\xe2\x82\xac\x0a') # <BOM>12<euro><cr>
+
+
 def test_utf_8_encode():
     '''
     '''
