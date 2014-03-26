@@ -968,7 +968,9 @@ namespace IronPython.Modules {
                             lsecond = (int)kvp.Value;
                             break;
                         case "microsecond":
-                            lmicrosecond = (int)kvp.Value;
+                            lmicrosecond = kvp.Value is BigInteger ?
+                                (int)(BigInteger)kvp.Value :
+                                (int)kvp.Value;
                             break;
                         case "tzinfo":
                             tz = kvp.Value as tzinfo;

@@ -106,6 +106,13 @@ class TestDatetime(unittest.TestCase):
         t = time.strptime("2013-11-29T16:38:12 Friday", "%Y-%m-%dT%H:%M:%S %A")
         self.assertEqual(t, (2013, 11, 29, 16, 38, 12, 4, 333, -1))
 
+    def test_datime_replace(self):
+        # cp35075
+        dt = datetime.now().replace(microsecond=1000L)
+        self.assertEqual(dt.time().microsecond, 1000)
+        self.assertRaises(ValueError, datetime.now().replace, microsecond=10000000L)
+        self.assertRaises(OverflowError, datetime.now().replace, microsecond=1000000000000L)
+
 
 def test_main():
     from unittest import main
