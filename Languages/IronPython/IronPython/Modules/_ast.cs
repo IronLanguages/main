@@ -1927,19 +1927,19 @@ namespace IronPython.Modules
             private string _name;
             private arguments _args;
             private PythonList _body;
-            private PythonList _decorators;
+            private PythonList _decorator_list;
 
             public FunctionDef() {
-                _fields = new PythonTuple(new[] { "name", "args", "body", "decorators" });
+				_fields = new PythonTuple(new[] { "name", "args", "body", "decorator_list" });
             }
 
-            public FunctionDef(string name, arguments args, PythonList body, PythonList decorators,
+            public FunctionDef(string name, arguments args, PythonList body, PythonList decorator_list,
                 [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _name = name;
                 _args = args;
                 _body = body;
-                _decorators = decorators;
+                _decorator_list = decorator_list;
                 _lineno = lineno;
                 _col_offset = col_offset;
             }
@@ -1951,19 +1951,19 @@ namespace IronPython.Modules
                 _body = ConvertStatements(def.Body);
 
                 if (def.Decorators != null) {
-                    _decorators = PythonOps.MakeEmptyList(def.Decorators.Count);
+                    _decorator_list = PythonOps.MakeEmptyList(def.Decorators.Count);
                     foreach (AstExpression expr in def.Decorators)
-                        _decorators.Add(Convert(expr));
+                        _decorator_list.Add(Convert(expr));
                 } else
-                    _decorators = PythonOps.MakeEmptyList(0);
+                    _decorator_list = PythonOps.MakeEmptyList(0);
             }
 
             internal override Statement Revert() {
                 FunctionDefinition fd = new FunctionDefinition(name, args.Revert(), RevertStmts(body));
                 fd.IsGenerator = _containsYield;
                 _containsYield = false;
-                if (decorators.Count != 0)
-                    fd.Decorators = expr.RevertExprs(decorators);
+                if (decorator_list.Count != 0)
+                    fd.Decorators = expr.RevertExprs(decorator_list);
                 return fd;
             }
 
@@ -1982,9 +1982,9 @@ namespace IronPython.Modules
                 set { _body = value; }
             }
 
-            public PythonList decorators {
-                get { return _decorators; }
-                set { _decorators = value; }
+            public PythonList decorator_list {
+                get { return _decorator_list; }
+                set { _decorator_list = value; }
             }
         }
 
