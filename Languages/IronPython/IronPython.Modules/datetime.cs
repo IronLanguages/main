@@ -933,6 +933,9 @@ namespace IronPython.Modules {
                 return new time(hour, minute, second, microsecond, _tz);
             }
 
+            private int CastToInt(object o) {
+                return o is BigInteger ? (int)(BigInteger)o : (int)o;
+            }
             [Documentation("gets a new datetime object with the fields provided as keyword arguments replaced.")]
             public override date replace(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict) {
                 int lyear = year;
@@ -950,27 +953,25 @@ namespace IronPython.Modules {
 
                     switch (key) {
                         case "year":
-                            lyear = (int)kvp.Value;
+                            lyear = CastToInt(kvp.Value);
                             break;
                         case "month":
-                            lmonth = (int)kvp.Value;
+                            lmonth = CastToInt(kvp.Value);
                             break;
                         case "day":
-                            lday = (int)kvp.Value;
+                            lday = CastToInt(kvp.Value);
                             break;
                         case "hour":
-                            lhour = (int)kvp.Value;
+                            lhour = CastToInt(kvp.Value);
                             break;
                         case "minute":
-                            lminute = (int)kvp.Value;
+                            lminute = CastToInt(kvp.Value);
                             break;
                         case "second":
-                            lsecond = (int)kvp.Value;
+                            lsecond = CastToInt(kvp.Value);
                             break;
                         case "microsecond":
-                            lmicrosecond = kvp.Value is BigInteger ?
-                                (int)(BigInteger)kvp.Value :
-                                (int)kvp.Value;
+                            lmicrosecond = CastToInt(kvp.Value);
                             break;
                         case "tzinfo":
                             tz = kvp.Value as tzinfo;
