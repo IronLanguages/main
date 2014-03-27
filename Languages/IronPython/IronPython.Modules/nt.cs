@@ -399,7 +399,7 @@ namespace IronPython.Modules {
                 FileAccess access = FileAccessFromFlags(flag);
                 FileOptions options = FileOptionsFromFlags(flag);
                 Stream fs;
-                if (Environment.OSVersion.Platform == PlatformID.Win32NT && filename == "nul") {
+                if (Environment.OSVersion.Platform == PlatformID.Win32NT && (String.Compare(filename, "nul", true) == 0)) {
                     fs = Stream.Null;
                 } else if (access == FileAccess.Read && (fileMode == FileMode.CreateNew || fileMode == FileMode.Create || fileMode == FileMode.Append)) {
                     // .NET doesn't allow Create/CreateNew w/ access == Read, so create the file, then close it, then
