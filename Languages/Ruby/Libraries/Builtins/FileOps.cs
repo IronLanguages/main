@@ -2,10 +2,10 @@
  *
  * Copyright (c) Microsoft Corporation. 
  *
- * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
- * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Apache License, Version 2.0, please send an email to 
- * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A
+ * copy of the license can be found in the License.html file at the root of this distribution. If
+ * you cannot locate the  Apache License, Version 2.0, please send an email to
+ * ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound
  * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
@@ -60,8 +60,8 @@ namespace IronRuby.Builtins {
             ConversionStorage<MutableString>/*!*/ toPath,
             ConversionStorage<MutableString>/*!*/ toStr,
             RubyClass/*!*/ self,
-            object descriptorOrPath, 
-            [Optional]object optionsOrMode, 
+            object descriptorOrPath,
+            [Optional]object optionsOrMode,
             [Optional]object optionsOrPermissions,
             [DefaultParameterValue(null), DefaultProtocol]IDictionary<object, object> options) {
 
@@ -75,13 +75,13 @@ namespace IronRuby.Builtins {
             ConversionStorage<MutableString>/*!*/ toPath,
             ConversionStorage<MutableString>/*!*/ toStr,
             RubyFile/*!*/ self,
-            object descriptorOrPath, 
-            [Optional]object optionsOrMode, 
+            object descriptorOrPath,
+            [Optional]object optionsOrMode,
             [Optional]object optionsOrPermissions,
             [DefaultParameterValue(null), DefaultProtocol]IDictionary<object, object> options) {
 
             var context = self.Context;
-            
+
             Protocols.TryConvertToOptions(toHash, ref options, ref optionsOrMode, ref optionsOrPermissions);
             var toIntSite = toInt.GetSite(TryConvertToFixnumAction.Make(toInt.Context));
 
@@ -105,7 +105,7 @@ namespace IronRuby.Builtins {
             }
 
             // TODO: permissions
-            
+
             // descriptor or path:
             int? descriptor = toIntSite.Target(toIntSite, descriptorOrPath);
             if (descriptor.HasValue) {
@@ -131,7 +131,7 @@ namespace IronRuby.Builtins {
                 file.InternalEncoding = info.InternalEncoding;
             }
         }
-        
+
         #endregion
 
         #region Declared Constants
@@ -291,7 +291,7 @@ namespace IronRuby.Builtins {
         private static int CalculateUmask(int mask) {
             return (mask % 512) / 128 * 128;
         }
-        
+
         #endregion
 
         #region delete, unlink, truncate, rename
@@ -304,7 +304,7 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.CreateENOENT("No such file or directory - {0}", strPath);
             }
 
-            Delete(self.Context, strPath);     
+            Delete(self.Context, strPath);
             return 1;
         }
 
@@ -387,7 +387,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region path, basename, dirname, extname, expand_path, absolute_path, fnmatch
+        #region path, basename, dirname, extname, expand_path, absolute_path, fnmatch, realpath
 
         [RubyMethod("path", RubyMethodAttributes.PublicSingleton)]
         public static MutableString/*!*/ ToPath(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object path) {
@@ -420,7 +420,7 @@ namespace IronRuby.Builtins {
             if (isWindows) {
                 string first = parts[0];
                 if (strPath.Length >= 2 && IsDirectorySeparator(strPath[0]) && IsDirectorySeparator(strPath[1])) {
-                    // UNC: skip 2 parts 
+                    // UNC: skip 2 parts
                     if (parts.Length <= 2) {
                         return MutableString.CreateMutable(path.Encoding).Append(DirectorySeparatorChar).TaintBy(path);
                     }
@@ -567,6 +567,16 @@ namespace IronRuby.Builtins {
             return Glob.FnMatch(pattern.ConvertToString(), Protocols.CastToPath(toPath, path).ConvertToString(), flags);
         }
 
+        [RubyMethod("realpath", RubyMethodAttributes.PublicSingleton)]
+        public static MutableString/*!*/ Realpath(ConversionStorage<MutableString>/*!*/ toPath, RubyClass/*!*/ self, object path,
+            [DefaultParameterValue(null)]object basePath) {
+            MutableString realpath = AbsolutePath(toPath, self, path, basePath);
+
+            if (!RubyFileOps.Exists(self.Context, realpath)) {
+                throw RubyExceptions.CreateENOENT("No such file or directory - {0}", path);
+            }
+            return realpath;
+        }
         #endregion
 
         #region split, join
@@ -751,7 +761,7 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.CreateTypeConversionError(name, "time");
             }
         }
-        
+
         #endregion
 
         #region ftype, stat, inspect, path, to_path
@@ -829,7 +839,7 @@ namespace IronRuby.Builtins {
                 PlatformAdaptationLayer pal = context.Platform;
                 result = null;
                 if (pal.FileExists(path)) {
-                    result = new FileInfo(path);                    
+                    result = new FileInfo(path);
                 } else if (pal.DirectoryExists(path)) {
                     result = new DirectoryInfo(path);
                 } else if (path.ToUpperInvariant().Equals(NUL_VALUE)) {
@@ -943,7 +953,7 @@ namespace IronRuby.Builtins {
             public static bool IsGroupOwned(FileSystemInfo/*!*/ self) {
                 return false;
             }
-            
+
             [RubyMethod("ino")]
             public static int Inode(FileSystemInfo/*!*/ self) {
                 return 0;
@@ -951,7 +961,7 @@ namespace IronRuby.Builtins {
 
             [RubyMethod("inspect")]
             public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, FileSystemInfo/*!*/ self) {
-               return MutableString.CreateAscii(String.Format(CultureInfo.InvariantCulture, 
+               return MutableString.CreateAscii(String.Format(CultureInfo.InvariantCulture,
                     "#<File::Stat dev={0}, ino={1}, mode={2}, nlink={3}, uid={4}, gid={5}, rdev={6}, size={7}, blksize={8}, blocks={9}, atime={10}, mtime={11}, ctime={12}",
                     context.Inspect(DeviceId(self)),
                     context.Inspect(Inode(self)),
@@ -1081,7 +1091,7 @@ namespace IronRuby.Builtins {
             // cannot inherit from FileSystemInfo in Silverlight because the
             // constructor is SecurityCritical
             internal class DeviceInfo : FileSystemInfo {
-                
+
                 private string/*!*/ _name;
 
                 internal DeviceInfo(string/*!*/ name) {
