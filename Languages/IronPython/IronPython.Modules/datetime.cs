@@ -485,9 +485,9 @@ namespace IronPython.Modules {
                     if (strVal == null) continue;
 
                     switch (strVal) {
-                        case "year": year2 = PythonContext.GetContext(context).ConvertToInt32(kvp.Value); break;
-                        case "month": month2 = PythonContext.GetContext(context).ConvertToInt32(kvp.Value); break;
-                        case "day": day2 = PythonContext.GetContext(context).ConvertToInt32(kvp.Value); break;
+                        case "year": year2 = CastToInt(kvp.Value); break;
+                        case "month": month2 = CastToInt(kvp.Value); break;
+                        case "day": day2 = CastToInt(kvp.Value); break;
                         default: throw PythonOps.TypeError("{0} is an invalid keyword argument for this function", kvp.Key);
                     }
                 }
