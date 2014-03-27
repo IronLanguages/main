@@ -670,6 +670,7 @@ for k, v in toError.iteritems():
                 if (errCode is int) {
                     switch ((int)errCode) {
                         case ERROR_BROKEN_PIPE:
+                        case ERROR_NO_DATA:
                             errno = 32;
                             break;
                         case ERROR_FILE_NOT_FOUND:
@@ -843,6 +844,7 @@ for k, v in toError.iteritems():
             internal const int ERROR_INFLOOP_IN_RELOC_CHAIN = 202;
             internal const int ERROR_FILENAME_EXCED_RANGE = 206;
             internal const int ERROR_NESTING_NOT_ALLOWED = 215;
+            internal const int ERROR_NO_DATA = 232; // The pipe is being closed.
             internal const int ERROR_NOT_ENOUGH_QUOTA = 1816;
 
             // These map to POSIX errno 22 and are added by hand as needed.
