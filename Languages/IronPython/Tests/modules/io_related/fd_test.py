@@ -41,7 +41,6 @@ def xtest_unlink():
     os.close(fd)
     os.unlink("tmp.unlink.test-1")
 
-
 def test_dup2():
     test_filename = "tmp.dup2.test-1"
     # test inspired by gsasl dup2 test cases
@@ -183,16 +182,11 @@ def test_pipe():
     AreEqual(os.read(r, 1), '')
     os.close(r)
 
-def _test_pipe_write_closed():
-    # TODO: when writing to closed pipe a clr exception is raised
-    try:
-        r, w = os.pipe()
-        os.close(r)
-        os.write(w, "x")
-        # AssertError(IOError, os.write, w, "x")
-        os.close(w)
-    except Exception as e:
-        pass
+def test_pipe_write_closed():
+    r, w = os.pipe()
+    os.close(r)
+    AssertError(OSError, os.write, w, "x")
+    os.close(w)
 
 def test_pipe_block():
     r, w = os.pipe()
@@ -200,7 +194,7 @@ def test_pipe_block():
     def delayed_write():
         os.write(w, "x")
 
-    Timer(1, delayed_write()).start()
+    Timer(1, delayed_write).start()
 
     # this will block
     AreEqual(os.read(r, 1), "x")

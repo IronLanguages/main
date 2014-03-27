@@ -19,7 +19,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -31,6 +30,10 @@ using Microsoft.Win32.SafeHandles;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+#if FEATURE_PROCESS
+using System.IO.Pipes;
+#endif
 
 #if FEATURE_NUMERICS
 using System.Numerics;
@@ -1078,6 +1081,8 @@ namespace IronPython.Runtime {
             } catch (ObjectDisposedException) {
             } catch (EncoderFallbackException) {
                 // flushing could fail due to encoding, ignore it
+            } catch (IOException) {
+                // flushing could fail, especially if one half of a pipe is closed
             }
         }
 
@@ -1452,7 +1457,12 @@ namespace IronPython.Runtime {
                     return;
                 }
 
-                FlushNoLock();
+                try {
+                    FlushNoLock();
+                } catch (IOException) {
+                    // flushing can fail, esp. if the other half of a pipe is closed
+                    // ignore it because we're closing anyway
+                }
                 _isOpen = false;
 
                 if (!IsConsole) {
