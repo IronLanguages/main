@@ -367,6 +367,10 @@ namespace IronPython.Modules {
             return false;
         }
 
+        internal static int CastToInt(object o) {
+            return o is BigInteger ? (int)(BigInteger)o : (int)o;
+        }
+
         [PythonType]
         public class date : ICodeFormattable {
             internal DateTime _dateTime;
@@ -481,9 +485,9 @@ namespace IronPython.Modules {
                     if (strVal == null) continue;
 
                     switch (strVal) {
-                        case "year": year2 = PythonContext.GetContext(context).ConvertToInt32(kvp.Value); break;
-                        case "month": month2 = PythonContext.GetContext(context).ConvertToInt32(kvp.Value); break;
-                        case "day": day2 = PythonContext.GetContext(context).ConvertToInt32(kvp.Value); break;
+                        case "year": year2 = CastToInt(kvp.Value); break;
+                        case "month": month2 = CastToInt(kvp.Value); break;
+                        case "day": day2 = CastToInt(kvp.Value); break;
                         default: throw PythonOps.TypeError("{0} is an invalid keyword argument for this function", kvp.Key);
                     }
                 }
@@ -950,25 +954,25 @@ namespace IronPython.Modules {
 
                     switch (key) {
                         case "year":
-                            lyear = (int)kvp.Value;
+                            lyear = CastToInt(kvp.Value);
                             break;
                         case "month":
-                            lmonth = (int)kvp.Value;
+                            lmonth = CastToInt(kvp.Value);
                             break;
                         case "day":
-                            lday = (int)kvp.Value;
+                            lday = CastToInt(kvp.Value);
                             break;
                         case "hour":
-                            lhour = (int)kvp.Value;
+                            lhour = CastToInt(kvp.Value);
                             break;
                         case "minute":
-                            lminute = (int)kvp.Value;
+                            lminute = CastToInt(kvp.Value);
                             break;
                         case "second":
-                            lsecond = (int)kvp.Value;
+                            lsecond = CastToInt(kvp.Value);
                             break;
                         case "microsecond":
-                            lmicrosecond = (int)kvp.Value;
+                            lmicrosecond = CastToInt(kvp.Value);
                             break;
                         case "tzinfo":
                             tz = kvp.Value as tzinfo;
@@ -1313,16 +1317,16 @@ namespace IronPython.Modules {
 
                     switch (key) {
                         case "hour":
-                            lhour = (int)kvp.Value;
+                            lhour = CastToInt(kvp.Value);
                             break;
                         case "minute":
-                            lminute = (int)kvp.Value;
+                            lminute = CastToInt(kvp.Value);
                             break;
                         case "second":
-                            lsecond = (int)kvp.Value;
+                            lsecond = CastToInt(kvp.Value);
                             break;
                         case "microsecond":
-                            lmicrosecond = (int)kvp.Value;
+                            lmicrosecond = CastToInt(kvp.Value);
                             break;
                         case "tzinfo":
                             tz = kvp.Value as tzinfo;
