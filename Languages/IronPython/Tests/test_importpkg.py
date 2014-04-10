@@ -1026,7 +1026,6 @@ def test_multiple_relative_imports_and_package():
 def test_cp34551():
     try:
         mod_backup = dict(sys.modules)
-        print testpath.public_testdir
         _f_dir      = path_combine(testpath.public_testdir, 'test_dir6')
         _f_init     = path_combine(_f_dir, '__init__.py')
         _f_subdir   = path_combine(_f_dir, 'sub')
@@ -1057,6 +1056,58 @@ def bar():
         nt.unlink(_f_foo_py)
         nt.unlink(_f_subinit)
         nt.unlink(_f_init)
+
+def test_cp35116():
+    try:
+        mod_backup = dict(sys.modules)
+        _f_dir      = path_combine(testpath.public_testdir, 'test_dir7')
+        _f_init     = path_combine(_f_dir, '__init__.py')
+        _f_pkg1     = path_combine(_f_dir, 'pkg1')
+        _f_pkg2     = path_combine(_f_dir, 'pkg2')
+        _f_pkg1init = path_combine(_f_pkg1, '__init__.py')
+        _f_pkg2init = path_combine(_f_pkg2, '__init__.py')
+        _f_m1       = path_combine(_f_pkg1, 'm1.py')
+        _f_m2       = path_combine(_f_pkg2, 'pkg1.py')
+
+        # write the files
+        ensure_directory_present(_f_dir)
+        ensure_directory_present(_f_pkg1)
+        ensure_directory_present(_f_pkg2)
+
+        write_to_file(_f_init, "from .pkg2 import *")
+        write_to_file(_f_pkg1init, "")
+        write_to_file(_f_pkg2init, "from .pkg1 import bar")
+        write_to_file(_f_m1, "foo = 42")
+        write_to_file(_f_m2, "bar = 'fourty two'")
+
+        import test_dir7
+        AreEqual(test_dir7.bar, 'fourty two')
+
+        # The following is not possible, 'sys.modules = mod_backup'
+        # obfuscates content of the real sys.modules
+        # AreEqual(test_dir7.pkg1, sys.modules['test_dir7.pkg2.pkg1'])
+        # AreEqual(test_dir7.pkg2, sys.modules['test_dir7.pkg2'])
+
+        AreEqual(test_dir7.pkg1.__name__, 'test_dir7.pkg2.pkg1')
+        AreEqual(test_dir7.pkg2.__name__, 'test_dir7.pkg2')
+
+        from test_dir7.pkg1.m1 import foo
+        AreEqual(foo, 42)
+
+        AreEqual(test_dir7.pkg1.__name__, 'test_dir7.pkg1')
+        AreEqual(test_dir7.pkg2.__name__, 'test_dir7.pkg2')
+
+    except ImportError:
+        Assert(False)
+
+    finally:
+        sys.modules = mod_backup
+        nt.unlink(_f_m2)
+        nt.unlink(_f_m1)
+        nt.unlink(_f_pkg2init)
+        nt.unlink(_f_pkg1init)
+        nt.unlink(_f_init)
+
 
 
 #--MAIN------------------------------------------------------------------------
