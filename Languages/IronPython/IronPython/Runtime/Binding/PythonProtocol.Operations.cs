@@ -331,7 +331,7 @@ namespace IronPython.Runtime.Binding {
                                 Ast.Call(
                                     typeof(PythonOps).GetMethod("TypeErrorForNonIterableObject"),
                                     AstUtils.Convert(
-                                        types[1].Expression,
+                                        types[0].Expression,
                                         typeof(object)
                                     )
                                 ),
