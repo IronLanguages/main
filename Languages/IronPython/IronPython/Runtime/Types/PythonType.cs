@@ -1956,23 +1956,14 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             if (IsSystemType) {
                 PythonBinder.GetBinder(context).LookupMembers(context, this, dict);
             } else {
-                foreach (string x in _dict.Keys) {
-                    if (excludeDict && x.ToString() == "__dict__") {
+                foreach (var item in _dict) {
+                    if (excludeDict && item.Key == "__dict__") {
                         continue;
                     }
 
-                    PythonTypeSlot dts;
-                    if (TryLookupSlot(context, x, out dts)) {
-                        //??? why check for DTVS?
-                        object val;
-                        if (dts is PythonTypeUserDescriptorSlot) {
-                            dict[x] = ((PythonTypeUserDescriptorSlot) dts).Value;
-                        } else if (dts.TryGetValue(context, null, this, out val)) {
-                            dict[x] = val;
-                        } else {
-                            dict[x] = dts;
-                        }
-                    }
+                    PythonTypeUserDescriptorSlot dts = item.Value as PythonTypeUserDescriptorSlot;
+                    object val = dts == null ? item.Value : dts.Value;
+                    dict[item.Key] = val;
                 }
             }
             return dict;
