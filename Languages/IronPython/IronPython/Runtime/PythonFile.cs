@@ -1005,7 +1005,7 @@ namespace IronPython.Runtime {
 
         private PythonStreamReader _reader;
         private PythonStreamWriter _writer;
-        protected bool _isOpen;
+        [PythonHidden] protected bool _isOpen;
         private Nullable<long> _reseekPosition; // always null for console
         private WeakRefTracker _weakref;
         private string _enumValue;
@@ -1058,6 +1058,7 @@ namespace IronPython.Runtime {
             return new [] {inPipeFile, outPipeFile};
         }
 
+        [PythonHidden]
         public static PythonTuple CreatePipeAsFd(CodeContext context) {
                     SafePipeHandle hRead, hWrite;
             var secAttrs = new NativeMethods.SECURITY_ATTRIBUTES();
