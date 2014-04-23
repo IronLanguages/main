@@ -74,7 +74,6 @@ namespace IronPython.Modules {
             try {
                 return GetPattern(context, pattern, 0, true);
             } catch (ArgumentException e) {
-                Console.WriteLine(e);
                 throw PythonExceptions.CreateThrowable(error(context), e.Message);
             }
         }
