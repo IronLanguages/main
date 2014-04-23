@@ -803,6 +803,10 @@ def test_conditional():
         AreEqual(p.match('ab').groups(), ('ab',))
     else:
         AssertError(re.error, re.compile, s)
-    
+
+def test_cp35146():
+    # re.compile returns cached instances
+    AreEqual(re.compile('cp35146'), re.compile('cp35146'))
+
 #--MAIN------------------------------------------------------------------------        
 run_test(__name__)
