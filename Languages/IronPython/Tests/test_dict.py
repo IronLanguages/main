@@ -1209,5 +1209,17 @@ def test_cp32527():
     actual = d.keys().count('a8')
     AreEqual(actual, expected)
 
+def test_cp34770():
+    # Entries added with Int64/UInt64 should be findable with Python long
+    from System import Int64, UInt64
+    i64 = Int64(1110766100758387874)
+    u64 = UInt64(9223372036854775808)
+    
+    m = {}
+    m[i64] = 'a'
+    AreEqual(m[1110766100758387874L], 'a')
+    
+    m[u64] = 'b'
+    AreEqual(m[9223372036854775808L], 'b')
 
 run_test(__name__)
