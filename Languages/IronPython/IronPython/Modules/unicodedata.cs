@@ -52,6 +52,8 @@ namespace IronPython.Modules {
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, IDictionary/*!*/ dict) {
             if (ucd_5_2_0 == null) {
+                // This is a lie. The version of Unicode depends on the .NET version as well as the OS. The
+                // version of the database stored internally is 5.2, so just say that.
                 Interlocked.CompareExchange(ref ucd_5_2_0, new UCD("5.2.0"), null);
             }
         }
@@ -142,12 +144,10 @@ namespace IronPython.Modules {
                 EnsureLoaded();
             }
 
-            // This is a lie. The version of Unicode depends on the .NET version as well as the OS. The
-            // version of the database stored internally is 5.2, so just day that.
             public string unidata_version { get; private set; }
 
             public string lookup(string name) {
-                return Convert.ToChar(nameLookup[name]).ToString();
+                return char.ConvertFromUtf32(nameLookup[name]);
             }
 
             public string name(char unichr, string @default = null) {
@@ -373,8 +373,6 @@ namespace IronPython.Modules {
             }
 
             private CharInfo GetInfo(char unichr) {
-                EnsureLoaded();
-
                 return database[(int)unichr];
             }
 
