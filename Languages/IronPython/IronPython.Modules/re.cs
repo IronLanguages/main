@@ -1037,19 +1037,28 @@ namespace IronPython.Modules {
                                                 pattern = pattern.Remove(nameIndex, 1);
                                             }
                                             break;
-                                        case 'i': res.Options |= RegexOptions.IgnoreCase; break;
+                                        case 'i':
+                                            res.Options |= RegexOptions.IgnoreCase;
+                                            RemoveOption(ref pattern, ref nameIndex);
+                                            break;
                                         case 'L':
                                             res.Options &= ~(RegexOptions.CultureInvariant);
                                             RemoveOption(ref pattern, ref nameIndex);
                                             break;
-                                        case 'm': res.Options |= RegexOptions.Multiline; break;
-                                        case 's': res.Options |= RegexOptions.Singleline; break;
+                                        case 'm': res.Options |= RegexOptions.Multiline;
+                                            RemoveOption(ref pattern, ref nameIndex);
+                                            break;
+                                        case 's': res.Options |= RegexOptions.Singleline;
+                                            RemoveOption(ref pattern, ref nameIndex);
+                                            break;
                                         case 'u':
                                             // specify unicode; not relevant and not valid under .NET as we're always unicode
                                             // -- so the option needs to be removed
                                             RemoveOption(ref pattern, ref nameIndex);
                                             break;
-                                        case 'x': res.Options |= RegexOptions.IgnorePatternWhitespace; break;
+                                        case 'x': res.Options |= RegexOptions.IgnorePatternWhitespace;
+                                            RemoveOption(ref pattern, ref nameIndex);
+                                            break;
                                         case ':': break; // non-capturing
                                         case '=': break; // look ahead assertion
                                         case '<': break; // positive look behind assertion
@@ -1149,7 +1158,8 @@ namespace IronPython.Modules {
                 pattern = pattern.Remove(nameIndex - 2, 4);
                 nameIndex -= 2;
             } else {
-                pattern = pattern.Remove(nameIndex--, 1);
+                pattern = pattern.Remove(nameIndex, 1);
+                nameIndex -= 2;
             }
         }
 
