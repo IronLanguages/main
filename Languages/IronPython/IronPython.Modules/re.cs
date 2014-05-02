@@ -72,7 +72,7 @@ namespace IronPython.Modules {
 
         public static RE_Pattern compile(CodeContext/*!*/ context, object pattern) {
             try {
-                return new RE_Pattern(context, ValidatePattern(pattern), 0, true);
+                return GetPattern(context, pattern, 0, true);
             } catch (ArgumentException e) {
                 throw PythonExceptions.CreateThrowable(error(context), e.Message);
             }
@@ -80,7 +80,7 @@ namespace IronPython.Modules {
 
         public static RE_Pattern compile(CodeContext/*!*/ context, object pattern, object flags) {
             try {
-                return new RE_Pattern(context, ValidatePattern(pattern), PythonContext.GetContext(context).ConvertToInt32(flags), true);
+                return GetPattern(context, pattern, PythonContext.GetContext(context).ConvertToInt32(flags), true);
             } catch (ArgumentException e) {
                 throw PythonExceptions.CreateThrowable(error(context), e.Message);
             }
@@ -882,6 +882,10 @@ namespace IronPython.Modules {
         #region Private helper functions
 
         private static RE_Pattern GetPattern(CodeContext/*!*/ context, object pattern, int flags) {
+            return GetPattern(context, pattern, flags, false);
+        }
+
+        private static RE_Pattern GetPattern(CodeContext/*!*/ context, object pattern, int flags, bool compiled) {
             RE_Pattern res = pattern as RE_Pattern;
             if (res != null) {
                 return res;
@@ -891,10 +895,11 @@ namespace IronPython.Modules {
             PatternKey key = new PatternKey(strPattern, flags);
             lock (_cachedPatterns) {
                 if (_cachedPatterns.TryGetValue(new PatternKey(strPattern, flags), out res)) {
-                    return res;
+                    if ( ! compiled || res._re.Options.HasFlag(RegexOptions.Compiled)) {
+                        return res;
+                    }
                 }
-
-                res = new RE_Pattern(context, strPattern, flags);
+                res = new RE_Pattern(context, strPattern, flags, compiled);
                 _cachedPatterns[key] = res;
                 return res;
             }
