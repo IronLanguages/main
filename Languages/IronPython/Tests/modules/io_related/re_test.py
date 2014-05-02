@@ -808,5 +808,10 @@ def test_cp35146():
     # re.compile returns cached instances
     AreEqual(re.compile('cp35146'), re.compile('cp35146'))
 
+def test_cp35135():
+    AreEqual(re.match(r"(?iu)aA", "aa").string, "aa")
+    AreEqual(re.match(r"(?iu)Aa", "aa").string, "aa")
+    AreEqual(re.match(r"(?iLmsux)Aa", "aa").string, "aa")
+
 #--MAIN------------------------------------------------------------------------        
 run_test(__name__)
