@@ -895,9 +895,13 @@ namespace IronPython.Modules {
             PatternKey key = new PatternKey(strPattern, flags);
             lock (_cachedPatterns) {
                 if (_cachedPatterns.TryGetValue(new PatternKey(strPattern, flags), out res)) {
-                    if ( ! compiled || res._re.Options.HasFlag(RegexOptions.Compiled)) {
+#if SILVERLIGHT
+                    return res;
+#else
+                    if ( ! compiled || (res._re.Options & RegexOptions.Compiled) == RegexOptions.Compiled) {
                         return res;
                     }
+#endif
                 }
                 res = new RE_Pattern(context, strPattern, flags, compiled);
                 _cachedPatterns[key] = res;
