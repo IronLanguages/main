@@ -15,6 +15,8 @@
 
 from iptest.assert_util import *
 
+from types import FunctionType
+
 def x(a,b,c):
     z = 8
     if a < b:
@@ -48,7 +50,7 @@ Assert(g.a == 20)
 def foo(): pass
 
 AreEqual(foo.func_code.co_filename.lower().endswith('test_function.py'), True)
-AreEqual(foo.func_code.co_firstlineno, 48)  # if you added lines to the top of this file you need to update this number.
+AreEqual(foo.func_code.co_firstlineno, 50)  # if you added lines to the top of this file you need to update this number.
 
 
 # Cannot inherit from a function
@@ -1303,5 +1305,54 @@ def test_delattr():
     del f.abc
     def g(): f.abc
     AssertError(AttributeError, g)
+
+
+def copyfunc(f, name):
+    return FunctionType(f.func_code, f.func_globals, name, f.func_defaults, f.func_closure)
+
+def test_cp35180():
+    def foo():
+        return 13
+    def bar():
+        return 42
+    dpf = copyfunc(foo, "dpf")
+    AreEqual(dpf(), 13)
+    foo.func_code = bar.func_code
+    AreEqual(foo(), 42)
+    AreEqual(dpf(), 13)
+    AreEqual(foo.__module__, '__main__')
+    AreEqual(dpf.__module__, '__main__')
+
+
+def substitute_globals(f, name, globals):
+    return FunctionType(f.func_code, globals, name, f.func_defaults, f.func_closure)
+
+global_variable = 13
+
+def test_cp34932():
+    def get_global_variable():
+        return global_variable
+    def set_global_variable(v):
+        global global_variable
+        global_variable = v
+
+    alt_globals = {'global_variable' : 66 }
+    get_global_variable_x = substitute_globals(get_global_variable, "get_global_variable_x", alt_globals)
+    set_global_variable_x = substitute_globals(set_global_variable, "set_global_variable_x", alt_globals)
+    AreEqual(get_global_variable(), 13)
+    AreEqual(get_global_variable_x(), 66)
+    AreEqual(get_global_variable(), 13)
+    set_global_variable_x(7)
+    AreEqual(get_global_variable_x(), 7)
+    AreEqual(get_global_variable(), 13)
+
+    AreEqual(get_global_variable_x.__module__, None)
+    AreEqual(set_global_variable_x.__module__, None)
+
+    get_global_variable_y = substitute_globals(get_global_variable, "get_global_variable_x", globals())
+    AreEqual(get_global_variable_y(), 13)
+    AreEqual(get_global_variable_y.__module__, '__main__')
+
+
    
 run_test(__name__)

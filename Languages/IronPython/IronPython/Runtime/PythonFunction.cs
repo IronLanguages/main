@@ -14,9 +14,9 @@
  * ***************************************************************************/
 
 #if FEATURE_CORE_DLR
-using System.Linq.Expressions;
+using MSAst = System.Linq.Expressions;
 #else
-using Microsoft.Scripting.Ast;
+using MSAst = Microsoft.Scripting.Ast;
 #endif
 
 using System;
@@ -32,11 +32,12 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Compiler;
+using IronPython.Compiler.Ast;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
-    using Ast = Expression;
+    using Ast = MSAst.Expression;
     using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 
     /// <summary>
@@ -69,7 +70,31 @@ namespace IronPython.Runtime {
         /// y = func(x.__code__, globals(), 'foo', None, (a, ))
         /// </summary>
         public PythonFunction(CodeContext context, FunctionCode code, PythonDictionary globals, string name, PythonTuple defaults, PythonTuple closure) {
-            throw new NotImplementedException();
+            if (closure != null && closure.__len__() != 0) {
+                throw new ArgumentException("non empty closure argument is not supported");
+            }
+
+            if (globals == context.GlobalDict) {
+                _module = context.Module.GetName();
+                _context = context;
+            } else {
+                _module = null;
+                _context = new CodeContext(new PythonDictionary(), new ModuleContext(globals, DefaultContext.DefaultPythonContext));
+            }
+
+            _defaults = defaults == null ? ArrayUtils.EmptyObjects : defaults.ToArray();
+            _code = code;
+            _name = name;
+            _doc = code._initialDoc;
+            Closure = null;
+
+            var scopeStatement = _code.PythonCode;
+            if (scopeStatement.IsClosure) {
+                throw new ArgumentException("code containing closures is not supported");
+            }
+            scopeStatement.RewriteBody(FunctionDefinition.ArbitraryGlobalsVisitorInstance);
+
+            _compat = CalculatedCachedCompat();
         }
 
         internal PythonFunction(CodeContext/*!*/ context, FunctionCode funcInfo, object modName, object[] defaults, MutableTuple closure) {
@@ -529,7 +554,7 @@ namespace IronPython.Runtime {
 
         #region IDynamicMetaObjectProvider Members
 
-        DynamicMetaObject/*!*/ IDynamicMetaObjectProvider.GetMetaObject(Expression/*!*/ parameter) {
+        DynamicMetaObject/*!*/ IDynamicMetaObjectProvider.GetMetaObject(Ast/*!*/ parameter) {
             return new Binding.MetaPythonFunction(parameter, BindingRestrictions.Empty, this);
         }
 
