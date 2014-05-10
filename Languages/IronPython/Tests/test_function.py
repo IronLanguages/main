@@ -1353,6 +1353,24 @@ def test_cp34932():
     AreEqual(get_global_variable_y(), 13)
     AreEqual(get_global_variable_y.__module__, '__main__')
 
+def create_fn_with_closure():
+    x=13
+    def f():
+        return x
+    return f
 
+def test_function_type():
+    fn_with_closure = create_fn_with_closure()
+    def fn_no_closure():
+        pass
+    AssertError(NotImplementedError, copyfunc, fn_with_closure, "new_fn_name")
+    AssertError(NotImplementedError, FunctionType, fn_with_closure.func_code,
+            fn_with_closure.func_globals, "name", fn_with_closure.func_defaults)
+    AssertError(NotImplementedError, FunctionType, fn_with_closure.func_code,
+            fn_with_closure.func_globals, "name", fn_with_closure.func_defaults,
+            fn_with_closure.func_closure)
+    AssertError(NotImplementedError, FunctionType, fn_no_closure.func_code,
+            fn_no_closure.func_globals, "name", fn_no_closure.func_defaults,
+            fn_with_closure.func_closure)
    
 run_test(__name__)

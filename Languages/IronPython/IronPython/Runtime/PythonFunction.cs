@@ -64,6 +64,19 @@ namespace IronPython.Runtime {
         [MultiRuntimeAware]
         private static int _CurrentId = 1;              // The current ID for functions which are called in complex ways.
 
+
+        public PythonFunction(CodeContext context, FunctionCode code, PythonDictionary globals)
+            : this(context, code, globals, code.PythonCode.Name, null, null) {
+        }
+
+        public PythonFunction(CodeContext context, FunctionCode code, PythonDictionary globals, string name)
+            : this(context, code, globals, name, null, null) {
+        }
+
+        public PythonFunction(CodeContext context, FunctionCode code, PythonDictionary globals, string name, PythonTuple defaults)
+            : this(context, code, globals, name, defaults, null) {
+        }
+
         /// <summary>
         /// Python ctor - maps to function.__new__
         /// 
@@ -71,7 +84,7 @@ namespace IronPython.Runtime {
         /// </summary>
         public PythonFunction(CodeContext context, FunctionCode code, PythonDictionary globals, string name, PythonTuple defaults, PythonTuple closure) {
             if (closure != null && closure.__len__() != 0) {
-                throw new ArgumentException("non empty closure argument is not supported");
+                throw new NotImplementedException("non empty closure argument is not supported");
             }
 
             if (globals == context.GlobalDict) {
@@ -90,7 +103,7 @@ namespace IronPython.Runtime {
 
             var scopeStatement = _code.PythonCode;
             if (scopeStatement.IsClosure) {
-                throw new ArgumentException("code containing closures is not supported");
+                throw new NotImplementedException("code containing closures is not supported");
             }
             scopeStatement.RewriteBody(FunctionDefinition.ArbitraryGlobalsVisitorInstance);
 
