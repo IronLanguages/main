@@ -644,6 +644,9 @@ namespace IronPython.Runtime {
         }
 
         public bool __contains__(CodeContext/*!*/ context, object value) {
+            if (value is Extensible<string>) {
+                return __contains__(PythonOps.MakeBytes(((Extensible<string>)value).Value.MakeByteArray()));
+            }
             if (!PythonContext.GetContext(context).PythonOptions.Python30) {
                 throw PythonOps.TypeError("'in <bytes>' requires string or bytes as left operand, not {0}", PythonTypeOps.GetName(value));
             }
