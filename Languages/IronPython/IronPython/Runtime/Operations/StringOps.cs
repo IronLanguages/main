@@ -941,11 +941,18 @@ namespace IronPython.Runtime.Operations {
             if (buffer != null) {
                 return buffer.ToString();
             }
+            Bytes bytes = input as Bytes;
+            if (bytes != null) {
+                return bytes.ToString();
+            }
+            ExtensibleString es = input as ExtensibleString;
+            if (es != null) {
+                return es.Value;
+            }
             throw PythonOps.TypeError("expected a character buffer object");
         }
 
-        public static string replace(this string self, [BytesConversion]string old, [BytesConversion]string @new, 
-            [DefaultParameterValue(-1)]int count) {
+        private static string replace(this string self, string old, string @new, [DefaultParameterValue(-1)]int count) {
             if (old.Length == 0) return ReplaceEmpty(self, @new, count);
 
             string v = self;

@@ -110,6 +110,14 @@ def test_replace():
     AreEqual("abc".replace(b"a", b"x", 1), "xbc")
     AreEqual("abc".replace("a", b"x", 1), "xbc")
 
+    AreEqual("abc".replace(b"a", buffer("x")), "xbc")
+    AreEqual("abc".replace(buffer("a"), "x"), "xbc")
+
+    # no bytearray
+    # AreEqual("abc".replace(bytearray(b"a"), bytearray(b"x")), "xbc")
+    # no memoryviews
+    # AreEqual("abc".replace(memoryview(b"a"), memoryview(b"x")), "xbc")
+
     AreEqual("abc".replace("a", esx), "xbc")
     AreEqual("abc".replace(b"a", esx), "xbc")
     AreEqual("abc".replace(esa, esx), "xbc")
