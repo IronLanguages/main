@@ -952,7 +952,9 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.TypeError("expected a character buffer object");
         }
 
-        private static string replace(this string self, string old, string @new, [DefaultParameterValue(-1)]int count) {
+        public static string replace(this string self, [BytesConversion]string old, [BytesConversion]string @new,
+            [DefaultParameterValue(-1)]int count) {
+
             if (old.Length == 0) return ReplaceEmpty(self, @new, count);
 
             string v = self;
@@ -974,12 +976,6 @@ namespace IronPython.Runtime.Operations {
             ret.Append(v.Substring(start));
 
             return ret.ToString();
-        }
-
-        public static string replace(this string self, object old, object @new, [DefaultParameterValue(-1)]int count) {
-            string oldString = StringOrBuffer(old);
-            string newString = StringOrBuffer(@new);
-            return replace(self, oldString, newString, count);
         }
 
         public static int rfind(this string self, [BytesConversion]string sub) {
