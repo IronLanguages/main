@@ -932,26 +932,6 @@ namespace IronPython.Runtime.Operations {
             return new PythonTuple(obj);
         }
 
-        private static string StringOrBuffer(object input) {
-            string result = (input as string);
-            if (result != null) {
-                return result;
-            }
-            PythonBuffer buffer = (input as PythonBuffer);
-            if (buffer != null) {
-                return buffer.ToString();
-            }
-            Bytes bytes = input as Bytes;
-            if (bytes != null) {
-                return bytes.ToString();
-            }
-            ExtensibleString es = input as ExtensibleString;
-            if (es != null) {
-                return es.Value;
-            }
-            throw PythonOps.TypeError("expected a character buffer object");
-        }
-
         public static string replace(this string self, [BytesConversion]string old, [BytesConversion]string @new,
             [DefaultParameterValue(-1)]int count) {
 
