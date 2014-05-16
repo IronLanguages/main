@@ -536,22 +536,22 @@ namespace IronPython.Runtime {
             return partition(GetBytes(sep));
         }
 
-        public ByteArray/*!*/ replace([BytesConversion]IList<byte>/*!*/ old, [BytesConversion]IList<byte> new_) {
+        public ByteArray/*!*/ replace([BytesConversion]IList<byte>/*!*/ old, [BytesConversion]IList<byte> @new) {
             if (old == null) {
                 throw PythonOps.TypeError("expected bytes or bytearray, got NoneType");
             }
 
-            return replace(old, new_, _bytes.Count);
+            return replace(old, @new, _bytes.Count);
         }
 
-        public ByteArray/*!*/ replace([BytesConversion]IList<byte>/*!*/ old, [BytesConversion]IList<byte>/*!*/ new_, int maxsplit) {
+        public ByteArray/*!*/ replace([BytesConversion]IList<byte>/*!*/ old, [BytesConversion]IList<byte>/*!*/ @new, int count) {
             if (old == null) {
                 throw PythonOps.TypeError("expected bytes or bytearray, got NoneType");
-            } else if (maxsplit == 0) {
+            } else if (count == 0) {
                 return CopyThis();
             }
 
-            return new ByteArray(_bytes.Replace(old, new_, maxsplit));
+            return new ByteArray(_bytes.Replace(old, @new, count));
         }
 
 

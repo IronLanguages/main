@@ -384,22 +384,22 @@ namespace IronPython.Runtime {
             return new PythonTuple(obj);
         }
 
-        public Bytes replace([BytesConversion]IList<byte>/*!*/ old, [BytesConversion]IList<byte>/*!*/ new_) {
+        public Bytes replace([BytesConversion]IList<byte>/*!*/ old, [BytesConversion]IList<byte>/*!*/ @new) {
             if (old == null) {
                 throw PythonOps.TypeError("expected bytes or bytearray, got NoneType");
             }
 
-            return replace(old, new_, _bytes.Length);
+            return replace(old, @new, _bytes.Length);
         }
 
-        public Bytes replace([BytesConversion]IList<byte>/*!*/ old, [BytesConversion]IList<byte>/*!*/ new_, int maxsplit) {
+        public Bytes replace([BytesConversion]IList<byte>/*!*/ old, [BytesConversion]IList<byte>/*!*/ @new, int count) {
             if (old == null) {
                 throw PythonOps.TypeError("expected bytes or bytearray, got NoneType");
-            } else if (maxsplit == 0) {
+            } else if (count == 0) {
                 return this;
             }
 
-            return new Bytes(_bytes.Replace(old, new_, maxsplit));
+            return new Bytes(_bytes.Replace(old, @new, count));
         }
 
 
@@ -644,6 +644,9 @@ namespace IronPython.Runtime {
         }
 
         public bool __contains__(CodeContext/*!*/ context, object value) {
+            if (value is Extensible<string>) {
+                return __contains__(PythonOps.MakeBytes(((Extensible<string>)value).Value.MakeByteArray()));
+            }
             if (!PythonContext.GetContext(context).PythonOptions.Python30) {
                 throw PythonOps.TypeError("'in <bytes>' requires string or bytes as left operand, not {0}", PythonTypeOps.GetName(value));
             }
