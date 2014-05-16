@@ -17,7 +17,10 @@
 ##
 ## Test str/byte equivalence for built-in string methods
 ##
-## All commented test cases are for bytes/extensible string combination
+## Please, Note:
+## i) All commented test cases are for bytes/extensible string combination
+## ii) For version 3.x the str/byte mixing below become "Raises" test cases
+##
 ##
 
 
@@ -254,5 +257,16 @@ def test_endswith():
     # Assert(b"abc".endswith(esc))
     # Assert(b"abc".endswith(esc, 0))
     # Assert(b"abc".endswith(esc, 0, 3))
+
+def test_join():
+    AreEqual("abc", "b".join([b"a", b"c"]))
+    AreEqual("b", "a".join([b"b"]))
+    AreEqual("abc", "b".join([esa, esc]))
+    AreEqual("b", "a".join([esb]))
+    AreEqual(b"abc", b"b".join(["a", "c"]))
+    AreEqual(b"b", b"a".join(["b"]))
+    # AreEqual(b"abc", b"b".join([esb, esc]))
+    # AreEqual(b"b", b"a".join([esb]))
+
 
 run_test(__name__)

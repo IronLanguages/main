@@ -825,11 +825,13 @@ namespace IronPython.Runtime {
         #region Implementation Details
 
         private static Bytes/*!*/ JoinOne(object curVal) {
-            if (!(curVal is IList<byte>)) {
-                throw PythonOps.TypeError("can only join an iterable of bytes");
+            if (curVal is IList<byte>) {
+                return curVal as Bytes ?? new Bytes(curVal as IList<byte>);
             }
-
-            return curVal as Bytes ?? new Bytes(curVal as IList<byte>);
+            if (curVal is string) {
+                return PythonOps.MakeBytes(((string)curVal).MakeByteArray());
+            }
+            throw PythonOps.TypeError("can only join an iterable of bytes");
         }
 
         internal static Bytes/*!*/ Concat(IList<Bytes> list, int length) {
