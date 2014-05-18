@@ -1483,10 +1483,9 @@ namespace IronPython.Runtime {
 
             object pythonEx = PythonExceptions.ToPython(exception);
 
-            string result = FormatStackTraces(exception) + FormatPythonException(pythonEx);
+            string result = FormatStackTraces(exception) + FormatPythonException(pythonEx) + Environment.NewLine;
 
             if (Options.ShowClrExceptions) {
-                result += Environment.NewLine;
                 result += FormatCLSException(exception);
             }
 

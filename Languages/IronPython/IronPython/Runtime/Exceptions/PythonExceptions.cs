@@ -1278,7 +1278,7 @@ for k, v in toError.iteritems():
 
 #if !SILVERLIGHT
             frames = new List<DynamicStackFrame>(frames);
-            List<DynamicStackFrame> res = new List<DynamicStackFrame>();
+            List<DynamicStackFrame> identified = new List<DynamicStackFrame>();
 
             // merge .NET frames w/ any dynamic frames that we have
             try {
@@ -1301,7 +1301,7 @@ for k, v in toError.iteritems():
                         // upon name/module/declaring type which will always be a correct
                         // check for dynamic methods.
                         if (MethodsMatch(method, other)) {
-                            res.Add(frames[j]);
+                            identified.Add(frames[j]);
                             frames.RemoveAt(j);
                             lastFound = j;
                             break;
@@ -1312,9 +1312,10 @@ for k, v in toError.iteritems():
                 // can't access new StackTrace(e) due to security
             }
 
-            // add any remaining frames we couldn't find
-            res.AddRange(frames);
-            return res.ToArray();
+            // combine identified and any remaining frames we couldn't find
+            // this is equivalent of adding remaining frames in front of identified
+            frames.AddRange(identified);
+            return frames.ToArray();
 #else 
             return frames.ToArray();
 #endif
