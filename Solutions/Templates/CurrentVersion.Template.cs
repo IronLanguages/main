@@ -13,9 +13,9 @@ namespace IronPython {{
         public const string DisplayName = "IronPython {6}";
 
 #if !SILVERLIGHT
-        public const string AssemblyVersion = "{0}.{1}.0.{7}";
+        public const string AssemblyVersion = "{0}.{1}.{2}.{7}";
 #else
-        public const string AssemblyVersion = "{0}.{1}.1300.{7}";
+        public const string AssemblyVersion = "{0}.{1}.130{2}.{7}";
 #endif
         
         public const string AssemblyFileVersion = "{0}.{1}.{2}.{8}";

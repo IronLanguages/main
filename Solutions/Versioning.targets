@@ -43,4 +43,20 @@
                     OutputFile="Properties\BuildInfo.Generated.cs"
                     Parameters="$(Configuration)" />
   </Target>
+  
+  <ItemGroup>
+    <PolicyFileOutput Include="@(PolicyFile->'$(OutputPath)\%(Filename)%(Extension)')" />
+    <PolicyAssemblyOutput Include="$(OutputPath)\policy.$(MajorVersion).$(MinorVersion).$(AssemblyName).dll" />
+  </ItemGroup>
+  
+  <Target Name="GeneratePolicy"
+          Inputs="@(PolicyFile)"
+          Outputs="@(PolicyFileOutput);@(PolicyAssemblyOutput)">
+    <Copy SourceFiles="@(PolicyFile)"
+          DestinationFiles="@(PolicyFileOutput)" />
+    <Al LinkResources="@(PolicyFile)"
+        OutputAssembly="@(PolicyAssemblyOutput)"
+        Platform="$(Platform)"
+        KeyFile="$(PublicKey)" />
+  </Target>
 </Project>
