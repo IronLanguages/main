@@ -2300,13 +2300,21 @@ namespace IronPython.Runtime.Operations {
 
         /// <summary>
         /// helper function for re-raised exceptions.
-        /// This entry point is used by 'raise' statement without arguments
+        /// This entry point is used by 'raise' statement without arguments.
+        /// Note: it used to call MakeRethrowExceptionWorker, but the stack
+        /// trace retrieved by ExceptionHelpers.UpdateForRethrow did not
+        /// contain any frames.
         /// </summary>
         public static Exception MakeRethrownException(CodeContext/*!*/ context) {
             PythonTuple t = GetExceptionInfo(context);
             return MakeExceptionWorker(context, t[0], t[1], t[2]);
         }
-
+        /// <summary>
+        /// helper function for re-raised exception.
+        /// This entry point is used by 'raise' inside 'with' statement
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
         public static Exception MakeRethrowExceptionWorker(Exception e) {
             e.RemoveTraceBack();
             ExceptionHelpers.UpdateForRethrow(e);
