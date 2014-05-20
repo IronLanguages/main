@@ -36,7 +36,7 @@
       <Properties>Configuration=Silverlight5$(BaseConfiguration)</Properties>
     </BuildProject>
     <InstallerProject Include="$(BaseDir)\Msi\Python\IronPython.Installer.wixproj">
-      <Properties>Configuration=$(BaseConfiguration);BaseInputPaths=$(StageDir);WixToolPath=$(UtilDir)\Wix35\;OutputPath=$(PackageDir)</Properties>
+      <Properties>Configuration=$(BaseConfiguration);BaseInputPaths=$(StageDir);WixToolPath=$(UtilDir)\Wix35\;OutputPath=$(PackageDir);BuildDir=$(BuildDir)</Properties>
     </InstallerProject>
   </ItemGroup>
 
