@@ -2300,14 +2300,21 @@ namespace IronPython.Runtime.Operations {
 
         /// <summary>
         /// helper function for re-raised exceptions.
+        /// This entry point is used by 'raise' statement without arguments.
+        /// Note: it used to call MakeRethrowExceptionWorker, but the stack
+        /// trace retrieved by ExceptionHelpers.UpdateForRethrow did not
+        /// contain any frames.
         /// </summary>
         public static Exception MakeRethrownException(CodeContext/*!*/ context) {
             PythonTuple t = GetExceptionInfo(context);
-
-            Exception e = MakeExceptionWorker(context, t[0], t[1], t[2], true);
-            return MakeRethrowExceptionWorker(e);
+            return MakeExceptionWorker(context, t[0], t[1], t[2]);
         }
-
+        /// <summary>
+        /// helper function for re-raised exception.
+        /// This entry point is used by 'raise' inside 'with' statement
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
         public static Exception MakeRethrowExceptionWorker(Exception e) {
             e.RemoveTraceBack();
             ExceptionHelpers.UpdateForRethrow(e);
@@ -2316,6 +2323,7 @@ namespace IronPython.Runtime.Operations {
 
         /// <summary>
         /// helper function for non-re-raise exceptions.
+        /// This entry point is used by 'raise' statement with 3 arguments
         /// 
         /// type is the type of exception to throw or an instance.  If it 
         /// is an instance then value should be null.  
@@ -2324,12 +2332,12 @@ namespace IronPython.Runtime.Operations {
         /// a Tuple, or a single value.  This case is handled by EC.CreateThrowable.
         /// </summary>
         public static Exception MakeException(CodeContext/*!*/ context, object type, object value, object traceback) {
-            Exception e = MakeExceptionWorker(context, type, value, traceback, false);
+            Exception e = MakeExceptionWorker(context, type, value, traceback);
             e.RemoveFrameList();
             return e;
         }
 
-        private static Exception MakeExceptionWorker(CodeContext/*!*/ context, object type, object value, object traceback, bool forRethrow) {
+        private static Exception MakeExceptionWorker(CodeContext/*!*/ context, object type, object value, object traceback) {
             Exception throwable;
             PythonType pt;
 
@@ -2352,12 +2360,10 @@ namespace IronPython.Runtime.Operations {
             }
 
             if (traceback != null) {
-                if (!forRethrow) {
-                    TraceBack tb = traceback as TraceBack;
-                    if (tb == null) throw PythonOps.TypeError("traceback argument must be a traceback object");
+                TraceBack tb = traceback as TraceBack;
+                if (tb == null) throw PythonOps.TypeError("traceback argument must be a traceback object");
 
-                    throwable.SetTraceBack(tb);
-                }
+                throwable.SetTraceBack(tb);
             } else {
                 throwable.RemoveTraceBack();
             }
