@@ -144,7 +144,7 @@ def test_nt_abort():
 
 def test_c():
     TestCommandLine(("-c", "print 'foo'"), "foo\n")
-    TestCommandLine(("-c", "raise Exception('foo')"), ("lastline", "Exception: foo"), 1)
+    TestCommandLine(("-c", "raise Exception('foo')"), ("lastline", "Exception: foo\n"), 1)
     TestCommandLine(("-c", "import sys; sys.exit(123)"), "", 123)
     TestCommandLine(("-c", "import sys; print sys.argv", "foo", "bar", "baz"), "['-c', 'foo', 'bar', 'baz']\n")
     TestCommandLine(("-c",), "Argument expected for the -c option.\n", 1)
@@ -171,7 +171,7 @@ def test_S():
     TestCommandLine(("-S", "-c", "import sys; print str(sys.exec_prefix + '\\lib').lower() in [x.lower() for x in sys.path]"), "True\n")
     
     # Now check that we can suppress this with -S.
-    TestCommandLine(("-S", "-c", "import sys; print sys.foo"), ("lastline", "AttributeError: 'module' object has no attribute 'foo'"), 1)
+    TestCommandLine(("-S", "-c", "import sys; print sys.foo"), ("lastline", "AttributeError: 'module' object has no attribute 'foo'\n"), 1)
 
 def test_cp24720():
     f = file(nt.getcwd() + "\\site.py", "w")
@@ -229,7 +229,7 @@ def test_E():
     
     # Re-use the generated site.py from above and verify that we can stop it being picked up from IRONPYTHONPATH
     # using -E.
-    TestCommandLine(("-E", "-c", "import sys; print sys.foo"), ("lastline", "AttributeError: 'module' object has no attribute 'foo'"), 1)
+    TestCommandLine(("-E", "-c", "import sys; print sys.foo"), ("lastline", "AttributeError: 'module' object has no attribute 'foo'\n"), 1)
     
     # Create an override startup script that exits right away
     tmpscript = tmpdir + "\\startupdie.py"
@@ -347,7 +347,8 @@ def test_doc():
 def test_cp11922():
     TestCommandLine(("-c", "assert False"), '''Traceback (most recent call last):
   File "<string>", line 1, in <module>
-AssertionError''',
+AssertionError
+''',
                     1)
 
 def test_cp798():
@@ -360,6 +361,7 @@ def test_logo():
     x = i.EatToPrompt()
     Assert(x.find('\r\r\n') == -1)
 
+@disabled("When run in a batch mode, the stdout/stderr/stdin are redirected")
 def test_isatty():
     # cp33123
     # this test assumes to be run from cmd.exe without redirecting stdout/stderr/stdin
@@ -389,6 +391,31 @@ def test_isatty():
         TestCommandLine(("-c", isattycmd2), "True False True", 0)
     finally:
         batfile = hideDefaultBatch
+
+def test_cp34849():
+    script="""
+import sys
+def f1():
+    raise Exception("test exception")
+def t():
+    try:
+        f1()
+    except:
+        pt = sys.exc_info()
+        raise pt[0], pt[1], pt[2]
+t()
+"""
+    expected=r"""Traceback (most recent call last):
+  File "script_cp34849.py", line 7, in t
+  File "script_cp34849.py", line 4, in f1
+Exception: test exception
+"""
+
+    scriptFileName = "script_cp34849.py"
+    f = file(scriptFileName, "w")
+    f.write(script)
+    f.close()
+    TestCommandLine((scriptFileName,), expected, 1)
 
 run_test(__name__)
 

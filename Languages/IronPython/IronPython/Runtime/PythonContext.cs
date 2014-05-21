@@ -1678,6 +1678,10 @@ namespace IronPython.Runtime {
                 printedHeader = true;
             }
 
+            var traceback = e.GetTraceBack();
+            if (traceback != null) {
+                return result + traceback.Extract();
+            }
             var frames = PythonExceptions.GetDynamicStackFrames(e);
             for (int i = frames.Length - 1; i >= 0; i--) {
                 var frame = frames[i];
