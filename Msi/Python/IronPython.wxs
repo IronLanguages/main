@@ -92,10 +92,24 @@
         </File>
       </Component>
       
+      <Component Guid="{40B104FB-E966-425C-A960-7DB19E3344E3}">
+        <File Id="policy.$(var.ReleaseSeries).IronPython.dll" KeyPath="yes" 
+              Source="$(var.BuildDir)\policy.$(var.ReleaseSeries).IronPython.dll" Assembly=".net" />
+        <File Id="policy.$(var.ReleaseSeries).IronPython.config" KeyPath="no" 
+              Source="$(var.BuildDir)\policy.IronPython.config" />
+      </Component>
+      
       <Component Guid="{24B20236-2211-46B6-816E-A2118BDE76C9}">
         <File Id="gac_IronPython.Modules.dll" Name="IronPython.Modules.dll" Assembly=".net" KeyPath="yes">
           <netfx:NativeImage Id="ngen_IronPython.Modules.dll" Platform="all" AppBaseDirectory="INSTALLDIR"/>
         </File>
+      </Component>
+      
+      <Component Guid="{9883A38B-A77C-4818-A13E-029F33A2D914}">
+        <File Id="policy.$(var.ReleaseSeries).IronPython.Modules.dll" KeyPath="yes" 
+              Source="$(var.BuildDir)\policy.$(var.ReleaseSeries).IronPython.Modules.dll" Assembly=".net" />
+        <File Id="policy.$(var.ReleaseSeries).IronPython.Modules.config" KeyPath="no" 
+              Source="$(var.BuildDir)\policy.IronPython.Modules.config" />
       </Component>
     </DirectoryRef>
 
@@ -117,7 +131,9 @@
 
     <ComponentGroup Id="IronPythonGac">
       <ComponentRef Id="gac_IronPython.dll"/>
+      <ComponentRef Id="policy.$(var.ReleaseSeries).IronPython.dll"/>
       <ComponentRef Id="gac_IronPython.Modules.dll"/>
+      <ComponentRef Id="policy.$(var.ReleaseSeries).IronPython.Modules.dll"/>
     </ComponentGroup>
   </Fragment>
 </Wix>
