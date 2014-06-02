@@ -417,5 +417,24 @@ Exception: test exception
     f.close()
     TestCommandLine((scriptFileName,), expected, 1)
 
+def test_cp35263():
+    script="""
+import warnings
+def foo():
+    warnings.warn('warning 1')
+warnings.warn('warning 2')
+foo()
+"""
+    expected=r"""script_cp35263.py:5: UserWarning: warning 2
+  warnings.warn('warning 2')
+script_cp35263.py:4: UserWarning: warning 1
+  warnings.warn('warning 1')
+"""
+    scriptFileName = "script_cp35263.py"
+    f = file(scriptFileName, "w")
+    f.write(script)
+    f.close()
+    TestCommandLine(("-X:Tracing", "-X:FullFrames", scriptFileName,), expected, 0)
+
 run_test(__name__)
 
