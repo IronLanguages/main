@@ -16,6 +16,7 @@
 #if FEATURE_FULL_NET
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -133,16 +134,38 @@ namespace IronPython.Modules {
             return res;
         }
 
-        private static PythonTuple IssuerToPython(CodeContext context, string issuer) {
-            var split = issuer.Split(',');
-            object[] res = new object[split.Length];
-            for(int i = 0; i<split.Length; i++) {
-                res[i] = PythonTuple.MakeTuple(
-                    IssuerFieldToPython(context, split[i].Trim())
-                );
-                
+        // yields parts out of issuer or subject string
+        // Respects quoted comma e.g: CN=*.c.ssl.fastly.net, O="Fastly, Inc.", L=San Francisco, S=California, C=US
+        // Quote characters are removed
+        private static IEnumerable<string> IssuerParts(string issuer) {
+            var inQuote = false;
+            var token = new StringBuilder();
+            foreach (var c in issuer) {
+                if (inQuote) {
+                    if (c == '"') {
+                        inQuote = false;
+                    } else {
+                        token.Append(c);
+                    }
+                } else {
+                    if (c == '"') {
+                        inQuote = true;
+                    } else if (c == ',') {
+                        yield return token.ToString().Trim();
+                        token.Length = 0;
+                    } else {
+                        token.Append(c);
+                    }
+                }
             }
-            return PythonTuple.MakeTuple(res);
+        }
+
+        private static PythonTuple IssuerToPython(CodeContext context, string issuer) {
+            var collector = new List<object>();
+            foreach (var part in IssuerParts(issuer)) {
+                collector.Add(IssuerFieldToPython(context, part));
+            }
+            return PythonTuple.MakeTuple(collector.ToArray());
         }
 
         private static PythonTuple IssuerFieldToPython(CodeContext context, string p) {
