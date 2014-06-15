@@ -115,9 +115,30 @@ namespace IronPython.Modules {
                 dict.AddNoLock("serialNumber", SerialNumberToPython(cert));
                 dict.AddNoLock("version", cert.GetCertHashString());
                 dict.AddNoLock("issuer", IssuerToPython(context, cert.Issuer));
+                AddSubjectAltNames(dict, new X509Certificate2(cert));
             }
 
             return new PythonDictionary(dict);
+        }
+
+        private static void AddSubjectAltNames(CommonDictionaryStorage dict, X509Certificate2 cert2) {
+            foreach (var extension in cert2.Extensions) {
+                if (extension.Oid.Value != "2.5.29.17") {  // Subject Alternative Name
+                    continue;
+                }
+                var altNames = new List<object>();
+                var sr = new StringReader(extension.Format(true));
+                string line;
+                while (null != (line = sr.ReadLine())) {
+                    line = line.Trim();
+                    var keyValue = line.Split('=');
+                    if (keyValue[0] == "DNS Name" && keyValue.Length == 2) {
+                        altNames.Add(PythonTuple.MakeTuple("DNS", keyValue[1]));
+                    }
+                }
+                dict.AddNoLock("subjectAltName", PythonTuple.MakeTuple(altNames.ToArray()));
+                break;
+            }
         }
 
         private static string ToPythonDateFormat(string date) {
