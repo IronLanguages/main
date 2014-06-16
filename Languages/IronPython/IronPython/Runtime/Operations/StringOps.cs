@@ -1233,10 +1233,25 @@ namespace IronPython.Runtime.Operations {
             StringBuilder ret = new StringBuilder();
             for (int i = 0, idx = 0; i < self.Length; i++) {
                 idx = (int)self[i];
-                if (table.__contains__(idx))
-                    ret.Append((string)table[idx]);
-                else
+                if (table.__contains__(idx)) {
+                    var mapped = table[idx];
+                    if (mapped == null) {
+                        continue;
+                    }
+                    if (mapped is int) {
+                        var mappedInt = (int) mapped;
+                        if (mappedInt > 0xFFFF) {
+                            throw PythonOps.TypeError("character mapping must be in range(0x%lx)");
+                        }
+                        ret.Append((char)(int)mapped);
+                    } else if (mapped is String) {
+                        ret.Append(mapped);
+                    } else {
+                        throw PythonOps.TypeError("character mapping must return integer, None or unicode");
+                    }
+                } else {
                     ret.Append(self[i]);
+                }
             }
             return ret.ToString();
         }
