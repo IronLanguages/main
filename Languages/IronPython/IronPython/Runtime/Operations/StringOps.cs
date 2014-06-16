@@ -935,6 +935,9 @@ namespace IronPython.Runtime.Operations {
         public static string replace(this string self, [BytesConversion]string old, [BytesConversion]string @new,
             [DefaultParameterValue(-1)]int count) {
 
+            if (old == null) {
+                throw PythonOps.TypeError("expected a character buffer object"); // cpython message
+            }
             if (old.Length == 0) return ReplaceEmpty(self, @new, count);
 
             string v = self;
@@ -1705,7 +1708,7 @@ namespace IronPython.Runtime.Operations {
             if (encoding == null) {
                 e = encodingType as Encoding;
                 if (e == null) {
-                    if (encodingType == null || encodingType == Missing.Value) {
+                    if (encodingType == Missing.Value) {
                         encoding = pc.GetDefaultEncodingName();
                     } else {
                         throw PythonOps.TypeError("decode() expected string, got '{0}'", DynamicHelpers.GetPythonType(encodingType).Name);
