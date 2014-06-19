@@ -1067,4 +1067,14 @@ def test_derived_keyword_args():
     
     AreEqual(type(ED(args='')), ED)
 
+class CP35300_Derived(EnvironmentError):
+    def __init__(self, *args, **kwargs):
+        pass
+
+def test_cp35300():
+    # make sure that classes derived from builtin exceptions which have
+    # generated implementation do not restrict parameters of __init__
+    AreNotEqual(None, CP35300_Derived("a", x="b"))
+
+
 run_test(__name__)
