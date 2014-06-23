@@ -8,11 +8,10 @@ import zipfile
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 def zipdir(path, zipname):
-    with zipfile.ZipFile(zipname, 'w') as zipf:
+    with zipfile.ZipFile(zipname, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for root, dirs, files in os.walk(path):
             for f in files:
                 zipf.write(os.path.join(root, f))
-
 
 def repackage(subdir, wheel):
     os.chdir(script_dir)
