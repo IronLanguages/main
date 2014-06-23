@@ -1,9 +1,11 @@
+from __future__ import print_function
+
 import os
 import os.path
 import pkgutil
 import sys
 import tempfile
-
+import shutil
 
 __all__ = ["version", "bootstrap"]
 
@@ -11,6 +13,8 @@ __all__ = ["version", "bootstrap"]
 _SETUPTOOLS_VERSION = "3.6"
 
 _PIP_VERSION = "1.5.6"
+
+IRON = sys.platform == 'cli'
 
 # pip currently requires ssl support, so we try to provide a nicer
 # error message when that is missing (http://bugs.python.org/issue19744)
@@ -59,7 +63,7 @@ def _disable_pip_configuration_settings():
     os.environ['PIP_CONFIG_FILE'] = os.devnull
 
 
-def bootstrap(*, root=None, upgrade=False, user=False,
+def bootstrap(root=None, upgrade=False, user=False,
               altinstall=False, default_pip=False,
               verbosity=0):
     """
@@ -87,7 +91,11 @@ def bootstrap(*, root=None, upgrade=False, user=False,
         # omit pip and easy_install
         os.environ["ENSUREPIP_OPTIONS"] = "install"
 
-    with tempfile.TemporaryDirectory() as tmpdir:
+    tmpdir = tempfile.mkdtemp()
+    if os.path.exists(tmpdir):
+        shutil.rmtree(tmpdir)
+    os.mkdir(tmpdir)
+    try:
         # Put our bundled wheels into a temporary directory and construct the
         # additional paths that need added to sys.path
         additional_paths = []
@@ -104,6 +112,8 @@ def bootstrap(*, root=None, upgrade=False, user=False,
 
         # Construct the arguments to be passed to the pip command
         args = ["install", "--no-index", "--find-links", tmpdir]
+        if IRON:
+            args.append("--no-compile")
         if root:
             args += ["--root", root]
         if upgrade:
@@ -114,8 +124,11 @@ def bootstrap(*, root=None, upgrade=False, user=False,
             args += ["-" + "v" * verbosity]
 
         _run_pip(args + [p[0] for p in _PROJECTS], additional_paths)
+    finally:
+        shutil.rmtree(tmpdir)
+        pass
 
-def _uninstall_helper(*, verbosity=0):
+def _uninstall_helper(verbosity=0):
     """Helper to support a clean default uninstall process on Windows
 
     Note that calling this function may alter os.environ.
@@ -145,6 +158,13 @@ def _uninstall_helper(*, verbosity=0):
 
 
 def _main(argv=None):
+    if IRON:
+        try:
+            sys._getframe()
+        except AttributeError:
+            print("ensurepip under IronPython requires -X:Frames parameter")
+            return
+
     if ssl is None:
         print("Ignoring ensurepip failure: {}".format(_MISSING_SSL_MESSAGE),
               file=sys.stderr)
