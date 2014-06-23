@@ -935,6 +935,9 @@ namespace IronPython.Runtime.Operations {
         public static string replace(this string self, [BytesConversion]string old, [BytesConversion]string @new,
             [DefaultParameterValue(-1)]int count) {
 
+            if (old == null) {
+                throw PythonOps.TypeError("expected a character buffer object"); // cpython message
+            }
             if (old.Length == 0) return ReplaceEmpty(self, @new, count);
 
             string v = self;
@@ -1230,10 +1233,25 @@ namespace IronPython.Runtime.Operations {
             StringBuilder ret = new StringBuilder();
             for (int i = 0, idx = 0; i < self.Length; i++) {
                 idx = (int)self[i];
-                if (table.__contains__(idx))
-                    ret.Append((string)table[idx]);
-                else
+                if (table.__contains__(idx)) {
+                    var mapped = table[idx];
+                    if (mapped == null) {
+                        continue;
+                    }
+                    if (mapped is int) {
+                        var mappedInt = (int) mapped;
+                        if (mappedInt > 0xFFFF) {
+                            throw PythonOps.TypeError("character mapping must be in range(0x%lx)");
+                        }
+                        ret.Append((char)(int)mapped);
+                    } else if (mapped is String) {
+                        ret.Append(mapped);
+                    } else {
+                        throw PythonOps.TypeError("character mapping must return integer, None or unicode");
+                    }
+                } else {
                     ret.Append(self[i]);
+                }
             }
             return ret.ToString();
         }
@@ -1705,7 +1723,7 @@ namespace IronPython.Runtime.Operations {
             if (encoding == null) {
                 e = encodingType as Encoding;
                 if (e == null) {
-                    if (encodingType == null || encodingType == Missing.Value) {
+                    if (encodingType == Missing.Value) {
                         encoding = pc.GetDefaultEncodingName();
                     } else {
                         throw PythonOps.TypeError("decode() expected string, got '{0}'", DynamicHelpers.GetPythonType(encodingType).Name);

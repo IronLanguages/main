@@ -437,7 +437,10 @@ def test_turkish_upper_lower():
         AreEqual(u"I".ToLower(CultureInfo("tr-TR")),u"ı")
         AreEqual(u"i".ToUpper(CultureInfo("tr-TR")),u"İ")
 
-
-
+def test_translate():
+    AreEqual(u"abcd".translate(None), u"abcd")
+    AreEqual(u"abcd".translate({ord('a') : ord('A'), ord('b') : None, ord('d') : u"XY"}) , "AcXY")
+    AssertErrorWithMessage(TypeError, "character mapping must be in range(0x%lx)", lambda: 'a'.translate({ord('a') : 65536}))
+    AssertErrorWithMessage(TypeError, "character mapping must return integer, None or unicode", lambda: 'a'.translate({ord('a') : 2.0}))
 
 run_test(__name__)
