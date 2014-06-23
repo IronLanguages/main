@@ -18,6 +18,7 @@ Once this package is successfully installed this source code will be
 deleted (unless you remove this file).
 '''
 PIP_DELETE_MARKER_FILENAME = 'pip-delete-this-directory.txt'
+WINDOWS = sys.platform == 'win32' or (sys.platform == 'cli' and os.name == 'nt')
 
 def write_delete_marker_file(directory):
     """
@@ -54,7 +55,7 @@ def virtualenv_no_global():
 
 def __get_username():
     """ Returns the effective username of the current process. """
-    if sys.platform == 'win32':
+    if WINDOWS:
         return getpass.getuser()
     import pwd
     return pwd.getpwuid(os.geteuid()).pw_name
@@ -63,7 +64,7 @@ def _get_build_prefix():
     """ Returns a safe build_prefix """
     path = os.path.join(tempfile.gettempdir(), 'pip_build_%s' %
         __get_username())
-    if sys.platform == 'win32':
+    if WINDOWS:
         """ on windows(tested on 7) temp dirs are isolated """
         return path
     try:
@@ -112,7 +113,7 @@ src_prefix = os.path.abspath(src_prefix)
 
 site_packages = get_python_lib()
 user_dir = os.path.expanduser('~')
-if sys.platform == 'win32':
+if WINDOWS:
     bin_py = os.path.join(sys.prefix, 'Scripts')
     bin_user = os.path.join(user_site, 'Scripts') if user_site else None
     # buildout uses 'bin' on Windows too?

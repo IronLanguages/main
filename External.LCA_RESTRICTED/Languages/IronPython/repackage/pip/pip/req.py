@@ -35,6 +35,7 @@ import pip.wheel
 from pip.wheel import move_wheel_files, Wheel, wheel_ext
 from pip._vendor import pkg_resources, six
 
+WINDOWS = sys.platform == 'win32' or (sys.platform == 'cli' and os.name == 'nt')
 
 def read_text_file(filename):
     """Return the contents of *filename*.
@@ -576,7 +577,7 @@ exec(compile(getattr(tokenize, 'open', open)(__file__).read().replace('\\r\\n', 
                 else:
                     bin_dir = bin_py
                 paths_to_remove.add(os.path.join(bin_dir, script))
-                if sys.platform == 'win32':
+                if WINDOWS:
                     paths_to_remove.add(os.path.join(bin_dir, script) + '.bat')
 
         # find console_scripts
@@ -590,7 +591,7 @@ exec(compile(getattr(tokenize, 'open', open)(__file__).read().replace('\\r\\n', 
                     else:
                         bin_dir = bin_py
                     paths_to_remove.add(os.path.join(bin_dir, name))
-                    if sys.platform == 'win32':
+                    if WINDOWS:
                         paths_to_remove.add(os.path.join(bin_dir, name) + '.exe')
                         paths_to_remove.add(os.path.join(bin_dir, name) + '.exe.manifest')
                         paths_to_remove.add(os.path.join(bin_dir, name) + '-script.py')
@@ -1876,7 +1877,7 @@ class UninstallPthEntries(object):
         # backslashes.  This is correct for entries that describe absolute
         # paths outside of site-packages, but all the others use forward
         # slashes.
-        if sys.platform == 'win32' and not os.path.splitdrive(entry)[0]:
+        if WINDOWS and not os.path.splitdrive(entry)[0]:
             entry = entry.replace('\\', '/')
         self.entries.add(entry)
 
