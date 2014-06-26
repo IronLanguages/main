@@ -8,6 +8,8 @@ import logging
 from pip import backwardcompat
 from pip._vendor import colorama, pkg_resources
 
+WINDOWS = sys.platform.startswith("win") or (sys.platform == 'cli' and os.name == 'nt')
+
 
 def _color_wrap(*colors):
     def wrapped(inp):
@@ -81,7 +83,7 @@ class Logger(object):
         self.in_progress_hanging = False
 
     def add_consumers(self, *consumers):
-        if sys.platform.startswith("win"):
+        if WINDOWS:
             for level, consumer in consumers:
                 if hasattr(consumer, "write"):
                     self.consumers.append(
