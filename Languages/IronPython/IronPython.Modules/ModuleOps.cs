@@ -495,7 +495,7 @@ namespace IronPython.Modules {
 
         public static int GetUnsignedLong(object value, object type) {
             int? res = Converter.ImplicitConvertToInt32(value);
-            if (res != null && res.Value >= 0) {
+            if (res != null) {
                 return res.Value;
             }
 
