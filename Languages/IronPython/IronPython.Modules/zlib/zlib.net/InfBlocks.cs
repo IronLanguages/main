@@ -152,7 +152,7 @@ namespace ComponentAce.Compression.Libs.ZLib
         /// <summary>
         /// need check
         /// </summary>
-        private bool needCheck;
+        internal bool needCheck;
 
         /// <summary>
         /// check on output 

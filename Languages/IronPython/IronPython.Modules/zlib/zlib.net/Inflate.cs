@@ -154,6 +154,10 @@ namespace ComponentAce.Compression.Libs.ZLib
         /// </summary>
         private int wbits;
 
+	    private bool expectGzipHeader;
+
+	    private bool detectHeader;
+
         #endregion
 
         /// <summary>
@@ -209,12 +213,31 @@ namespace ComponentAce.Compression.Libs.ZLib
 			
 			// handle undocumented nowrap option (no zlib header or check)
 			nowrap = 0;
+            expectGzipHeader = false;
+            detectHeader = false;
 			if (windowBits < 0)
 			{
+                // deflate, no header
 				windowBits = - windowBits;
 				nowrap = 1;
-			}
-			
+            }
+
+            // TODO: support for gzip and header autodetect is partial
+            // DotNetZip should be considered as a replacement of zlib.Net
+
+            else if ((windowBits & 16) != 0)
+            {
+                // gzip
+                expectGzipHeader = true;
+                windowBits &= ~16;
+            }
+            else if ((windowBits & 32) != 0)
+            {
+                // zlib or gzip
+                detectHeader = true;
+                windowBits &= ~32;
+            }
+
 			// set Window size
 			if (windowBits < 8 || windowBits > 15)
 			{
@@ -229,7 +252,19 @@ namespace ComponentAce.Compression.Libs.ZLib
 			inflateReset(z);
 			return (int)ZLibResultCode.Z_OK;
 		}
-		
+
+        private void skipGzipHeader(ZStream z)
+        {
+            // The value 10 has been established experimentally
+            // based on the content from https://pypi.python.org
+            z.avail_in -= 10;
+            z.total_in += 10;
+            z.next_in_index += 10;
+            z.istate.mode = InflateMode.BLOCKS;
+            nowrap = 1;
+            z.istate.blocks.needCheck = false;
+        }
+
         /// <summary>
         /// Runs inflate algorithm
         /// </summary>
@@ -249,6 +284,38 @@ namespace ComponentAce.Compression.Libs.ZLib
 				return (int)ZLibResultCode.Z_STREAM_ERROR;
             res_temp = internalFlush == (int)FlushStrategy.Z_FINISH ? (int)ZLibResultCode.Z_BUF_ERROR : (int)ZLibResultCode.Z_OK;
 			r = (int)ZLibResultCode.Z_BUF_ERROR;
+
+            if (detectHeader) {
+                if (z.avail_in == 0 || z.avail_in == 1)
+                    return r;
+                if (z.next_in[z.next_in_index] == 0x1F && z.next_in[z.next_in_index + 1] == 0x8B)
+                {
+                    skipGzipHeader(z);
+                }
+                else  // zlib
+                {
+                    z.istate.mode = InflateMode.METHOD;
+                    nowrap = 0;
+                }
+                detectHeader = false;
+            }
+
+            if (expectGzipHeader)
+            {
+                if (z.avail_in == 0 || z.avail_in == 1)
+                    return r;
+                if (z.next_in[z.next_in_index] == 0x1F && z.next_in[z.next_in_index + 1] == 0x8B)
+                {
+                    skipGzipHeader(z);
+                }
+                else
+                {
+                    z.msg = "gzip header signature not found";
+                    z.istate.mode = InflateMode.BAD;
+                }
+                expectGzipHeader = false;
+            }
+
 			while (true)
 			{
 
