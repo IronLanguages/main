@@ -42,6 +42,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 * and contributors of zlib.
 */
 using System;
+using System.Collections.Generic;
 
 namespace ComponentAce.Compression.Libs.ZLib
 {
@@ -107,7 +108,8 @@ namespace ComponentAce.Compression.Libs.ZLib
         /// </summary>
 		BAD = 13
     }
-	
+
+
 	internal sealed class Inflate
 	{
 
@@ -154,7 +156,7 @@ namespace ComponentAce.Compression.Libs.ZLib
         /// </summary>
         private int wbits;
 
-	    private bool expectGzipHeader;
+	    private GzipHeaderRemover gzipHeaderRemover;
 
 	    private bool detectHeader;
 
@@ -213,7 +215,6 @@ namespace ComponentAce.Compression.Libs.ZLib
 			
 			// handle undocumented nowrap option (no zlib header or check)
 			nowrap = 0;
-            expectGzipHeader = false;
             detectHeader = false;
 			if (windowBits < 0)
 			{
@@ -221,19 +222,14 @@ namespace ComponentAce.Compression.Libs.ZLib
 				windowBits = - windowBits;
 				nowrap = 1;
             }
-
-            // TODO: support for gzip and header autodetect is partial
-            // DotNetZip should be considered as a replacement of zlib.Net
-
             else if ((windowBits & 16) != 0)
             {
-                // gzip
-                expectGzipHeader = true;
+                gzipHeaderRemover = new GzipHeaderRemover();
                 windowBits &= ~16;
+
             }
-            else if ((windowBits & 32) != 0)
+            else if ((windowBits & 32) != 0) 
             {
-                // zlib or gzip
                 detectHeader = true;
                 windowBits &= ~32;
             }
@@ -253,17 +249,6 @@ namespace ComponentAce.Compression.Libs.ZLib
 			return (int)ZLibResultCode.Z_OK;
 		}
 
-        private void skipGzipHeader(ZStream z)
-        {
-            // The value 10 has been established experimentally
-            // based on the content from https://pypi.python.org
-            z.avail_in -= 10;
-            z.total_in += 10;
-            z.next_in_index += 10;
-            z.istate.mode = InflateMode.BLOCKS;
-            nowrap = 1;
-            z.istate.blocks.needCheck = false;
-        }
 
         /// <summary>
         /// Runs inflate algorithm
@@ -286,34 +271,22 @@ namespace ComponentAce.Compression.Libs.ZLib
 			r = (int)ZLibResultCode.Z_BUF_ERROR;
 
             if (detectHeader) {
-                if (z.avail_in == 0 || z.avail_in == 1)
+                if (z.avail_in == 0)
                     return r;
-                if (z.next_in[z.next_in_index] == 0x1F && z.next_in[z.next_in_index + 1] == 0x8B)
-                {
-                    skipGzipHeader(z);
-                }
-                else  // zlib
-                {
-                    z.istate.mode = InflateMode.METHOD;
-                    nowrap = 0;
-                }
+                if (z.next_in[z.next_in_index] == 0x1F)
+                    gzipHeaderRemover = new GzipHeaderRemover();
                 detectHeader = false;
             }
 
-            if (expectGzipHeader)
-            {
-                if (z.avail_in == 0 || z.avail_in == 1)
+            if (gzipHeaderRemover != null) {
+                if (z.avail_in == 0)
                     return r;
-                if (z.next_in[z.next_in_index] == 0x1F && z.next_in[z.next_in_index + 1] == 0x8B)
-                {
-                    skipGzipHeader(z);
-                }
-                else
-                {
-                    z.msg = "gzip header signature not found";
-                    z.istate.mode = InflateMode.BAD;
-                }
-                expectGzipHeader = false;
+                if (!gzipHeaderRemover.TrySkip(z))
+                    return r;
+                gzipHeaderRemover = null;
+                z.istate.mode = InflateMode.BLOCKS;
+                z.istate.blocks.needCheck = false;
+                nowrap = 1;
             }
 
 			while (true)
@@ -416,8 +389,7 @@ namespace ComponentAce.Compression.Libs.ZLib
 						z.istate.marker = 0; // can try inflateSync
 						return (int)ZLibResultCode.Z_STREAM_ERROR;
 					
-					case  InflateMode.BLOCKS: 
-						
+					case  InflateMode.BLOCKS:
 						r = z.istate.blocks.proc(z, r);
 						if (r == (int)ZLibResultCode.Z_DATA_ERROR)
 						{
@@ -614,5 +586,127 @@ namespace ComponentAce.Compression.Libs.ZLib
         }
 
         #endregion
+    }
+
+    internal class GzipHeaderRemover {
+        public GzipHeaderRemover() {
+            headerCollector = new List<byte>(10);
+            state = STATE.HEADER;
+        }
+
+        [Flags]
+        private enum HEADER_FLAG {
+            // FTEXT = 1,
+            FHCRC = 2,
+            FEXTRA = 4,
+            FNAME = 8,
+            FCOMMENT = 16
+        }
+
+        public enum STATE {
+            HEADER = 1,
+            NAME = 2,
+            COMMENT = 3,
+            EXTRA = 4,
+            SKIP_EXTRA = 5,
+            CRC = 6
+        }
+
+        private const int FIXED_HEADER_SIZE = 10;
+        private readonly IList<byte> headerCollector;
+        private STATE state;
+        private byte flag;
+        private IList<byte> sizeCollector;
+        private int outstandingSize;
+
+        public bool TrySkip(ZStream z) {
+            switch (state) {
+                case STATE.HEADER:
+                    while (z.avail_in > 0) {
+                        z.avail_in--; z.total_in++;
+                        headerCollector.Add(z.next_in[z.next_in_index++]);
+                        if (headerCollector.Count < FIXED_HEADER_SIZE) {
+                            continue;
+                        }
+                        flag = headerCollector[3];
+                        sizeCollector = new List<byte>(2);
+                        state = STATE.EXTRA;
+                        goto case STATE.EXTRA;
+                    }
+                    break;
+
+                case STATE.EXTRA:
+                    if (0 == (flag & (byte)HEADER_FLAG.FEXTRA)) {
+                        state = STATE.NAME;
+                        goto case STATE.NAME;
+                    }
+                    while (z.avail_in > 0) {
+                        z.avail_in--; z.total_in++;
+                        sizeCollector.Add(z.next_in[z.next_in_index++]);
+                        if (sizeCollector.Count < 2) {
+                            continue;
+                        }
+                        outstandingSize = sizeCollector[0] + sizeCollector[1] * 256;
+                        state = STATE.SKIP_EXTRA;
+                        goto case STATE.SKIP_EXTRA;
+                    }
+                    return false;
+
+                case STATE.SKIP_EXTRA:
+                    while (z.avail_in > 0) {
+                        if (outstandingSize == 0) {
+                            state = STATE.NAME;
+                            goto case STATE.NAME;
+                        }
+                        z.avail_in--; z.total_in++; z.next_in_index++;
+                        outstandingSize--;
+                    }
+                    return false;
+
+                case STATE.NAME:
+                    if (0 == (flag & (byte)HEADER_FLAG.FNAME)) {
+                        state = STATE.COMMENT;
+                        goto case STATE.COMMENT;
+                    }
+                    while (z.avail_in > 0) {
+                        z.avail_in--; z.total_in++;
+                        if (z.next_in[z.next_in_index++] != 0) {
+                            continue;
+                        }
+                        state = STATE.COMMENT;
+                        goto case STATE.COMMENT;
+                    }
+                    return false;
+
+                case STATE.COMMENT:
+                    if (0 == (flag & (byte)HEADER_FLAG.FCOMMENT)) {
+                        state = STATE.CRC;
+                        goto case STATE.CRC;
+                    }
+                    while (z.avail_in > 0) {
+                        z.avail_in--; z.total_in++;
+                        if (z.next_in[z.next_in_index++] != 0) {
+                            continue;
+                        }
+                        outstandingSize = 4;
+                        state = STATE.CRC;
+                        goto case STATE.CRC;
+                    }
+                    return false;
+
+                case STATE.CRC:
+                    if (0 == (flag & (byte)HEADER_FLAG.FHCRC))
+                        return true;
+                    while (z.avail_in > 0) {
+                        if (outstandingSize == 0) {
+                            return true;
+                        }
+                        z.avail_in--; z.total_in++; z.next_in_index++;
+                        outstandingSize--;
+                    }
+                    return false;
+            }
+            return false;
+        }
     }
 }
