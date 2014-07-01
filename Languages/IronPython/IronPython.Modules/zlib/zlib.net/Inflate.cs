@@ -156,7 +156,7 @@ namespace ComponentAce.Compression.Libs.ZLib
         /// </summary>
         private int wbits;
 
-	    private GzipHeaderRemover gzipHeaderRemover;
+	    private IEnumerator<object> gzipHeaderRemover;
 
 	    private bool detectHeader;
 
@@ -224,7 +224,7 @@ namespace ComponentAce.Compression.Libs.ZLib
             }
             else if ((windowBits & 16) != 0)
             {
-                gzipHeaderRemover = new GzipHeaderRemover();
+                gzipHeaderRemover = GzipHeader.CreateRemover(z);
                 windowBits &= ~16;
 
             }
@@ -270,18 +270,20 @@ namespace ComponentAce.Compression.Libs.ZLib
             res_temp = internalFlush == (int)FlushStrategy.Z_FINISH ? (int)ZLibResultCode.Z_BUF_ERROR : (int)ZLibResultCode.Z_OK;
 			r = (int)ZLibResultCode.Z_BUF_ERROR;
 
-            if (detectHeader) {
+            if (detectHeader)
+            {
                 if (z.avail_in == 0)
                     return r;
                 if (z.next_in[z.next_in_index] == 0x1F)
-                    gzipHeaderRemover = new GzipHeaderRemover();
+                    gzipHeaderRemover = GzipHeader.CreateRemover(z);
                 detectHeader = false;
             }
 
-            if (gzipHeaderRemover != null) {
+            if (gzipHeaderRemover != null)
+            {
                 if (z.avail_in == 0)
                     return r;
-                if (!gzipHeaderRemover.TrySkip(z))
+                if (gzipHeaderRemover.MoveNext())
                     return r;
                 gzipHeaderRemover = null;
                 z.istate.mode = InflateMode.BLOCKS;
@@ -588,10 +590,17 @@ namespace ComponentAce.Compression.Libs.ZLib
         #endregion
     }
 
-    internal class GzipHeaderRemover {
-        public GzipHeaderRemover() {
-            headerCollector = new List<byte>(10);
-            state = STATE.HEADER;
+    internal class GzipHeader {
+
+        /// <summary>
+        /// Creates header remover.
+        /// As long as header is not completed, call to Remover.MoveNext() returns true and
+        /// adjust state of z.
+        /// </summary>
+        /// <param name="z">Stream where gzip header will appear.</param>
+        /// <returns></returns>
+        public static IEnumerator<object> CreateRemover(ZStream z) {
+            return new GzipHeader().StartHeaderSkipping(z).GetEnumerator();
         }
 
         [Flags]
@@ -603,110 +612,64 @@ namespace ComponentAce.Compression.Libs.ZLib
             FCOMMENT = 16
         }
 
-        public enum STATE {
-            HEADER = 1,
-            NAME = 2,
-            COMMENT = 3,
-            EXTRA = 4,
-            SKIP_EXTRA = 5,
-            CRC = 6
+        private const int FIXED_HEADER_SIZE = 10;
+
+        private byte GetNext(ZStream z) {
+            z.avail_in--;
+            z.total_in++;
+            return z.next_in[z.next_in_index++];
         }
 
-        private const int FIXED_HEADER_SIZE = 10;
-        private readonly IList<byte> headerCollector;
-        private STATE state;
-        private byte flag;
-        private IList<byte> sizeCollector;
-        private int outstandingSize;
+        private IEnumerable<object> StartHeaderSkipping(ZStream z) {
+            var headerCollector = new List<byte>(FIXED_HEADER_SIZE);
+            do {
+                if (z.avail_in == 0)
+                    yield return false;
+                headerCollector.Add(GetNext(z));
+            } while (headerCollector.Count < FIXED_HEADER_SIZE);
 
-        public bool TrySkip(ZStream z) {
-            switch (state) {
-                case STATE.HEADER:
-                    while (z.avail_in > 0) {
-                        z.avail_in--; z.total_in++;
-                        headerCollector.Add(z.next_in[z.next_in_index++]);
-                        if (headerCollector.Count < FIXED_HEADER_SIZE) {
-                            continue;
-                        }
-                        flag = headerCollector[3];
-                        sizeCollector = new List<byte>(2);
-                        state = STATE.EXTRA;
-                        goto case STATE.EXTRA;
-                    }
-                    break;
-
-                case STATE.EXTRA:
-                    if (0 == (flag & (byte)HEADER_FLAG.FEXTRA)) {
-                        state = STATE.NAME;
-                        goto case STATE.NAME;
-                    }
-                    while (z.avail_in > 0) {
-                        z.avail_in--; z.total_in++;
-                        sizeCollector.Add(z.next_in[z.next_in_index++]);
-                        if (sizeCollector.Count < 2) {
-                            continue;
-                        }
-                        outstandingSize = sizeCollector[0] + sizeCollector[1] * 256;
-                        state = STATE.SKIP_EXTRA;
-                        goto case STATE.SKIP_EXTRA;
-                    }
-                    return false;
-
-                case STATE.SKIP_EXTRA:
-                    while (z.avail_in > 0) {
-                        if (outstandingSize == 0) {
-                            state = STATE.NAME;
-                            goto case STATE.NAME;
-                        }
-                        z.avail_in--; z.total_in++; z.next_in_index++;
-                        outstandingSize--;
-                    }
-                    return false;
-
-                case STATE.NAME:
-                    if (0 == (flag & (byte)HEADER_FLAG.FNAME)) {
-                        state = STATE.COMMENT;
-                        goto case STATE.COMMENT;
-                    }
-                    while (z.avail_in > 0) {
-                        z.avail_in--; z.total_in++;
-                        if (z.next_in[z.next_in_index++] != 0) {
-                            continue;
-                        }
-                        state = STATE.COMMENT;
-                        goto case STATE.COMMENT;
-                    }
-                    return false;
-
-                case STATE.COMMENT:
-                    if (0 == (flag & (byte)HEADER_FLAG.FCOMMENT)) {
-                        state = STATE.CRC;
-                        goto case STATE.CRC;
-                    }
-                    while (z.avail_in > 0) {
-                        z.avail_in--; z.total_in++;
-                        if (z.next_in[z.next_in_index++] != 0) {
-                            continue;
-                        }
-                        outstandingSize = 4;
-                        state = STATE.CRC;
-                        goto case STATE.CRC;
-                    }
-                    return false;
-
-                case STATE.CRC:
-                    if (0 == (flag & (byte)HEADER_FLAG.FHCRC))
-                        return true;
-                    while (z.avail_in > 0) {
-                        if (outstandingSize == 0) {
-                            return true;
-                        }
-                        z.avail_in--; z.total_in++; z.next_in_index++;
-                        outstandingSize--;
-                    }
-                    return false;
+            var flag = headerCollector[3];
+            if (0 != (flag & (byte)HEADER_FLAG.FEXTRA)) {
+                if (z.avail_in == 0)
+                    yield return null;
+                var outstandingSize = (int)GetNext(z);
+                if (z.avail_in == 0)
+                    yield return null;
+                outstandingSize += 256 * GetNext(z);
+                do {
+                    if (z.avail_in == 0)
+                        yield return null;
+                    GetNext(z);
+                } while (--outstandingSize != 0);
             }
-            return false;
+
+            // STATE_NAME
+            if (0 != (flag & (byte)HEADER_FLAG.FNAME)) {
+                do {
+                    if (z.avail_in == 0) {
+                        yield return null;
+                    }
+                } while (GetNext(z) != 0);
+            }
+
+            // STATE_COMMENT:
+            if (0 != (flag & (byte)HEADER_FLAG.FCOMMENT)) {
+                do {
+                    if (z.avail_in == 0)
+                        yield return null;
+                } while (GetNext(z) != 0);
+            }
+
+            // STATE_CRC:
+            if (0 != (flag & (byte)HEADER_FLAG.FHCRC)) {
+                var outstandingSize = 4;
+                do {
+                    if (z.avail_in == 0) {
+                        yield return null;
+                    }
+                    GetNext(z);
+                } while (--outstandingSize != 0);
+            }
         }
     }
 }
