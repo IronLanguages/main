@@ -14,7 +14,7 @@ _SETUPTOOLS_VERSION = "3.6"
 
 _PIP_VERSION = "1.5.6"
 
-IRON = sys.platform == 'cli'
+IRONPYTHON = sys.platform == 'cli'
 
 # pip currently requires ssl support, so we try to provide a nicer
 # error message when that is missing (http://bugs.python.org/issue19744)
@@ -92,8 +92,6 @@ def bootstrap(root=None, upgrade=False, user=False,
         os.environ["ENSUREPIP_OPTIONS"] = "install"
 
     tmpdir = tempfile.mkdtemp()
-    if os.path.exists(tmpdir):
-        shutil.rmtree(tmpdir)
     os.mkdir(tmpdir)
     try:
         # Put our bundled wheels into a temporary directory and construct the
@@ -112,7 +110,7 @@ def bootstrap(root=None, upgrade=False, user=False,
 
         # Construct the arguments to be passed to the pip command
         args = ["install", "--no-index", "--find-links", tmpdir]
-        if IRON:
+        if IRONPYTHON:
             args.append("--no-compile")
         if root:
             args += ["--root", root]
@@ -158,7 +156,7 @@ def _uninstall_helper(verbosity=0):
 
 
 def _main(argv=None):
-    if IRON:
+    if IRONPYTHON:
         try:
             sys._getframe()
         except AttributeError:
