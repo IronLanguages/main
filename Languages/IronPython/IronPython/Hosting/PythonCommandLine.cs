@@ -463,15 +463,30 @@ namespace IronPython.Hosting {
         }
 
         private int RunCommandWorker(string command) {
-            int result = 1;
-            try {
-                Scope = CreateScope();
-                ExecuteCommand(Engine.CreateScriptSourceFromString(command, SourceCodeKind.File));
-                result = 0;
-            } catch (SystemExitException pythonSystemExit) {
-                result = GetEffectiveExitCode(pythonSystemExit);
+            ScriptCode compiledCode;
+            ModuleOptions trueDiv = (PythonContext.PythonOptions.DivisionOptions == PythonDivisionOptions.New) ?
+                ModuleOptions.TrueDivision : ModuleOptions.None;
+            ModuleOptions modOpt = ModuleOptions.Optimized | ModuleOptions.ModuleBuiltins | trueDiv;
+                ;
+            if (Options.SkipFirstSourceLine) {
+                modOpt |= ModuleOptions.SkipFirstLine;
             }
-            return result;
+            PythonModule module = PythonContext.CompileModule(
+                "", // there is no file, it will be set to <module>
+                "__main__",
+                PythonContext.CreateSnippet(command, SourceCodeKind.File),
+                modOpt,
+                out compiledCode);
+            PythonContext.PublishModule("__main__", module);
+            Scope = module.Scope;
+            try {
+                compiledCode.Run(Scope);
+            } catch (SystemExitException pythonSystemExit) {
+                // disable introspection when exited:
+                Options.Introspection = false;
+                return GetEffectiveExitCode(pythonSystemExit);
+            }
+            return 0;
         }
 
         #endregion

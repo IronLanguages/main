@@ -15,15 +15,26 @@
 
 from iptest.assert_util import *
 import ctypes
+import ctypes.wintypes
 
 def test_cp34892():
     src = b''
     buf = ctypes.create_string_buffer(0)
     try:
         ctypes.memmove(ctypes.addressof(buf), src, 0)
-    except:
+    except Exception as ex:
         # there should be no exception of any kind
-        Assert(False)
+        Fail("Unexpected exception: %s" % ex)
+
+def test_cp35326():
+    GetStdHandle = ctypes.windll.kernel32.GetStdHandle
+    GetStdHandle.argtypes = [ ctypes.wintypes.DWORD, ]
+    GetStdHandle.restype = ctypes.wintypes.HANDLE
+    try:
+        GetStdHandle(-11)
+    except Exception as ex:
+        Fail("Unexpected exception: %s" % ex)
+
 
 run_test(__name__)
 

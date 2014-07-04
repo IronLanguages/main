@@ -42,6 +42,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 * and contributors of zlib.
 */
 using System;
+using System.Collections.Generic;
 
 namespace ComponentAce.Compression.Libs.ZLib
 {
@@ -107,7 +108,8 @@ namespace ComponentAce.Compression.Libs.ZLib
         /// </summary>
 		BAD = 13
     }
-	
+
+
 	internal sealed class Inflate
 	{
 
@@ -153,6 +155,10 @@ namespace ComponentAce.Compression.Libs.ZLib
         /// log2(Window size)  (8..15, defaults to 15)
         /// </summary>
         private int wbits;
+
+	    private IEnumerator<object> gzipHeaderRemover;
+
+	    private bool detectHeader;
 
         #endregion
 
@@ -209,12 +215,25 @@ namespace ComponentAce.Compression.Libs.ZLib
 			
 			// handle undocumented nowrap option (no zlib header or check)
 			nowrap = 0;
+            detectHeader = false;
 			if (windowBits < 0)
 			{
+                // deflate, no header
 				windowBits = - windowBits;
 				nowrap = 1;
-			}
-			
+            }
+            else if ((windowBits & 16) != 0)
+            {
+                gzipHeaderRemover = GzipHeader.CreateRemover(z);
+                windowBits &= ~16;
+
+            }
+            else if ((windowBits & 32) != 0) 
+            {
+                detectHeader = true;
+                windowBits &= ~32;
+            }
+
 			// set Window size
 			if (windowBits < 8 || windowBits > 15)
 			{
@@ -229,7 +248,8 @@ namespace ComponentAce.Compression.Libs.ZLib
 			inflateReset(z);
 			return (int)ZLibResultCode.Z_OK;
 		}
-		
+
+
         /// <summary>
         /// Runs inflate algorithm
         /// </summary>
@@ -249,6 +269,28 @@ namespace ComponentAce.Compression.Libs.ZLib
 				return (int)ZLibResultCode.Z_STREAM_ERROR;
             res_temp = internalFlush == (int)FlushStrategy.Z_FINISH ? (int)ZLibResultCode.Z_BUF_ERROR : (int)ZLibResultCode.Z_OK;
 			r = (int)ZLibResultCode.Z_BUF_ERROR;
+
+            if (detectHeader)
+            {
+                if (z.avail_in == 0)
+                    return r;
+                if (z.next_in[z.next_in_index] == 0x1F)
+                    gzipHeaderRemover = GzipHeader.CreateRemover(z);
+                detectHeader = false;
+            }
+
+            if (gzipHeaderRemover != null)
+            {
+                if (z.avail_in == 0)
+                    return r;
+                if (gzipHeaderRemover.MoveNext())
+                    return r;
+                gzipHeaderRemover = null;
+                z.istate.mode = InflateMode.BLOCKS;
+                z.istate.blocks.needCheck = false;
+                nowrap = 1;
+            }
+
 			while (true)
 			{
 
@@ -349,8 +391,7 @@ namespace ComponentAce.Compression.Libs.ZLib
 						z.istate.marker = 0; // can try inflateSync
 						return (int)ZLibResultCode.Z_STREAM_ERROR;
 					
-					case  InflateMode.BLOCKS: 
-						
+					case  InflateMode.BLOCKS:
 						r = z.istate.blocks.proc(z, r);
 						if (r == (int)ZLibResultCode.Z_DATA_ERROR)
 						{
@@ -547,5 +588,88 @@ namespace ComponentAce.Compression.Libs.ZLib
         }
 
         #endregion
+    }
+
+    internal class GzipHeader {
+
+        /// <summary>
+        /// Creates header remover.
+        /// As long as header is not completed, call to Remover.MoveNext() returns true and
+        /// adjust state of z.
+        /// </summary>
+        /// <param name="z">Stream where gzip header will appear.</param>
+        /// <returns></returns>
+        public static IEnumerator<object> CreateRemover(ZStream z) {
+            return new GzipHeader().StartHeaderSkipping(z).GetEnumerator();
+        }
+
+        [Flags]
+        private enum HEADER_FLAG {
+            // FTEXT = 1,
+            FHCRC = 2,
+            FEXTRA = 4,
+            FNAME = 8,
+            FCOMMENT = 16
+        }
+
+        private const int FIXED_HEADER_SIZE = 10;
+
+        private byte GetNext(ZStream z) {
+            z.avail_in--;
+            z.total_in++;
+            return z.next_in[z.next_in_index++];
+        }
+
+        private IEnumerable<object> StartHeaderSkipping(ZStream z) {
+            var headerCollector = new List<byte>(FIXED_HEADER_SIZE);
+            do {
+                if (z.avail_in == 0)
+                    yield return false;
+                headerCollector.Add(GetNext(z));
+            } while (headerCollector.Count < FIXED_HEADER_SIZE);
+
+            var flag = headerCollector[3];
+            if (0 != (flag & (byte)HEADER_FLAG.FEXTRA)) {
+                if (z.avail_in == 0)
+                    yield return null;
+                var outstandingSize = (int)GetNext(z);
+                if (z.avail_in == 0)
+                    yield return null;
+                outstandingSize += 256 * GetNext(z);
+                do {
+                    if (z.avail_in == 0)
+                        yield return null;
+                    GetNext(z);
+                } while (--outstandingSize != 0);
+            }
+
+            // STATE_NAME
+            if (0 != (flag & (byte)HEADER_FLAG.FNAME)) {
+                do {
+                    if (z.avail_in == 0) {
+                        yield return null;
+                    }
+                } while (GetNext(z) != 0);
+            }
+
+            // STATE_COMMENT:
+            if (0 != (flag & (byte)HEADER_FLAG.FCOMMENT)) {
+                do {
+                    if (z.avail_in == 0)
+                        yield return null;
+                } while (GetNext(z) != 0);
+            }
+
+            // STATE_CRC:
+            if (0 != (flag & (byte)HEADER_FLAG.FHCRC)) {
+                var outstandingSize = 4;
+                do {
+                    if (z.avail_in == 0) {
+                        yield return null;
+                    }
+                    GetNext(z);
+                } while (--outstandingSize != 0);
+            }
+        }
     }
 }
