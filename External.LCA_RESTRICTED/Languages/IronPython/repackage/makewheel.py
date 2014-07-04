@@ -1,8 +1,16 @@
+# this script recreates and copy package files to be bundled with ensurepip
+#
+# the source for packages are pip and setuptools
+# the target is stdlib
+#
+# Usage: ipy makewheel.py
+#
+# Author: Pawel Jasinski
+#
 import os
 import shutil
 import sys
 import zipfile
-
 
 
 script_dir = os.path.dirname(os.path.abspath(__file__))

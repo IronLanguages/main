@@ -504,6 +504,11 @@
     <Content Include="$(StdLibPath)\xml\sax\__init__.py" />
     <Content Include="$(StdLibPath)\site-packages\README.txt" />
     <!-- End Generated Project Items -->
+    <Content Include="$(StdLibPath)\ensurepip\_bundled\pip-1.5.6-py2.py3-none-any.whl" />
+    <Content Include="$(StdLibPath)\ensurepip\_bundled\setuptools-3.6-py2.py3-none-any.whl" />
+    <Content Include="$(StdLibPath)\ensurepip\_uninstall.py" />
+    <Content Include="$(StdLibPath)\ensurepip\__init__.py" />
+    <Content Include="$(StdLibPath)\ensurepip\__main__.py" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.Common.targets"/>
 
