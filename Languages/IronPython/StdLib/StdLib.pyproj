@@ -509,6 +509,20 @@
     <Content Include="$(StdLibPath)\ensurepip\_uninstall.py" />
     <Content Include="$(StdLibPath)\ensurepip\__init__.py" />
     <Content Include="$(StdLibPath)\ensurepip\__main__.py" />
+    <Content Include="$(StdLibPath)\multiprocessing\connection.py" />
+    <Content Include="$(StdLibPath)\multiprocessing\dummy\connection.py" />
+    <Content Include="$(StdLibPath)\multiprocessing\dummy\__init__.py" />
+    <Content Include="$(StdLibPath)\multiprocessing\forking.py" />
+    <Content Include="$(StdLibPath)\multiprocessing\heap.py" />
+    <Content Include="$(StdLibPath)\multiprocessing\managers.py" />
+    <Content Include="$(StdLibPath)\multiprocessing\pool.py" />
+    <Content Include="$(StdLibPath)\multiprocessing\process.py" />
+    <Content Include="$(StdLibPath)\multiprocessing\queues.py" />
+    <Content Include="$(StdLibPath)\multiprocessing\reduction.py" />
+    <Content Include="$(StdLibPath)\multiprocessing\sharedctypes.py" />
+    <Content Include="$(StdLibPath)\multiprocessing\synchronize.py" />
+    <Content Include="$(StdLibPath)\multiprocessing\util.py" />
+    <Content Include="$(StdLibPath)\multiprocessing\__init__.py" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.Common.targets"/>
 

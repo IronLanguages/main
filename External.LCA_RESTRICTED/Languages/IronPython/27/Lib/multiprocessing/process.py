@@ -306,7 +306,7 @@ class _MainProcess(Process):
         self._popen = None
         self._counter = itertools.count(1)
         self._children = set()
-        self._authkey = AuthenticationString(os.urandom(32))
+        self._authkey = AuthenticationString(bytes(os.urandom(32), 'latin-1'))
         self._tempdir = None
 
 _current_process = _MainProcess()
