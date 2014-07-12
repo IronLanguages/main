@@ -161,6 +161,7 @@
     <Content Include="$(StdLibPath)\string.py" />
     <Content Include="$(StdLibPath)\StringIO.py" />
     <Content Include="$(StdLibPath)\stringold.py" />
+    <Content Include="$(StdLibPath)\stringprep.py" />
     <Content Include="$(StdLibPath)\struct.py" />
     <Content Include="$(StdLibPath)\subprocess.py" />
     <Content Include="$(StdLibPath)\sunau.py" />
@@ -291,6 +292,7 @@
     <Content Include="$(StdLibPath)\encodings\aliases.py" />
     <Content Include="$(StdLibPath)\encodings\ascii.py" />
     <Content Include="$(StdLibPath)\encodings\base64_codec.py" />
+    <Content Include="$(StdLibPath)\encodings\bz2_codec.py" />
     <Content Include="$(StdLibPath)\encodings\charmap.py" />
     <Content Include="$(StdLibPath)\encodings\cp037.py" />
     <Content Include="$(StdLibPath)\encodings\cp1006.py" />
@@ -329,6 +331,7 @@
     <Content Include="$(StdLibPath)\encodings\cp875.py" />
     <Content Include="$(StdLibPath)\encodings\hex_codec.py" />
     <Content Include="$(StdLibPath)\encodings\hp_roman8.py" />
+    <Content Include="$(StdLibPath)\encodings\idna.py" />
     <Content Include="$(StdLibPath)\encodings\iso8859_1.py" />
     <Content Include="$(StdLibPath)\encodings\iso8859_10.py" />
     <Content Include="$(StdLibPath)\encodings\iso8859_11.py" />
@@ -381,6 +384,9 @@
     <Content Include="$(StdLibPath)\encodings\uu_codec.py" />
     <Content Include="$(StdLibPath)\encodings\zlib_codec.py" />
     <Content Include="$(StdLibPath)\encodings\__init__.py" />
+    <Content Include="$(StdLibPath)\ensurepip\_uninstall.py" />
+    <Content Include="$(StdLibPath)\ensurepip\__init__.py" />
+    <Content Include="$(StdLibPath)\ensurepip\__main__.py" />
     <Content Include="$(StdLibPath)\importlib\__init__.py" />
     <Content Include="$(StdLibPath)\json\decoder.py" />
     <Content Include="$(StdLibPath)\json\encoder.py" />
@@ -462,6 +468,12 @@
     <Content Include="$(StdLibPath)\logging\config.py" />
     <Content Include="$(StdLibPath)\logging\handlers.py" />
     <Content Include="$(StdLibPath)\logging\__init__.py" />
+    <Content Include="$(StdLibPath)\multiprocessing\pool.py" />
+    <Content Include="$(StdLibPath)\multiprocessing\process.py" />
+    <Content Include="$(StdLibPath)\multiprocessing\util.py" />
+    <Content Include="$(StdLibPath)\multiprocessing\__init__.py" />
+    <Content Include="$(StdLibPath)\multiprocessing\dummy\connection.py" />
+    <Content Include="$(StdLibPath)\multiprocessing\dummy\__init__.py" />
     <Content Include="$(StdLibPath)\pydoc_data\topics.py" />
     <Content Include="$(StdLibPath)\pydoc_data\__init__.py" />
     <Content Include="$(StdLibPath)\sqlite3\dbapi2.py" />
@@ -506,23 +518,14 @@
     <!-- End Generated Project Items -->
     <Content Include="$(StdLibPath)\ensurepip\_bundled\pip-1.5.6-py2.py3-none-any.whl" />
     <Content Include="$(StdLibPath)\ensurepip\_bundled\setuptools-3.6-py2.py3-none-any.whl" />
-    <Content Include="$(StdLibPath)\ensurepip\_uninstall.py" />
-    <Content Include="$(StdLibPath)\ensurepip\__init__.py" />
-    <Content Include="$(StdLibPath)\ensurepip\__main__.py" />
     <Content Include="$(StdLibPath)\multiprocessing\connection.py" />
-    <Content Include="$(StdLibPath)\multiprocessing\dummy\connection.py" />
-    <Content Include="$(StdLibPath)\multiprocessing\dummy\__init__.py" />
     <Content Include="$(StdLibPath)\multiprocessing\forking.py" />
     <Content Include="$(StdLibPath)\multiprocessing\heap.py" />
     <Content Include="$(StdLibPath)\multiprocessing\managers.py" />
-    <Content Include="$(StdLibPath)\multiprocessing\pool.py" />
-    <Content Include="$(StdLibPath)\multiprocessing\process.py" />
     <Content Include="$(StdLibPath)\multiprocessing\queues.py" />
     <Content Include="$(StdLibPath)\multiprocessing\reduction.py" />
     <Content Include="$(StdLibPath)\multiprocessing\sharedctypes.py" />
     <Content Include="$(StdLibPath)\multiprocessing\synchronize.py" />
-    <Content Include="$(StdLibPath)\multiprocessing\util.py" />
-    <Content Include="$(StdLibPath)\multiprocessing\__init__.py" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.Common.targets"/>
 
