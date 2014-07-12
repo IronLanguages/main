@@ -92,7 +92,6 @@ def bootstrap(root=None, upgrade=False, user=False,
         os.environ["ENSUREPIP_OPTIONS"] = "install"
 
     tmpdir = tempfile.mkdtemp()
-    os.mkdir(tmpdir)
     try:
         # Put our bundled wheels into a temporary directory and construct the
         # additional paths that need added to sys.path
