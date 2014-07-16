@@ -114,6 +114,11 @@ class ScriptMaker(object):
         if enquote and ' ' in executable:
             executable = '"%s"' % executable
         executable = fsencode(executable)
+        # in case of IronPython, play safe and enable frames support
+        if sys.platform == 'cli' \
+           and post_interp.find("-X:Frames") == -1 \
+           and post_interp.find("-X:FullFrames") == -1:
+            post_interp += b' -X:Frames'
         shebang = b'#!' + executable + post_interp + b'\n'
         # Python parser starts to read a script using UTF-8 until
         # it gets a #coding:xxx cookie. The shebang has to be the
