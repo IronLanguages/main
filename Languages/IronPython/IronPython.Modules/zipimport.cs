@@ -102,7 +102,6 @@ to Zip archives.";
                 }
 
                 path = pathObj as string;
-                input = path;
 
                 if (path.Length == 0)
                     throw MakeError("archive path is empty");
@@ -112,6 +111,7 @@ to Zip archives.";
 
                 string buf = path.Replace(Path.AltDirectorySeparatorChar,
                     Path.DirectorySeparatorChar);
+                input = buf;
 
                 path = string.Empty;
                 prefix = string.Empty;
@@ -419,8 +419,6 @@ contain the module, but has no source for it.")]
                         data = ZlibModule.Decompress(raw_data, -15);
                     }
 
-                } catch {
-                    throw;
                 } finally {
                     if (fp != null) {
                         fp.Close();
@@ -595,7 +593,6 @@ contain the module, but has no source for it.")]
             private ModuleStatus GetModuleInfo(CodeContext/*!*/ context, string fullname) {
                 string subname = GetSubName(fullname);
                 string path = MakeFilename(_prefix, subname);
-
                 if (string.IsNullOrEmpty(path))
                     return ModuleStatus.Error;
 
