@@ -495,7 +495,7 @@ contain the module, but has no source for it.")]
                         throw MakeError("can't open Zip file: '{0}'", archive);
                     }
 
-                    if (fp.BaseStream.Length < 2) {
+                    if (fp.BaseStream.Length < 22) {
                         throw MakeError("can't read Zip file: '{0}'", archive);
                     }
 
@@ -557,8 +557,6 @@ contain the module, but has no source for it.")]
                         files.Add(name, t);
                         count++;
                     }
-                } catch {
-                    throw;
                 } finally {
                     if (fp != null) {
                         fp.Close();
