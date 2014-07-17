@@ -116,8 +116,8 @@ class ScriptMaker(object):
         executable = fsencode(executable)
         # in case of IronPython, play safe and enable frames support
         if sys.platform == 'cli' \
-           and post_interp.find("-X:Frames") == -1 \
-           and post_interp.find("-X:FullFrames") == -1:
+           and "-X:Frames" not in post_interp \
+           and "-X:FullFrames" not in post_interp:
             post_interp += b' -X:Frames'
         shebang = b'#!' + executable + post_interp + b'\n'
         # Python parser starts to read a script using UTF-8 until
