@@ -296,7 +296,7 @@ namespace IronPython.Runtime {
 
 #if DEBUG
                     // For developer use, add External.LCA_RESTRICTED/Languages/IronPython/27/Lib
-                    string devStdLib = Path.Combine(entry, @"../../External.LCA_RESTRICTED/Languages/IronPython/27/Lib");
+                    string devStdLib = Path.GetFullPath(Path.Combine(entry, @"../../External.LCA_RESTRICTED/Languages/IronPython/27/Lib"));
                     if (Directory.Exists(devStdLib))
                         path.append(devStdLib);
 #endif

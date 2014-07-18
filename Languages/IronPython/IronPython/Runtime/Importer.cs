@@ -868,6 +868,26 @@ namespace IronPython.Runtime {
             return null;
         }
 
+        internal static bool TryImportMainFromZip(CodeContext/*!*/ context, string/*!*/ path, out object importer) {
+            Assert.NotNull(context, path);
+            var importCache = PythonContext.GetContext(context).GetSystemStateValue("path_importer_cache") as IDictionary<object, object>;
+            if (importCache == null) {
+                importer = null;
+                return false;
+            }
+            importCache[path] = importer = FindImporterForPath(context, path);
+            if (importer == null) {
+                return false;
+            }
+            // for consistency with cpython, insert zip as a first entry into sys.path
+            var syspath = PythonContext.GetContext(context).GetSystemStateValue("path") as List;
+            if (syspath != null) {
+                syspath.Insert(0, path);
+            }
+            object dummy;
+            return FindAndLoadModuleFromImporter(context, importer, "__main__", null, out dummy);
+        }
+
         private static object LoadFromDisk(CodeContext context, string name, string fullName, string str) {
             // default behavior
             PythonModule module;

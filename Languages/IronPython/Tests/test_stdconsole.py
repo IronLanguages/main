@@ -26,8 +26,9 @@ import os
 # Test that IronPython console behaves as expected (command line argument processing etc.).
 
 # Get a temporary directory in which the tests can scribble.
-tmpdir = Environment.GetEnvironmentVariable("TEMP")
-tmpdir = IO.Path.Combine(tmpdir, "IronPython")
+# This is relative to working directory so the path related tests (e.g.'print __name__')
+# return predictable results.
+tmpdir = "tmp"
 if not os.path.exists(tmpdir):
     nt.mkdir(tmpdir)
 
@@ -405,32 +406,32 @@ def t():
         raise pt[0], pt[1], pt[2]
 t()
 """
-    expected=r"""Traceback (most recent call last):
-  File "script_cp34849.py", line 7, in t
-  File "script_cp34849.py", line 4, in f1
+    expected = r"""Traceback (most recent call last):
+  File "tmp\script_cp34849.py", line 7, in t
+  File "tmp\script_cp34849.py", line 4, in f1
 Exception: test exception
 """
 
-    scriptFileName = "script_cp34849.py"
+    scriptFileName = os.path.join(tmpdir, "script_cp34849.py")
     f = file(scriptFileName, "w")
     f.write(script)
     f.close()
     TestCommandLine((scriptFileName,), expected, 1)
 
 def test_cp35263():
-    script="""
+    script = """
 import warnings
 def foo():
     warnings.warn('warning 1')
 warnings.warn('warning 2')
 foo()
 """
-    expected=r"""script_cp35263.py:5: UserWarning: warning 2
+    expected=r"""tmp\script_cp35263.py:5: UserWarning: warning 2
   warnings.warn('warning 2')
-script_cp35263.py:4: UserWarning: warning 1
+tmp\script_cp35263.py:4: UserWarning: warning 1
   warnings.warn('warning 1')
 """
-    scriptFileName = "script_cp35263.py"
+    scriptFileName = os.path.join(tmpdir, "script_cp35263.py")
     f = file(scriptFileName, "w")
     f.write(script)
     f.close()
@@ -438,6 +439,43 @@ script_cp35263.py:4: UserWarning: warning 1
 
 def test_cp35322():
     TestCommandLine(("-c", "print __name__"), "__main__\n", 0)
+
+def test_cp35379():
+    script1 = r"""
+print __file__
+print __name__"""
+    from zipfile import ZipFile
+    zipname = os.path.join(tmpdir, 'script_cp35379_1.zip')
+    with ZipFile(zipname, 'w') as myzip:
+        myzip.writestr('__main__.py', script1)
+
+    TestCommandLine((zipname,), "tmp\\script_cp35379_1.zip\\__main__.py\n__main__\n", 0)
+
+    script2 = r"""
+import sys
+print __file__
+print __name__
+sys.exit(42)"""
+    from zipfile import ZipFile
+    zipname = os.path.join(tmpdir, 'script_cp35379_2.zip')
+    with ZipFile(zipname, 'w') as myzip:
+        myzip.writestr('__main__.py', script2)
+
+    TestCommandLine((zipname,), "tmp\\script_cp35379_2.zip\\__main__.py\n__main__\n", 42)
+
+    zipname = os.path.join(tmpdir, 'script_cp35379_3.zip')
+    # get some padding in front of 1st zip content
+    with open(zipname, "wb") as padded:
+        with open("cmd.exe", "rb") as cmdexe:
+            padded.write(cmdexe.read())
+        with open(os.path.join(tmpdir, "script_cp35379_1.zip"), "rb") as firstZip:
+            padded.write(firstZip.read())
+
+    TestCommandLine((zipname,), "tmp\\script_cp35379_3.zip\\__main__.py\n__main__\n", 0)
+
+    # it should not matter if relative path is given with \ or /
+    zipname = zipname.replace('\\', '/')
+    TestCommandLine((zipname,), "tmp\\script_cp35379_3.zip\\__main__.py\n__main__\n", 0)
 
 run_test(__name__)
 
