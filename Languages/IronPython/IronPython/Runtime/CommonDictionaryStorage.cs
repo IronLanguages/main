@@ -896,7 +896,13 @@ namespace IronPython.Runtime {
                 Add(kvp.Key, kvp.Value);
             }
 
-            NullValue nullVal = (NullValue)info.GetValue("nullvalue", typeof(NullValue));
+            NullValue nullVal = null;
+            try {
+                nullVal = (NullValue)info.GetValue("nullvalue", typeof(NullValue));
+            }
+            catch (SerializationException e) {
+                // for compatibility with dictionary serialized in 2.6.
+            }
             if (nullVal != null) {
                 _nullValue = new NullValue(nullVal);
             }
