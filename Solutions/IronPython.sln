@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPython", "..\Languages\IronPython\IronPython\IronPython.csproj", "{95289EA9-5778-489D-AB48-F81F2CE2DA32}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPython.Modules", "..\Languages\IronPython\IronPython.Modules\IronPython.Modules.csproj", "{155CE436-1669-4A48-8095-410F2430237F}"
@@ -60,6 +62,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting.Core", "..\Runtime\Microsoft.Scripting.Core\Microsoft.Scripting.Core.csproj", "{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPython.SQLite", "..\Languages\IronPython\IronPython.SQLite\IronPython.SQLite.csproj", "{4A617A40-2BA7-4713-AAFE-F90C4325C581}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPythonCompiler", "..\Languages\IronPython\IronPythonCompiler\IronPythonCompiler.csproj", "{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -514,6 +518,40 @@ Global
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.WP7Debug|Any CPU.Build.0 = WP7Debug|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.WP7Release|Any CPU.ActiveCfg = WP7Release|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.WP7Release|Any CPU.Build.0 = WP7Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.AndroidDebug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.AndroidDebug|Any CPU.Build.0 = Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.AndroidRelease|Any CPU.ActiveCfg = Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.AndroidRelease|Any CPU.Build.0 = Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.FxCop|Any CPU.ActiveCfg = Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.FxCop|Any CPU.Build.0 = Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Silverlight4Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Silverlight4Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Silverlight4Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Silverlight4Release|Any CPU.Build.0 = Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Silverlight5Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Silverlight5Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Silverlight5Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Silverlight5Release|Any CPU.Build.0 = Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.v2Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.v2Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.v2Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.v2Release|Any CPU.Build.0 = Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.v45Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.v45Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.v45Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.v45Release|Any CPU.Build.0 = Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Win8Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Win8Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Win8Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Win8Release|Any CPU.Build.0 = Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.WP7Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.WP7Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.WP7Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.WP7Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
