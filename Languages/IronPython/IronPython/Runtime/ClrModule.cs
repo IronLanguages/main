@@ -209,6 +209,37 @@ the assembly object.")]
             return scope;
         }
 
+        [Documentation("Converts an array of bytes to a string.")]
+        public static string GetString(byte[] bytes) {
+            return GetString(bytes, bytes.Length);
+        }
+
+        [Documentation("Converts maxCount of an array of bytes to a string")]
+        public static string GetString(byte[] bytes, int maxCount) {
+            int bytesToCopy = Math.Min(bytes.Length, maxCount);
+            StringBuilder b = new StringBuilder(bytesToCopy);
+            for (int i = 0; i < bytesToCopy; i++) {
+                b.Append((char)bytes[i]);
+            }
+            return b.ToString();
+        }
+
+        [Documentation("Converts a string to an array of bytes")]
+        public static byte[] GetBytes(string s) {
+            return GetBytes(s, s.Length);
+        }
+
+        [Documentation("Converts maxCount of a string to an array of bytes")]
+        public static byte[] GetBytes(string s, int maxCount) {
+            int charsToCopy = Math.Min(s.Length, maxCount);
+            byte[] ret = new byte[charsToCopy];
+            for (int i = 0; i < charsToCopy; i++) {
+                if (s[i] < 0x100) ret[i] = (byte)s[i];
+                else throw PythonOps.UnicodeDecodeError("'ascii' codec can't decode byte {0:X} in position {1}: ordinal not in range", (int)ret[i], i);
+            }
+            return ret;
+        }
+
         /// <summary>
         /// Use(path, language) -> module
         /// 
