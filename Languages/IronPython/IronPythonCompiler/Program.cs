@@ -27,6 +27,8 @@ using IKVM.Reflection;
 using IKVM.Reflection.Emit;
 using System.Resources;
 
+using Type = IKVM.Reflection.Type;
+
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Providers;
@@ -43,7 +45,7 @@ namespace IronPythonCompiler {
         static void GenerateExe(Config config) {
             var u = new Universe();
             var aName = new AssemblyName(Path.GetFileNameWithoutExtension(new FileInfo(config.Output).Name));
-            var ab = u.DefineDynamicAssembly(aName, AssemblyBuilderAccess.Save);
+            var ab = u.DefineDynamicAssembly(aName, AssemblyBuilderAccess.Save, Path.GetDirectoryName(config.Output));
             var mb = ab.DefineDynamicModule(config.Output, aName.Name + (aName.Name.EndsWith(".exe") ? string.Empty : ".exe"));
             var tb = mb.DefineType("PythonMain", IKVM.Reflection.TypeAttributes.Public);
 
@@ -75,48 +77,48 @@ namespace IronPythonCompiler {
                 gen.Emit(OpCodes.Ldnull);
                 gen.Emit(OpCodes.Stloc, s);
                 var d = gen.DeclareLocal(u.Import(typeof(byte[]))); // data buffer;
-                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Reflection.Assembly)).GetMethod("GetEntryAssembly"), IKVM.Reflection.Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Reflection.Assembly)).GetMethod("GetEntryAssembly"), Type.EmptyTypes);
                 gen.Emit(OpCodes.Ldstr, "Dll.");
                 gen.Emit(OpCodes.Ldarg_1);    // The event args
-                gen.EmitCall(OpCodes.Callvirt, u.Import(typeof(System.ResolveEventArgs)).GetMethod("get_Name"), IKVM.Reflection.Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Callvirt, u.Import(typeof(System.ResolveEventArgs)).GetMethod("get_Name"), Type.EmptyTypes);
                 gen.Emit(OpCodes.Newobj, u.Import(typeof(System.Reflection.AssemblyName)).GetConstructor(new IKVM.Reflection.Type[] { u.Import(typeof(string)) }));
-                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Reflection.AssemblyName)).GetMethod("get_Name"), IKVM.Reflection.Type.EmptyTypes);
-                gen.EmitCall(OpCodes.Call, u.Import(typeof(string)).GetMethod("Concat", new IKVM.Reflection.Type[] { u.Import(typeof(string)), u.Import(typeof(string)) }), IKVM.Reflection.Type.EmptyTypes);
-                gen.EmitCall(OpCodes.Callvirt, u.Import(typeof(System.Reflection.Assembly)).GetMethod("GetManifestResourceStream", new IKVM.Reflection.Type[] { u.Import(typeof(string)) }), IKVM.Reflection.Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Reflection.AssemblyName)).GetMethod("get_Name"), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, u.Import(typeof(string)).GetMethod("Concat", new IKVM.Reflection.Type[] { u.Import(typeof(string)), u.Import(typeof(string)) }), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Callvirt, u.Import(typeof(System.Reflection.Assembly)).GetMethod("GetManifestResourceStream", new IKVM.Reflection.Type[] { u.Import(typeof(string)) }), Type.EmptyTypes);
                 gen.Emit(OpCodes.Stloc, s);
                 gen.Emit(OpCodes.Ldloc, s);
-                gen.EmitCall(OpCodes.Callvirt, u.Import(typeof(System.IO.Stream)).GetMethod("get_Length"), IKVM.Reflection.Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Callvirt, u.Import(typeof(System.IO.Stream)).GetMethod("get_Length"), Type.EmptyTypes);
                 gen.Emit(OpCodes.Newarr, u.Import(typeof(System.Byte)));
                 gen.Emit(OpCodes.Stloc, d);
                 gen.Emit(OpCodes.Ldloc, s);
                 gen.Emit(OpCodes.Ldloc, d);
                 gen.Emit(OpCodes.Ldc_I4_0);
                 gen.Emit(OpCodes.Ldloc, s);
-                gen.EmitCall(OpCodes.Callvirt, u.Import(typeof(System.IO.Stream)).GetMethod("get_Length"), IKVM.Reflection.Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Callvirt, u.Import(typeof(System.IO.Stream)).GetMethod("get_Length"), Type.EmptyTypes);
                 gen.Emit(OpCodes.Conv_I4);
-                gen.EmitCall(OpCodes.Callvirt, u.Import(typeof(System.IO.Stream)).GetMethod("Read", new IKVM.Reflection.Type[] { u.Import(typeof(byte[])), u.Import(typeof(int)), u.Import(typeof(int)) }), IKVM.Reflection.Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Callvirt, u.Import(typeof(System.IO.Stream)).GetMethod("Read", new IKVM.Reflection.Type[] { u.Import(typeof(byte[])), u.Import(typeof(int)), u.Import(typeof(int)) }), Type.EmptyTypes);
                 gen.Emit(OpCodes.Pop);
                 gen.Emit(OpCodes.Ldloc, d);
-                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Reflection.Assembly)).GetMethod("Load", new IKVM.Reflection.Type[] { u.Import(typeof(byte[])) }), IKVM.Reflection.Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Reflection.Assembly)).GetMethod("Load", new IKVM.Reflection.Type[] { u.Import(typeof(byte[])) }), Type.EmptyTypes);
                 gen.Emit(OpCodes.Ret);
 
                 // generate a static constructor to assign the AssemblyResolve handler (otherwise it tries to use IronPython before it adds the handler)
                 // the other way of handling this would be to move the call to InitializeModule into a separate method.
-                var staticConstructor = tb.DefineConstructor(MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, IKVM.Reflection.Type.EmptyTypes);
+                var staticConstructor = tb.DefineConstructor(MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, Type.EmptyTypes);
                 gen = staticConstructor.GetILGenerator();
-                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.AppDomain)).GetMethod("get_CurrentDomain"), IKVM.Reflection.Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.AppDomain)).GetMethod("get_CurrentDomain"), Type.EmptyTypes);
                 gen.Emit(OpCodes.Ldnull);
                 gen.Emit(OpCodes.Ldftn, assemblyResolveMethod);
                 gen.Emit(OpCodes.Newobj, u.Import(typeof(System.ResolveEventHandler)).GetConstructor(new IKVM.Reflection.Type[] { u.Import(typeof(object)), u.Import(typeof(System.IntPtr)) }));
-                gen.EmitCall(OpCodes.Callvirt, u.Import(typeof(System.AppDomain)).GetMethod("add_AssemblyResolve"), IKVM.Reflection.Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Callvirt, u.Import(typeof(System.AppDomain)).GetMethod("add_AssemblyResolve"), Type.EmptyTypes);
                 gen.Emit(OpCodes.Ret);
             }
 
-            var mainMethod = tb.DefineMethod("Main", MethodAttributes.Public | MethodAttributes.Static, u.Import(typeof(int)), IKVM.Reflection.Type.EmptyTypes);
+            var mainMethod = tb.DefineMethod("Main", MethodAttributes.Public | MethodAttributes.Static, u.Import(typeof(int)), Type.EmptyTypes);
             if (config.Target == PEFileKinds.WindowApplication && config.UseMta) {
-                mainMethod.SetCustomAttribute(u.Import(typeof(System.MTAThreadAttribute)).GetConstructor(IKVM.Reflection.Type.EmptyTypes), new byte[0]);
+                mainMethod.SetCustomAttribute(u.Import(typeof(System.MTAThreadAttribute)).GetConstructor(Type.EmptyTypes), new byte[0]);
             } else if (config.Target == PEFileKinds.WindowApplication) {
-                mainMethod.SetCustomAttribute(u.Import(typeof(System.STAThreadAttribute)).GetConstructor(IKVM.Reflection.Type.EmptyTypes), new byte[0]);
+                mainMethod.SetCustomAttribute(u.Import(typeof(System.STAThreadAttribute)).GetConstructor(Type.EmptyTypes), new byte[0]);
             }
 
             gen = mainMethod.GetILGenerator();
@@ -140,35 +142,35 @@ namespace IronPythonCompiler {
 
                 // generate code to load the resource
                 gen.Emit(OpCodes.Ldstr, "IPDll");
-                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Reflection.Assembly)).GetMethod("GetEntryAssembly"), IKVM.Reflection.Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Reflection.Assembly)).GetMethod("GetEntryAssembly"), Type.EmptyTypes);
                 gen.Emit(OpCodes.Newobj, u.Import(typeof(System.Resources.ResourceManager)).GetConstructor(new IKVM.Reflection.Type[] { u.Import(typeof(string)), u.Import(typeof(System.Reflection.Assembly)) }));
                 gen.Emit(OpCodes.Ldstr, "IPDll." + Path.GetFileNameWithoutExtension(config.Output) + ".dll");
-                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Resources.ResourceManager)).GetMethod("GetObject", new IKVM.Reflection.Type[] { u.Import(typeof(string)) }), IKVM.Reflection.Type.EmptyTypes);
-                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Reflection.Assembly)).GetMethod("Load", new IKVM.Reflection.Type[] { u.Import(typeof(byte[])) }), IKVM.Reflection.Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Resources.ResourceManager)).GetMethod("GetObject", new IKVM.Reflection.Type[] { u.Import(typeof(string)) }), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Reflection.Assembly)).GetMethod("Load", new IKVM.Reflection.Type[] { u.Import(typeof(byte[])) }), Type.EmptyTypes);
             } else {
                 
 
                 // save current working directory
-                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Environment)).GetMethod("get_CurrentDirectory"), IKVM.Reflection.Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Environment)).GetMethod("get_CurrentDirectory"), Type.EmptyTypes);
                 gen.Emit(OpCodes.Stloc, strVar);
-                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Reflection.Assembly)).GetMethod("GetEntryAssembly"), IKVM.Reflection.Type.EmptyTypes);
-                gen.EmitCall(OpCodes.Callvirt, u.Import(typeof(System.Reflection.Assembly)).GetMethod("get_Location"), IKVM.Reflection.Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Reflection.Assembly)).GetMethod("GetEntryAssembly"), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Callvirt, u.Import(typeof(System.Reflection.Assembly)).GetMethod("get_Location"), Type.EmptyTypes);
                 gen.Emit(OpCodes.Newobj, u.Import(typeof(System.IO.FileInfo)).GetConstructor(new IKVM.Reflection.Type[] { u.Import(typeof(string)) }));
-                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.IO.FileInfo)).GetMethod("get_Directory"), IKVM.Reflection.Type.EmptyTypes);
-                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.IO.DirectoryInfo)).GetMethod("get_FullName"), IKVM.Reflection.Type.EmptyTypes);
-                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Environment)).GetMethod("set_CurrentDirectory"), IKVM.Reflection.Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.IO.FileInfo)).GetMethod("get_Directory"), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.IO.DirectoryInfo)).GetMethod("get_FullName"), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Environment)).GetMethod("set_CurrentDirectory"), Type.EmptyTypes);
                 gen.Emit(OpCodes.Ldstr, config.Output + ".dll");
-                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.IO.Path)).GetMethod("GetFullPath", new IKVM.Reflection.Type[] { u.Import(typeof(string)) }), IKVM.Reflection.Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.IO.Path)).GetMethod("GetFullPath", new IKVM.Reflection.Type[] { u.Import(typeof(string)) }), Type.EmptyTypes);
                 // result of GetFullPath stays on the stack during the restore of the
                 // original working directory
 
                 // restore original working directory
                 gen.Emit(OpCodes.Ldloc, strVar);
-                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Environment)).GetMethod("set_CurrentDirectory"), IKVM.Reflection.Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Environment)).GetMethod("set_CurrentDirectory"), Type.EmptyTypes);
 
                 // for the LoadFile() call, the full path of the assembly is still is on the stack
                 // as the result from the call to GetFullPath()
-                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Reflection.Assembly)).GetMethod("LoadFile", new IKVM.Reflection.Type[] { u.Import(typeof(string)) }), IKVM.Reflection.Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Reflection.Assembly)).GetMethod("LoadFile", new IKVM.Reflection.Type[] { u.Import(typeof(string)) }), Type.EmptyTypes);
             }
 
             // emit module name
@@ -179,17 +181,17 @@ namespace IronPythonCompiler {
             // call InitializeModule
             // (this will also run the script)
             // and put the return code on the stack
-            gen.EmitCall(OpCodes.Call, u.Import(typeof(PythonOps)).GetMethod("InitializeModuleEx"), IKVM.Reflection.Type.EmptyTypes);
+            gen.EmitCall(OpCodes.Call, u.Import(typeof(PythonOps)).GetMethod("InitializeModuleEx"), Type.EmptyTypes);
             gen.Emit(OpCodes.Stloc, intVar);
 
             gen.BeginCatchBlock(u.Import(typeof(Exception)));
 
             if (config.Target == PEFileKinds.ConsoleApplication) {
-                gen.EmitCall(OpCodes.Callvirt, u.Import(typeof(System.Exception)).GetMethod("get_Message", IKVM.Reflection.Type.EmptyTypes), IKVM.Reflection.Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Callvirt, u.Import(typeof(System.Exception)).GetMethod("get_Message", Type.EmptyTypes), Type.EmptyTypes);
                 gen.Emit(OpCodes.Stloc, strVar);
                 gen.Emit(OpCodes.Ldstr, config.ErrorMessageFormat);
                 gen.Emit(OpCodes.Ldloc, strVar);
-                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Console)).GetMethod("WriteLine", new IKVM.Reflection.Type[] { u.Import(typeof(string)), u.Import(typeof(string)) }), IKVM.Reflection.Type.EmptyTypes);                
+                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Console)).GetMethod("WriteLine", new IKVM.Reflection.Type[] { u.Import(typeof(string)), u.Import(typeof(string)) }), Type.EmptyTypes);                
             } else {
                 // what do we want to do in the case of a Windows app, show a MessageBox?
             }
@@ -206,16 +208,6 @@ namespace IronPythonCompiler {
             ab.SetEntryPoint(mainMethod, config.Target);
             string fileName = aName.Name.EndsWith(".exe") ? aName.Name : aName.Name + ".exe";
             ab.Save(fileName, config.Platform, config.Machine);
-
-            try {
-                if (File.Exists(config.Output)) {
-                    File.Delete(config.Output);
-                }
-
-                File.Move(fileName, config.Output);
-            } catch (Exception ex) {
-                ConsoleOps.Error("Could not create the output '{0}' - {1}", config.Output, ex.Message);
-            }
         }
 
         static int Main(string[] args) {
