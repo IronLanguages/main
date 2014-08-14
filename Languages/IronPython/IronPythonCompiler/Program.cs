@@ -132,7 +132,7 @@ namespace IronPythonCompiler {
                 // put the generated DLL into the resources for the stub exe
                 var mem = new MemoryStream();
                 var rw = new ResourceWriter(mem);
-                rw.AddResource("IPDll." + config.Output + ".dll", File.ReadAllBytes(config.Output + ".dll"));
+                rw.AddResource("IPDll." + Path.GetFileNameWithoutExtension(config.Output) + ".dll", File.ReadAllBytes(config.Output + ".dll"));
                 rw.Generate();
                 mem.Position = 0;
                 mb.DefineManifestResource("IPDll.resources", mem, ResourceAttributes.Public);
@@ -142,7 +142,7 @@ namespace IronPythonCompiler {
                 gen.Emit(OpCodes.Ldstr, "IPDll");
                 gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Reflection.Assembly)).GetMethod("GetEntryAssembly"), IKVM.Reflection.Type.EmptyTypes);
                 gen.Emit(OpCodes.Newobj, u.Import(typeof(System.Resources.ResourceManager)).GetConstructor(new IKVM.Reflection.Type[] { u.Import(typeof(string)), u.Import(typeof(System.Reflection.Assembly)) }));
-                gen.Emit(OpCodes.Ldstr, "IPDll." + config.Output + ".dll");
+                gen.Emit(OpCodes.Ldstr, "IPDll." + Path.GetFileNameWithoutExtension(config.Output) + ".dll");
                 gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Resources.ResourceManager)).GetMethod("GetObject", new IKVM.Reflection.Type[] { u.Import(typeof(string)) }), IKVM.Reflection.Type.EmptyTypes);
                 gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Reflection.Assembly)).GetMethod("Load", new IKVM.Reflection.Type[] { u.Import(typeof(byte[])) }), IKVM.Reflection.Type.EmptyTypes);
             } else {
@@ -183,7 +183,7 @@ namespace IronPythonCompiler {
             gen.Emit(OpCodes.Stloc, intVar);
 
             gen.BeginCatchBlock(u.Import(typeof(Exception)));
-            
+
             if (config.Target == PEFileKinds.ConsoleApplication) {
                 gen.EmitCall(OpCodes.Callvirt, u.Import(typeof(System.Exception)).GetMethod("get_Message", IKVM.Reflection.Type.EmptyTypes), IKVM.Reflection.Type.EmptyTypes);
                 gen.Emit(OpCodes.Stloc, strVar);
