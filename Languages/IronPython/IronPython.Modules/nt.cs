@@ -393,7 +393,7 @@ namespace IronPython.Modules {
 
         public static PythonFile popen(CodeContext/*!*/ context, string command, string mode, int bufsize) {
             if (String.IsNullOrEmpty(mode)) mode = "r";
-            ProcessStartInfo psi = GetProcessInfo(command);
+            ProcessStartInfo psi = GetProcessInfo(command, true);
             psi.CreateNoWindow = true;  // ipyw shouldn't create a new console window
             Process p;
             PythonFile res;
@@ -436,7 +436,7 @@ namespace IronPython.Modules {
             if (mode == "t") mode = String.Empty;
 
             try {
-                ProcessStartInfo psi = GetProcessInfo(command);
+                ProcessStartInfo psi = GetProcessInfo(command, true);
                 psi.RedirectStandardInput = true;
                 psi.RedirectStandardOutput = true;
                 psi.CreateNoWindow = true; // ipyw shouldn't create a new console window
@@ -463,7 +463,7 @@ namespace IronPython.Modules {
             if (mode == "t") mode = String.Empty;
 
             try {
-                ProcessStartInfo psi = GetProcessInfo(command);
+                ProcessStartInfo psi = GetProcessInfo(command, true);
                 psi.RedirectStandardInput = true;
                 psi.RedirectStandardOutput = true;
                 psi.RedirectStandardError = true;
@@ -1252,7 +1252,12 @@ namespace IronPython.Modules {
 #if FEATURE_PROCESS
         [Documentation("system(command) -> int\nExecute the command (a string) in a subshell.")]
         public static int system(string command) {
-            ProcessStartInfo psi = GetProcessInfo(command);
+            ProcessStartInfo psi = GetProcessInfo(command, false);
+
+            if (psi == null) {
+                return -1;
+            }
+
             psi.CreateNoWindow = false;
 
             try {
@@ -1610,13 +1615,17 @@ are defined in the signal module.")]
             }
         }
 
-        private static ProcessStartInfo GetProcessInfo(string command) {
+        private static ProcessStartInfo GetProcessInfo(string command, bool throwException) {
             // TODO: always run through cmd.exe ?
             command = command.Trim();
             string baseCommand, args;
             if (!TryGetExecutableCommand(command, out baseCommand, out args)) {
                 if (!TryGetShellCommand(command, out baseCommand, out args)) {
-                    throw PythonOps.WindowsError("The system can not find command '{0}'", command);
+                    if (throwException) {
+                        throw PythonOps.WindowsError("The system can not find command '{0}'", command);
+                    } else {
+                        return null;
+                    }
                 }
             }
 
