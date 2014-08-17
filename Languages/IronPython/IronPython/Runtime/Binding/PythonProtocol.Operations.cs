@@ -1569,7 +1569,7 @@ namespace IronPython.Runtime.Binding {
                     return TypeError(operation, "'{0}' object doesn't support item deletion", newTypes);
                 }
             }
-            return TypeError(operation, "'{0}' object is unsubscriptable", newTypes);
+            return TypeError(operation, "'{0}' object is not subscriptable", newTypes);
         }
 
         /// <summary>
