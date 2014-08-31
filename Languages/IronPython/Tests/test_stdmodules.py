@@ -85,6 +85,13 @@ def test_cp35507():
     AreEqual(base64.b64encode('1234\xff'), 'MTIzNP8=')
     AreEqual(base64.b64encode(b'1234\xff'), 'MTIzNP8=')
 
+    import cPickle
+    one = cPickle.dumps(1)
+    AreEqual(1, cPickle.loads("\nI1\n."))
+    AreEqual(1, cPickle.loads(b"\nI1\n."))
+    AreEqual(1, cPickle.loads(one))
+    AreEqual(1, cPickle.loads(bytes(one)))
+
 @skip("win32")
 def test_cp13618():
     import os
