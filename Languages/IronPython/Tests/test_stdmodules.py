@@ -78,6 +78,20 @@ def test_cp5566():
         AreEqual(base64.decodestring(str_function(test_str)),
                 'i\xb7\x1dy\xf8!\x8a9%\x9az)\xaa\xbb-\xba\xfc1\xcb0\x01\x081\x05\x18r\t(\xb3\r8\xf4\x11I5\x15Yv\x19\xd3]\xb7\xe3\x9e\xbb\xf3\xdf')
 
+def test_cp35507():
+    import base64
+    AreEqual(base64.b64decode('MTIzNP8='), '1234\xff')
+    AreEqual(base64.b64decode(b'MTIzNP8='), '1234\xff')
+    AreEqual(base64.b64encode('1234\xff'), 'MTIzNP8=')
+    AreEqual(base64.b64encode(b'1234\xff'), 'MTIzNP8=')
+
+    import cPickle
+    one = cPickle.dumps(1)
+    AreEqual(1, cPickle.loads("\nI1\n."))
+    AreEqual(1, cPickle.loads(b"\nI1\n."))
+    AreEqual(1, cPickle.loads(one))
+    AreEqual(1, cPickle.loads(bytes(one)))
+
 @skip("win32")
 def test_cp13618():
     import os
