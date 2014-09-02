@@ -101,15 +101,15 @@ namespace IronPythonCompiler {
                 }
 
                 if (arg.StartsWith("/main:")) {
-                    MainName = Main = arg.Substring(6);
+                    MainName = Main = arg.Substring(6).Trim('"');
                     // only override the target kind if its currently a DLL
                     if (Target == PEFileKinds.Dll) {
                         Target = PEFileKinds.ConsoleApplication;
                     }
                 } else if (arg.StartsWith("/out:")) {
-                    Output = arg.Substring(5);
+                    Output = arg.Substring(5).Trim('"');
                 } else if (arg.StartsWith("/target:")) {
-                    string tgt = arg.Substring(8);
+                    string tgt = arg.Substring(8).Trim('"');
                     switch (tgt) {
                         case "exe":
                             Target = PEFileKinds.ConsoleApplication;
@@ -122,7 +122,7 @@ namespace IronPythonCompiler {
                             break;
                     }
                 } else if (arg.StartsWith("/platform:")) {
-                    string plat = arg.Substring(10);
+                    string plat = arg.Substring(10).Trim('"');
                     switch (plat) {
                         case "x86":
                             Platform = IKVM.Reflection.PortableExecutableKinds.ILOnly | IKVM.Reflection.PortableExecutableKinds.Required32Bit;
@@ -138,9 +138,9 @@ namespace IronPythonCompiler {
                             break;
                     }
                 } else if (arg.StartsWith("/win32icon:")) {
-                    Win32Icon = arg.Substring(11);
+                    Win32Icon = arg.Substring(11).Trim('"'); 
                 } else if (arg.StartsWith("/version:")) {
-                    Version = arg.Substring(9);
+                    Version = arg.Substring(9).Trim('"');
                 } else if(arg.StartsWith("/errfmt:")) {
                     ErrorMessageFormat = arg.Substring(8);
                 } else if (arg.StartsWith("/embed")) {

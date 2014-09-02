@@ -6,14 +6,22 @@ using System.Threading.Tasks;
 
 namespace IronPythonCompiler {
     public static class ConsoleOps {
+
         public static void Error(string format, params object[] args) {
+            Error(false, format, args);
+        }
+
+        public static void Error(bool fatal, string format, params object[] args) {
             ConsoleColor origForeground = Console.ForegroundColor;
             ConsoleColor origBackground = Console.BackgroundColor;
 
             Console.ForegroundColor = ConsoleColor.DarkRed;
             Console.WriteLine("ERROR: " + format, args);
             Console.ForegroundColor = origForeground;
-            Console.BackgroundColor = origBackground;            
+            Console.BackgroundColor = origBackground;
+            if (fatal) {
+                Environment.Exit(-1);
+            }
         }
 
         public static void Warning(string format, params object[] args) {
