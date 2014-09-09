@@ -90,8 +90,8 @@ namespace IronPython.Runtime {
             __init__(GetBytes(source));
         }
 
-        public void __init__(CodeContext/*!*/ context, string source, string encoding, [DefaultParameterValue("strict")]string errors) {
-            _bytes = new List<byte>(StringOps.encode(context, source, encoding, errors).MakeByteArray());
+        public void __init__(CodeContext/*!*/ context, string source, [DefaultParameterValue("latin-1")]string encoding, [DefaultParameterValue("strict")]string errors){
+               _bytes = new List<byte>(StringOps.encode(context, source, encoding, errors).MakeByteArray());
         }
 
         #region Public Mutable Sequence API
@@ -790,25 +790,27 @@ namespace IronPython.Runtime {
         }
 
         public ByteArray/*!*/ translate([BytesConversion]IList<byte>/*!*/ table) {
-            if (table == null) {
-                throw PythonOps.TypeError("expected bytearray or bytes, got NoneType");
-            }
-
+           
             lock (this) {
-                if (table.Count != 256) {
-                    throw PythonOps.ValueError("translation table must be 256 characters long");
-                } else if (Count == 0) {
-                    return CopyThis();
+                if (table != null) {
+                    if (table.Count != 256) {
+                        throw PythonOps.ValueError("translation table must be 256 characters long");
+                    }
+                    else if (Count == 0) {
+                        return CopyThis();
+                    }
                 }
 
                 return new ByteArray(_bytes.Translate(table, null));
             }
         }
 
+
         public ByteArray/*!*/ translate([BytesConversion]IList<byte>/*!*/ table, [BytesConversion]IList<byte>/*!*/ deletechars) {
-            if (table == null) {
+            if (table == null && deletechars == null) {
                 throw PythonOps.TypeError("expected bytearray or bytes, got NoneType");
-            } else if (deletechars == null) {
+            }
+            else if (deletechars == null) {
                 throw PythonOps.TypeError("expected bytes or bytearray, got None");
             }
             
@@ -1414,7 +1416,14 @@ namespace IronPython.Runtime {
         }
 
         public override bool Equals(object other) {
-            IList<byte> bytes = other as IList<byte>;
+            IList<byte> bytes ;
+            if (other is string)
+                bytes = PythonOps.MakeBytes(((string)other).MakeByteArray());
+            else if (other is Extensible<string>)
+                bytes = PythonOps.MakeBytes(((Extensible<string>)other).Value.MakeByteArray());
+            else
+                bytes = other as IList<byte>;
+
             if (bytes == null || Count != bytes.Count) {
                 return false;
             } else if (Count == 0) {

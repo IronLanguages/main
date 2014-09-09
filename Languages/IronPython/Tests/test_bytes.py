@@ -748,14 +748,10 @@ def test_translate():
     AreEqual(b'AAA'.translate(None, b'A'), b'')
     AreEqual(b'AAABBB'.translate(None, b'A'), b'BBB')
     AreEqual(b'AAA'.translate(None), b'AAA')
-    if is_ironpython: #http://ironpython.codeplex.com/workitem/27904
-        AssertError(TypeError, bytearray(b'AAA').translate, None, b'A')
-        AssertError(TypeError, bytearray(b'AAA').translate, None)
-    else:
-        AreEqual(bytearray(b'AAA').translate(None, b'A'),
-                 b'')
-        AreEqual(bytearray(b'AAA').translate(None),
-                 b'AAA')
+    AreEqual(bytearray(b'AAA').translate(None, b'A'),
+             b'')
+    AreEqual(bytearray(b'AAA').translate(None),
+             b'AAA')
 
     b = b'abc'    
     AreEqual(id(b.translate(None)), id(b))    
@@ -1397,10 +1393,12 @@ def test_zzz_cli_features():
         AreEqual(testType(b'').join([myList]), b'abc')
 
     # bytearray
+    '''
     AreEqual(bytearray(b'abc') == 'abc', False)
     if not is_net40:
         AreEqual(Microsoft.Scripting.IValueEquality.ValueEquals(bytearray(b'abc'), 'abc'), False)
-    
+    '''
+    AreEqual(bytearray(b'abc') == 'abc', True)
     AreEqual(b'abc'.IsReadOnly, True)
     AreEqual(bytearray(b'abc').IsReadOnly, False)
         
