@@ -1272,8 +1272,14 @@ namespace IronPython.Runtime {
                 return (IList<byte>)value;
             }
 
-            if (value is string || value is Extensible<string>) {
-                throw PythonOps.TypeError("unicode argument without an encoding");
+            var strValue = value as string;
+            if (strValue != null) {
+                return strValue.MakeByteArray();
+            }
+
+            var esValue = value as Extensible<string>;
+            if (esValue != null) {
+                return esValue.Value.MakeByteArray();
             }
 
             List<byte> ret = new List<byte>();

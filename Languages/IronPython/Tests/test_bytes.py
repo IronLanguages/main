@@ -1453,4 +1453,7 @@ def test_bytes_hashing():
         temp = hashLib(bytearray(b'abc'))
         x.update(bytearray(b'abc'))
 
+def test_cp35493():
+    AreEqual(bytearray(u'\xde\xad\xbe\xef\x80'), bytearray(b'\xde\xad\xbe\xef\x80'))
+
 run_test(__name__)
