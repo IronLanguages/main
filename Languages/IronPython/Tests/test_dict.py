@@ -1040,7 +1040,7 @@ def test_cp15882():
     for bad_stuff in [
                         [1],
                         {}, {1:1}, {(1,2): 1},
-                        ]:
+                        set()]:
         try:
             x[bad_stuff] = 1
             Fail(str(bad_stuff) + " is unhashable")
@@ -1071,6 +1071,71 @@ def test_cp15882():
             AreEqual(x, {})
             AssertError(KeyError, x.__delitem__, stuff)
             
+def test_cp35348():
+    empty = {}        # underlying type: EmptyDictionaryStorage
+    emptied = {1:1}   # underlying type: CommonDictionaryStorage
+    del emptied[1]
+    not_empty = {42:1}
+
+    #negative cases
+    for bad_stuff in [
+                        [1],
+                        {}, {1:1}, {(1,2): 1},
+                        set()]:
+        try:
+            dummy = bad_stuff in empty
+            Fail(str(bad_stuff) + " is unhashable")
+        except TypeError:
+            pass
+        try:
+            dummy = bad_stuff in emptied
+            Fail(str(bad_stuff) + " is unhashable")
+        except TypeError:
+            pass
+        try:
+            dummy = bad_stuff in not_empty
+            Fail(str(bad_stuff) + " is unhashable")
+        except TypeError:
+            pass
+
+    class C1(object):
+        pass
+    c1=C1()
+    class C2:
+        pass
+    c2=C2()
+
+    #positive cases
+    for stuff in [
+                    (), (None),
+                    (-1), (0), (1), (2),
+                    (1, 2), (1, 2, 3),
+                    xrange(3), 1j, object, test_cp35348,
+                    (xrange(3)), (1j), (object), (test_cp35348),
+                    (()), ((())), c1, c2,
+                    ]:
+        AssertFalse(stuff in empty)
+        AssertFalse(stuff in emptied)
+        AssertFalse(stuff in not_empty)
+
+    for stuff in [
+                    (), (None),
+                    (-1), (0), (1), (2),
+                    (1, 2), (1, 2, 3),
+                    xrange(3), 1j, object, test_cp35348,
+                    (xrange(3)), (1j), (object), (test_cp35348),
+                    (()), ((())), c1, c2,
+                    ]:
+        emptied[stuff] = 'test_cp35348'
+        Assert(stuff in emptied)
+        del emptied[stuff]
+        AreEqual(len(empty), 0)
+        not_empty[stuff] = 'test_cp35348'
+        Assert(stuff in not_empty)
+        del not_empty[stuff]
+        AreEqual(len(not_empty), 1)
+
+
 
 def test_comparison_operators():
     x = {2:3}

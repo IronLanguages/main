@@ -486,8 +486,28 @@ namespace IronPython.Runtime {
         /// Checks to see if the key exists in the dictionary.
         /// </summary>
         public override bool Contains(object key) {
-            object dummy;
-            return TryGetValue(key, out dummy);
+            if (key != null) {
+                if (_count > 0 && _buckets != null) {
+                    Func<object, int> hashFunc;
+                    Func<object, object, bool> eqFunc;
+                    if (key.GetType() == _keyType || _keyType == HeterogeneousType) {
+                        hashFunc = _hashFunc;
+                        eqFunc = _eqFunc;
+                    } else {
+                        hashFunc = _genericHash;
+                        eqFunc = _genericEquals;
+                    }
+                    object dummy;
+                    var hc = hashFunc(key) & Int32.MaxValue;
+                    return TryGetValue(_buckets, key, hc, eqFunc, out dummy);
+                }
+                // make sure argument is valid, avoid calculating hash
+                if (PythonContext.IsHashable(key)) {
+                    return false;
+                }
+                throw PythonOps.TypeErrorForUnhashableObject(key);
+            }
+            return _nullValue != null;
         }
 
         /// <summary>
