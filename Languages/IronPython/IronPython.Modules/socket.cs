@@ -505,17 +505,14 @@ namespace IronPython.Modules {
                 + "is not specified (or 0), receive up to the size available in the given buffer.\n\n"
                 + "See recv() for documentation about the flags.\n"
                 )]
-            public int recv_into(MemoryView buffer, [DefaultParameterValue(0)]int nbytes, [DefaultParameterValue(0)]int flags){
+            public int recv_into(MemoryView buffer, [DefaultParameterValue(0)]int nbytes, [DefaultParameterValue(0)]int flags) {
                 int bytesRead;
                 byte[] byteBuffer = buffer.tobytes().ToByteArray();
-                try
-                {
+                try {
                     bytesRead = _socket.Receive(byteBuffer, (SocketFlags)flags);
                 }
-                catch (Exception e)
-                {
-                    if (_socket.SendTimeout == 0)
-                    {
+                catch (Exception e) {
+                    if (_socket.SendTimeout == 0) {
                         var s = new SocketException((int)SocketError.NotConnected);
                         throw PythonExceptions.CreateThrowable(error(_context), (int)SocketError.NotConnected, s.Message);
                     }
@@ -524,10 +521,7 @@ namespace IronPython.Modules {
 
                 }
 
-                for (int i = 0; i < bytesRead; i++)
-                {
-                    buffer[i] = byteBuffer[i];
-                }
+                buffer[new Slice(0, bytesRead)] = byteBuffer.Slice(new Slice(0, bytesRead));
                 return bytesRead;
 
             }
@@ -617,9 +611,7 @@ namespace IronPython.Modules {
                     throw MakeRecvException(e, SocketError.InvalidArgument);
                 }
 
-                for (int i = 0; i < byteBuffer.Length; i++){
-                    buffer[i] = byteBuffer[i];
-                }
+                buffer[new Slice(0, bytesRead)] = byteBuffer.Slice(new Slice(0, bytesRead));
                 PythonTuple remoteAddress = EndPointToTuple((IPEndPoint)remoteEP);
                 return PythonTuple.MakeTuple(bytesRead, remoteAddress);
             }
