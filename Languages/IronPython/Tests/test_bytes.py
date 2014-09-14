@@ -880,7 +880,7 @@ def test_encode_decode():
     for testType in types:
         AreEqual(testType(b'abc').decode(), u'abc')
 
-def test_encode_decode():
+def test_encode_decode_error():
     for testType in types:
         AssertError(TypeError, testType(b'abc').decode, None)
           
