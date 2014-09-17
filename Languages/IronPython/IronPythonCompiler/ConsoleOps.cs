@@ -38,9 +38,9 @@ namespace IronPythonCompiler {
         }
 
         public static void Usage(bool doExit = false) {
-            Console.WriteLine(@"ipc: The Command-Line IronPython Compiler
+            Console.WriteLine(@"ipyc: The Command-Line IronPython Compiler
 
-Usage: ipc.exe [options] file [file ...]
+Usage: ipyc.exe [options] file [file ...]
 
 Options:
     /out:output_file                          Output file name (default is main_file.<extenstion>)
