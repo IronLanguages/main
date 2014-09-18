@@ -486,6 +486,8 @@ namespace IronPython.Runtime {
         /// Checks to see if the key exists in the dictionary.
         /// </summary>
         public override bool Contains(object key) {
+            if (!PythonContext.IsHashable(key))
+                throw PythonOps.TypeErrorForUnhashableObject(key);
             object dummy;
             return TryGetValue(key, out dummy);
         }
