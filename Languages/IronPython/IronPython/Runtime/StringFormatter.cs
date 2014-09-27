@@ -54,22 +54,40 @@ namespace IronPython.Runtime {
 
         // This is a ThreadStatic since so that formatting operations on one thread do not interfere with other threads
         [ThreadStatic]
-        private static NumberFormatInfo NumberFormatInfoForThread;
+        private static NumberFormatInfo NumberFormatInfoForThreadLower;
+        [ThreadStatic]
+        private static NumberFormatInfo NumberFormatInfoForThreadUpper;
  
-        internal static NumberFormatInfo nfi {
+        internal static NumberFormatInfo nfil {
             get {
-                if (NumberFormatInfoForThread == null) {
+                if (NumberFormatInfoForThreadLower == null) {
                     NumberFormatInfo numberFormatInfo = ((CultureInfo)CultureInfo.InvariantCulture.Clone()).NumberFormat;
                     // The CLI formats as "Infinity", but CPython formats differently
                     numberFormatInfo.PositiveInfinitySymbol = "inf";
                     numberFormatInfo.NegativeInfinitySymbol = "-inf";
                     numberFormatInfo.NaNSymbol = "nan";
 
-                    NumberFormatInfoForThread = numberFormatInfo;
+                    NumberFormatInfoForThreadLower = numberFormatInfo;
                 }
-                return NumberFormatInfoForThread;
+                return NumberFormatInfoForThreadLower;
             }
         }
+        internal static NumberFormatInfo nfiu {
+            get {
+                if (NumberFormatInfoForThreadUpper == null) {
+                    NumberFormatInfo numberFormatInfo = ((CultureInfo)CultureInfo.InvariantCulture.Clone()).NumberFormat;
+                    // The CLI formats as "Infinity", but CPython formats differently
+                    numberFormatInfo.PositiveInfinitySymbol = "INF";
+                    numberFormatInfo.NegativeInfinitySymbol = "-INF";
+                    numberFormatInfo.NaNSymbol = "NAN";
+
+                    NumberFormatInfoForThreadUpper = numberFormatInfo;
+                }
+                return NumberFormatInfoForThreadUpper;
+            }
+        }
+
+        private NumberFormatInfo _nfi;
 
         #region Constructors
         
@@ -82,6 +100,7 @@ namespace IronPython.Runtime {
             _data = data;
             _context = context;
             _isUnicodeString = isUnicode;
+            _nfi = nfil;
         }
 
         #endregion
@@ -303,13 +322,14 @@ namespace IronPython.Runtime {
                 case 'X': AppendHex(_curCh); return;
                 // floating point exponential format
                 case 'e':
-                case 'E':
                 // floating point decimal
                 case 'f':
-                case 'F': AppendFloat(_curCh); return;
                 // Same as "e" if exponent is less than -4 or more than precision, "f" otherwise.
-                case 'G':
                 case 'g': AppendFloat(_curCh); return;
+                // same as 3 above but uppercase
+                case 'E':
+                case 'F':
+                case 'G': _nfi = nfiu; AppendFloat(_curCh); _nfi = nfil; return;
                 // single character (int or single char str)
                 case 'c': AppendChar(); return;
                 // string (repr() version)
@@ -511,7 +531,7 @@ namespace IronPython.Runtime {
             }
 
             type = AdjustForG(type, v);
-            nfi.NumberDecimalDigits = _opts.Precision;
+            _nfi.NumberDecimalDigits = _opts.Precision;
 
             // then append
             if (_opts.LeftAdj) {
@@ -579,7 +599,7 @@ namespace IronPython.Runtime {
             if (fPos && (_opts.SignChar || _opts.Space)) {
                 // produce [' '|'+']0000digits
                 // first get 0 padded number to field width
-                string res = String.Format(nfi, "{0:" + format + _opts.FieldWidth.ToString() + "}", val);
+                string res = String.Format(_nfi, "{0:" + format + _opts.FieldWidth.ToString() + "}", val);
 
                 char signOrSpace = _opts.SignChar ? '+' : ' ';
                 // then if we ended up with a leading zero replace it, otherwise
@@ -591,7 +611,7 @@ namespace IronPython.Runtime {
                 }
                 _buf.Append(res);
             } else {
-                string res = String.Format(nfi, "{0:" + format + _opts.FieldWidth.ToString() + "}", val);
+                string res = String.Format(_nfi, "{0:" + format + _opts.FieldWidth.ToString() + "}", val);
 
                 // Difference: 
                 //   System.String.Format("{0:D3}", -1)      '-001'
@@ -614,7 +634,7 @@ namespace IronPython.Runtime {
 
         private void AppendZeroPadFloat(double val, char format) {
             if (val >= 0) {
-                StringBuilder res = new StringBuilder(val.ToString(format.ToString(), nfi));
+                StringBuilder res = new StringBuilder(val.ToString(format.ToString(), _nfi));
                 if (res.Length < _opts.FieldWidth) {
                     res.Insert(0, new string('0', _opts.FieldWidth - res.Length));
                 }
@@ -630,7 +650,7 @@ namespace IronPython.Runtime {
                 }
                 _buf.Append(res);
             } else {
-                StringBuilder res = new StringBuilder(val.ToString(format.ToString(), nfi));
+                StringBuilder res = new StringBuilder(val.ToString(format.ToString(), _nfi));
                 if (res.Length < _opts.FieldWidth) {
                     res.Insert(1, new string('0', _opts.FieldWidth - res.Length));
                 }
@@ -649,17 +669,17 @@ namespace IronPython.Runtime {
 
         private void AppendNumericExp(object val, bool fPos, char format) {
             if (fPos && (_opts.SignChar || _opts.Space)) {
-                string strval = (_opts.SignChar ? "+" : " ") + String.Format(nfi, "{0:" + format + _opts.Precision + "}", val);
+                string strval = (_opts.SignChar ? "+" : " ") + String.Format(_nfi, "{0:" + format + _opts.Precision + "}", val);
                 strval = adjustExponent(strval);
                 if (strval.Length < _opts.FieldWidth) {
                     _buf.Append(' ', _opts.FieldWidth - strval.Length);
                 }
                 _buf.Append(strval);
             } else if (_opts.Precision == UnspecifiedPrecision) {
-                _buf.AppendFormat(nfi, "{0," + _opts.FieldWidth + ":" + format + "}", val);
+                _buf.AppendFormat(_nfi, "{0," + _opts.FieldWidth + ":" + format + "}", val);
             } else if (_opts.Precision < 100) {
                 //CLR formatting has a maximum precision of 100.
-                string num = String.Format(nfi, "{0," + _opts.FieldWidth + ":" + format + _opts.Precision + "}", val);
+                string num = String.Format(_nfi, "{0," + _opts.FieldWidth + ":" + format + _opts.Precision + "}", val);
                 num = adjustExponent(num);
                 if (num.Length < _opts.FieldWidth) {
                     _buf.Append(' ', _opts.FieldWidth - num.Length);
@@ -672,16 +692,16 @@ namespace IronPython.Runtime {
 
         private void AppendNumericDecimal(object val, bool fPos, char format) {
             if (fPos && (_opts.SignChar || _opts.Space)) {
-                string strval = (_opts.SignChar ? "+" : " ") + String.Format(nfi, "{0:" + format + "}", val);
+                string strval = (_opts.SignChar ? "+" : " ") + String.Format(_nfi, "{0:" + format + "}", val);
                 if (strval.Length < _opts.FieldWidth) {
                     _buf.Append(' ', _opts.FieldWidth - strval.Length);
                 }
                 _buf.Append(strval);
             } else if (_opts.Precision == UnspecifiedPrecision) {
-                _buf.AppendFormat(nfi, "{0," + _opts.FieldWidth + ":" + format + "}", val);
+                _buf.AppendFormat(_nfi, "{0," + _opts.FieldWidth + ":" + format + "}", val);
             } else if (_opts.Precision < 100) {
                 //CLR formatting has a maximum precision of 100.
-                _buf.Append(String.Format(nfi, "{0," + _opts.FieldWidth + ":" + format + _opts.Precision + "}", val));
+                _buf.Append(String.Format(_nfi, "{0," + _opts.FieldWidth + ":" + format + _opts.Precision + "}", val));
             } else {
                 AppendNumericCommon(val, format);
             }
@@ -732,7 +752,7 @@ namespace IronPython.Runtime {
         }
 
         private void AppendLeftAdjExp(object val, bool fPos, char type) {
-            string str = String.Format(nfi, "{0:" + type + _opts.Precision + "}", val);
+            string str = String.Format(_nfi, "{0:" + type + _opts.Precision + "}", val);
             str = adjustExponent(str);
             if (fPos) {
                 if (_opts.SignChar) str = '+' + str;
@@ -745,7 +765,7 @@ namespace IronPython.Runtime {
         private void AppendLeftAdjDecimal(object val, bool fPos, char type) {
             // TODO: until now there is not much difference with AppendLeftExp
             //       for now keep separate for clarity
-            string str = String.Format(nfi, "{0:" + type + "}", val);
+            string str = String.Format(_nfi, "{0:" + type + "}", val);
             if (fPos) {
                 if (_opts.SignChar) str = '+' + str;
                 else if (_opts.Space) str = ' ' + str;
