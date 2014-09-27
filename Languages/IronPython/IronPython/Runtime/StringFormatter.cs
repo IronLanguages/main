@@ -298,10 +298,10 @@ namespace IronPython.Runtime {
                 case 'o': AppendOctal(); return;
                 // unsigned decimal
                 case 'u': AppendInt(); return;
-                // unsigned hexidecimal
+                // unsigned hexadecimal
                 case 'x': AppendHex(_curCh); return;
                 case 'X': AppendHex(_curCh); return;
-                // floating point exponential format 
+                // floating point exponential format
                 case 'e':
                 case 'E':
                 // floating point decimal
@@ -639,7 +639,38 @@ namespace IronPython.Runtime {
         }
 
         private void AppendNumeric(object val, bool fPos, char format) {
-            bool isE = format == 'e' || format == 'E';
+            if (format == 'e' || format == 'E') {
+                AppendNumericExp(val, fPos, format);
+            } else {
+                // format is 'f' or 'F'
+                AppendNumericDecimal(val, fPos, format);
+            }
+        }
+
+        private void AppendNumericExp(object val, bool fPos, char format) {
+            if (fPos && (_opts.SignChar || _opts.Space)) {
+                string strval = (_opts.SignChar ? "+" : " ") + String.Format(nfi, "{0:" + format + _opts.Precision + "}", val);
+                strval = adjustExponent(strval);
+                if (strval.Length < _opts.FieldWidth) {
+                    _buf.Append(' ', _opts.FieldWidth - strval.Length);
+                }
+                _buf.Append(strval);
+            } else if (_opts.Precision == UnspecifiedPrecision) {
+                _buf.AppendFormat(nfi, "{0," + _opts.FieldWidth + ":" + format + "}", val);
+            } else if (_opts.Precision < 100) {
+                //CLR formatting has a maximum precision of 100.
+                string num = String.Format(nfi, "{0," + _opts.FieldWidth + ":" + format + _opts.Precision + "}", val);
+                num = adjustExponent(num);
+                if (num.Length < _opts.FieldWidth) {
+                    _buf.Append(' ', _opts.FieldWidth - num.Length);
+                }
+                _buf.Append(adjustExpotent(num));
+            } else {
+                AppendNumericCommon(val, format);
+            }
+        }
+
+        private void AppendNumericDecimal(object val, bool fPos, char format) {
             if (fPos && (_opts.SignChar || _opts.Space)) {
                 string strval = (_opts.SignChar ? "+" : " ") + String.Format(nfi, "{0:" + format + "}", val);
                 if (strval.Length < _opts.FieldWidth) {
@@ -650,29 +681,28 @@ namespace IronPython.Runtime {
                 _buf.AppendFormat(nfi, "{0," + _opts.FieldWidth + ":" + format + "}", val);
             } else if (_opts.Precision < 100) {
                 //CLR formatting has a maximum precision of 100.
-                string num = String.Format(nfi, "{0," + _opts.FieldWidth + ":" + format + _opts.Precision + "}", val);
-                if (isE) {
-                    _buf.Append(removeExponentePaddingZero(num));
-                } else {
-                    _buf.Append(num);
-                }
+                _buf.Append(String.Format(nfi, "{0," + _opts.FieldWidth + ":" + format + _opts.Precision + "}", val));
             } else {
-                StringBuilder res = new StringBuilder();
-                res.AppendFormat("{0:" + format + "}", val);
-                if (res.Length < _opts.Precision) {
-                    res.Insert(0, new String('0', _opts.Precision - res.Length));
-                }
-                if (res.Length < _opts.FieldWidth) {
-                    res.Insert(0, new String(' ', _opts.FieldWidth - res.Length));
-                }
-                _buf.Append(res.ToString());
+                AppendNumericCommon(val, format);
             }
 
             // If AdjustForG() sets opts.Precision == 0, it means that no significant digits should be displayed after
             // the decimal point. ie. 123.4 should be displayed as "123", not "123.4". However, we might still need a 
             // decorative ".0". ie. to display "123.0"
-            if (_TrailingZeroAfterWholeFloat && (format == 'f' || format == 'F') && _opts.Precision == 0)
+            if (_TrailingZeroAfterWholeFloat && _opts.Precision == 0)
                 _buf.Append(".0");
+        }
+
+        private void AppendNumericCommon(object val, char format) {
+            StringBuilder res = new StringBuilder();
+            res.AppendFormat("{0:" + format + "}", val);
+            if (res.Length < _opts.Precision) {
+                res.Insert(0, new String('0', _opts.Precision - res.Length));
+            }
+            if (res.Length < _opts.FieldWidth) {
+                res.Insert(0, new String(' ', _opts.FieldWidth - res.Length));
+            }
+            _buf.Append(res.ToString());
         }
 
         // A strange string formatting bug requires that we format then strip the extra zero from the
@@ -681,19 +711,29 @@ namespace IronPython.Runtime {
         //  format string "e16" ==> "2.9522485325887698e+023", but we want "e+23", not "e+023"
         //  format string "0.0000000000000000e+00" ==> "9.3126672485384600e+23", which is a precision error
         //  so, we have to format with "e16" and strip the zero manually
-        private static string removeExponentePaddingZero(string val) {
+        private string adjustExponent(string val) {
             if (val[val.Length - 3] == '0' && (
                 (val[val.Length - 5] == 'e' || val[val.Length - 5] == 'E') &&
                 (val[val.Length - 4] == '+' || val[val.Length - 4] == '-') ||
                 (val[val.Length - 4] == 'e' || val[val.Length - 4] == 'E'))) {
-                return val.Substring(0, val.Length - 3) + val.Substring(val.Length - 2, 2);
+                var adjusted = val.Substring(0, val.Length - 3) + val.Substring(val.Length - 2, 2);
+                return adjusted;
             } else {
                 return val;
             }
         }
 
         private void AppendLeftAdj(object val, bool fPos, char type) {
-            string str = String.Format(nfi, "{0:" + type.ToString() + "}", val);
+            if (type == 'e' || type == 'E') {
+                AppendLeftAdjExp(val, fPos, type);
+            } else {
+                AppendLeftAdjDecimal(val, fPos, type);
+            }
+        }
+
+        private void AppendLeftAdjExp(object val, bool fPos, char type) {
+            string str = String.Format(nfi, "{0:" + type + _opts.Precision + "}", val);
+            str = adjustExponent(str);
             if (fPos) {
                 if (_opts.SignChar) str = '+' + str;
                 else if (_opts.Space) str = ' ' + str;
@@ -701,6 +741,19 @@ namespace IronPython.Runtime {
             _buf.Append(str);
             if (str.Length < _opts.FieldWidth) _buf.Append(' ', _opts.FieldWidth - str.Length);
         }
+
+        private void AppendLeftAdjDecimal(object val, bool fPos, char type) {
+            // TODO: until now there is not much difference with AppendLeftExp
+            //       for now keep separate for clarity
+            string str = String.Format(nfi, "{0:" + type + "}", val);
+            if (fPos) {
+                if (_opts.SignChar) str = '+' + str;
+                else if (_opts.Space) str = ' ' + str;
+            }
+            _buf.Append(str);
+            if (str.Length < _opts.FieldWidth) _buf.Append(' ', _opts.FieldWidth - str.Length);
+        }
+
 
         private static bool NeedsAltForm(char format, char last) {
             if (format == 'X' || format == 'x') return true;
