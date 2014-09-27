@@ -687,8 +687,6 @@ namespace IronPython.Runtime {
                 if (forceMinus)
                     _buf.Append('-');
                 _buf.Append(strval);
-            } else if (_opts.Precision == UnspecifiedPrecision) {
-                _buf.AppendFormat(_nfi, "{0," + _opts.FieldWidth + ":" + format + "}", val);
             } else if (_opts.Precision < 100) {
                 //CLR formatting has a maximum precision of 100.
                 string num = String.Format(_nfi, "{0," + _opts.FieldWidth + ":" + format + _opts.Precision + "}", val);
@@ -746,12 +744,8 @@ namespace IronPython.Runtime {
         //  format string "0.0000000000000000e+00" ==> "9.3126672485384600e+23", which is a precision error
         //  so, we have to format with "e16" and strip the zero manually
         private string adjustExponent(string val) {
-            if (val[val.Length - 3] == '0' && (
-                (val[val.Length - 5] == 'e' || val[val.Length - 5] == 'E') &&
-                (val[val.Length - 4] == '+' || val[val.Length - 4] == '-') ||
-                (val[val.Length - 4] == 'e' || val[val.Length - 4] == 'E'))) {
-                var adjusted = val.Substring(0, val.Length - 3) + val.Substring(val.Length - 2, 2);
-                return adjusted;
+            if (val[val.Length - 3] == '0') {
+                return val.Substring(0, val.Length - 3) + val.Substring(val.Length - 2, 2);
             } else {
                 return val;
             }
