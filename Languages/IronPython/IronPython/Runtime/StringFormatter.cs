@@ -448,7 +448,7 @@ namespace IronPython.Runtime {
         private static readonly char[] zero = new char[] { '0' };
 
         // Return the new type char to use
-        // opts.Precision will be set to the nubmer of digits to display after the decimal point
+        // opts.Precision will be set to the number of digits to display after the decimal point
         private char AdjustForG(char type, double v) {
             if (type != 'G' && type != 'g')
                 return type;
@@ -456,6 +456,10 @@ namespace IronPython.Runtime {
                 return type;
 
             double absV = Math.Abs(v);
+
+            if (_opts.Precision == 0) {
+                _opts.Precision = 1;
+            }
 
             if ((v != 0.0) && // 0.0 should not be displayed as scientific notation
                 absV < 1e-4 || // Values less than 0.0001 will need scientific notation
@@ -465,11 +469,13 @@ namespace IronPython.Runtime {
                 int fractionDigitsRequired = (_opts.Precision - 1);
                 string expForm = absV.ToString("E" + fractionDigitsRequired, CultureInfo.InvariantCulture);
                 string mantissa = expForm.Substring(0, expForm.IndexOf('E')).TrimEnd(zero);
-
-                // We do -2 to ignore the digit before the decimal point and the decimal point itself
-                Debug.Assert(mantissa[1] == '.');
-                _opts.Precision = mantissa.Length - 2;
-
+                if (mantissa.Length == 1) {
+                    _opts.Precision = 0;
+                } else {
+                    // We do -2 to ignore the digit before the decimal point and the decimal point itself
+                    Debug.Assert(mantissa[1] == '.');
+                    _opts.Precision = mantissa.Length - 2;
+                }
                 type = (type == 'G') ? 'E' : 'e';
             } else {
                 // "0.000ddddd" is allowed when the precision is 5. The 3 leading zeros are not counted
