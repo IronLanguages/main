@@ -902,7 +902,7 @@ namespace IronPython.Runtime {
             try {
                 nullVal = (NullValue)info.GetValue("nullvalue", typeof(NullValue));
             }
-            catch (SerializationException e) {
+            catch (SerializationException) {
                 // for compatibility with dictionary serialized in 2.6.
             }
             if (nullVal != null) {
