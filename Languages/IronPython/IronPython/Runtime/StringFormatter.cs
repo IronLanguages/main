@@ -661,19 +661,31 @@ namespace IronPython.Runtime {
         private void AppendNumeric(object val, bool fPos, char format) {
             if (format == 'e' || format == 'E') {
                 AppendNumericExp(val, fPos, format);
+            } else if (format == 'f' || format == 'F') {
+                AppendNumericDecimal(val, fPos, format);
             } else {
-                // format is 'f' or 'F'
+                // g, D
                 AppendNumericDecimal(val, fPos, format);
             }
         }
 
         private void AppendNumericExp(object val, bool fPos, char format) {
+            Debug.Assert(_opts.Precision != UnspecifiedPrecision);
+            var forceMinus = false;
+            double doubleVal = (double)val;
+            if (IsNegativeZero(doubleVal)) {
+                // not sure for a moment
+                // _opts.FieldWidth -= 1;
+                forceMinus = true;
+            }
             if (fPos && (_opts.SignChar || _opts.Space)) {
                 string strval = (_opts.SignChar ? "+" : " ") + String.Format(_nfi, "{0:" + format + _opts.Precision + "}", val);
                 strval = adjustExponent(strval);
                 if (strval.Length < _opts.FieldWidth) {
                     _buf.Append(' ', _opts.FieldWidth - strval.Length);
                 }
+                if (forceMinus)
+                    _buf.Append('-');
                 _buf.Append(strval);
             } else if (_opts.Precision == UnspecifiedPrecision) {
                 _buf.AppendFormat(_nfi, "{0," + _opts.FieldWidth + ":" + format + "}", val);
@@ -684,7 +696,9 @@ namespace IronPython.Runtime {
                 if (num.Length < _opts.FieldWidth) {
                     _buf.Append(' ', _opts.FieldWidth - num.Length);
                 }
-                _buf.Append(adjustExpotent(num));
+                if (forceMinus)
+                    _buf.Append('-');
+                _buf.Append(num);
             } else {
                 AppendNumericCommon(val, format);
             }
@@ -1004,6 +1018,12 @@ namespace IronPython.Runtime {
             if (_opts.LeftAdj && _opts.FieldWidth > s.Length) {
                 _buf.Append(' ', _opts.FieldWidth - s.Length);
             }
+        }
+
+        private static readonly long NegativeZeroBits =  BitConverter.DoubleToInt64Bits(-0.0);
+
+        internal static bool IsNegativeZero(double x) {
+            return BitConverter.DoubleToInt64Bits(x) == NegativeZeroBits;
         }
 
         #endregion
