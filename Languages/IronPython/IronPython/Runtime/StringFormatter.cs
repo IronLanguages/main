@@ -743,10 +743,11 @@ namespace IronPython.Runtime {
             _buf.Append(res.ToString());
         }
 
-        // A strange string formatting bug requires that we format then strip the extra zero from the
-        // exponent, rather than simply passing a format string of the form "0.0...0e+00"
+        // A strange string formatting bug requires that we use Standard Numeric Format and
+        // not Custom Numeric Format. Standard Numeric Format produces always a 3 digit exponent
+        // which needs to be taken care off.
         // Example: 9.3126672485384569e+23, precision=16
-        //  format string "e16" ==> "2.9522485325887698e+023", but we want "e+23", not "e+023"
+        //  format string "e16" ==> "9.3126672485384569e+023", but we want "e+23", not "e+023"
         //  format string "0.0000000000000000e+00" ==> "9.3126672485384600e+23", which is a precision error
         //  so, we have to format with "e16" and strip the zero manually
         private string adjustExponent(string val) {
