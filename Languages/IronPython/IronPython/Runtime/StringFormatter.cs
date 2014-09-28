@@ -680,8 +680,6 @@ namespace IronPython.Runtime {
             var forceMinus = false;
             double doubleVal = (double)val;
             if (IsNegativeZero(doubleVal)) {
-                // not sure for a moment
-                // _opts.FieldWidth -= 1;
                 forceMinus = true;
             }
             if (fPos && (_opts.SignChar || _opts.Space)) {
@@ -727,7 +725,7 @@ namespace IronPython.Runtime {
             // If AdjustForG() sets opts.Precision == 0, it means that no significant digits should be displayed after
             // the decimal point. ie. 123.4 should be displayed as "123", not "123.4". However, we might still need a 
             // decorative ".0". ie. to display "123.0"
-            if (_TrailingZeroAfterWholeFloat && _opts.Precision == 0)
+            if (_TrailingZeroAfterWholeFloat && (format == 'f' || format == 'F') && _opts.Precision == 0)
                 _buf.Append(".0");
         }
 
@@ -759,15 +757,9 @@ namespace IronPython.Runtime {
         }
 
         private void AppendLeftAdj(object val, bool fPos, char type) {
-            if (type == 'e' || type == 'E') {
-                AppendLeftAdjExp(val, fPos, type);
-            } else {
-                AppendLeftAdjDecimal(val, fPos, type);
-            }
-        }
-
-        private void AppendLeftAdjExp(object val, bool fPos, char type) {
-            string str = String.Format(_nfi, "{0:" + type + _opts.Precision + "}", val);
+            var str = (type == 'e' || type == 'E') ?
+                String.Format(_nfi, "{0:" + type + _opts.Precision + "}", val) :
+                String.Format(_nfi, "{0:" + type + "}", val);
             str = adjustExponent(str);
             if (fPos) {
                 if (_opts.SignChar) str = '+' + str;
@@ -776,19 +768,6 @@ namespace IronPython.Runtime {
             _buf.Append(str);
             if (str.Length < _opts.FieldWidth) _buf.Append(' ', _opts.FieldWidth - str.Length);
         }
-
-        private void AppendLeftAdjDecimal(object val, bool fPos, char type) {
-            // TODO: until now there is not much difference with AppendLeftExp
-            //       for now keep separate for clarity
-            string str = String.Format(_nfi, "{0:" + type + "}", val);
-            if (fPos) {
-                if (_opts.SignChar) str = '+' + str;
-                else if (_opts.Space) str = ' ' + str;
-            }
-            _buf.Append(str);
-            if (str.Length < _opts.FieldWidth) _buf.Append(' ', _opts.FieldWidth - str.Length);
-        }
-
 
         private static bool NeedsAltForm(char format, char last) {
             if (format == 'X' || format == 'x') return true;
