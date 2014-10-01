@@ -1170,13 +1170,14 @@ namespace IronPython.Modules {
         }
 
         public static socket create_connection(CodeContext/*!*/ context, PythonTuple address, object timeout, PythonTuple source_address) {
-            string msg = "getaddrinfo returns an empty list";
             string host = Converter.ConvertToString(address[0]);
             object port = address[1];
-
-            IEnumerator en = getaddrinfo(context, host, port, 0, SOCK_STREAM, (int)ProtocolType.IP, (int)SocketFlags.None).GetEnumerator();
-            while (en.MoveNext()) {
-                PythonTuple current = (PythonTuple)en.Current;
+            Exception lastException = null;
+            var addrInfos = getaddrinfo(context, host, port, 0, SOCK_STREAM, (int)ProtocolType.IP, (int)SocketFlags.None);
+            if (addrInfos.Count == 0) {
+                throw PythonExceptions.CreateThrowableForRaise(context, error(context), "getaddrinfo returns an empty list");
+            }
+            foreach (PythonTuple current in addrInfos) {
                 int family = Converter.ConvertToInt32(current[0]);
                 int socktype = Converter.ConvertToInt32(current[1]);
                 int proto = Converter.ConvertToInt32(current[2]);
@@ -1198,17 +1199,13 @@ namespace IronPython.Modules {
                     socket.connect(sockaddress);
                     return socket;
                 } catch (Exception ex) {
-                    if (PythonOps.CheckException(context, ex, error(context)) == null) {
-                        continue;
-                    }
+                    lastException = ex;
                     if (socket != null) {
                         socket.close();
                     }
-                    msg = ex.Message;
                 }
             }
-
-            throw PythonExceptions.CreateThrowableForRaise(context, error(context), msg);
+            throw lastException;
         }
 
         [Documentation("")]
