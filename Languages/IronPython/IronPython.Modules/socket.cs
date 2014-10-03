@@ -2239,8 +2239,9 @@ namespace IronPython.Modules {
             }
 
             public override void Close() {
-                if (PythonOps.HasAttr(DefaultContext.Default,_userSocket,"close"))
-                    DefaultContext.DefaultPythonContext.CallSplat(PythonOps.GetBoundAttr(DefaultContext.Default, _userSocket, "close"));
+                object closeObj;
+                if(PythonOps.TryGetBoundAttr(_userSocket,"close",out closeObj))
+                    PythonCalls.Call(closeObj);
                 Dispose(false); 
             }
 
@@ -2323,7 +2324,7 @@ namespace IronPython.Modules {
                
                 base.__init__(stream, System.Text.Encoding.Default, mode);
 
-                _isOpen = (socket == null) ? false : true;
+                _isOpen = socket != null;
                 _close = (socket == null) ? false : close;
             }
 
