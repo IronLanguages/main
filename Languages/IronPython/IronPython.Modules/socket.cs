@@ -2235,7 +2235,12 @@ namespace IronPython.Modules {
                 get { return true; }
             }
 
-            public override void Close() { Dispose(false); }
+            public override void Close() {
+                object closeObj;
+                if(PythonOps.TryGetBoundAttr(_userSocket,"close",out closeObj))
+                    PythonCalls.Call(closeObj);
+                Dispose(false); 
+            }
 
             public override void Flush() {
                 if (_data.Count > 0) {
@@ -2310,10 +2315,14 @@ namespace IronPython.Modules {
                     _socket = s;
                     stream = new NetworkStream(s._socket, false);
                 } else {
+                    _socket = null;
                     stream = new PythonUserSocketStream(socket, GetBufferSize(context, bufsize), close);
                 }
-                _isOpen = true;
+               
                 base.__init__(stream, System.Text.Encoding.Default, mode);
+
+                _isOpen = socket != null;
+                _close = (socket == null) ? false : close;
             }
 
             public void __init__(params object[] args) {
@@ -2339,7 +2348,12 @@ namespace IronPython.Modules {
 
             public override object close() {
                 if (!_isOpen) return null;
-                if (_socket != null && _close) _socket.close();
+                if (_socket != null && _close) {
+                    _socket.close();
+                }
+                else if (this._stream != null && _close) {
+                    _stream.Close();
+                }
                 _isOpen = false;
                 var obj = base.close();
                 return obj;
