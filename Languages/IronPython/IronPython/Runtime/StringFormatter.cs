@@ -667,10 +667,8 @@ namespace IronPython.Runtime {
         private void AppendNumeric(object val, bool fPos, char format) {
             if (format == 'e' || format == 'E') {
                 AppendNumericExp(val, fPos, format);
-            } else if (format == 'f' || format == 'F') {
-                AppendNumericDecimal(val, fPos, format);
             } else {
-                // g, D
+                // f, F, g, D
                 AppendNumericDecimal(val, fPos, format);
             }
         }
@@ -688,8 +686,9 @@ namespace IronPython.Runtime {
                 if (strval.Length < _opts.FieldWidth) {
                     _buf.Append(' ', _opts.FieldWidth - strval.Length);
                 }
-                if (forceMinus)
+                if (forceMinus) {
                     _buf.Append('-');
+                }
                 _buf.Append(strval);
             } else if (_opts.Precision < 100) {
                 //CLR formatting has a maximum precision of 100.
@@ -757,10 +756,10 @@ namespace IronPython.Runtime {
         }
 
         private void AppendLeftAdj(object val, bool fPos, char type) {
-            var str = (type == 'e' || type == 'E') ?
-                String.Format(_nfi, "{0:" + type + _opts.Precision + "}", val) :
-                String.Format(_nfi, "{0:" + type + "}", val);
-            str = adjustExponent(str);
+            var format = (type == 'e' || type == 'E') ?
+                "{0:" + type + _opts.Precision + "}" :
+                "{0:" + type + "}";
+            var str = adjustExponent(String.Format(_nfi, format, val));
             if (fPos) {
                 if (_opts.SignChar) str = '+' + str;
                 else if (_opts.Space) str = ' ' + str;
@@ -1003,6 +1002,7 @@ namespace IronPython.Runtime {
         private static readonly long NegativeZeroBits =  BitConverter.DoubleToInt64Bits(-0.0);
 
         internal static bool IsNegativeZero(double x) {
+            // -0.0 == 0.0 is True, so detecting -0.0 uses memory representation
             return BitConverter.DoubleToInt64Bits(x) == NegativeZeroBits;
         }
 
