@@ -327,7 +327,7 @@ namespace IronPython.Modules {
                 opts.DontImplyDedent = true;
             }
 
-            SourceUnit sourceUnit = null; 
+            SourceUnit sourceUnit = null;
             switch (mode) {
                 case "exec": sourceUnit = context.LanguageContext.CreateSnippet(text, filename, SourceCodeKind.Statements); break;
                 case "eval": sourceUnit = context.LanguageContext.CreateSnippet(text, filename, SourceCodeKind.Expression); break;
