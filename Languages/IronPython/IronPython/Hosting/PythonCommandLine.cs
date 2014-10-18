@@ -237,14 +237,6 @@ namespace IronPython.Hosting {
                 prefix = Path.GetDirectoryName(executable);
             }
 
-#if DEBUG
-            string devPrefix = Path.GetFullPath(
-                Path.Combine(prefix, @"../../External.LCA_RESTRICTED/Languages/IronPython/27"));
-            if(Directory.Exists(devPrefix)) {
-                prefix = devPrefix;
-            }
-#endif
-
             // Make sure there an IronPython Lib directory, and if not keep looking up
             while (prefix != null && !File.Exists(Path.Combine(prefix, "Lib/os.py"))) {
                 prefix = Path.GetDirectoryName(prefix);

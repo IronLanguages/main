@@ -549,5 +549,8 @@
   <Import Project="$(CSharpTargets)" />
   <Import Project="$(SolutionDir)Versioning.targets" />
   <Target Name="BeforeBuild" DependsOnTargets="GenerateBuildInfo;GenerateCurrentVersion" />
-  <Target Name="AfterBuild" DependsOnTargets="GeneratePolicy" />
+  <Target Name="AfterBuild" DependsOnTargets="GeneratePolicy">
+    <Copy DestinationFolder="$(OutputPath)\Lib"
+          SourceFiles="$(OutputPath)..\..\External.LCA_RESTRICTED\Languages\IronPython\27\Lib\os.py" />
+  </Target>
 </Project>
