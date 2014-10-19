@@ -372,8 +372,8 @@ def test_partition():
 
 def test_pop():
     b = bytearray()
-    AssertError(OverflowError, b.pop)
-    AssertError(OverflowError, b.pop, 0)
+    AssertError(IndexError, b.pop)
+    AssertError(IndexError, b.pop, 0)
     
     b = bytearray(b'abc')
     AreEqual(b.pop(), ord('c'))
