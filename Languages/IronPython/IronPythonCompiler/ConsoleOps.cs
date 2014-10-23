@@ -47,6 +47,7 @@ Options:
     /target:dll                               Compile only into dll.  Default
     /target:exe                               Generate CONSOLE executable stub for startup in addition to dll.
     /target:winexe                            Generate WINDOWS executable stub for startup in addition to dll.
+    /file_info_version:<version>              Set the file/assembly version
     @<file>                                   Specifies a response file to be parsed for input files and command line options (one per line)
     /? /h                                     This message    
 
@@ -58,9 +59,15 @@ EXE/WinEXE specific options:
     /standalone                               Embeds the IronPython assemblies into the stub executable.
     /mta                                      Set MTAThreadAttribute on Main instead of STAThreadAttribute, only valid for /target:winexe
     /errfmt:msg                               A string that will be used when showing an error occured, {{0}} will be replaced by the exception message
+    /file_info_product:<name>                 Set product name in executable meta information
+    /file_info_product_version:<version>      Set product version in executable meta information
+    /file_info_company:<name>                 Set company name in executable meta information
+    /file_info_copyright:<info>               Set copyright information in executable meta information
+    /file_info_trademark:<info>               Set trademark information in executable meta information
 
 Example:
-    ipc.exe /main:Program.py Form.py /target:winexe");
+    ipyc.exe /main:Program.py Form.py /target:winexe");
+
             if (doExit) {
                 Environment.Exit(0);
             }

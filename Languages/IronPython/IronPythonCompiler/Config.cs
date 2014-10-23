@@ -26,8 +26,44 @@ namespace IronPythonCompiler {
             Win32Icon = string.Empty;
             Version = string.Empty;
             ErrorMessageFormat = "Error occured: {0}";
+            FileInfoVersion = null;
+            FileInfoProduct = null;
+            FileInfoProductVersion = null;
+            FileInfoCompany = null;
+            FileInfoCopyright = null;
+            FileInfoTrademark = null;
         }
 
+        public Version FileInfoVersion {
+            get;
+            private set;
+        }
+
+        public string FileInfoProduct {
+            get;
+            private set;
+        }
+
+        public string FileInfoProductVersion {
+            get;
+            private set;
+        }
+
+        public string FileInfoCompany {
+            get;
+            private set;
+        }
+
+        public string FileInfoCopyright {
+            get;
+            private set;
+        }
+
+
+        public string FileInfoTrademark {
+            get;
+            private set;
+        }
         public string ErrorMessageFormat {
             get;
             private set;
@@ -149,6 +185,33 @@ namespace IronPythonCompiler {
                     Standalone = true;
                 } else if (arg.StartsWith("/mta")) {
                     UseMta = true;
+                } else if(arg.StartsWith("/file_info")) {
+                    string[] items = arg.Substring(10).Split(':');
+                    if (items.Length == 2) {
+                        switch(items[0].Trim()) {
+                            case "version":
+                                FileInfoVersion = new Version(items[1].Trim());
+                                break;
+                            case "product":
+                                FileInfoProduct = items[1].Trim();
+                                break;
+                            case "product_version":
+                                FileInfoProductVersion = items[1].Trim();
+                                break;
+                            case "company":
+                                FileInfoCompany = items[1].Trim();
+                                break;
+                            case "copyright":
+                                FileInfoCopyright = items[1].Trim();
+                                break;
+                            case "trademark":
+                                FileInfoTrademark = items[1].Trim();
+                                break;
+                            default:
+                                ConsoleOps.Warning("Unknown File Information option {0}", arg);
+                                break;
+                        }
+                    }
                 } else if (Array.IndexOf(new string[] { "/?", "-?", "/h", "-h" }, args) >= 0) {
                     ConsoleOps.Usage(true);
                 } else {

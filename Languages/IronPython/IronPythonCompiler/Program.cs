@@ -45,7 +45,13 @@ namespace IronPythonCompiler {
         static void GenerateExe(Config config) {
             var u = new Universe();
             var aName = new AssemblyName(Path.GetFileNameWithoutExtension(new FileInfo(config.Output).Name));
+
+            if (config.FileInfoVersion != null) {
+                aName.Version = config.FileInfoVersion;
+            }
+
             var ab = u.DefineDynamicAssembly(aName, AssemblyBuilderAccess.Save, Path.GetDirectoryName(config.Output));
+            ab.DefineVersionInfoResource(config.FileInfoProduct, config.FileInfoProductVersion, config.FileInfoCompany, config.FileInfoCopyright, config.FileInfoTrademark);
             var mb = ab.DefineDynamicModule(config.Output, aName.Name + (aName.Name.EndsWith(".exe") ? string.Empty : ".exe"));
             var tb = mb.DefineType("PythonMain", IKVM.Reflection.TypeAttributes.Public);
 
