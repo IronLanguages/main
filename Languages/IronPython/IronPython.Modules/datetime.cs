@@ -809,10 +809,6 @@ namespace IronPython.Modules {
             }
 
             // other constructors, all class methods:
-            public new static object today() {
-                return new datetime(DateTime.Now, 0, null);
-            }
-
             public static object now([DefaultParameterValue(null)]tzinfo tz) {
                 if (tz != null) {
                     return tz.fromutc(new datetime(DateTime.UtcNow, 0, tz));
@@ -824,6 +820,11 @@ namespace IronPython.Modules {
             public static object utcnow() {
                 return new datetime(DateTime.UtcNow, 0, null);
             }
+
+            
+            public new static object today() {
+                return new datetime(DateTime.Now, 0, null);
+            }           
 
             public static object fromtimestamp(double timestamp, [DefaultParameterValue(null)] tzinfo tz) {
                 DateTime dt = PythonTime.TimestampToDateTime(timestamp);
@@ -1147,6 +1148,7 @@ namespace IronPython.Modules {
 
             public override string/*!*/ __repr__(CodeContext/*!*/ context) {
                 StringBuilder sb = new StringBuilder();
+                // TODO: need to determine how to get the actual class name if a derived type (CP21478)
                 sb.AppendFormat("datetime.datetime({0}, {1}, {2}, {3}, {4}",
                     InternalDateTime.Year,
                     InternalDateTime.Month,
