@@ -351,9 +351,10 @@ namespace IronPython.Modules
                     ast = Convert((ConstantExpression)expr);
                 else if (expr is NameExpression)
                     ast = new Name((NameExpression)expr, ctx);
-                else if (expr is UnaryExpression)
-                    ast = new UnaryOp((UnaryExpression)expr);
-                else if (expr is BinaryExpression)
+                else if (expr is UnaryExpression) {
+                    var unaryOp = new UnaryOp((UnaryExpression)expr);
+                    ast = unaryOp.TryTrimTrivialUnaryOp();
+                } else if (expr is BinaryExpression)
                     ast = Convert((BinaryExpression)expr);
                 else if (expr is AndExpression)
                     ast = new BoolOp((AndExpression)expr);
@@ -3467,6 +3468,39 @@ namespace IronPython.Modules
             public expr operand {
                 get { return _operand; }
                 set { _operand = value; }
+            }
+
+            internal expr TryTrimTrivialUnaryOp() {
+                // in case of +constant or -constant returns underlying Num
+                // representation, otherwise unmodified itself
+                var num = _operand as Num;
+                if (null == num) {
+                    return this;
+                }
+                if (_op is UAdd) {
+                    return num;
+                }
+                if (!(_op is USub)) {
+                    return this;
+                }
+                // list of possible types can be found in:
+                // class AST {
+                //     internal static expr Convert(ConstantExpression expr);
+                // }
+                if (num.n is int) {
+                    num.n = -(int)num.n;
+                } else if (num.n is double) {
+                    num.n = -(double)num.n;
+                } else if (num.n is Int64) {
+                    num.n = -(Int64)num.n;
+                } else if (num.n is BigInteger) {
+                    num.n = -(BigInteger)num.n;
+                } else if (num.n is Complex) {
+                    num.n = -(Complex)num.n;
+                } else {
+                    return this;
+                }
+                return num;
             }
         }
 

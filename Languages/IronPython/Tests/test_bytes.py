@@ -372,8 +372,8 @@ def test_partition():
 
 def test_pop():
     b = bytearray()
-    AssertError(OverflowError, b.pop)
-    AssertError(OverflowError, b.pop, 0)
+    AssertError(IndexError, b.pop)
+    AssertError(IndexError, b.pop, 0)
     
     b = bytearray(b'abc')
     AreEqual(b.pop(), ord('c'))
@@ -748,14 +748,10 @@ def test_translate():
     AreEqual(b'AAA'.translate(None, b'A'), b'')
     AreEqual(b'AAABBB'.translate(None, b'A'), b'BBB')
     AreEqual(b'AAA'.translate(None), b'AAA')
-    if is_ironpython: #http://ironpython.codeplex.com/workitem/27904
-        AssertError(TypeError, bytearray(b'AAA').translate, None, b'A')
-        AssertError(TypeError, bytearray(b'AAA').translate, None)
-    else:
-        AreEqual(bytearray(b'AAA').translate(None, b'A'),
-                 b'')
-        AreEqual(bytearray(b'AAA').translate(None),
-                 b'AAA')
+    AreEqual(bytearray(b'AAA').translate(None, b'A'),
+             b'')
+    AreEqual(bytearray(b'AAA').translate(None),
+             b'AAA')
 
     b = b'abc'    
     AreEqual(id(b.translate(None)), id(b))    
@@ -880,7 +876,7 @@ def test_encode_decode():
     for testType in types:
         AreEqual(testType(b'abc').decode(), u'abc')
 
-def test_encode_decode():
+def test_encode_decode_error():
     for testType in types:
         AssertError(TypeError, testType(b'abc').decode, None)
           
@@ -1397,10 +1393,12 @@ def test_zzz_cli_features():
         AreEqual(testType(b'').join([myList]), b'abc')
 
     # bytearray
+    '''
     AreEqual(bytearray(b'abc') == 'abc', False)
     if not is_net40:
         AreEqual(Microsoft.Scripting.IValueEquality.ValueEquals(bytearray(b'abc'), 'abc'), False)
-    
+    '''
+    AreEqual(bytearray(b'abc') == 'abc', True)
     AreEqual(b'abc'.IsReadOnly, True)
     AreEqual(bytearray(b'abc').IsReadOnly, False)
         
@@ -1452,5 +1450,8 @@ def test_bytes_hashing():
         #For now just make sure this doesn't throw
         temp = hashLib(bytearray(b'abc'))
         x.update(bytearray(b'abc'))
+
+def test_cp35493():
+    AreEqual(bytearray(u'\xde\xad\xbe\xef\x80'), bytearray(b'\xde\xad\xbe\xef\x80'))
 
 run_test(__name__)

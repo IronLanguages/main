@@ -98,7 +98,7 @@ def test_formatexception():
         exc_string = service.FormatException(System.Exception("first",
                                                         System.Exception("second",
                                                                          System.Exception())))
-        AreEqual(exc_string, 'Traceback (most recent call last):\r\nException: first')
+        AreEqual(exc_string, 'Traceback (most recent call last):\r\nException: first\r\n')
         exc_string = service.FormatException(c())
         AreEqual(exc_string.count(" File "), 4)
         AreEqual(exc_string.count(" line "), 4)
@@ -140,7 +140,7 @@ def test_formatexception_exceptiondetail():
     Assert(exc_string.startswith("first"))
     Assert(re.match("first\r\n(   at .*ThrowArgumentNullException.*\n)?   at .*Insert.*\n(   at .*\n)*",exc_string) is not None) 
     exc_string = pe.GetService[Microsoft.Scripting.Hosting.ExceptionOperations]().FormatException(c())
-    Assert(exc_string.endswith("Exception: first"))
+    Assert(exc_string.endswith("Exception: first\r\n"))
 
 @skip("silverlight")
 def test_engine_access_from_within():

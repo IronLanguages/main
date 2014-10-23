@@ -219,7 +219,7 @@ def test_encode_decode():
     AreEqual('abc'.encode(), 'abc')
     AreEqual('abc'.decode(), 'abc')
 
-def test_encode_decode():
+def test_encode_decode_error():
     AssertError(TypeError, 'abc'.encode, None)
     AssertError(TypeError, 'abc'.decode, None)
       

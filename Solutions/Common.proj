@@ -48,15 +48,6 @@
     <ReferencedPlatform Condition="'$(Configuration)' == 'AndroidRelease' or '$(Configuration)' == 'AndroidDebug'">Android</ReferencedPlatform>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Mono)' == 'true'">
-    <CscToolExeSuffix Condition="'$(OS)' == 'Windows_NT'">.bat</CscToolExeSuffix>
-    <CscToolExeSuffix Condition="'$(OS)' != 'Windows_NT'"></CscToolExeSuffix>
-
-    <CscToolExe>mcs$(CscToolExeSuffix)</CscToolExe>
-    <CscToolExe Condition="'$(ReferencedPlatform)' == 'V2'">gmcs$(CscToolExeSuffix)</CscToolExe>
-    <CscToolExe Condition="'$(ReferencedPlatform)' == 'V4'">dmcs$(CscToolExeSuffix)</CscToolExe>
-  </PropertyGroup>
-
   <PropertyGroup>
     <CSharpTargets Condition="'$(CSharpTargets)' == ''">$(MSBuildBinPath)\Microsoft.CSharp.targets</CSharpTargets>
     <CSharpTargets Condition="'$(CSharpTargets)' == '' and '$(ReferencedPlatform)' == 'Android'">$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets</CSharpTargets>

@@ -1267,6 +1267,15 @@ class ASTHelpers_Test(unittest.TestCase):
         self.assertEqual(ast.literal_eval('1.5 - 2j'), 1.5 - 2j)
         self.assertRaises(ValueError, ast.literal_eval, '2 + (3 + 4j)')
 
+    def test_literal_eval_cp35572(self):
+        self.assertEqual(ast.literal_eval('-1'), -1)
+        self.assertEqual(ast.literal_eval('+1'), 1)
+        self.assertEqual(ast.literal_eval('-1j'), -1j)
+        self.assertEqual(ast.literal_eval('+1j'), 1j)
+        self.assertEqual(ast.literal_eval('-1.1'), -1.1)
+        self.assertEqual(ast.literal_eval('+1.1'), 1.1)
+        self.assertEqual(ast.literal_eval('-1L'), -1L)
+        self.assertEqual(ast.literal_eval('+1L'), 1L)
 
 def test_main():
     with test_support.check_py3k_warnings(("backquote not supported",

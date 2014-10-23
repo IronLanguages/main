@@ -31,6 +31,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Debugging {
     using Ast = MSAst.Expression;
+    using System.Threading;
     
     /// <summary>
     /// Used to rewrite expressions containing DebugInfoExpressions.
@@ -358,11 +359,12 @@ namespace Microsoft.Scripting.Debugging {
                 MSAst.Expression transformedExpression;
 
                 // Verify that DebugInfoExpression has valid SymbolDocumentInfo
-                if (node.Document == null || String.IsNullOrEmpty(node.Document.FileName)) {
+                if (node.Document == null) {
                     throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, ErrorStrings.DebugInfoWithoutSymbolDocumentInfo, _locationCookie));
                 }
 
-                DebugSourceFile sourceFile = _debugContext.GetDebugSourceFile(node.Document.FileName);
+                DebugSourceFile sourceFile = _debugContext.GetDebugSourceFile(
+                    String.IsNullOrEmpty(node.Document.FileName) ? "<compile>" : node.Document.FileName);
 
                 // Update the location cookie
                 int locationCookie = _locationCookie++;
