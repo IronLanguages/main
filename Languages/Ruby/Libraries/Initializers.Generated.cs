@@ -10472,6 +10472,7 @@ namespace IronRuby.StandardLibrary.Zlib {
             IronRuby.Builtins.RubyClass def4 = DefineClass("Zlib::Deflate", typeof(IronRuby.StandardLibrary.Zlib.Zlib.Deflate), 0x00000008, def14, LoadZlib__Deflate_Instance, LoadZlib__Deflate_Class, null, IronRuby.Builtins.RubyModule.EmptyArray);
             #if !SILVERLIGHT && !WIN8 && !WP75
             IronRuby.Builtins.RubyClass def8 = DefineClass("Zlib::GzipReader", typeof(IronRuby.StandardLibrary.Zlib.Zlib.GZipReader), 0x00000008, def6, LoadZlib__GzipReader_Instance, LoadZlib__GzipReader_Class, null, IronRuby.Builtins.RubyModule.EmptyArray, 
+                new Func<IronRuby.Builtins.RubyClass, System.Object, System.Collections.IDictionary, IronRuby.StandardLibrary.Zlib.Zlib.GZipReader>(IronRuby.StandardLibrary.Zlib.Zlib.GZipReader.Create), 
                 new Func<IronRuby.Builtins.RubyClass, System.Object, IronRuby.StandardLibrary.Zlib.Zlib.GZipReader>(IronRuby.StandardLibrary.Zlib.Zlib.GZipReader.Create)
             );
             #endif
@@ -10634,9 +10635,29 @@ namespace IronRuby.StandardLibrary.Zlib {
         
         #if !SILVERLIGHT && !WIN8 && !WP75
         private static void LoadZlib__GzipReader_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
+            DefineLibraryMethod(module, "eof", 0x11, 
+                0x00000000U, 
+                new Func<IronRuby.StandardLibrary.Zlib.Zlib.GZipReader, System.Boolean>(IronRuby.StandardLibrary.Zlib.Zlib.GZipReader.Eof)
+            );
+            
+            DefineLibraryMethod(module, "eof?", 0x11, 
+                0x00000000U, 
+                new Func<IronRuby.StandardLibrary.Zlib.Zlib.GZipReader, System.Boolean>(IronRuby.StandardLibrary.Zlib.Zlib.GZipReader.Eof)
+            );
+            
+            DefineLibraryMethod(module, "pos", 0x11, 
+                0x00000000U, 
+                new Func<IronRuby.StandardLibrary.Zlib.Zlib.GZipReader, System.Int64>(IronRuby.StandardLibrary.Zlib.Zlib.GZipReader.Pos)
+            );
+            
             DefineLibraryMethod(module, "read", 0x11, 
                 0x00010000U, 
                 new Func<IronRuby.StandardLibrary.Zlib.Zlib.GZipReader, System.Nullable<System.Int32>, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Zlib.Zlib.GZipReader.Read)
+            );
+            
+            DefineLibraryMethod(module, "tell", 0x11, 
+                0x00000000U, 
+                new Func<IronRuby.StandardLibrary.Zlib.Zlib.GZipReader, System.Int64>(IronRuby.StandardLibrary.Zlib.Zlib.GZipReader.Pos)
             );
             
         }
@@ -10662,6 +10683,16 @@ namespace IronRuby.StandardLibrary.Zlib {
             DefineLibraryMethod(module, "flush", 0x11, 
                 0x00000000U, 
                 new Func<IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter, System.Int32, IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter>(IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter.Flush)
+            );
+            
+            DefineLibraryMethod(module, "pos", 0x11, 
+                0x00000000U, 
+                new Func<IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter, System.Int64>(IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter.Pos)
+            );
+            
+            DefineLibraryMethod(module, "tell", 0x11, 
+                0x00000000U, 
+                new Func<IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter, System.Int64>(IronRuby.StandardLibrary.Zlib.Zlib.GzipWriter.Pos)
             );
             
             DefineLibraryMethod(module, "write", 0x11, 
