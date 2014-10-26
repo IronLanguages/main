@@ -107,7 +107,7 @@ namespace IronPython {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to EOF while scanning triple-quoted string.
+        ///   Looks up a localized string similar to EOF while scanning triple-quoted string literal.
         /// </summary>
         internal static string EofInTripleQuotedString {
             get {
