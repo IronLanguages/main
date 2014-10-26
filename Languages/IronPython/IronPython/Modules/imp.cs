@@ -27,6 +27,8 @@ using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
+using PyFrozen = IronPython.Runtime.PythonFrozen;
+
 [assembly: PythonModule("imp", typeof(IronPython.Modules.PythonImport))]
 namespace IronPython.Modules {
     public static class PythonImport {
@@ -148,16 +150,29 @@ namespace IronPython.Modules {
         public const int IMP_HOOK = ImporterHook;
 
         public static object init_builtin(CodeContext/*!*/ context, string/*!*/ name) {
-            if (name == null) throw PythonOps.TypeError("init_builtin() argument 1 must be string, not None");
+            if (name == null) throw PythonOps.TypeError("must be string, not {0}", PythonOps.GetPythonTypeName(name));
             return LoadBuiltinModule(context, name);
         }
 
-        public static object init_frozen(string name) {
-            return null;
+        public static object init_frozen(CodeContext/*!*/ context, string name) {
+            string n = name as string;
+            if (name == null) throw PythonOps.TypeError ("must be string, not None");
+            if (n == null) throw PythonOps.TypeError ("must be string, not {0}", PythonOps.GetPythonTypeName(name));
+            return ImportFrozenModule(context, n);
         }
 
-        public static object get_frozen_object(string name) {
-            throw PythonOps.ImportError("No such frozen object named {0}", name);
+        public static object get_frozen_object(CodeContext/*!*/ context, object name) {
+            string n = name as string;
+            if (name == null) throw PythonOps.TypeError("must be string, not None");
+            if (n == null) throw PythonOps.TypeError("must be string, not {0}", PythonOps.GetPythonTypeName(name));
+            PyFrozen frozen = PyFrozen.FindFrozen(n);
+            if (frozen == null) {
+                throw PythonOps.ImportError("No such frozen object named {0}", n);
+            } else if (frozen.Code == null) {
+                throw PythonOps.ImportError("Excluded frozen object named {0}", n);
+            }
+
+            return null;
         }
 
         public static int is_builtin(CodeContext/*!*/ context, string/*!*/ name) {
@@ -177,8 +192,12 @@ namespace IronPython.Modules {
             return 0;
         }
 
-        public static bool is_frozen(string name) {
-            return false;
+        public static bool is_frozen(CodeContext/*!*/ context, object name) {
+            string n = name as string;
+            if (name == null) throw PythonOps.TypeError("must be string, not None");
+            if (n == null) throw PythonOps.TypeError("must be string, not {0}", PythonOps.GetPythonTypeName(name));
+            PyFrozen frozen = PyFrozen.FindFrozen(n);
+            return frozen != null && frozen.Size > 0;
         }
 
         public static object load_compiled(string name, string pathname) {
@@ -316,6 +335,11 @@ namespace IronPython.Modules {
         private static object LoadBuiltinModule(CodeContext/*!*/ context, string/*!*/ name) {
             Assert.NotNull(context, name);
             return Importer.ImportBuiltin(context, name);
+        }
+
+        private static object ImportFrozenModule (CodeContext/*!*/ context, string/*!*/ name) {
+            Assert.NotNull (context, name);
+            return Importer.ImportFrozen (context, name);
         }
 
         #endregion
