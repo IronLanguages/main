@@ -34,23 +34,6 @@ def test_exception_line_no_with_finally():
         while tb:
             AreEqual(tb.tb_lineno, expected.pop()) # adding lines will require an update here
             tb = tb.tb_next
-
-def test_traceback():
-    import traceback
-
-    def foo():
-        return 1[0]
-
-    try:
-        try:
-            foo()
-        except:
-            raise
-    except:
-        t = sys.exc_info()
-        # adding lines before test_traceback requires adjusting line numbers below
-        expected = [('test_exceptions.py', 46, 'test_traceback', 'foo()'), ('test_exceptions.py', 42, 'foo', 'return 1[0]')]
-        AreEqual(traceback.extract_tb(t[2]), expected)
             
 if is_cli or is_silverlight:
     def test_system_exception():
