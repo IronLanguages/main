@@ -675,7 +675,7 @@ namespace IronPython.Runtime {
             lock (this) {
                 if (_buckets == null) {
                     if (_nullValue != null) {
-                        return new CommonDictionaryStorage(null, 1, _keyType, _hashFunc, _eqFunc, new NullValue(_nullValue.Value));
+                        return new CommonDictionaryStorage(null, 0, _keyType, _hashFunc, _eqFunc, new NullValue(_nullValue.Value));
                     }
 
                     return new CommonDictionaryStorage();
