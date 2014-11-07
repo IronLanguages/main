@@ -137,6 +137,11 @@ namespace IronPython.Runtime {
 
         // Read at most size characters (bytes in this case) and return the result as a string.
         public override String Read(int size) {
+
+            // If size is zero return empty string
+            if (size == 0)
+                return String.Empty;
+
             byte[] data;
             if (size <= BufferSize) {
                 if (_buffer == null)
