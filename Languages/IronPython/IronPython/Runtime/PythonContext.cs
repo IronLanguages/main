@@ -1760,6 +1760,13 @@ namespace IronPython.Runtime {
             }
         }
 
+        internal void AddToPath(string directory, int index) {
+            List path;
+            if (TryGetSystemPath(out path)) {
+                path.insert(index, directory);
+            }
+        }
+
         internal PythonCompilerOptions GetPythonCompilerOptions() {
             ModuleOptions features = ModuleOptions.None;
 
@@ -1944,7 +1951,7 @@ namespace IronPython.Runtime {
             _initialPrefix = prefix;
 
 #if !SILVERLIGHT
-            AddToPath(prefix);
+            AddToPath(Path.Combine(prefix, "Lib"), 0);
 #endif
 
             SetHostVariables(SystemState.__dict__);
