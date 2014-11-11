@@ -2997,6 +2997,9 @@ namespace IronPython.Runtime {
                     return true;
                 }
             }
+            if (o is PythonType) {
+                return true;
+            }
             return false;
         }
 
