@@ -1135,6 +1135,15 @@ def test_cp35348():
         del not_empty[stuff]
         AreEqual(len(not_empty), 1)
 
+def test_cp35667():
+    try:
+        AssertFalse(type([]) in {})
+        AssertFalse(type({}) in {})
+        d = {list:1, dict:2}
+        Assert(list in d)
+        Assert(dict in d)
+    except Exception as ex:
+        Assert(False, "unexpected exception: %s" % ex)
 
 
 def test_comparison_operators():
