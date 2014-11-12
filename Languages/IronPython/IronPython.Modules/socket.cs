@@ -2630,7 +2630,7 @@ namespace IronPython.Modules {
                     case PythonSsl.PROTOCOL_SSLv2: return SslProtocols.Ssl2;
                     case -1:
                     case PythonSsl.PROTOCOL_SSLv3: return SslProtocols.Ssl3;
-                    case PythonSsl.PROTOCOL_SSLv23: return SslProtocols.Ssl3 | SslProtocols.Ssl2;
+                    case PythonSsl.PROTOCOL_SSLv23: return SslProtocols.Ssl3 | SslProtocols.Ssl2 | SslProtocols.Tls;
                     case PythonSsl.PROTOCOL_TLSv1: return SslProtocols.Tls;
                     default:
                         throw new InvalidOperationException("bad ssl protocol type: " + type);
