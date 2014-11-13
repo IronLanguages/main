@@ -4287,7 +4287,7 @@ namespace IronPython.Runtime.Operations {
             if (attributeName == "__class__")
                 return PythonOps.TypeError("can't delete __class__ attribute");
 
-            return PythonOps.AttributeError("attribute '{0}' of '{1}' object is read-only", attributeName, typeName);
+            return PythonOps.AttributeError("'{1}' object attribute '{0}' is read-only", attributeName, typeName);
         }
 
         public static Exception AttributeErrorForBuiltinAttributeDeletion(string typeName, string attributeName) {
