@@ -184,7 +184,10 @@ namespace IronPython.Modules {
         private static PythonTuple IssuerToPython(CodeContext context, string issuer) {
             var collector = new List<object>();
             foreach (var part in IssuerParts(issuer)) {
-                collector.Add(IssuerFieldToPython(context, part));
+                var field = IssuerFieldToPython(context, part);
+                if (field != null) {
+                    collector.Add(field); 
+                }
             }
             return PythonTuple.MakeTuple(collector.ToArray());
         }
@@ -206,7 +209,8 @@ namespace IronPython.Modules {
                 return PythonTuple.MakeTuple("email", p.Substring(2));
             }
 
-            throw PythonExceptions.CreateThrowable(SSLError(context), "Unknown field: ", p);
+            // Ignore unknown fields
+            return null;
         }
 
 
