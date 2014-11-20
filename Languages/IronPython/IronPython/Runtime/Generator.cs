@@ -400,7 +400,7 @@ namespace IronPython.Runtime {
                 // 2. Exit normally: _next returns false.
                 // 3. Exit with a StopIteration exception: for-loops and other enumeration consumers will 
                 //    catch this and terminate the loop without propogating the exception.
-                // 4. Exit via some other unhandled exception: This will close the generator, but the exception still propogates.
+                // 4. Exit via some other unhandled exception: This will close the generator, but the exception still propagates.
                 //    _next does not return, so ret is left assigned to false (closed), which we detect in the finally.
                 if (!(ret = GetNext())) {
                     CurrentValue = OperationFailed.Value;
