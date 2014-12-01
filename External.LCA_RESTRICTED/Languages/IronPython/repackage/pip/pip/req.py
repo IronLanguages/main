@@ -310,6 +310,9 @@ class InstallRequirement(object):
             script = script.replace('__SETUP_PY__', repr(self.setup_py))
             script = script.replace('__PKG_NAME__', repr(self.name))
             egg_info_cmd = [sys.executable, '-c', script, 'egg_info']
+            if sys.platform == 'cli':
+                egg_info_cmd.insert(1, "-X:Frames")
+
             # We can't put the .egg-info files at the root, because then the source code will be mistaken
             # for an installed egg, causing problems
             if self.editable or force_root_egg_info:
@@ -677,6 +680,8 @@ exec(compile(getattr(tokenize, 'open', open)(__file__).read().replace('\\r\\n', 
         record_filename = os.path.join(temp_location, 'install-record.txt')
         try:
             install_args = [sys.executable]
+            if sys.platform == 'cli':
+                install_args.append('-X:Frames')
             install_args.append('-c')
             install_args.append(
             "import setuptools, tokenize;__file__=%r;"\
