@@ -1132,6 +1132,34 @@ def test_popen_cp34837():
     Assert(p!=None)
     p.wait()
 
+def test_fsync():
+    fsync_file_name = 'text_fsync.txt'
+    fd = nt.open(fsync_file_name, nt.O_WRONLY | nt.O_CREAT)
+
+    # negative test, make sure it raises on invalid (closed) fd
+    try:
+        nt.close(fd+1)
+    except:
+        pass
+    AssertError(OSError, nt.fsync, fd+1)
+
+    # BUG (or implementation detail)
+    # On a posix system, once written to a file descriptor
+    # it is visible without any additional intervention.
+    # In case of IronPython the data lingers in a stream which
+    # is used to simulate file descriptors
+    fd2 = nt.open(fsync_file_name, nt.O_RDONLY)
+    AreEqual(nt.read(fd2, 1), '')
+
+    nt.write(fd, '1')
+    AreEqual(nt.read(fd2, 1), '') # this should be visible right away, but is not
+    nt.fsync(fd)
+    AreEqual(nt.read(fd2, 1), '1')
+
+    nt.close(fd)
+    nt.close(fd2)
+    nt.unlink(fsync_file_name)
+
 
 #------------------------------------------------------------------------------
 try:

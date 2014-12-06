@@ -258,6 +258,11 @@ namespace IronPython.Modules {
             return lstat(pf.name);
         }
 
+        public static void fsync(CodeContext context, int fd) {
+            PythonContext pythonContext = PythonContext.GetContext(context);
+            pythonContext.FileManager.GetFileFromId(pythonContext, fd).flush();
+        }
+
         public static string getcwd(CodeContext/*!*/ context) {
             return context.LanguageContext.DomainManager.Platform.CurrentDirectory;
         }
