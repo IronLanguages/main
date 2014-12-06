@@ -149,13 +149,7 @@ def test_chdir():
 
 # fdopen tests
 def test_fdopen():
-    
-    # IronPython does not implement the nt.dup function
-    if not is_cli:
-        fd_lambda = lambda x: nt.dup(x)
-    else:
-        AssertError(AttributeError, lambda: nt.dup)
-        fd_lambda = lambda x: x
+    fd_lambda = lambda x: nt.dup(x)
     
     # fd = 0    
     result = None
