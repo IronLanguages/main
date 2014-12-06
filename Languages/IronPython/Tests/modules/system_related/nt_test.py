@@ -1139,9 +1139,9 @@ def test_fsync():
 
     # BUG (or implementation detail)
     # On a posix system, once written to a file descriptor
-    # it is visible without any additional intervention.
+    # it can be read using another fd without any additional intervention.
     # In case of IronPython the data lingers in a stream which
-    # is used to simulate file descriptors
+    # is used to simulate file descriptor.
     fd2 = nt.open(fsync_file_name, nt.O_RDONLY)
     AreEqual(nt.read(fd2, 1), '')
 
