@@ -310,7 +310,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal static MSAst.Expression TransformMaybeSingleLineSuite(Statement body, SourceLocation prevStart) {
-            if (body.GlobalParent.IndexToLocation(body.StartIndex).Line != prevStart.Line) {
+            if (body.Start.Line != prevStart.Line) {
                 return body;
             }
 

@@ -45,6 +45,10 @@ namespace IronPython.Compiler.Ast {
             _var = var;
             _body = body;
         }
+        
+        public SourceLocation Header {
+            get { return GlobalParent.IndexToLocation(_headerIndex); }
+        }
 
         public int HeaderIndex {
             set { _headerIndex = value; }
@@ -103,7 +107,7 @@ namespace IronPython.Compiler.Ast {
                         manager,
                         _contextManager
                     ),
-                    new SourceSpan(GlobalParent.IndexToLocation(StartIndex), GlobalParent.IndexToLocation(_headerIndex))
+                    new SourceSpan(Start, Header)
                 )
             );
 
@@ -140,7 +144,7 @@ namespace IronPython.Compiler.Ast {
                             )
                         )
                     ),
-                    new SourceSpan(GlobalParent.IndexToLocation(StartIndex), GlobalParent.IndexToLocation(_headerIndex))
+                    new SourceSpan(Start, Header)
                 )
             );
 

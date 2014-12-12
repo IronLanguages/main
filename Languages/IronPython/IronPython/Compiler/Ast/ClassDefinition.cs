@@ -196,8 +196,8 @@ namespace IronPython.Compiler.Ast {
             return GlobalParent.AddDebugInfoAndVoid(
                 AssignValue(Parent.GetVariableExpression(_variable), classDef), 
                 new SourceSpan(
-                    GlobalParent.IndexToLocation(StartIndex),
-                    GlobalParent.IndexToLocation(HeaderIndex)
+                    Start,
+                    Header
                 )
             );
         }

@@ -64,6 +64,10 @@ namespace IronPython.Compiler.Ast {
             _else = else_;
             _finally = finally_;
         }
+        
+        public SourceLocation Header {
+            get { return GlobalParent.IndexToLocation(_headerIndex); }
+        }
 
         public int HeaderIndex {
             set { _headerIndex = value; }
@@ -133,7 +137,7 @@ namespace IronPython.Compiler.Ast {
                         PushLineUpdated(false, lineUpdated),
                         LightExceptions.RewriteExternal(
                             AstUtils.Try(
-                                Parent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, GlobalParent.IndexToLocation(_headerIndex))),
+                                Parent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, Header)),
                                 body,
                                 AstUtils.Constant(null)
                             ).Catch(exception,
@@ -161,7 +165,7 @@ namespace IronPython.Compiler.Ast {
                 result = 
                     LightExceptions.RewriteExternal(
                         AstUtils.Try(
-                            GlobalParent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, GlobalParent.IndexToLocation(_headerIndex))),
+                            GlobalParent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, Header)),
                             // save existing line updated
                             PushLineUpdated(false, lineUpdated),
                             body,
@@ -214,7 +218,7 @@ namespace IronPython.Compiler.Ast {
                 body = AstUtils.Try( // we use a fault to know when we have an exception and when control leaves normally (via
                     // either a return or the body completing successfully).
                     AstUtils.Try(
-                        Parent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, GlobalParent.IndexToLocation(_headerIndex))),
+                        Parent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, Header)),
                         Ast.Assign(tryThrows, AstUtils.Constant(null, typeof(Exception))),
                         body,
                         AstUtils.Empty()
