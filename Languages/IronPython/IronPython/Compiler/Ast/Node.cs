@@ -90,13 +90,13 @@ namespace IronPython.Compiler.Ast {
 
         public SourceLocation Start {
             get {
-                return OriginalGlobalParent.IndexToLocation(StartIndex); 
+                return IndexToLocation(StartIndex); 
             }
         }
 
         public SourceLocation End {
             get {
-                return OriginalGlobalParent.IndexToLocation(EndIndex);
+                return IndexToLocation(EndIndex);
             }
         }
 
@@ -123,7 +123,7 @@ namespace IronPython.Compiler.Ast {
                 return SourceLocation.Invalid;
             }
 
-            var locs = GlobalParent._lineLocations;
+            var locs = OriginalGlobalParent._lineLocations;
             int match = Array.BinarySearch(locs, index);
             if (match < 0) {
                 // If our index = -1, it means we're on the first line.
