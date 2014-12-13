@@ -196,22 +196,20 @@ namespace IronPython.Compiler.Ast {
                 return (PythonAst)cur;
             }
         }
-        internal PythonAst OriginalGlobalParent
-        {
-            get
-            {
+        internal PythonAst OriginalGlobalParent {
+            get {
                 Node cur = this;
-                while (!(cur is PythonAst))
-                {
+                while (!(cur is PythonAst)) {
                     Debug.Assert(cur != null);
-                    if (cur._originalParent != null)
-                    {
+                    if (cur._originalParent != null) {
                         cur = cur._originalParent;
                     }
-                    else
-                    {
+                    else {
                         cur = cur.Parent;
                     }
+                }
+                if ((cur._originalParent != null) && (cur._originalParent is PythonAst)) {
+                    return (PythonAst)cur._originalParent;
                 }
                 return (PythonAst)cur;
             }
