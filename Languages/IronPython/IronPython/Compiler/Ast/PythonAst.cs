@@ -772,7 +772,7 @@ namespace IronPython.Compiler.Ast {
 
         /// <summary>
         /// Rewrites the tree for performing lookups against globals instead of being bound
-        /// against the optimized scope.  This is used if the user compiles optimied code and then
+        /// against the optimized scope.  This is used if the user compiles optimized code and then
         /// runs it against a different scope.
         /// </summary>
         internal PythonAst MakeLookupCode() {
