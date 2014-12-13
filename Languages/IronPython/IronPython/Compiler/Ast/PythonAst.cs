@@ -413,8 +413,8 @@ namespace IronPython.Compiler.Ast {
                     simpleBody = retStmt.Expression.Reduce();
                 }
 
-                var start = IndexToLocation(ret.Expression.StartIndex);
-                var end = IndexToLocation(ret.Expression.EndIndex);
+                var start = ret.Expression.Start;
+                var end = ret.Expression.End;
 
                 return Ast.Block(
                     Ast.DebugInfo(
