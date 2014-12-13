@@ -66,7 +66,7 @@ namespace IronPython.Compiler.Ast {
         }
         
         public SourceLocation Header {
-            get { return GlobalParent.IndexToLocation(_headerIndex); }
+            get { return OriginalGlobalParent.IndexToLocation(_headerIndex); }
         }
 
         public int HeaderIndex {
@@ -477,7 +477,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         public SourceLocation Header {
-            get { return GlobalParent.IndexToLocation(_headerIndex); }
+            get { return OriginalGlobalParent.IndexToLocation(_headerIndex); }
         }
 
         public int HeaderIndex {
