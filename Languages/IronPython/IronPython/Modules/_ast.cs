@@ -126,6 +126,8 @@ namespace IronPython.Modules
             private PythonTuple __attributes = new PythonTuple();   // Genshi assumes _fields in not None
             protected int? _lineno; // both lineno and col_offset are expected to be int, in cpython anything is accepted
             protected int? _col_offset;
+            protected ScopeStatement _parent;
+            protected SourceSpan _span;
 
             public PythonTuple _fields {
                 get { return __fields; }
@@ -206,6 +208,9 @@ namespace IronPython.Modules
 
                 // IronPython counts from 1; CPython counts from 0
                 _col_offset = node.Start.Column - 1;
+
+                _span = node.Span;
+                _parent = node.Parent;
             }
 
             internal static PythonList ConvertStatements(Statement stmt) {
