@@ -66,9 +66,13 @@ namespace IronPython.Modules {
         public static bool access(CodeContext/*!*/ context, string path, int mode) {
             if (path == null) throw PythonOps.TypeError("expected string, got None");
 
+            if (! context.LanguageContext.DomainManager.Platform.FileExists(path) &&
+                ! context.LanguageContext.DomainManager.Platform.DirectoryExists(path)) {
+                return false;
+            }
+            // File or directory exist beyond this point
             if (mode == F_OK) {
-                return context.LanguageContext.DomainManager.Platform.FileExists(path) ||
-            context.LanguageContext.DomainManager.Platform.DirectoryExists(path);
+                return true;
             }
 #if FEATURE_FILESYSTEM
             // match the behavior of the VC C Runtime
