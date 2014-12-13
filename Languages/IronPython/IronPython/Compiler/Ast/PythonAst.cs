@@ -86,6 +86,8 @@ namespace IronPython.Compiler.Ast {
             ContractUtils.RequiresNotNull(body, "body");
 
             _body = body;
+            IndexSpan = body.IndexSpan;
+            _originalParent = body.OriginalGlobalParent;
             
             _lineLocations = lineLocations;
         }

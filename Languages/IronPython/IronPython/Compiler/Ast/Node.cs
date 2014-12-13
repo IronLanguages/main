@@ -43,6 +43,7 @@ namespace IronPython.Compiler.Ast {
 
     public abstract class Node : MSAst.Expression {
         private ScopeStatement _parent;
+        protected ScopeStatement _originalParent; // Holds the original scope if compiled from AST.
         private IndexSpan _span;
 
         internal static readonly MSAst.BlockExpression EmptyBlock = Ast.Block(AstUtils.Empty());
@@ -60,7 +61,12 @@ namespace IronPython.Compiler.Ast {
 
         public ScopeStatement Parent {
             get { return _parent; }
-            set { _parent = value; }
+            set {
+                if ((_parent is PythonAst) && (value is PythonAst) && (_parent != value)) {
+                    _originalParent = _parent;
+                }
+                _parent = value;
+            }
         }
         
         public void SetLoc(PythonAst globalParent, int start, int end) {
@@ -84,13 +90,13 @@ namespace IronPython.Compiler.Ast {
 
         public SourceLocation Start {
             get {
-                return GlobalParent.IndexToLocation(StartIndex); 
+                return OriginalGlobalParent.IndexToLocation(StartIndex); 
             }
         }
 
         public SourceLocation End {
             get {
-                return GlobalParent.IndexToLocation(EndIndex);
+                return OriginalGlobalParent.IndexToLocation(EndIndex);
             }
         }
 
@@ -186,6 +192,26 @@ namespace IronPython.Compiler.Ast {
                 while (!(cur is PythonAst)) {
                     Debug.Assert(cur != null);
                     cur = cur.Parent;
+                }
+                return (PythonAst)cur;
+            }
+        }
+        internal PythonAst OriginalGlobalParent
+        {
+            get
+            {
+                Node cur = this;
+                while (!(cur is PythonAst))
+                {
+                    Debug.Assert(cur != null);
+                    if (cur._originalParent != null)
+                    {
+                        cur = cur._originalParent;
+                    }
+                    else
+                    {
+                        cur = cur.Parent;
+                    }
                 }
                 return (PythonAst)cur;
             }
