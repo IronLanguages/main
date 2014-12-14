@@ -1896,7 +1896,7 @@ namespace IronPython.Modules {
         public const int IPV6_MULTICAST_LOOP = (int)SocketOptionName.MulticastLoopback;
         public const int IPV6_PKTINFO = (int)SocketOptionName.PacketInformation;
         public const int IPV6_UNICAST_HOPS = (int)SocketOptionName.IpTimeToLive;
-#if !CLR2
+#if FEATURE_IPV6
         public const int IPV6_V6ONLY = (int) SocketOptionName.IPv6Only;
 #endif
         public const int IP_ADD_MEMBERSHIP = (int)SocketOptionName.AddMembership;
