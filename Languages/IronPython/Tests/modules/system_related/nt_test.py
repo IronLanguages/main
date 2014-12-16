@@ -1152,8 +1152,37 @@ def test_fsync():
 
     nt.close(fd)
     nt.close(fd2)
+
+    # fsync on read file descriptor
+    fd = nt.open(fsync_file_name, nt.O_RDONLY)
+    AssertError(OSError, nt.fsync, fd)
+    nt.close(fd)
+
+    # fsync on rdwr file descriptor
+    fd = nt.open(fsync_file_name, nt.O_RDWR)
+    nt.fsync(fd)
+    nt.close(fd)
+
+    # fsync on derived fd
+    for mode in ('rb', 'r'):
+        f = open(fsync_file_name, mode)
+        AssertError(OSError, nt.fsync, f.fileno())
+        f.close()
+
+    for mode in ('wb', 'w'):
+        f = open(fsync_file_name, mode)
+        nt.fsync(f.fileno())
+        f.close()
+
     nt.unlink(fsync_file_name)
 
+    # fsync on pipe ends
+    r,w = nt.pipe()
+    AssertError(OSError, nt.fsync, r)
+    nt.write(w, '1')
+    nt.fsync(w)
+    nt.close(w)
+    nt.close(r)
 
 #------------------------------------------------------------------------------
 try:

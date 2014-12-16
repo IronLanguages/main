@@ -49,7 +49,7 @@ namespace IronPython.Runtime {
     // the runtime and the underlying system.
     //
     // Python supports opening files in binary and text mode. Binary is fairly obvious: we want to preserve
-    // the data as is, to the point where it should be possible to round-trip an arbitary binary file without
+    // the data as is, to the point where it should be possible to round-trip an arbitrary binary file without
     // introducing corruptions.
     //
     // Text mode is more complex. Python further subdivides this class into the regular text mode where the
@@ -765,6 +765,23 @@ namespace IronPython.Runtime {
 
         // Flush any buffered data to the file.
         public abstract void Flush();
+
+        public abstract void FlushToDisk();
+
+        public void FlushToDiskWorker(Stream stream) {
+            var fs = stream as FileStream;
+            if (fs != null) {
+#if CLR4
+                fs.Flush(true);
+#elif FEATURE_NATIVE
+                if (!FlushFileBuffers(fs.SafeFileHandle)) {
+                    throw new IOException();
+                }
+#else
+                throw new NotImplementedException();
+#endif
+            }
+        }
     }
 
     // Write binary data embedded in the low-order byte of each string character to the output stream with no
@@ -801,6 +818,11 @@ namespace IronPython.Runtime {
         public override void Flush() {
             _stream.Flush();
         }
+
+        public override void FlushToDisk() {
+            FlushToDiskWorker(_stream);
+        }
+
     }
 
     // Write data with '\r', '\n' or '\r\n' line termination.
@@ -852,6 +874,14 @@ namespace IronPython.Runtime {
         // Flush any buffered data to the file.
         public override void Flush() {
             _writer.Flush();
+        }
+
+        public override void FlushToDisk() {
+            var streamWriter = _writer as StreamWriter;
+            if (streamWriter != null) {
+                streamWriter.Flush();
+                FlushToDiskWorker(streamWriter.BaseStream);
+            }
         }
     }
 
@@ -1021,6 +1051,12 @@ namespace IronPython.Runtime {
         internal bool IsConsole {
             get {
                 return _stream == null;
+            }
+        }
+
+        internal bool IsOutput {
+            get {
+                return _writer != null;
             }
         }
 
@@ -1515,6 +1551,16 @@ namespace IronPython.Runtime {
                 _writer.Flush();
                 if (!IsConsole) {
                     _stream.Flush();
+                }
+            }
+        }
+
+        internal void FlushToDisk() {
+            lock (this) {
+                ThrowIfClosed();
+                if (_writer != null) {
+                    _writer.Flush();
+                    _writer.FlushToDisk();
                 }
             }
         }
@@ -2096,5 +2142,6 @@ namespace IronPython.Runtime {
             }
         }
     }
+
 #endif
 }
