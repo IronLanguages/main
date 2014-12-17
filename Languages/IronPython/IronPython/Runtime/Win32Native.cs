@@ -65,7 +65,7 @@ namespace IronPython.Runtime {
 
         [DllImport("kernel32.dll", SetLastError=true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool FlushFileBuffers(SafeFileHandle hFile);
+        internal static extern bool FlushFileBuffers(SafeFileHandle hFile);
 
 
     }

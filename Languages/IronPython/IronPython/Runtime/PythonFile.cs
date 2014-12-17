@@ -774,7 +774,7 @@ namespace IronPython.Runtime {
 #if CLR4
                 fs.Flush(true);
 #elif FEATURE_NATIVE
-                if (!FlushFileBuffers(fs.SafeFileHandle)) {
+                if (!NativeMethods.FlushFileBuffers(fs.SafeFileHandle)) {
                     throw new IOException();
                 }
 #else
