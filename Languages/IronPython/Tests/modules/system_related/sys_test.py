@@ -326,8 +326,9 @@ def test_getrefcount():
 @skip("win32 silverlight")
 def test_version():
     import re
-    #E.g., 2.5.0 (IronPython 2.0 Alpha (2.0.0.800) on .NET 2.0.50727.1433)
-    regex = "^\d\.\d\.\d(RC\d+)? \(IronPython \d\.\d(\.\d)?(RC\d+)? ((Alpha \d+ )|(Beta \d+ )|())((DEBUG )|()|(\d?))\(\d\.\d\.\d{1,8}\.\d{1,8}\) on \.NET \d(\.\d{1,5}){3} \(32-bit\)\)$"
+    # 2.7.5 (IronPython 2.7.5 (2.7.5.0) on .NET 4.0.30319.18444 (32-bit))
+    # 2.7.6a0 (IronPython 2.7.6a0 DEBUG (2.7.6.0) on .NET 4.0.30319.18444 (32-bit))
+    regex = "^\d\.\d\.\d((RC\d+ )|(a\d+ )|(b\d+ )|( ))\(IronPython \d\.\d(\.\d)?((RC\d+ )|(a\d+ )|(b\d+ )|( ))?((DEBUG )|()|(\d?))\(\d\.\d\.\d{1,8}\.\d{1,8}\) on \.NET \d(\.\d{1,5}){3} \(32-bit\)\)$"
     Assert(re.match(regex, sys.version, re.IGNORECASE) != None)
 
 def test_winver():
@@ -432,7 +433,7 @@ def test_cp30129():
             frames.append(args[0])
             if len(frames) == 3:
                 res.append('setting' + str(frames[1].f_lineno))
-                frames[1].f_lineno = 449
+                frames[1].f_lineno = 450
         return f
     
     
@@ -460,7 +461,7 @@ def test_cp30129():
     
     c()
     
-    AreEqual(res, ['setting449', 'foo', 'bar', 'baz', 'x', 'y', 'z', 'hello', 'goodbye', 'see ya'])
+    AreEqual(res, ['setting450', 'foo', 'bar', 'baz', 'x', 'y', 'z', 'hello', 'goodbye', 'see ya'])
     
     sys.settrace(None)
     
