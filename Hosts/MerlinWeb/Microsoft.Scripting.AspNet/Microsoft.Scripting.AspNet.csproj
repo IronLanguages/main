@@ -67,11 +67,17 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Web" />
   </ItemGroup>
+  <Choose>
+    <When Condition="'$(FeatureCoreDlr)' != 'true'">
+      <ItemGroup>
+        <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting.Core\Microsoft.Scripting.Core.csproj">
+          <Project>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</Project>
+          <Name>Microsoft.Scripting.Core</Name>
+        </ProjectReference>
+      </ItemGroup>
+    </When>
+  </Choose>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting.Core\Microsoft.Scripting.Core.csproj" Condition="'$(FeatureCoreDlr)' != 'true'">
-      <Project>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</Project>
-      <Name>Microsoft.Scripting.Core</Name>
-    </ProjectReference>
     <ProjectReference Include="$(SolutionDir)..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj">
       <Project>{02FF0909-F5AD-48CF-A86A-345E721B7E40}</Project>
       <Name>Microsoft.Scripting</Name>
