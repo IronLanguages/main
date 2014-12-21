@@ -147,12 +147,16 @@
     <Reference Include="System.Configuration" />
     <Reference Include="System.Runtime.Remoting" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Microsoft.Scripting.Core\Microsoft.Scripting.Core.csproj" Condition="'$(FeatureCoreDlr)' != 'true'">
-      <Project>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</Project>
-      <Name>Microsoft.Scripting.Core</Name>
-      <Private>False</Private>
-    </ProjectReference>
-  </ItemGroup>
+  <Choose>
+    <When Condition="'$(FeatureCoreDlr)' != 'true'">
+      <ItemGroup>
+        <ProjectReference Include="..\Microsoft.Scripting.Core\Microsoft.Scripting.Core.csproj">
+          <Project>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</Project>
+          <Name>Microsoft.Scripting.Core</Name>
+          <Private>False</Private>
+        </ProjectReference>
+      </ItemGroup>
+    </When>
+  </Choose>
   <Import Project="$(CSharpTargets)" />
 </Project>
