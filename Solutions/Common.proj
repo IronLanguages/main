@@ -12,17 +12,6 @@
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
   </PropertyGroup>
 
-  <!-- Signing -->
-  <PropertyGroup>
-    <PublicKey>$(SolutionDir)\Key.snk</PublicKey>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="Exists('$(PublicKey)') and '$(AssemblyOriginatorKeyFile)'==''">
-    <AssemblyOriginatorKeyFile>$(PublicKey)</AssemblyOriginatorKeyFile>
-    <SignAssembly Condition="'$(SignAssembly)' == ''">true</SignAssembly>
-    <SignedDir>Unsigned</SignedDir>
-  </PropertyGroup>
-
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -46,6 +35,18 @@
     <ReferencedPlatform Condition="'$(Configuration)' == 'Silverlight4Release' or '$(Configuration)' == 'Silverlight4Debug'">Silverlight4</ReferencedPlatform>
     <ReferencedPlatform Condition="'$(Configuration)' == 'Silverlight5Release' or '$(Configuration)' == 'Silverlight5Debug'">Silverlight5</ReferencedPlatform>
     <ReferencedPlatform Condition="'$(Configuration)' == 'AndroidRelease' or '$(Configuration)' == 'AndroidDebug'">Android</ReferencedPlatform>
+  </PropertyGroup>
+
+  <!-- Signing -->
+  <PropertyGroup>
+    <PublicKey>$(SolutionDir)Key.snk</PublicKey>
+    <PublicKey Condition="'$(ConfigurationFlavor)' == 'Debug'">$(SolutionDir)DevelKey.snk</PublicKey>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="Exists('$(PublicKey)') and '$(AssemblyOriginatorKeyFile)'==''">
+    <AssemblyOriginatorKeyFile>$(PublicKey)</AssemblyOriginatorKeyFile>
+    <SignAssembly Condition="'$(SignAssembly)' == ''">true</SignAssembly>
+    <SignedDir>Unsigned</SignedDir>
   </PropertyGroup>
 
   <PropertyGroup>
