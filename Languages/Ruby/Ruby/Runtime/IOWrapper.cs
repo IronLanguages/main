@@ -201,12 +201,12 @@ namespace IronRuby.Runtime {
                 }
                 // TODO: conversion
                 if (Protocols.RespondTo(_respondToStorage, _io, "pos")) {
-                    return (long)this.PosSite.Target(this.PosSite, _io);
+                    return Convert.ToInt64(this.PosSite.Target(this.PosSite, _io));
                 } else {
                     if (!_canSeek) {
                         throw new NotSupportedException();
                     }
-                    return (long)this.TellSite.Target(this.TellSite, _io);
+                    return Convert.ToInt64(this.TellSite.Target(this.TellSite, _io));
                 }
             }
             set {
