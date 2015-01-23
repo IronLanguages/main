@@ -1008,7 +1008,9 @@ def test_access():
     f.close()
     
     AreEqual(nt.access('new_file_name', nt.F_OK), True)
+    AreEqual(nt.access('new_file_name', nt.R_OK), True)
     AreEqual(nt.access('does_not_exist.py', nt.F_OK), False)
+    AreEqual(nt.access('does_not_exist.py', nt.R_OK), False)
 
     nt.chmod('new_file_name', 0x100) # S_IREAD
     AreEqual(nt.access('new_file_name', nt.W_OK), False)

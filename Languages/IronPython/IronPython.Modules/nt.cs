@@ -66,26 +66,33 @@ namespace IronPython.Modules {
         public static bool access(CodeContext/*!*/ context, string path, int mode) {
             if (path == null) throw PythonOps.TypeError("expected string, got None");
 
-            if (mode == F_OK) {
-                return context.LanguageContext.DomainManager.Platform.FileExists(path) ||
-            context.LanguageContext.DomainManager.Platform.DirectoryExists(path);
-            }
 #if FEATURE_FILESYSTEM
-            // match the behavior of the VC C Runtime
-            FileAttributes fa = File.GetAttributes(path);
-            if ((fa & FileAttributes.Directory) != 0) {
-                // directories have read & write access
+            try {
+                FileAttributes fa = File.GetAttributes(path);
+                if (mode == F_OK) {
+                    return true;
+                }
+                // match the behavior of the VC C Runtime
+                if ((fa & FileAttributes.Directory) != 0) {
+                    // directories have read & write access
+                    return true;
+                }
+                if ((fa & FileAttributes.ReadOnly) != 0 && (mode & W_OK) != 0) {
+                    // want to write but file is read-only
+                    return false;
+                }
                 return true;
+            } catch(ArgumentException) {
+            } catch(PathTooLongException) {
+            } catch(NotSupportedException) {
+            } catch(FileNotFoundException) {
+            } catch(DirectoryNotFoundException) {
+            } catch(IOException) {
+            } catch(UnauthorizedAccessException) {
             }
-
-            if ((fa & FileAttributes.ReadOnly) != 0 && (mode & W_OK) != 0) {
-                // want to write but file is read-only
-                return false;
-            }
-
-            return true;
-#else
             return false;
+#else
+            throw new NotImplementedException();
 #endif
         }
 
