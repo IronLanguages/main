@@ -258,6 +258,23 @@ namespace IronPython.Modules {
             return lstat(pf.name);
         }
 
+        public static void fsync(CodeContext context, int fd) {
+            PythonContext pythonContext = PythonContext.GetContext(context);
+            PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
+            if (!pf.IsOutput) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+            }
+            try {
+                pf.FlushToDisk();
+            } catch (Exception ex) {
+                if (ex is ValueErrorException ||
+                    ex is IOException) {
+                    throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+                }
+                throw;
+            }
+        }
+
         public static string getcwd(CodeContext/*!*/ context) {
             return context.LanguageContext.DomainManager.Platform.CurrentDirectory;
         }

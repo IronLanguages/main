@@ -63,6 +63,11 @@ namespace IronPython.Runtime {
         internal static extern bool CreatePipe(out SafePipeHandle hReadPipe, out SafePipeHandle hWritePipe,
            ref SECURITY_ATTRIBUTES lpPipeAttributes, uint nSize);
 
+        [DllImport("kernel32.dll", SetLastError=true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool FlushFileBuffers(SafeFileHandle hFile);
+
+
     }
 #endif
 }
