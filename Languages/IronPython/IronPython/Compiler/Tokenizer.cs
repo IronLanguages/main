@@ -1837,6 +1837,8 @@ namespace IronPython.Compiler {
             _tokenEnd = -1;
 #if DEBUG
             _tokenEndIndex = -1;
+#else
+            if (_position < _start) _position = _start; // make sure _position >= _start so that we don't cause a runtime exception
 #endif
             CheckInvariants();
         }
