@@ -756,8 +756,9 @@ namespace IronPython.Modules {
             private void Initialize(int year, int month, int day, int hour, int minute, int second, int microsecond, tzinfo tzinfo) {
             }
 
+            const long TicksPerMicrosecond = 10;
             public datetime(DateTime dt)
-                : this(dt, 0, null) {
+                : this(dt, (int)((dt.Ticks / TicksPerMicrosecond) % 1000), null) {
             }
 
             // just present to match CPython's error messages...

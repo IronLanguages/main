@@ -26,7 +26,6 @@ class TestDatetime(unittest.TestCase):
         d = datetime.datetime.strptime("2013-11-29T16:38:12.507000", "%Y-%m-%dT%H:%M:%S.%f")
         self.assertEquals(d, datetime.datetime(2013, 11, 29, 16, 38, 12, 507000))
 
-    @unittest.skip("%f parsing uses .net DateType with miliseconds accuracy")
     def test_strptime_2(self):
         d = datetime.datetime.strptime("2013-11-29T16:38:12.507042", "%Y-%m-%dT%H:%M:%S.%f")
         self.assertEquals(d, datetime.datetime(2013, 11, 29, 16, 38, 12, 507042))
