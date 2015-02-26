@@ -129,6 +129,14 @@ class TestDatetime(unittest.TestCase):
         self.assertRaises(OverflowError, datetime.date.today().replace, year=1000000000000L)
         self.assertRaises(TypeError, datetime.date.today().replace, year=1000.1)
 
+    def test_fromtimestamp(self):
+        # gh11170
+        ts = 1399410716.123
+        self.assertEqual(datetime.datetime.fromtimestamp(ts).microsecond, 123000)
+        ts = 5399410716.777882
+        self.assertEqual(datetime.datetime.fromtimestamp(ts).microsecond, 777882)
+
+
 def test_main():
     from unittest import main
     main(module='test_datetime')
