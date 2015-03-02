@@ -307,8 +307,6 @@
       <Tests />
     </TestCategory>
     <TestCategory>
-        <!-- All of the sbs tests are diasabled because the lanucher script
-        has been lost to the mists of time. -->
       <Name>Languages\IronPython\IronPython\2.X\compat\builtin</Name>
       <Tests>
         <Test>
@@ -328,7 +326,7 @@
           <Arguments>%DLR_BIN%\ipy.exe sbs_parse_string.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>true</Disabled> <!-- failing -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests\compat</WorkingDirectory>
