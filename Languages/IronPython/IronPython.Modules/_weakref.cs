@@ -172,14 +172,14 @@ namespace IronPython.Modules {
             [SpecialName]
             public object Call(CodeContext context) {
                 if (!_target.IsAlive) {
-                    throw PythonOps.ReferenceError("weak object has gone away");
+                    return null;
                 }
                 try {
                     object res = _target.Target;
                     GC.KeepAlive(this);
                     return res;
                 } catch (InvalidOperationException) {
-                    throw PythonOps.ReferenceError("weak object has gone away");
+                    return null;
                 }
             }
 
