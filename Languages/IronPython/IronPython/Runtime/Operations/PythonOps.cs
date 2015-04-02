@@ -1784,7 +1784,7 @@ namespace IronPython.Runtime.Operations {
         public static object ImportBottom(CodeContext/*!*/ context, string fullName, int level) {
             object module = Importer.ImportLightThrow(context, fullName, null, level);
 
-            if (fullName.IndexOf('.') >= 0) {
+            if (!LightExceptions.IsLightException(module) && fullName.IndexOf('.') >= 0) {
                 // Extract bottom from the imported module chain
                 string[] parts = fullName.Split('.');
 
