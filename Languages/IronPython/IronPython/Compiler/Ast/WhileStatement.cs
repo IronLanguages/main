@@ -55,6 +55,11 @@ namespace IronPython.Compiler.Ast {
         public SourceLocation Header {
             get { return IndexToLocation(_headerIndex); }
         }
+        
+        public int HeaderIndex {
+            get { return _headerIndex; }
+            set { _headerIndex = value; }
+        }
 
         public void SetLoc(PythonAst globalParent, int start, int header, int end) {
             SetLoc(globalParent, start, end);

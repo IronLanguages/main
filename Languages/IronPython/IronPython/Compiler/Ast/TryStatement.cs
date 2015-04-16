@@ -70,6 +70,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         public int HeaderIndex {
+            get { return _headerIndex; }
             set { _headerIndex = value; }
         }
 

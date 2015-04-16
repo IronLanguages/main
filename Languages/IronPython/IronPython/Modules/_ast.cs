@@ -304,8 +304,9 @@ namespace IronPython.Modules
                         body = PythonOps.MakeListNoCopy(tryExcept);
                     } else
                         body = ConvertStatements(stmt.Body);
-
-                    return new TryFinally(body, ConvertStatements(stmt.Finally));
+                    TryFinally tf = new TryFinally(body, ConvertStatements(stmt.Finally));
+                    tf.HeaderIndex = stmt.HeaderIndex;
+                    return tf;
                 }
 
                 return new TryExcept(stmt);
@@ -1371,6 +1372,7 @@ namespace IronPython.Modules
             private PythonList _bases;
             private PythonList _body;
             private PythonList _decorator_list;
+            private int _headerIndex;
 
             public ClassDef() {
                 _fields = new PythonTuple(new[] { "name", "bases", "body", "decorator_list" });
@@ -1401,12 +1403,14 @@ namespace IronPython.Modules
                         _decorator_list.Add(Convert(expr));
                 } else
                     _decorator_list = PythonOps.MakeEmptyList(0);
-            }
+                _headerIndex = def.HeaderIndex;
+                }
 
             internal override Statement Revert() {
                 ClassDefinition cd = new ClassDefinition(name, expr.RevertExprs(bases), RevertStmts(body));
                 if (decorator_list.Count != 0) 
                     cd.Decorators = expr.RevertExprs(decorator_list);
+                cd.HeaderIndex = _headerIndex;
                 return AttachLoc(cd);
             }
 
@@ -1695,6 +1699,7 @@ namespace IronPython.Modules
             private expr _type;
             private expr _name;
             private PythonList _body;
+            private int _headerIndex;
 
             public ExceptHandler() {
                 _fields = new PythonTuple(new[] { "type", "name", "body" });
@@ -1718,6 +1723,7 @@ namespace IronPython.Modules
                     _name = Convert(stmt.Target, Store.Instance);
 
                 _body = ConvertStatements(stmt.Body);
+                _headerIndex = stmt.HeaderIndex;
             }
             
             protected TryStatementHandler AttachLoc(TryStatementHandler other) {
@@ -1726,7 +1732,9 @@ namespace IronPython.Modules
             }
 
             internal TryStatementHandler RevertHandler() {
-                return AttachLoc(new TryStatementHandler(expr.Revert(type), expr.Revert(name), stmt.RevertStmts(body)));
+                TryStatementHandler tsh = new TryStatementHandler(expr.Revert(type), expr.Revert(name), stmt.RevertStmts(body));
+                tsh.HeaderIndex = _headerIndex;
+                return AttachLoc(tsh);
             }
 
             public expr type {
@@ -1895,6 +1903,7 @@ namespace IronPython.Modules
             private expr _iter;
             private PythonList _body;
             private PythonList _orelse; // Optional, default []
+            private int _headerIndex;
 
             public For() {
                 _fields = new PythonTuple(new[] { "target", "iter", "body", "orelse" });
@@ -1920,10 +1929,13 @@ namespace IronPython.Modules
                 _iter = Convert(stmt.List);
                 _body = ConvertStatements(stmt.Body);
                 _orelse = ConvertStatements(stmt.Else, true);
+                _headerIndex = stmt.HeaderIndex;
             }
 
             internal override Statement Revert() {
-                return AttachLoc(new ForStatement(expr.Revert(target), expr.Revert(iter), RevertStmts(body), RevertStmts(orelse)));
+                ForStatement fs = new ForStatement(expr.Revert(target), expr.Revert(iter), RevertStmts(body), RevertStmts(orelse));
+                fs.HeaderIndex = _headerIndex;
+                return AttachLoc(fs);
             }
 
             public expr target {
@@ -1954,6 +1966,7 @@ namespace IronPython.Modules
             private arguments _args;
             private PythonList _body;
             private PythonList _decorator_list;
+            private int _headerIndex;
 
             public FunctionDef() {
 				_fields = new PythonTuple(new[] { "name", "args", "body", "decorator_list" });
@@ -1982,6 +1995,7 @@ namespace IronPython.Modules
                         _decorator_list.Add(Convert(expr));
                 } else
                     _decorator_list = PythonOps.MakeEmptyList(0);
+                _headerIndex = def.HeaderIndex;
             }
 
             internal override Statement Revert() {
@@ -1990,6 +2004,7 @@ namespace IronPython.Modules
                 _containsYield = false;
                 if (decorator_list.Count != 0)
                     fd.Decorators = expr.RevertExprs(decorator_list);
+                fd.HeaderIndex = _headerIndex;
                 return AttachLoc(fd);
             }
 
@@ -3313,6 +3328,7 @@ namespace IronPython.Modules
             private PythonList _body;
             private PythonList _handlers;
             private PythonList _orelse; // Optional, default []
+            private int _headerIndex;
 
             public TryExcept() {
                 _fields = new PythonTuple(new[] { "body", "handlers", "orelse" });
@@ -3341,6 +3357,7 @@ namespace IronPython.Modules
                     _handlers.Add(Convert(tryStmt));
 
                 _orelse = ConvertStatements(stmt.Else, true);
+                _headerIndex = stmt.HeaderIndex;
             }
 
             internal override Statement Revert() {
@@ -3348,7 +3365,9 @@ namespace IronPython.Modules
                 for (int i = 0; i < handlers.Count; i++) {
                     tshs[i] = ((ExceptHandler)handlers[i]).RevertHandler();
                 }
-                return AttachLoc(new TryStatement(RevertStmts(body), tshs, RevertStmts(orelse), null));
+                TryStatement ts = new TryStatement(RevertStmts(body), tshs, RevertStmts(orelse), null);
+                ts.HeaderIndex = _headerIndex;
+                return AttachLoc(ts);
             }
 
             public PythonList body {
@@ -3372,6 +3391,7 @@ namespace IronPython.Modules
         {
             private PythonList _body;
             private PythonList _finalbody;
+            private int _headerIndex;
 
             public TryFinally() {
                 _fields = new PythonTuple(new[] { "body", "finalbody" });
@@ -3393,16 +3413,24 @@ namespace IronPython.Modules
                 _finalbody = finalbody;
             }
 
+            internal int HeaderIndex {
+                get { return _headerIndex; }
+                set { _headerIndex = value; }
+            }
+
             internal override Statement Revert() {
+                TryStatement ts;
                 if (body.Count == 1 && body[0] is TryExcept) {
                     TryExcept te = (TryExcept)body[0];
                     TryStatementHandler[] tshs = new TryStatementHandler[te.handlers.Count];
                     for (int i = 0; i < te.handlers.Count; i++) {
                         tshs[i] = ((ExceptHandler)te.handlers[i]).RevertHandler();
                     }
-                    return AttachLoc(new TryStatement(RevertStmts(te.body), tshs, RevertStmts(te.orelse), RevertStmts(finalbody)));
+                    ts = new TryStatement(RevertStmts(te.body), tshs, RevertStmts(te.orelse), RevertStmts(finalbody));
+                } else {
+                    ts = new TryStatement(RevertStmts(body), null, null, RevertStmts(finalbody));
                 }
-                return AttachLoc(new TryStatement(RevertStmts(body), null, null, RevertStmts(finalbody)));
+                return AttachLoc(ts);
             }
 
             public PythonList body {
@@ -3552,6 +3580,7 @@ namespace IronPython.Modules
             private expr _test;
             private PythonList _body;
             private PythonList _orelse; // Optional, default []
+            private int _headerIndex;
 
             public While() {
                 _fields = new PythonTuple(new[] { "test", "body", "orelse" });
@@ -3575,10 +3604,13 @@ namespace IronPython.Modules
                 _test = Convert(stmt.Test);
                 _body = ConvertStatements(stmt.Body);
                 _orelse = ConvertStatements(stmt.ElseStatement, true);
+                _headerIndex = stmt.HeaderIndex;
             }
 
             internal override Statement Revert() {
-                return AttachLoc(new WhileStatement(expr.Revert(test), RevertStmts(body), RevertStmts(orelse)));
+                WhileStatement ws = new WhileStatement(expr.Revert(test), RevertStmts(body), RevertStmts(orelse));
+                ws.HeaderIndex = _headerIndex;
+                return AttachLoc(ws);
             }
 
             public expr test {
@@ -3603,6 +3635,7 @@ namespace IronPython.Modules
             private expr _context_expr;
             private expr _optional_vars; // Optional
             private PythonList _body;
+            private int _headerIndex;
 
             public With() {
                 _fields = new PythonTuple(new[] { "context_expr", "optional_vars", "body" });
@@ -3625,10 +3658,13 @@ namespace IronPython.Modules
                     _optional_vars = Convert(with.Variable);
 
                 _body = ConvertStatements(with.Body);
+                _headerIndex = with.HeaderIndex;
             }
 
             internal override Statement Revert() {
-                return AttachLoc(new WithStatement(expr.Revert(context_expr), expr.Revert(optional_vars), RevertStmts(body)));
+                WithStatement ws = new WithStatement(expr.Revert(context_expr), expr.Revert(optional_vars), RevertStmts(body));
+                ws.HeaderIndex = _headerIndex;
+                return AttachLoc(ws);
             }
 
             public expr context_expr {
