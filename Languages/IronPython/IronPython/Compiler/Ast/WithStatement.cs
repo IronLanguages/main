@@ -263,7 +263,7 @@ namespace IronPython.Compiler.Ast {
             );
 
             statements.Add(AstUtils.Empty());
-            return Ast.Block(variables.ToReadOnlyCollection(), statements.ToReadOnlyCollection());
+            return AppendLine(Ast.Block(variables.ToReadOnlyCollection(), statements.ToReadOnlyCollection()));
         }
 
         private MSAst.Expression MakeExitCall(MSAst.ParameterExpression exit, MSAst.Expression exception) {

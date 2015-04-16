@@ -183,11 +183,11 @@ namespace IronPython.Compiler.Ast {
                 result = body;
             }
             
-            return Ast.Block(
+            return AppendLine(Ast.Block(
                 GetVariables(lineUpdated, runElse), 
                 AddFinally(result),
                 AstUtils.Default(typeof(void))
-            );
+            ));
         }
 
         private static ReadOnlyCollectionBuilder<MSAst.ParameterExpression> GetVariables(MSAst.ParameterExpression lineUpdated, MSAst.ParameterExpression runElse) {

@@ -66,12 +66,12 @@ namespace IronPython.Compiler.Ast {
                 body = iterator.Transform(body);
             }
 
-            return Ast.Block(
+            return AppendLine(Ast.Block(
                 new[] { res },
                 initialize,
                 body,
                 res
-            );
+            ));
         }
     }
 
@@ -160,7 +160,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override Ast Reduce() {
-            return _scope.AddVariables(base.Reduce());
+            return AppendLine(_scope.AddVariables(base.Reduce()));
         }
 
         protected override Ast Body(MSAst.ParameterExpression res) {
@@ -234,7 +234,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override Ast Reduce() {
-            return _scope.AddVariables(base.Reduce());
+            return AppendLine(_scope.AddVariables(base.Reduce()));
         }
 
         protected override Ast Body(MSAst.ParameterExpression res) {

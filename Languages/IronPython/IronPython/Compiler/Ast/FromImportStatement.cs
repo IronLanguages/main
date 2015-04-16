@@ -74,7 +74,7 @@ namespace IronPython.Compiler.Ast {
         public override MSAst.Expression Reduce() {
             if (_names == _star) {
                 // from a[.b] import *
-                return GlobalParent.AddDebugInfo(
+                return AppendLine(GlobalParent.AddDebugInfo(
                     Ast.Call(
                         AstMethods.ImportStar,
                         Parent.LocalContext,
@@ -82,7 +82,7 @@ namespace IronPython.Compiler.Ast {
                         AstUtils.Constant(GetLevel())
                     ),
                     Span
-                );
+                ));
             } else {
                 // from a[.b] import x [as xx], [ y [ as yy] ] [ , ... ]
 
@@ -133,7 +133,7 @@ namespace IronPython.Compiler.Ast {
                 }
 
                 statements.Add(AstUtils.Empty());
-                return GlobalParent.AddDebugInfo(Ast.Block(new[] { module }, statements.ToArray()), Span);
+                return AppendLine(GlobalParent.AddDebugInfo(Ast.Block(new[] { module }, statements.ToArray()), Span));
             }
         }
 

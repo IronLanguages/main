@@ -55,7 +55,7 @@ namespace IronPython.Compiler.Ast {
             Type t = Type;
             MSAst.ParameterExpression tmp = Ast.Variable(t, "__all__");
 
-            return Ast.Block(
+            return AppendLine(Ast.Block(
                 new[] { tmp },
                 Ast.Condition(
                     GlobalParent.Convert(
@@ -75,7 +75,7 @@ namespace IronPython.Compiler.Ast {
                         t
                     )
                 )
-            );
+            ));
         }
 
         public override Type Type {

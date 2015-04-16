@@ -80,7 +80,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override MSAst.Expression Reduce() {
-            return ReduceWorker(true);
+            return AppendLine(ReduceWorker(true));
         }
 
         #region IInstructionProvider Members

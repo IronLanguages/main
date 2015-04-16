@@ -152,6 +152,16 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
+        public MSAst.Expression AppendLine(MSAst.Expression reduced) {
+            if (GlobalParent.IsLightThrow) {
+                return reduced;
+            }
+            if (Parent is ClassDefinition) {
+                return reduced;
+            }
+            return Ast.Block(UpdateLineNumber(Start.Line), reduced);
+        }
+
         #endregion
 
         #region Base Class Overrides

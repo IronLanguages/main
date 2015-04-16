@@ -76,10 +76,10 @@ namespace IronPython.Compiler.Ast {
                     return FalseExpr;
                 }
             } else if ((wrapper = _value as UnicodeWrapper) != null) {
-                return GlobalParent.Constant(wrapper.Value);
+                return AppendLine(GlobalParent.Constant(wrapper.Value));
             }
 
-            return GlobalParent.Constant(_value);
+            return AppendLine(GlobalParent.Constant(_value));
         }
 
         internal override ConstantExpression ConstantFold() {

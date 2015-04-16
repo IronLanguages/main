@@ -328,7 +328,7 @@ namespace IronPython.Compiler.Ast {
         /// Reduces the PythonAst to a LambdaExpression of type Type.
         /// </summary>
         public override MSAst.Expression Reduce() {
-            return GetLambda();
+            return AppendLine(GetLambda());
         }
 
         internal override Microsoft.Scripting.Ast.LightLambdaExpression GetLambda() {
@@ -363,6 +363,15 @@ namespace IronPython.Compiler.Ast {
         public bool AbsoluteImports {
             get {
                 return (_languageFeatures & ModuleOptions.AbsoluteImports) != 0;
+            }
+        }
+
+        /// <summary>
+        /// True if light throw is enabled
+        /// </summary>
+        public bool IsLightThrow {
+            get {
+                return (_languageFeatures & ModuleOptions.LightThrow) != 0;
             }
         }
 

@@ -193,13 +193,13 @@ namespace IronPython.Compiler.Ast {
 
             classDef = AddDecorators(classDef, _decorators);
 
-            return GlobalParent.AddDebugInfoAndVoid(
+            return AppendLine(GlobalParent.AddDebugInfoAndVoid(
                 AssignValue(Parent.GetVariableExpression(_variable), classDef), 
                 new SourceSpan(
                     Start,
                     Header
                 )
-            );
+            ));
         }
 
         private Microsoft.Scripting.Ast.LightExpression<Func<CodeContext, CodeContext>> MakeClassBody() {

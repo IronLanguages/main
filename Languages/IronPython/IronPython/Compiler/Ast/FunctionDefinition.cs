@@ -337,10 +337,10 @@ namespace IronPython.Compiler.Ast {
             Debug.Assert(_variable != null, "Shouldn't be called by lambda expression");
 
             MSAst.Expression function = MakeFunctionExpression();
-            return GlobalParent.AddDebugInfoAndVoid(
+            return /*AppendLine*/(GlobalParent.AddDebugInfoAndVoid(
                 AssignValue(Parent.GetVariableExpression(_variable), function),
                 new SourceSpan(Start, Header)
-            );
+            ));
         }
         
         /// <summary>
