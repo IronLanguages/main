@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <metadata xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <id>DynamicLanguageRuntime</id>
+    <title>DynamicLanguageRuntime</title>
+    <!-- version number defined by Dlr*Version property in ~/CurrentVersion.props. -->
+    <version>0.0.0</version>
+    <authors>DLR Contributors,Microsoft</authors>
+    <owners>DLR Community</owners>
+    <projectUrl>http://dlr.codeplex.com</projectUrl>
+    <licenseUrl>http://dlr.codeplex.com/license</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <summary>The Dynamic Language Runtime enables language developers to more easily create dynamic languages for the .NET platform.</summary>
+    <description>The Dynamic Language Runtime enables language developers to more easily create dynamic languages for the .NET platform.</description>
+    <language>en-US</language>
+    <tags>dynamic dlr</tags>
+  </metadata>
+  <files>
+    <file src="Platforms\**\Microsoft.*.*" target="lib" />
+  </files>
+</package>

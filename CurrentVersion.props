@@ -10,4 +10,14 @@
 
     <AssemblyRevision>0</AssemblyRevision>
   </PropertyGroup>
+  <PropertyGroup>
+    <DlrMajorVersion>1</DlrMajorVersion>
+    <DlrMinorVersion>1</DlrMinorVersion>
+    <DlrMicroVersion>0</DlrMicroVersion>
+    <!-- Allowed: alpha,beta,candidate,final -->
+    <DlrReleaseLevel>final</DlrReleaseLevel>
+    <DlrReleaseSerial>0</DlrReleaseSerial>
+
+    <DlrAssemblyRevision>21</DlrAssemblyRevision>
+  </PropertyGroup>
 </Project>
