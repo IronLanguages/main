@@ -704,6 +704,8 @@ namespace IronPython.Modules {
 
             private UnifiedDateTime _utcDateTime;
 
+            private const long TicksPerMicrosecond = TimeSpan.TicksPerMillisecond/1000;
+
             public datetime(int year,
                 int month,
                 int day,
@@ -757,7 +759,11 @@ namespace IronPython.Modules {
             }
 
             public datetime(DateTime dt)
-                : this(dt, 0, null) {
+                : this(dt, null) {
+            }
+
+            public datetime(DateTime dt, tzinfo tzinfo)
+                : this(dt, (int)((dt.Ticks / TicksPerMicrosecond) % 1000), tzinfo) {
             }
 
             // just present to match CPython's error messages...
@@ -832,10 +838,10 @@ namespace IronPython.Modules {
 
                 if (tz != null) {
                     dt = dt.ToUniversalTime();
-                    datetime pdtc = new datetime(dt, 0, tz);
+                    datetime pdtc = new datetime(dt, tz);
                     return tz.fromutc(pdtc);
                 } else {
-                    return new datetime(dt, 0, null);
+                    return new datetime(dt);
                 }
             }
 
