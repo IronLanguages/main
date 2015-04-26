@@ -14,10 +14,14 @@
 #
 #####################################################################################
 
+import clr
+
 import unittest
 import datetime
 import time
 from test import test_support
+
+from System import DateTime, TimeSpan
 
 class TestDatetime(unittest.TestCase):
 
@@ -136,6 +140,22 @@ class TestDatetime(unittest.TestCase):
         ts = 5399410716.777882
         self.assertEqual(datetime.datetime.fromtimestamp(ts).microsecond, 777882)
 
+    def test_System_DateTime_conversion(self):
+        example = datetime.datetime(2015, 4, 25, 8, 39, 54)
+        result = clr.Convert(example, DateTime)
+        self.assertIsInstance(result, DateTime)
+        
+        expected = DateTime(2015, 4, 25, 8, 39, 54)
+        self.assertEqual(expected, result)
+    
+    def test_System_DateTime_binding(self):
+        pydt = datetime.datetime(2015, 4, 25, 8, 39, 54)
+        netdt = DateTime(2015, 4, 25, 9, 39, 54)
+        
+        result = netdt.Subtract(pydt)
+        expected = TimeSpan(1, 0, 0)
+        
+        self.assertEqual(expected, result)
 
 def test_main():
     from unittest import main

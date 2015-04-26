@@ -109,6 +109,17 @@
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
+          <Name>test_datetime_20</Name>
+          <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
+          <Arguments>test_datetime.py</Arguments>
+          <MaxDuration>600000</MaxDuration>
+          <LongRunning>false</LongRunning>
+          <Disabled>false</Disabled>
+          <RequiresAdmin>false</RequiresAdmin>
+          <NotParallelSafe>false</NotParallelSafe>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
+        </Test>
+        <Test>
           <Name>test_dict_20</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
           <Arguments>test_dict.py</Arguments>

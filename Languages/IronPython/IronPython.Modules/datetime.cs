@@ -433,6 +433,10 @@ namespace IronPython.Modules {
                 set { _dateTime = value; }
             }
 
+            public static implicit operator DateTime(date self) {
+                return self._dateTime;
+            }
+
             // supported operations
             public static date operator +([NotNull]date self, [NotNull]timedelta other) {
                 try {
