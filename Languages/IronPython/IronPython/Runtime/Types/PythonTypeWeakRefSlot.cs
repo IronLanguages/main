@@ -50,7 +50,7 @@ namespace IronPython.Runtime.Types {
         internal override bool TrySetValue(CodeContext context, object instance, PythonType owner, object value) {
             IWeakReferenceable reference = instance as IWeakReferenceable;
             if (reference != null) {
-                return reference.SetWeakRef(new WeakRefTracker(value, instance));
+                return reference.SetWeakRef(new WeakRefTracker(reference, value, instance));
             }
             return false;
         }
