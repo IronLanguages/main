@@ -5795,7 +5795,9 @@ whereBeginError:
         ** that reference the table and converts them into opcodes that
         ** reference the index.
         */
+        #pragma warning disable 1570
         if ( ( pLevel.plan.wsFlags & WHERE_INDEXED ) != 0 )///* && 0 == db.mallocFailed */ )
+        #pragma warning restore 1570
         {
           int k, j, last;
           VdbeOp pOp;

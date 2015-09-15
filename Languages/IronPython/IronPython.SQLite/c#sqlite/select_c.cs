@@ -4969,7 +4969,9 @@ if (sqlite3AuthCheck(pParse, SQLITE_SELECT, 0, 0, 0)) return 1;
               Debug.Assert( !ExprHasProperty( p.pEList.a[0].pExpr, EP_xIsSelect ) );
               pMinMax = sqlite3ExprListDup( db, p.pEList.a[0].pExpr.x.pList, 0 );
               pDel = pMinMax;
+              #pragma warning disable 1570
               if ( pMinMax != null )///* && 0 == db.mallocFailed */ )
+              #pragma warning restore 1570
               {
                 pMinMax.a[0].sortOrder = (u8)( flag != WHERE_ORDERBY_MIN ? 1 : 0 );
                 pMinMax.a[0].pExpr.op = TK_COLUMN;
