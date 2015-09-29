@@ -189,7 +189,7 @@ namespace IronPython.Runtime
         private Debugging.ITracePipeline _tracePipeline;
 
         private Microsoft.Scripting.Utils.ThreadLocal<Stack<PythonTracebackListener>> _tracebackListeners;
-        private static int _tracingThreads;
+        private int _tracingThreads;
 
         internal FunctionCode.CodeList _allCodes;
         internal readonly object _codeCleanupLock = new object(), _codeUpdateLock = new object();
@@ -201,6 +201,9 @@ namespace IronPython.Runtime
         internal readonly List<FunctionStack> _mainThreadFunctionStack;
         private CallSite<Func<CallSite, CodeContext, object, object>> _callSite0LightEh;
         private List<WeakReference> _weakExtensionMethodSets;
+
+        // store the Python types mapping to each .NET type
+        private CommonDictionaryStorage _systemPythonTypesWeakRefs = new CommonDictionaryStorage();
 
 #region Generated Python Shared Call Sites Storage
 
@@ -2194,6 +2197,52 @@ namespace IronPython.Runtime
 
 #endregion
 
+        internal WeakRefTracker GetSystemPythonTypeWeakRef(PythonType type) {
+            object wrt;
+            return _systemPythonTypesWeakRefs.TryGetValue(type, out wrt) ?
+                (WeakRefTracker)wrt :
+                null;
+        }
+
+        internal bool SetSystemPythonTypeWeakRef(PythonType type, WeakRefTracker value) {
+            lock(_systemPythonTypesWeakRefs) {
+                _systemPythonTypesWeakRefs.AddNoLock(type, value);
+            }
+            return true;
+        }
+
+        internal void SetSystemPythonTypeFinalizer(PythonType type, WeakRefTracker value) {
+            lock(_systemPythonTypesWeakRefs) {
+                _systemPythonTypesWeakRefs.AddNoLock(type, value);
+            }
+        }
+
+        internal bool TryConvertToWeakReferenceable(object obj, out IWeakReferenceable weakref) {
+            IWeakReferenceableByProxy iwrp = obj as IWeakReferenceableByProxy;
+            if (iwrp != null) {
+                weakref = iwrp.GetWeakRefProxy(this);
+                return true;
+            }
+
+            IWeakReferenceable iwr = obj as IWeakReferenceable;
+            if (iwr != null) {
+                weakref = iwr;
+                return true;
+            }
+
+            weakref = null;
+            return false;
+        }
+
+        internal IWeakReferenceable ConvertToWeakReferenceable(object obj) {
+            IWeakReferenceable iwr;
+            if (TryConvertToWeakReferenceable(obj, out iwr)) {
+                return iwr;
+            } else {
+                throw PythonOps.TypeError("cannot create weak reference to '{0}' object", PythonOps.GetPythonTypeName(obj));
+            }
+        }
+
 #region Per-Runtime Call Sites
 
         private bool InvokeOperatorWorker(CodeContext/*!*/ context, UnaryOperators oper, object target, out object result) {
@@ -4164,6 +4213,12 @@ namespace IronPython.Runtime
                 }
                 return newSet;
             }
+        }
+    }
+
+    public static class PythonContextHelpers {
+        public static PythonContext GetPythonContext(this CodeContext context) {
+            return PythonContext.GetContext(context);
         }
     }
 

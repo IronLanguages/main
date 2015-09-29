@@ -1356,7 +1356,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static void InitializeForFinalization(CodeContext/*!*/ context, object newObject) {
-            IWeakReferenceable iwr = newObject as IWeakReferenceable;
+            IWeakReferenceable iwr = context.GetPythonContext().ConvertToWeakReferenceable(newObject);
             Debug.Assert(iwr != null);
 
             InstanceFinalizer nif = new InstanceFinalizer(context, newObject);
