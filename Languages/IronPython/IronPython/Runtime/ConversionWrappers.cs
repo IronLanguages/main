@@ -222,9 +222,23 @@ namespace IronPython.Runtime {
         }
 
         #region IEnumerator<T> Members
-
-        public T Current {
-            get { return (T)enumerable.Current; }
+        public T Current
+        {
+            get
+            {
+                try
+                {
+                    return (T)enumerable.Current;
+                }
+                catch (System.InvalidCastException iex)
+                {
+                    throw new System.Exception(string.Format("Error in IEnumeratorOfTWrapper.Current(). Could not cast: {0} in {0}", typeof(T).ToString(), enumerable.Current.GetType().ToString()), iex);
+                }
+                catch (System.Exception ex)
+                {
+                    throw ex;
+                }
+            }
         }
 
         #endregion
