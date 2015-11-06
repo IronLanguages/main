@@ -234,10 +234,6 @@ namespace IronPython.Runtime {
                 {
                     throw new System.InvalidCastException(string.Format("Error in IEnumeratorOfTWrapper.Current. Could not cast: {0} in {0}", typeof(T).ToString(), enumerable.Current.GetType().ToString()), iex);
                 }
-                catch (System.Exception ex)
-                {
-                    throw ex;
-                }
             }
         }
 
