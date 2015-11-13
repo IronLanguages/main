@@ -418,6 +418,17 @@ namespace IronPython.Modules {
         public const int PROTOCOL_SSLv3 = 1;
         public const int PROTOCOL_SSLv23 = 2;
         public const int PROTOCOL_TLSv1 = 3;
+        public const int PROTOCOL_TLSv1_1 = 4;
+        public const int PROTOCOL_TLSv1_2 = 5;
+
+        public const int OP_NO_SSLv2 =    0x1000000;
+        public const int OP_NO_SSLv3 =    0x2000000;
+        public const int OP_NO_TLSv1 =    0x4000000;
+        public const int OP_NO_TLSv1_1 = 0x10000000;
+        public const int OP_NO_TLSv1_2 =  0x8000000;
+
+        internal const int OP_NO_ALL = OP_NO_SSLv2 | OP_NO_SSLv3 | OP_NO_TLSv1 | OP_NO_TLSv1_1 | OP_NO_TLSv1_2;
+
 
         #region Exported constants
 
