@@ -383,6 +383,11 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static bool IsInstance(object o, PythonType typeinfo) {
+            if(typeinfo == Builtin.basestring) {
+                return IsInstance(o, DynamicHelpers.GetPythonTypeFromType(typeof(string))) ||
+                    IsInstance(o, DynamicHelpers.GetPythonTypeFromType(typeof(Bytes)));
+            }
+
             if (typeinfo.__instancecheck__(o)) {
                 return true;
             }
