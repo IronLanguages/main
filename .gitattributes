@@ -29,6 +29,7 @@
 *.exe binary
 *.bmp binary
 *.zip binary
+*.pickle binary
 
 # Do not normalize on commit.
 *.pdf -text
