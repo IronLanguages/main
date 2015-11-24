@@ -36,7 +36,7 @@ using IronPython.Runtime.Types;
 [assembly: PythonModule("_ssl", typeof(IronPython.Modules.PythonSsl))]
 namespace IronPython.Modules {
     public static class PythonSsl {
-        public const string __doc__ = "Implementation module for SSL socket operations.";
+        public const string __doc__ = "Implementation module for SSL socket operations.  See the socket module\nfor documentation.";
         public const int OPENSSL_VERSION_NUMBER = 9437184;
         public static PythonTuple OPENSSL_VERSION_INFO = PythonTuple.MakeTuple(0, 0, 0, 0, 0);
         public const string OPENSSL_VERSION = "OpenSSL 0.0.0 (.NET SSL)";
@@ -80,7 +80,7 @@ namespace IronPython.Modules {
             [DefaultParameterValue(null)] string keyfile, 
             [DefaultParameterValue(null)] string certfile,
             [DefaultParameterValue(PythonSsl.CERT_NONE)]int certs_mode,
-            [DefaultParameterValue(-1)]int protocol,
+            [DefaultParameterValue(PythonSsl.PROTOCOL_SSLv23 | PythonSsl.OP_NO_SSLv2 | PythonSsl.OP_NO_SSLv3)]int protocol,
             [DefaultParameterValue(null)]string cacertsfile,
             [DefaultParameterValue(null)]object ciphers) {
             return new PythonSocket.ssl(

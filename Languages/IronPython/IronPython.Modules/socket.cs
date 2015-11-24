@@ -919,6 +919,8 @@ namespace IronPython.Modules {
                 + "If the timeout is non-zero and is less than 0.5, it will be set to 0.5. This\n"
                 + "limitation is specific to IronPython.\n"
                 )]
+            // NOTE: The above IronPython specific timeout behavior is due to the underlying
+            // .Net Socket.SendTimeout behavior and is outside of our control.
             public void settimeout(object timeout) {
                 try {
                     if (timeout == null) {
@@ -1418,14 +1420,6 @@ namespace IronPython.Modules {
             + "   '80' rather than 'http'). This flag is required (see below).\n"
             + " - NI_DGRAM: Silently ignored (see below).\n"
             + "\n"
-            + "Difference from CPython: the following flag behavior differs from CPython\n"
-            + "because the .NET framework libraries offer no name-to-port conversion APIs:\n"
-            + " - NI_NUMERICSERV: This flag is required because the .NET framework libraries\n"
-            + "   offer no port-to-name mapping APIs. If it is omitted, getnameinfo() will\n"
-            + "   raise a NotImplementedError.\n"
-            + " - The NI_DGRAM flag is ignored because it only applies when NI_NUMERICSERV is\n"
-            + "   omitted. It it were supported, it would return the UDP-based port name\n"
-            + "   rather than the TCP-based port name.\n"
             )]
         public static object getnameinfo(CodeContext/*!*/ context, PythonTuple socketAddr, int flags) {
             if (socketAddr.__len__() < 2 || socketAddr.__len__() > 4) {
@@ -2305,6 +2299,8 @@ namespace IronPython.Modules {
             public const string __module__ = "socket";
             private bool _close;
 
+            public object _sock; // Only present for compatibility with CPython tests
+
             public object bufsize = DefaultBufferSize; // Only present for compatibility with CPython public API
 
             public _fileobject(CodeContext/*!*/ context, object socket, [DefaultParameterValue("rb")]string mode, [DefaultParameterValue(-1)]int bufsize, [DefaultParameterValue(false)]bool close)
@@ -2321,6 +2317,7 @@ namespace IronPython.Modules {
                     _socket = null;
                     stream = new PythonUserSocketStream(socket, GetBufferSize(context, bufsize), close);
                 }
+                _sock = socket;
                
                 base.__init__(stream, System.Text.Encoding.Default, mode);
 
@@ -2433,7 +2430,7 @@ namespace IronPython.Modules {
                 {
                     _SslProtocol_Tls12 = result;
                     try {
-                        _SslProtocol_Tls12 = (SslProtocols)Enum.Parse(typeof(SslProtocols), "Tls11");
+                        _SslProtocol_Tls11 = (SslProtocols)Enum.Parse(typeof(SslProtocols), "Tls11");
                     }
                     catch (ArgumentException) {
                         // This is thrown for invalid enumeration values by Enum.Parse.
@@ -2452,7 +2449,7 @@ namespace IronPython.Modules {
                 _sslStream = new SslStream(new NetworkStream(sock._socket, false), true, CertValidationCallback);
                 _socket = sock;
                 _certCollection = new X509Certificate2Collection();
-                _protocol = -1;
+                _protocol = PythonSsl.PROTOCOL_SSLv23 | PythonSsl.OP_NO_SSLv2 | PythonSsl.OP_NO_SSLv3;
                 _validate = false;
             }
 
@@ -2462,7 +2459,7 @@ namespace IronPython.Modules {
                [DefaultParameterValue(null)] string keyfile,
                [DefaultParameterValue(null)] string certfile,
                [DefaultParameterValue(PythonSsl.CERT_NONE)]int certs_mode,
-               [DefaultParameterValue(-1)]int protocol,
+               [DefaultParameterValue(PythonSsl.PROTOCOL_SSLv23 | PythonSsl.OP_NO_SSLv2 | PythonSsl.OP_NO_SSLv3)]int protocol,
                string cacertsfile) {
                 if (sock == null) {
                     throw PythonOps.TypeError("expected socket object, got None");
@@ -2659,7 +2656,6 @@ namespace IronPython.Modules {
                     case PythonSsl.PROTOCOL_SSLv2:
                         result = SslProtocols.Ssl2;
                         break;
-                    case -1:
                     case PythonSsl.PROTOCOL_SSLv3:
                         result = SslProtocols.Ssl3;
                         break;
