@@ -693,7 +693,7 @@ namespace IronPython.Modules {
                 if (string.IsNullOrEmpty(dateFormat)) {
                     return PythonOps.ToString(context, this);
                 } else {
-                    return this.strftime(context, dateFormat);
+                    return strftime(context, dateFormat);
                 }
             }
 
@@ -1502,7 +1502,7 @@ namespace IronPython.Modules {
                     // If we're a subtype, there might be a strftime overload,
                     // so call it if it exists.
                     if (GetType() == typeof(time)) {
-                        return this.strftime(context, dateFormat);
+                        return strftime(context, dateFormat);
                     }
                     else {
                         return PythonOps.Invoke(context, this, "strftime", dateFormat);
