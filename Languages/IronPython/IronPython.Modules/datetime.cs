@@ -218,7 +218,7 @@ namespace IronPython.Modules {
 
             public PythonTuple __reduce__() {
                 return PythonTuple.MakeTuple(
-                    DynamicHelpers.GetPythonTypeFromType(GetType()), 
+                    DynamicHelpers.GetPythonType(this),
                     PythonTuple.MakeTuple(_days, _seconds, _microseconds)
                 );
             }
@@ -382,7 +382,15 @@ namespace IronPython.Modules {
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
             public static readonly timedelta resolution = timedelta._DayResolution;
 
-            protected date() { }
+            // Make this parameterless constructor internal
+            // so that the datetime module subclasses can use it,
+            // if this was protected instead, then you couldn't
+            // successfully call the public date constructor.
+            // Due to overload resolution failing.
+            // The protected version of this constructor matches
+            // the public constructor due to KeywordArgReturnBuilder
+            // related parameter processing,
+            internal date() { }
 
             public date(int year, int month, int day) {
                 PythonDateTime.ValidateInput(InputKind.Year, year);
@@ -467,7 +475,7 @@ namespace IronPython.Modules {
             }
 
             public virtual PythonTuple __reduce__() {
-                return PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(this.GetType()), PythonTuple.MakeTuple(_dateTime.Year, _dateTime.Month, _dateTime.Day));
+                return PythonTuple.MakeTuple(DynamicHelpers.GetPythonType(this), PythonTuple.MakeTuple(_dateTime.Year, _dateTime.Month, _dateTime.Day));
             }
 
             public static object __getnewargs__(CodeContext context, int year, int month, int day) {
@@ -1101,7 +1109,7 @@ namespace IronPython.Modules {
 
             public override PythonTuple __reduce__() {
                 return PythonTuple.MakeTuple(
-                    DynamicHelpers.GetPythonTypeFromType(GetType()),
+                    DynamicHelpers.GetPythonType(this),
                     PythonTuple.MakeTuple(
                         InternalDateTime.Year, 
                         InternalDateTime.Month, 
@@ -1292,7 +1300,7 @@ namespace IronPython.Modules {
 
             public PythonTuple __reduce__() {
                 return PythonTuple.MakeTuple(
-                    DynamicHelpers.GetPythonTypeFromType(GetType()),
+                    DynamicHelpers.GetPythonType(this),
                     PythonTuple.MakeTuple(
                         this.hour,
                         this.minute,
@@ -1370,7 +1378,7 @@ namespace IronPython.Modules {
                 return sb.ToString();
             }
 
-            public object strftime(CodeContext/*!*/ context, string format) {
+            public string strftime(CodeContext/*!*/ context, string format) {
                 return PythonTime.strftime(context,
                     format,
                     new DateTime(1900, 1, 1, _timeSpan.Hours, _timeSpan.Minutes, _timeSpan.Seconds, _timeSpan.Milliseconds),
@@ -1485,6 +1493,22 @@ namespace IronPython.Modules {
             }
 
             #endregion
+
+            public object __format__(CodeContext/*!*/ context, string dateFormat) {
+                if (string.IsNullOrEmpty(dateFormat)) {
+                    return PythonOps.ToString(context, this);
+                }
+                else {
+                    // If we're a subtype, there might be a strftime overload,
+                    // so call it if it exists.
+                    if (GetType() == typeof(time)) {
+                        return this.strftime(context, dateFormat);
+                    }
+                    else {
+                        return PythonOps.Invoke(context, this, "strftime", dateFormat);
+                    }
+                }
+            }
 
             class UnifiedTime {
                 public TimeSpan TimeSpan;
