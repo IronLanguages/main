@@ -148,8 +148,6 @@ namespace IronPythonCompiler {
                 gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Resources.ResourceManager)).GetMethod("GetObject", new IKVM.Reflection.Type[] { u.Import(typeof(string)) }), Type.EmptyTypes);
                 gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Reflection.Assembly)).GetMethod("Load", new IKVM.Reflection.Type[] { u.Import(typeof(byte[])) }), Type.EmptyTypes);
             } else {
-                
-
                 // save current working directory
                 gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Environment)).GetMethod("get_CurrentDirectory"), Type.EmptyTypes);
                 gen.Emit(OpCodes.Stloc, strVar);
@@ -194,6 +192,16 @@ namespace IronPythonCompiler {
                 gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Console)).GetMethod("WriteLine", new IKVM.Reflection.Type[] { u.Import(typeof(string)), u.Import(typeof(string)) }), Type.EmptyTypes);                
             } else {
                 // what do we want to do in the case of a Windows app, show a MessageBox?
+                gen.EmitCall(OpCodes.Callvirt, u.Import(typeof(System.Exception)).GetMethod("get_Message", Type.EmptyTypes), Type.EmptyTypes);
+                gen.Emit(OpCodes.Stloc, strVar);
+                gen.Emit(OpCodes.Ldstr, config.ErrorMessageFormat);
+                gen.Emit(OpCodes.Ldloc, strVar);
+                gen.EmitCall(OpCodes.Call, u.Import(typeof(string)).GetMethod("Format", new IKVM.Reflection.Type[] { u.Import(typeof(string)), u.Import(typeof(string)) }), Type.EmptyTypes);
+                gen.Emit(OpCodes.Ldstr, "Error");
+                gen.Emit(OpCodes.Ldc_I4, (int)System.Windows.Forms.MessageBoxButtons.OK);
+                gen.Emit(OpCodes.Ldc_I4, (int)System.Windows.Forms.MessageBoxIcon.Error);
+                gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Windows.Forms.MessageBox)).GetMethod("Show", new IKVM.Reflection.Type[] { u.Import(typeof(string)), u.Import(typeof(string)), u.Import(typeof(System.Windows.Forms.MessageBoxButtons)), u.Import(typeof(System.Windows.Forms.MessageBoxIcon)) }), Type.EmptyTypes);
+                gen.Emit(OpCodes.Pop);
             }
 
             gen.Emit(OpCodes.Ldc_I4, -1); // return code is -1 to show failure
