@@ -225,11 +225,13 @@ namespace IronPythonCompiler {
             if (!config.Validate()) {
                 ConsoleOps.Usage(true);
             }
-            ConsoleOps.Info("{0}", config);
-            ConsoleOps.Info("compiling...");
 
             // we don't use the engine, but we create it so we can have a default context.
             ScriptEngine engine = Python.CreateEngine();
+
+            ConsoleOps.Info("IronPython Compiler for {0} ({1})", engine.Setup.DisplayName, engine.LanguageVersion);
+            ConsoleOps.Info("{0}", config);
+            ConsoleOps.Info("compiling...");            
                         
             ClrModule.CompileModules(DefaultContext.DefaultCLS, config.Output + ".dll", new Dictionary<string, object> { { "mainModule", config.MainName } }, config.Files.ToArray());
 
