@@ -40,7 +40,7 @@ namespace IronPythonCompiler {
         public static void Usage(bool doExit = false) {
             Console.WriteLine(@"ipyc: The Command-Line IronPython Compiler
 
-Usage: ipyc.exe [options] file [file ...]
+Usage: ipc.exe [options] file [file ...]
 
 Options:
     /out:output_file                          Output file name (default is main_file.<extenstion>)
@@ -58,6 +58,7 @@ EXE/WinEXE specific options:
     /standalone                               Embeds the IronPython assemblies into the stub executable.
     /mta                                      Set MTAThreadAttribute on Main instead of STAThreadAttribute, only valid for /target:winexe
     /errfmt:msg                               A string that will be used when showing an error occured, {{0}} will be replaced by the exception message
+    /win32icon:file.ico                       Sets file.ico as the icon for the executable
 
 Example:
     ipc.exe /main:Program.py Form.py /target:winexe");
