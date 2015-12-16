@@ -70,6 +70,8 @@
     <Compile Include="Compiler\PythonDynamicExpression.cs" />
     <Compile Include="Compiler\UncollectableCompilationMode.Generated.cs" />
     <Compile Include="Compiler\RunnableScriptCode.cs" />
+    <Compile Include="Modules\importer\IImporterModule.cs" />
+    <Compile Include="Modules\importer\ImporterModuleState.cs" />
     <Compile Include="Modules\unicodedata.cs" />
     <Compile Include="Modules\_ast.cs" />
     <Compile Include="Properties\BuildInfo.Generated.cs" />
@@ -557,7 +559,6 @@
   <Import Project="$(SolutionDir)Versioning.targets" />
   <Target Name="BeforeBuild" DependsOnTargets="GenerateBuildInfo;GenerateCurrentVersion" />
   <Target Name="AfterBuild" DependsOnTargets="GeneratePolicy">
-    <Copy DestinationFolder="$(OutputPath)\Lib"
-          SourceFiles="$(OutputPath)..\..\External.LCA_RESTRICTED\Languages\IronPython\27\Lib\os.py" />
+    <Copy DestinationFolder="$(OutputPath)\Lib" SourceFiles="$(OutputPath)..\..\External.LCA_RESTRICTED\Languages\IronPython\27\Lib\os.py" />
   </Target>
 </Project>

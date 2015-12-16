@@ -12,6 +12,7 @@ using IronPython.Zlib;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
+using IronPython.Modules;
 
 [assembly: PythonModule("zipimport", typeof(IronPython.Runtime.ZipImportModule))]
 namespace IronPython.Runtime {
@@ -41,7 +42,8 @@ to Zip archives.";
         }
 
         [PythonType]
-        public class zipimporter {
+        public class zipimporter : Modules.IImporterModule
+        {
             private const int MAXPATHLEN = 256;
 
             private string _archive;
@@ -102,6 +104,7 @@ to Zip archives.";
                 }
 
                 path = pathObj as string;
+                State = ImporterModuleState.Ready;
 
                 if (path.Length == 0)
                     throw MakeError("archive path is empty");
@@ -136,7 +139,8 @@ to Zip archives.";
                         zip_directory_cache.Add(path, _files);
                     }
                 } else {
-                    throw MakeError("not a Zip file");
+                    State = ImporterModuleState.Ignore;
+                    return;
                 }
 
                 _prefix = input.Replace(path, string.Empty);
@@ -167,6 +171,15 @@ to Zip archives.";
                 get {
                     return _prefix;
                 }
+            }
+
+            /// <summary>
+            /// Represents the state of the current zipimporter
+            /// </summary>
+            public ImporterModuleState State
+            {
+                get;
+                set;
             }
 
             public string __repr__() {

@@ -917,8 +917,19 @@ namespace IronPython.Runtime {
                 try {
                     object handler = PythonCalls.Call(context, hook, dirname);
 
-                    if (handler != null) {
-                        return handler;
+                    if (handler != null)
+                    {
+                        if (handler is IImporterModule)
+                        {
+                            if (((IImporterModule)handler).State == ImporterModuleState.Ready)
+                            {
+                                return handler;
+                            }
+                        }
+                        else
+                        {
+                            return handler;
+                        }
                     }
                 } catch (ImportException) {
                     // we can't handle the path
