@@ -52,6 +52,24 @@ namespace IronPython.Runtime.Types {
             // reflected method if necessary in order to provide generic type arguments and
             // fully disambiguate the target.
 
+            // Precheck whether there is a method, which accepts the count of overloads
+            IList<MethodBase> countMatchingTarget = new List<MethodBase>();
+
+            foreach (var target in targets)
+            {
+                if (target.GetParameters().Length >= sig.Length)
+                {
+                    countMatchingTarget.Add(target);
+                }
+            }
+
+            if (countMatchingTarget.Count == 0)
+            {
+                throw new Exception(string.Format("Could not find overload for {0} which takes {1} arguments.", targets[0].Name, sig.Length));
+            }
+
+            targets = countMatchingTarget;
+
             // Search for targets with the right number of arguments.
             BuiltinFunction bf;
             BuiltinFunction.TypeList tl = new BuiltinFunction.TypeList(sig);
