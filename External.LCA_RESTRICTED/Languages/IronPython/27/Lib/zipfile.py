@@ -473,9 +473,11 @@ class ZipExtFile(io.BufferedIOBase):
     # Search for universal newlines or line chunks.
     PATTERN = re.compile(r'^(?P<chunk>[^\r\n]+)|(?P<newline>\n|\r\n?)')
 
-    def __init__(self, fileobj, mode, zipinfo, decrypter=None):
+    def __init__(self, fileobj, mode, zipinfo, decrypter=None,
+                 close_fileobj=False):
         self._fileobj = fileobj
         self._decrypter = decrypter
+        self._close_fileobj = close_fileobj
 
         self._compress_type = zipinfo.compress_type
         self._compress_size = zipinfo.compress_size
@@ -646,6 +648,13 @@ class ZipExtFile(io.BufferedIOBase):
         data = self._readbuffer[self._offset: self._offset + n]
         self._offset += len(data)
         return data
+
+    def close(self):
+        try:
+            if self._close_fileobj:
+                self._fileobj.close()
+        finally:
+            super(ZipExtFile, self).close()
 
 
 
@@ -878,8 +887,10 @@ class ZipFile:
         # given a file object in the constructor
         if self._filePassed:
             zef_file = self.fp
+            should_close = False
         else:
             zef_file = open(self.filename, 'rb')
+            should_close = True
 
         # Make sure we have an info object
         if isinstance(name, ZipInfo):
@@ -933,7 +944,8 @@ class ZipFile:
             if ord(h[11]) != check_byte:
                 raise RuntimeError("Bad password for file", name)
 
-        return  ZipExtFile(zef_file, mode, zinfo, zd)
+        return  ZipExtFile(zef_file, mode, zinfo, zd,
+                close_fileobj=should_close)
 
     def extract(self, member, path=None, pwd=None):
         """Extract a member from the archive to the current working directory,
