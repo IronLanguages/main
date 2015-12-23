@@ -16,6 +16,7 @@
 import nt
 import sys
 import rulediff
+import traceback
         
 from common import *
 
@@ -50,7 +51,7 @@ def run_sbs_test(l):
         except Exception, e:
             print "*FAIL*"
             failure += 1
-            exceptions.append((test, e))
+            exceptions.append((test, e, sys.exc_info()))
             
     print "----------------------------------------"
     if failure > 0 or len(exceptions) > 0:
@@ -59,6 +60,7 @@ def run_sbs_test(l):
             print '------------------------------------'
             print 'Test %s failed' % exception[0]
             print exception[1]
+            traceback.print_tb(exception[2][2])
             if sys.platform == "cli":
                 import System
                 if '-X:ExceptionDetail' in System.Environment.GetCommandLineArgs():
