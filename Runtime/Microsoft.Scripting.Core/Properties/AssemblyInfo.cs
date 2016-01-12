@@ -60,6 +60,6 @@ using System.Security;
 [assembly: AssemblyInformationalVersion("1.1")]
 #endif
 
-#if !SILVERLIGHT && !WP75
+#if FEATURE_APTCA
 [assembly: AllowPartiallyTrustedCallers]
 #endif
