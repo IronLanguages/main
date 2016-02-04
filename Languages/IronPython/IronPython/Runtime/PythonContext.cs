@@ -1173,12 +1173,12 @@ namespace IronPython.Runtime
             return ret;
         }
 
-        internal PythonModule/*!*/ CompileModule(string fileName, string moduleName, SourceUnit sourceCode, ModuleOptions options) {
+        public PythonModule/*!*/ CompileModule(string fileName, string moduleName, SourceUnit sourceCode, ModuleOptions options) {
             ScriptCode compiledCode;
             return CompileModule(fileName, moduleName, sourceCode, options, out compiledCode);
         }
 
-        internal PythonModule/*!*/ CompileModule(string fileName, string moduleName, SourceUnit sourceCode, ModuleOptions options, out ScriptCode scriptCode) {
+        public PythonModule/*!*/ CompileModule(string fileName, string moduleName, SourceUnit sourceCode, ModuleOptions options, out ScriptCode scriptCode) {
             ContractUtils.RequiresNotNull(fileName, "fileName");
             ContractUtils.RequiresNotNull(moduleName, "moduleName");
             ContractUtils.RequiresNotNull(sourceCode, "sourceCode");
