@@ -87,8 +87,8 @@ def test_cp35507():
 
     import cPickle
     one = cPickle.dumps(1)
-    AreEqual(1, cPickle.loads("\nI1\n."))
-    AreEqual(1, cPickle.loads(b"\nI1\n."))
+    AreEqual(1, cPickle.loads("I1\n."))
+    AreEqual(1, cPickle.loads(b"I1\n."))
     AreEqual(1, cPickle.loads(one))
     AreEqual(1, cPickle.loads(bytes(one)))
 
@@ -268,6 +268,13 @@ def test_cp34188():
     import locale
     locale.setlocale(locale.LC_COLLATE,"de_CH")
     Assert(sorted([u'a', u'z', u'ä'], cmp=locale.strcoll) == sorted([u'a', u'z', u'ä'], key=locale.strxfrm))
+
+def test_gh1144():
+    from collections import deque
+    a = deque(maxlen=0)
+    a.append("a")
+    AreEqual(len(a), 0)
+
     
 ##MAIN#########################################################################
 run_test(__name__)

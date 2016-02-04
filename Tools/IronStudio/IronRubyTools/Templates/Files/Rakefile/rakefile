@@ -1,4 +1,0 @@
-desc "Say Hello"
-task :say_hello do
-  puts 'hello'
-end

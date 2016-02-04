@@ -10,6 +10,7 @@
     <AssemblyName>ipyw64</AssemblyName>
     <ApplicationIcon>..\IronPythonWindow\ipy.ico</ApplicationIcon>
     <CodeAnalysisRuleSet>IronPythonWindowAny.ruleset</CodeAnalysisRuleSet>
+    <AppConfig>..\App.$(ConfigurationFlavor).config</AppConfig>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
   </PropertyGroup>
@@ -57,9 +58,11 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
-    <None Include="..\App.config">
-      <Link>App.config</Link>
-      <SubType>Designer</SubType>
+    <None Include="..\App.Debug.config">
+      <Link>App.Debug.config</Link>
+    </None>
+    <None Include="..\App.Release.config">
+      <Link>App.Release.config</Link>
     </None>
     <None Include="IronPythonWindowAny.ruleset" />
   </ItemGroup>

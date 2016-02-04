@@ -1392,8 +1392,12 @@ namespace IronPython.Runtime {
 
         #region IEnumerable Members
 
-        System.Collections.IEnumerator/*!*/ System.Collections.IEnumerable.GetEnumerator() {
-            return _bytes.GetEnumerator();
+        System.Collections.IEnumerator/*!*/ System.Collections.IEnumerable.GetEnumerator()
+        {
+            foreach (var _byte in _bytes)
+            {
+                yield return (int)_byte;
+            }
         }
 
         #endregion

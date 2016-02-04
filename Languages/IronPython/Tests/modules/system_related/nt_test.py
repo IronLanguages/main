@@ -149,13 +149,7 @@ def test_chdir():
 
 # fdopen tests
 def test_fdopen():
-    
-    # IronPython does not implement the nt.dup function
-    if not is_cli:
-        fd_lambda = lambda x: nt.dup(x)
-    else:
-        AssertError(AttributeError, lambda: nt.dup)
-        fd_lambda = lambda x: x
+    fd_lambda = lambda x: nt.dup(x)
     
     # fd = 0    
     result = None
@@ -1014,7 +1008,9 @@ def test_access():
     f.close()
     
     AreEqual(nt.access('new_file_name', nt.F_OK), True)
+    AreEqual(nt.access('new_file_name', nt.R_OK), True)
     AreEqual(nt.access('does_not_exist.py', nt.F_OK), False)
+    AreEqual(nt.access('does_not_exist.py', nt.R_OK), False)
 
     nt.chmod('new_file_name', 0x100) # S_IREAD
     AreEqual(nt.access('new_file_name', nt.W_OK), False)
@@ -1132,6 +1128,63 @@ def test_popen_cp34837():
     Assert(p!=None)
     p.wait()
 
+def test_fsync():
+    fsync_file_name = 'text_fsync.txt'
+    fd = nt.open(fsync_file_name, nt.O_WRONLY | nt.O_CREAT)
+
+    # negative test, make sure it raises on invalid (closed) fd
+    try:
+        nt.close(fd+1)
+    except:
+        pass
+    AssertError(OSError, nt.fsync, fd+1)
+
+    # BUG (or implementation detail)
+    # On a posix system, once written to a file descriptor
+    # it can be read using another fd without any additional intervention.
+    # In case of IronPython the data lingers in a stream which
+    # is used to simulate file descriptor.
+    fd2 = nt.open(fsync_file_name, nt.O_RDONLY)
+    AreEqual(nt.read(fd2, 1), '')
+
+    nt.write(fd, '1')
+    AreEqual(nt.read(fd2, 1), '') # this should be visible right away, but is not
+    nt.fsync(fd)
+    AreEqual(nt.read(fd2, 1), '1')
+
+    nt.close(fd)
+    nt.close(fd2)
+
+    # fsync on read file descriptor
+    fd = nt.open(fsync_file_name, nt.O_RDONLY)
+    AssertError(OSError, nt.fsync, fd)
+    nt.close(fd)
+
+    # fsync on rdwr file descriptor
+    fd = nt.open(fsync_file_name, nt.O_RDWR)
+    nt.fsync(fd)
+    nt.close(fd)
+
+    # fsync on derived fd
+    for mode in ('rb', 'r'):
+        f = open(fsync_file_name, mode)
+        AssertError(OSError, nt.fsync, f.fileno())
+        f.close()
+
+    for mode in ('wb', 'w'):
+        f = open(fsync_file_name, mode)
+        nt.fsync(f.fileno())
+        f.close()
+
+    nt.unlink(fsync_file_name)
+
+    # fsync on pipe ends
+    r,w = nt.pipe()
+    AssertError(OSError, nt.fsync, r)
+    nt.write(w, '1')
+    nt.fsync(w)
+    nt.close(w)
+    nt.close(r)
 
 #------------------------------------------------------------------------------
 try:

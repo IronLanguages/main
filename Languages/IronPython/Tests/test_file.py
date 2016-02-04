@@ -853,5 +853,19 @@ def test_buffering_kwparam():
         AssertError(OverflowError, #"long int too large to convert to int",
                     lambda: file(name = 'some_test_file.txt', mode = 'w', buffering=x))
 
+def test_open_with_BOM():
+    # gh1088
+    # https://github.com/IronLanguages/main/issues/1088
+    with open("file_without_BOM.txt", "r") as f:
+        AreEqual(f.read(), "\x42\xc3\x93\x4d\x0a")
+    with open("file_without_BOM.txt", "rb") as f:
+        AreEqual(f.read(), "\x42\xc3\x93\x4d\x0d\x0a")
+    with open("file_with_BOM.txt", "r") as f:
+        AreEqual(f.read(), "\xef\xbb\xbf\x42\xc3\x93\x4d\x0a")
+    with open("file_with_BOM.txt", "rb") as f:
+        AreEqual(f.read(), "\xef\xbb\xbf\x42\xc3\x93\x4d\x0d\x0a")
+
+
+
 #------------------------------------------------------------------------------    
 run_test(__name__)

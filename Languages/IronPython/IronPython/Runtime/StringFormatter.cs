@@ -756,10 +756,9 @@ namespace IronPython.Runtime {
         }
 
         private void AppendLeftAdj(object val, bool fPos, char type) {
-            var format = (type == 'e' || type == 'E') ?
-                "{0:" + type + _opts.Precision + "}" :
-                "{0:" + type + "}";
-            var str = adjustExponent(String.Format(_nfi, format, val));
+            var str = (type == 'e' || type == 'E') ?
+                adjustExponent(String.Format(_nfi, "{0:" + type + _opts.Precision + "}", val)):
+                String.Format(_nfi, "{0:" + type + "}", val);
             if (fPos) {
                 if (_opts.SignChar) str = '+' + str;
                 else if (_opts.Space) str = ' ' + str;

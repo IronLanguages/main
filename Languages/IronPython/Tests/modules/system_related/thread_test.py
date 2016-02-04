@@ -248,8 +248,9 @@ def test_start_new_thread():
     Assert("tempFunc() got an unexpected keyword argument 'my_misspelled_kw_param" in temp_stderr)
 
     
-@skip("win32")
+@skip("cli", "win32")
 def test_thread_interrupt_main():
+    # TODO: add real test for thread_interrupt_main
     AssertError(NotImplementedError, thread.interrupt_main)
 
 #------------------------------------------------------------------------------

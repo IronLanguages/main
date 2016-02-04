@@ -190,7 +190,12 @@
         <NuGetVersion Condition="'$(ReleaseLevel)' == 'final' and '$(ReleaseSerial)' == '0'">$(MajorVersion).$(MinorVersion).$(MicroVersion)</NuGetVersion>
         <NuGetVersion Condition="'$(ReleaseLevel)' != 'final' or '$(ReleaseSerial)' != '0'">$(MajorVersion).$(MinorVersion).$(MicroVersion)-$(ReleaseLevel)$(ReleaseSerial)</NuGetVersion>
     </PropertyGroup>
+    <PropertyGroup>
+      <DlrNuGetVersion Condition="'$(DlrReleaseLevel)' == 'final' and '$(DlrReleaseSerial)' == '0'">$(DlrMajorVersion).$(DlrMinorVersion).$(DlrMicroVersion)</DlrNuGetVersion>
+      <DlrNuGetVersion Condition="'$(DlrReleaseLevel)' != 'final' or '$(DlrReleaseSerial)' != '0'">$(DlrMajorVersion).$(DlrMinorVersion).$(DlrMicroVersion)-$(DlrReleaseLevel)$(DlrReleaseSerial)</DlrNuGetVersion>
+    </PropertyGroup>
     <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
+    <Exec Command="$(UtilDir)\Misc\NuGet.exe pack -Version $(DlrNuGetVersion) &quot;$(BaseDir)\Runtime\DynamicLanguageRuntime.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
     <Exec Command="$(UtilDir)\Misc\NuGet.exe pack -Version $(NuGetVersion) &quot;$(BaseDir)\Languages\IronPython\IronPython.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
     <Exec Command="$(UtilDir)\Misc\NuGet.exe pack -Version $(NuGetVersion) &quot;$(BaseDir)\Languages\IronPython\IronPython.StdLib.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
   </Target>

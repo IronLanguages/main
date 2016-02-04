@@ -11,6 +11,7 @@
     <ApplicationIcon>ipy.ico</ApplicationIcon>
     <PlatformTarget>x86</PlatformTarget>
     <CodeAnalysisRuleSet>IronPythonConsole.ruleset</CodeAnalysisRuleSet>
+    <AppConfig>..\App.$(ConfigurationFlavor).config</AppConfig>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
   </PropertyGroup>
@@ -51,8 +52,11 @@
     <Content Include="ipy.ico" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\App.config">
-      <Link>App.config</Link>
+    <None Include="..\App.Debug.config">
+      <Link>App.Debug.config</Link>
+    </None>
+    <None Include="..\App.Release.config">
+      <Link>App.Release.config</Link>
     </None>
     <None Include="IronPythonConsole.ruleset" />
   </ItemGroup>

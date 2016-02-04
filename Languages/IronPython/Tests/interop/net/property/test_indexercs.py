@@ -143,7 +143,7 @@ def test_writeonly():
     Flag.Check(11)
     
     AssertErrorWithMatch(TypeError, 
-        "'WriteOnlyIndexer' object is unsubscriptable",
+        "'WriteOnlyIndexer' object is not subscriptable",
         lambda: x[1])
 
 

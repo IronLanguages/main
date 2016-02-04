@@ -14,10 +14,14 @@
 #
 #####################################################################################
 
+import clr
+
 import unittest
 import datetime
 import time
 from test import test_support
+
+from System import DateTime, TimeSpan
 
 class TestDatetime(unittest.TestCase):
 
@@ -26,7 +30,6 @@ class TestDatetime(unittest.TestCase):
         d = datetime.datetime.strptime("2013-11-29T16:38:12.507000", "%Y-%m-%dT%H:%M:%S.%f")
         self.assertEquals(d, datetime.datetime(2013, 11, 29, 16, 38, 12, 507000))
 
-    @unittest.skip("%f parsing uses .net DateType with miliseconds accuracy")
     def test_strptime_2(self):
         d = datetime.datetime.strptime("2013-11-29T16:38:12.507042", "%Y-%m-%dT%H:%M:%S.%f")
         self.assertEquals(d, datetime.datetime(2013, 11, 29, 16, 38, 12, 507042))
@@ -129,6 +132,30 @@ class TestDatetime(unittest.TestCase):
         self.assertRaises(ValueError, datetime.date.today().replace, year=10000000L)
         self.assertRaises(OverflowError, datetime.date.today().replace, year=1000000000000L)
         self.assertRaises(TypeError, datetime.date.today().replace, year=1000.1)
+
+    def test_fromtimestamp(self):
+        # gh11170
+        ts = 1399410716.123
+        self.assertEqual(datetime.datetime.fromtimestamp(ts).microsecond, 123000)
+        ts = 5399410716.777882
+        self.assertEqual(datetime.datetime.fromtimestamp(ts).microsecond, 777882)
+
+    def test_System_DateTime_conversion(self):
+        example = datetime.datetime(2015, 4, 25, 8, 39, 54)
+        result = clr.Convert(example, DateTime)
+        self.assertIsInstance(result, DateTime)
+        
+        expected = DateTime(2015, 4, 25, 8, 39, 54)
+        self.assertEqual(expected, result)
+    
+    def test_System_DateTime_binding(self):
+        pydt = datetime.datetime(2015, 4, 25, 8, 39, 54)
+        netdt = DateTime(2015, 4, 25, 9, 39, 54)
+        
+        result = netdt.Subtract(pydt)
+        expected = TimeSpan(1, 0, 0)
+        
+        self.assertEqual(expected, result)
 
 def test_main():
     from unittest import main
