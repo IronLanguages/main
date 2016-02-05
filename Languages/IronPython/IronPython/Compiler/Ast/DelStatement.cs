@@ -43,7 +43,7 @@ namespace IronPython.Compiler.Ast {
                 statements.Add(_expressions[i].TransformDelete());
             }
             statements.Add(AstUtils.Empty());
-            return /*AppendLine*/(GlobalParent.AddDebugInfo(MSAst.Expression.Block(statements), Span));
+            return GlobalParent.AddDebugInfo(MSAst.Expression.Block(statements), Span);
         }
 
         public override void Walk(PythonWalker walker) {

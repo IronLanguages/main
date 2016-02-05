@@ -48,11 +48,11 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override MSAst.Expression Reduce() {
-            return /*AppendLine*/(GlobalParent.Operation(
+            return GlobalParent.Operation(
                 typeof(object),
                 PythonOperatorToOperatorString(_op),
                 _expression
-            ));
+            );
         }
 
         public override void Walk(PythonWalker walker) {

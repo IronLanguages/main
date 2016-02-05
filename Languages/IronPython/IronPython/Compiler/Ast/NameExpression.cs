@@ -82,7 +82,7 @@ namespace IronPython.Compiler.Ast {
                 );
             }
 
-            return /*AppendLine*/(read);
+            return read;
         }
 
         internal override MSAst.Expression TransformSet(SourceSpan span, MSAst.Expression right, PythonOperationKind op) {

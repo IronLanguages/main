@@ -37,7 +37,7 @@ namespace IronPython.Compiler.Ast {
 
         public override MSAst.Expression Reduce() {
             MSAst.Expression expression = _expression;
-            return /*AppendLine*/(ReduceWorker(expression));
+            return ReduceWorker(expression);
         }
 
         private MSAst.Expression ReduceWorker(MSAst.Expression expression) {

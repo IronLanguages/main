@@ -52,7 +52,7 @@ namespace IronPython.Compiler.Ast {
             }
 
             // empty dictionary
-            return /*AppendLine*/(EmptyDictExpression);
+            return EmptyDictExpression;
         }
 
         private MSAst.Expression ReduceDictionaryWithItems() {

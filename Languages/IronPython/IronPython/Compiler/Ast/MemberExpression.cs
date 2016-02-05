@@ -51,10 +51,10 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override MSAst.Expression Reduce() {
-            return /*AppendLine*/(GlobalParent.Get(
+            return GlobalParent.Get(
                 _name,
                 _target
-            ));
+            );
         }
 
         internal override MSAst.Expression TransformSet(SourceSpan span, MSAst.Expression right, PythonOperationKind op) {

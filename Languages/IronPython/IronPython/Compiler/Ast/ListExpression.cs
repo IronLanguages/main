@@ -33,19 +33,19 @@ namespace IronPython.Compiler.Ast {
 
         public override MSAst.Expression Reduce() {
             if (Items.Count == 0) {
-                return /*AppendLine*/(Ast.Call(
+                return Ast.Call(
                     AstMethods.MakeEmptyListFromCode,
                     EmptyExpression
-                ));
+                );
             }
 
-            return /*AppendLine*/(Ast.Call(
+            return Ast.Call(
                 AstMethods.MakeListNoCopy,  // method
                 Ast.NewArrayInit(           // parameters
                     typeof(object),
                     ToObjectArray(Items)
                 )
-            ));
+            );
         }
 
         public override void Walk(PythonWalker walker) {

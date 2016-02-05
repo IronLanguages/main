@@ -58,26 +58,26 @@ namespace IronPython.Compiler.Ast {
 
         public override MSAst.Expression Reduce() {
             if (_expandable) {
-                return /*AppendLine*/(Ast.NewArrayInit(
+                return Ast.NewArrayInit(
                     typeof(object),
                     ToObjectArray(Items)
-                ));
+                );
             }
 
             if (Items.Count == 0) {
-                return /*AppendLine*/(Ast.Field(
+                return Ast.Field(
                     null,
                     typeof(PythonOps).GetField("EmptyTuple")
-                ));
+                );
             }
 
-            return /*AppendLine*/(Ast.Call(
+            return Ast.Call(
                 AstMethods.MakeTuple,
                 Ast.NewArrayInit(
                     typeof(object),
                     ToObjectArray(Items)
                 )
-            ));
+            );
         }
 
         public override void Walk(PythonWalker walker) {
