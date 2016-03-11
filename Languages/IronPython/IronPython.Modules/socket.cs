@@ -1297,6 +1297,10 @@ namespace IronPython.Modules {
             )]
         public static string getfqdn(string host) {
             host = host.Trim();
+            if (host == string.Empty || host == "0.0.0.0") {
+                host = gethostname();
+            }
+
             if (host == BroadcastAddrToken) {
                 return host;
             }
