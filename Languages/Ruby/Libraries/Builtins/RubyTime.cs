@@ -636,8 +636,8 @@ namespace IronRuby.Builtins {
                 int day = (int)((dword1 >> 5) & 0x01f);
                 int hour = (int)(dword1 & 0x01f);
 
-                int minute = (int)((dword2 >> 26) & 0x2f);
-                int second = (int)((dword2 >> 20) & 0x2f);
+                int minute = (int)((dword2 >> 26) & 0x3f);
+                int second = (int)((dword2 >> 20) & 0x3f);
                 int usec = (int)(dword2 & 0xfffff);
 
                 DateTime result;
