@@ -206,6 +206,7 @@ namespace IronPython.Compiler.Ast {
                 return (PythonAst)cur;
             }
         }
+
         internal PythonAst OriginalGlobalParent {
             get {
                 Node cur = this;

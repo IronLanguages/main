@@ -779,7 +779,7 @@ namespace IronPython.Modules
                 throw PythonOps.TypeError("Unexpected expr type: {0}", GetType());
             }
             
-            protected AstExpression AttachLoc(AstExpression other) {
+            internal AstExpression AttachLoc(AstExpression other) {
                 other.SetLoc(_parent as PythonAst, _span.Start.Index, _span.End.Index);
                 return other;
             }
@@ -887,7 +887,7 @@ namespace IronPython.Modules
         [PythonType]
         public abstract class slice : AST
         {
-            public AstExpression AttachLoc(AstExpression other)
+            internal AstExpression AttachLoc(AstExpression other)
             {
                 other.SetLoc(_parent as PythonAst, _span.Start.Index, _span.End.Index);
                 return other;
@@ -905,7 +905,7 @@ namespace IronPython.Modules
                 throw PythonOps.TypeError("Unexpected statement type: {0}", GetType());
             }
             
-            protected Statement AttachLoc(Statement other) {
+            internal Statement AttachLoc(Statement other) {
                 other.SetLoc(_parent as PythonAst, _span.Start.Index, _span.End.Index);
                 return other;
             }
@@ -1404,7 +1404,7 @@ namespace IronPython.Modules
                 } else
                     _decorator_list = PythonOps.MakeEmptyList(0);
                 _headerIndex = def.HeaderIndex;
-                }
+            }
 
             internal override Statement Revert() {
                 ClassDefinition cd = new ClassDefinition(name, expr.RevertExprs(bases), RevertStmts(body));
@@ -1726,7 +1726,7 @@ namespace IronPython.Modules
                 _headerIndex = stmt.HeaderIndex;
             }
             
-            protected TryStatementHandler AttachLoc(TryStatementHandler other) {
+            internal TryStatementHandler AttachLoc(TryStatementHandler other) {
                 other.SetLoc(_parent as PythonAst, _span.Start.Index, _span.End.Index);
                 return other;
             }
@@ -2765,7 +2765,7 @@ namespace IronPython.Modules
                 GetSourceLocation(expr);
             }
             
-            public Parameter AttachLoc(Parameter other) {
+            internal Parameter AttachLoc(Parameter other) {
                 other.SetLoc(_parent as PythonAst, _span.Start.Index, _span.End.Index);
                 return other;
             }
