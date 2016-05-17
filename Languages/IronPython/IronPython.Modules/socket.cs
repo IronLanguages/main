@@ -1296,7 +1296,14 @@ namespace IronPython.Modules {
             + "name lookup fails, the passed-in name is returned as-is."
             )]
         public static string getfqdn(string host) {
+            if (host == null) {
+                throw PythonOps.TypeError("expected string, got None");
+            }
             host = host.Trim();
+            if (host == string.Empty || host == "0.0.0.0") {
+                host = gethostname();
+            }
+
             if (host == BroadcastAddrToken) {
                 return host;
             }
