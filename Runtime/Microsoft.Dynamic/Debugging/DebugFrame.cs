@@ -40,7 +40,7 @@ namespace Microsoft.Scripting.Debugging {
         private Dictionary<IList<VariableInfo>, ScopeData> _variables;
 
         // Symbol used to set "$exception" variable when exceptions are thrown
-        private const string _exceptionVariableSymbol = "$exception";
+        private const string _exceptionVariableSymbol = "$debugException";
 
         internal DebugFrame(
             DebugThread thread,
