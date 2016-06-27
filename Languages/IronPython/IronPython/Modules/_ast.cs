@@ -203,7 +203,7 @@ namespace IronPython.Modules
                 return __reduce__();
             }
 
-            protected void GetSourceLocation(Node node) {
+            internal void GetSourceLocation(Node node) {
                 _lineno = node.Start.Line;
 
                 // IronPython counts from 1; CPython counts from 0

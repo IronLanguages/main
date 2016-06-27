@@ -214,9 +214,11 @@ namespace IronPython.Compiler.Ast {
                     Debug.Assert(cur != null);
                     if (cur._originalParent != null) {
                         cur = cur._originalParent;
-                    }
-                    else {
+                    } else {
                         cur = cur.Parent;
+                    }
+                    if (cur == null) {
+                        return null;
                     }
                 }
                 if ((cur._originalParent != null) && (cur._originalParent is PythonAst)) {
