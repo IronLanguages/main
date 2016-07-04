@@ -552,6 +552,11 @@ namespace IronRuby.Builtins {
                 new Func<IronRuby.Runtime.RubyContext, System.Object, IronRuby.Runtime.IntegerValue, System.Int32, System.Int32>(IronRuby.Builtins.ArgFilesSingletonOps.Seek)
             );
             
+            DefineLibraryMethod(module, "set_encoding", 0x51, 
+                0x00000000U, 
+                new Action<IronRuby.Runtime.ConversionStorage<System.Collections.Generic.IDictionary<System.Object, System.Object>>, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Builtins.RubyObject, System.Object, System.Object, System.Collections.Generic.IDictionary<System.Object, System.Object>>(IronRuby.Builtins.ArgFilesSingletonOps.SetEncoding)
+            );
+            
             DefineLibraryMethod(module, "skip", 0x51, 
                 0x00000000U, 
                 new Action<IronRuby.Runtime.RubyContext, System.Object>(IronRuby.Builtins.ArgFilesSingletonOps.Skip)
