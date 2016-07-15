@@ -325,8 +325,8 @@ def test_getnameinfo():
     host, service = socket.getnameinfo( ("127.0.0.1", 80), 8)
     AreEqual(service, '80')
         
-    if is_cli:
-        AssertError(NotImplementedError, socket.getnameinfo, ("127.0.0.1", 80), 0)
+    host, service = socket.getnameinfo( ("127.0.0.1", 80), 0)
+    AreEqual(service, "http")
     #IP gives a TypeError
     #AssertError(SystemError, socket.getnameinfo, ("127.0.0.1"), 8)
     #AssertError(SystemError, socket.getnameinfo, (321), 8)
@@ -372,15 +372,11 @@ def test_gethostbyname_ex():
     AssertError(socket.gaierror, socket.gethostbyname_ex, "should never work")
     
 
-@retry_on_failure
 def test_getservbyport():
-    if is_cli:
-        AssertError(NotImplementedError, socket.getservbyport, 80)
+    AreEqual(socket.getservbyport(80), "http")
 
-@retry_on_failure        
 def test_getservbyname():
-    if is_cli:
-        AssertError(NotImplementedError, socket.getservbyname, "http")
+    AreEqual(socket.getservbyname("http"), 80)
 
 @retry_on_failure        
 def test_inet_ntop():

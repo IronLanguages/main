@@ -1,4 +1,4 @@
-# Wrapper module for _ssl, providing some additional facilities
+﻿# Wrapper module for _ssl, providing some additional facilities
 # implemented in Python.  Written by Bill Janssen.
 
 """\
@@ -53,6 +53,8 @@ PROTOCOL_SSLv2
 PROTOCOL_SSLv3
 PROTOCOL_SSLv23
 PROTOCOL_TLSv1
+PROTOCOL_TLSv1_1
+PROTOCOL_TLSv1_2
 """
 
 import textwrap
@@ -63,6 +65,7 @@ from _ssl import OPENSSL_VERSION_NUMBER, OPENSSL_VERSION_INFO, OPENSSL_VERSION
 from _ssl import SSLError
 from _ssl import CERT_NONE, CERT_OPTIONAL, CERT_REQUIRED
 from _ssl import RAND_status, RAND_egd, RAND_add
+
 from _ssl import \
      SSL_ERROR_ZERO_RETURN, \
      SSL_ERROR_WANT_READ, \
@@ -73,8 +76,12 @@ from _ssl import \
      SSL_ERROR_WANT_CONNECT, \
      SSL_ERROR_EOF, \
      SSL_ERROR_INVALID_ERROR_CODE
-from _ssl import PROTOCOL_SSLv3, PROTOCOL_SSLv23, PROTOCOL_TLSv1
+from _ssl import PROTOCOL_SSLv3, PROTOCOL_SSLv23, PROTOCOL_TLSv1, PROTOCOL_TLSv1_1, PROTOCOL_TLSv1_2
+from _ssl import OP_NO_SSLv2, OP_NO_SSLv3, OP_NO_TLSv1, OP_NO_TLSv1_1, OP_NO_TLSv1_2
+
 _PROTOCOL_NAMES = {
+    PROTOCOL_TLSv1_2: "TLSv1_2",
+    PROTOCOL_TLSv1_1: "TLSv1_1",
     PROTOCOL_TLSv1: "TLSv1",
     PROTOCOL_SSLv23: "SSLv23",
     PROTOCOL_SSLv3: "SSLv3",
@@ -360,7 +367,9 @@ class SSLSocket(socket):
 
 def wrap_socket(sock, keyfile=None, certfile=None,
                 server_side=False, cert_reqs=CERT_NONE,
-                ssl_version=PROTOCOL_SSLv23, ca_certs=None,
+                # Default to the current default protocol preferences for
+                # Python 2.7.9: i.e. NO SSLv2 or SSLv3, TLS ONLY!
+                ssl_version=PROTOCOL_SSLv23 | OP_NO_SSLv2 | OP_NO_SSLv3, ca_certs=None,
                 do_handshake_on_connect=True,
                 suppress_ragged_eofs=True, ciphers=None):
 

@@ -51,8 +51,15 @@ if is_cli:
     is_orcas = len(clr.GetClrType(System.Reflection.Emit.DynamicMethod).GetConstructors()) == 8
 
 is_net40 = False
+is_net45 = False
+is_net45Or46 = False
+is_net46 = False
 if is_cli:
-    is_net40 = System.Environment.Version.Major==4
+    version = System.Environment.Version
+    is_net40 = version.Major == 4
+    is_net45 = is_net40 and version.Minor == 0 and version.Build == 30319 and version.Revision < 42000
+    is_net45Or46 = is_net40 and version.Minor == 0 and version.Build == 30319
+    is_net46 = is_net40 and version.Minor == 0 and version.Build == 30319 and version.Revision == 42000 
 
 is_dlr_in_ndp = False
 if is_net40:

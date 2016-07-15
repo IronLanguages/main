@@ -47,10 +47,10 @@ using System.Security;
 
 [assembly: SecurityTransparent]
 
-#if !SILVERLIGHT
+#if FEATURE_APTCA
 [assembly: AllowPartiallyTrustedCallers]
-#if !CLR2
-[assembly: SecurityRules(SecurityRuleSet.Level1)]
-#endif
 #endif
 
+#if FEATURE_SECURITY_RULES
+[assembly: SecurityRules(SecurityRuleSet.Level1)]
+#endif

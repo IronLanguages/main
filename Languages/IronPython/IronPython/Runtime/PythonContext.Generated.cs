@@ -175,11 +175,10 @@ namespace IronPython.Runtime  {
             }
         }
 
-
         // *** END GENERATED CODE ***
 
         #endregion
 
-   
+
     }
 }

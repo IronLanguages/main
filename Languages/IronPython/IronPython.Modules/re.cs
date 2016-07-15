@@ -323,7 +323,11 @@ namespace IronPython.Modules {
 
             public RE_Match search(object text, int pos) {
                 string input = ValidateString(text, "text");
-                return RE_Match.make(_re.Match(input, pos, input.Length - pos), this, input);
+                Match m = _re.Match(input);
+                while(m.Success && m.Index < pos) {
+                    m = m.NextMatch();
+                }
+                return RE_Match.make(m, this, input);
             }
 
             public RE_Match search(object text, int pos, int endpos) {
@@ -1123,6 +1127,7 @@ namespace IronPython.Modules {
                     case 'd':
                     case 'D':
                     case 'A':
+                    case 'B':
                     case 'Z':
                     case '\\':
                         // known escape sequences, leave escaped.
@@ -1306,6 +1311,11 @@ namespace IronPython.Modules {
             ByteArray byteArray = str as ByteArray;
             if (byteArray != null) {
                 return byteArray.MakeString();
+            }
+
+            ArrayModule.array array = str as ArrayModule.array;
+            if(array != null) {
+                return Bytes.Make(array.ToByteArray()).ToString();
             }
 
 #if FEATURE_MMAP

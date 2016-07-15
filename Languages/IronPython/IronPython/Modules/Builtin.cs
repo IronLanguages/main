@@ -178,9 +178,16 @@ namespace IronPython.Modules {
             return context.LanguageContext.CallWithKeywords(func, args, kws);
         }
 
+        [PythonType("basestring"), PythonHidden]
+        public class _basestring {
+            public static void __new__(CodeContext/*!*/ context, object cls, [ParamDictionary]IDictionary<object, object> kwargs, params object[] args) {
+                throw PythonOps.TypeError("The basestring type cannot be instantiated");
+            }
+        }
+
         public static PythonType basestring {
             get {
-                return DynamicHelpers.GetPythonTypeFromType(typeof(string));
+                return DynamicHelpers.GetPythonTypeFromType(typeof(_basestring));
             }
         }
 

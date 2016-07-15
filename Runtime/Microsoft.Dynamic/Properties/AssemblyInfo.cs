@@ -50,7 +50,7 @@ using System.Security;
 //
 // You can specify all the values or you can default the Revision and Build Numbers 
 // by using the '*' as shown below:
-#if !CLR2 && !SILVERLIGHT && !WIN8 && !ANDROID && !WP75
+#if FEATURE_SECURITY_RULES
 [assembly: System.Security.SecurityRules(SecurityRuleSet.Level1)]
 #endif
 [assembly: SecurityTransparent]
@@ -64,8 +64,11 @@ using System.Security;
 [assembly: AssemblyInformationalVersion("1.1")]
 #endif
 
-#if !SILVERLIGHT && !WP75
+#if FEATURE_APTCA
 [assembly: AllowPartiallyTrustedCallers]
+#endif
+
+#if !SILVERLIGHT && !WP75
 [assembly: TypeForwardedTo(typeof(Microsoft.Scripting.Runtime.DynamicStackFrame))]
 #endif
 

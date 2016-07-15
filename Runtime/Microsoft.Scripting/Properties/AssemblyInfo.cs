@@ -46,7 +46,7 @@ using System.Security;
 
 [assembly: SecurityTransparent]
 
-#if CLR4 && !SILVERLIGHT && !WIN8
+#if FEATURE_SECURITY_RULES
 [assembly: SecurityRules(SecurityRuleSet.Level1)]
 #endif
 
@@ -56,6 +56,6 @@ using System.Security;
 [assembly: AssemblyInformationalVersion("1.1")]
 #endif
 
-#if !SILVERLIGHT && !WP75
+#if FEATURE_APTCA
 [assembly: AllowPartiallyTrustedCallers]
 #endif
