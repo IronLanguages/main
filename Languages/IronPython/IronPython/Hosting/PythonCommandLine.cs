@@ -132,8 +132,14 @@ namespace IronPython.Hosting {
                 result = RunInteractiveLoop();
 
             return result;
+        }
 
-
+        protected override int RunInteractiveLoop() {
+            var sys = Engine.GetSysModule();
+                        
+            sys.SetVariable("ps1", ">>> ");
+            sys.SetVariable("ps2", "... ");
+            return base.RunInteractiveLoop();
         }
 
         #region Initialization

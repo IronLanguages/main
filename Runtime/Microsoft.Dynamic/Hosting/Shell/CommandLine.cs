@@ -216,7 +216,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
         /// them to the console
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        protected int RunInteractiveLoop() {
+        protected virtual int RunInteractiveLoop() {
             if (_scope == null) {
                 _scope = _engine.CreateScope();
             }
