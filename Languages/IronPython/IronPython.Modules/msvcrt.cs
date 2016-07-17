@@ -31,7 +31,7 @@ using System.Numerics;
 using Microsoft.Scripting.Math;
 #endif
 
-[assembly: PythonModule("msvcrt", typeof(IronPython.Modules.PythonMsvcrt))]
+[assembly: PythonModule("msvcrt", typeof(IronPython.Modules.PythonMsvcrt), PlatformID.MacOSX, PlatformID.Unix)]
 namespace IronPython.Modules {
     [PythonType("msvcrt")]
     public class PythonMsvcrt {
