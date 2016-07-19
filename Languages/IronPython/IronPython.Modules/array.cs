@@ -586,9 +586,9 @@ namespace IronPython.Modules {
                 return new array(typecode, this);
             }
 
-            public array __deepcopy__() {
+            public array __deepcopy__(array arg) {
                 // we only have simple data so this is the same as a copy
-                return __copy__();
+                return arg.__copy__();
             }
 
             public PythonTuple __reduce_ex__(int version) {
