@@ -53,11 +53,18 @@ namespace IronPython.Runtime.Operations {
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s) {
+            return __new__(context, cls, s, 10);
+        }
+        
+        [StaticExtensionMethod]
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s, int redix) {
             object value;
             IPythonObject po = s as IPythonObject;
             if (po == null ||
                 !PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__long__", out value)) {
-                    value = ParseBigIntegerSign(s.MakeString(), 10);
+
+                    // Enable base using
+                    value = ParseBigIntegerSign(s.MakeString(), redix);
             }
 
             if (cls == TypeCache.BigInteger) {
