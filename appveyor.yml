@@ -49,16 +49,6 @@ nuget:
 #       build configuration       #
 #---------------------------------#
 
-# to add several platforms to build matrix:
-platform:
-  - x86
-  - Any CPU
-
-# to add several configurations to build matrix:
-configuration:
-  - Debug
-  - Release
-
 # scripts to run before build
 before_build:
 
