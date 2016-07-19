@@ -47,6 +47,8 @@ Languages/IronPython/Tests/test.xaml
 Languages/IronPython/Tests/testfile.tmp
 Languages/IronPython/Tests/testilcode.dll
 Languages/IronPython/Tests/the_dir/
+Languages/IronPython/Tests/tmp*
+Languages/IronPython/Tests/tempfile.txt
 Languages/IronPython/Tests/vbproptest0.*.dll
 
 # created by side by side tests

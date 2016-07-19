@@ -131,6 +131,17 @@
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
+          <Name>test_dictcomp_20</Name>
+          <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
+          <Arguments>test_dictcomp.py</Arguments>
+          <MaxDuration>600000</MaxDuration>
+          <LongRunning>false</LongRunning>
+          <Disabled>false</Disabled>
+          <RequiresAdmin>false</RequiresAdmin>
+          <NotParallelSafe>false</NotParallelSafe>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
+        </Test>
+        <Test>
           <Name>test_file_20</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
           <Arguments>test_file.py</Arguments>
@@ -178,6 +189,17 @@
           <Name>test_set_20</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
           <Arguments>test_set.py</Arguments>
+          <MaxDuration>600000</MaxDuration>
+          <LongRunning>false</LongRunning>
+          <Disabled>false</Disabled>
+          <RequiresAdmin>false</RequiresAdmin>
+          <NotParallelSafe>false</NotParallelSafe>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
+        </Test>
+        <Test>
+          <Name>test_setcomp_20</Name>
+          <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
+          <Arguments>test_setcomp.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
