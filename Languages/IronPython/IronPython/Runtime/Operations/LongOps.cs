@@ -52,8 +52,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s)
-        {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s) {
             return __new__(context, cls, s, 0);
         }
         
@@ -88,11 +87,9 @@ namespace IronPython.Runtime.Operations {
         public static object __new__(CodeContext context, PythonType cls, object x) {
             Extensible<string> es;
 
-            if (x is string)
-            {
+            if (x is string) {
                 return ReturnObject(context, cls, ParseBigIntegerSign((string)x, 10));
-            }
-            else if ((es = x as Extensible<string>) != null) {
+            } else if ((es = x as Extensible<string>) != null) {
                 object value;
                 if (PythonTypeOps.TryInvokeUnaryOperator(context, x, "__long__", out value)) {
                     return ReturnObject(context, cls, (BigInteger)value);
