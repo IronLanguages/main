@@ -52,12 +52,20 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s) {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s)
+        {
+            return __new__(context, cls, s, 0);
+        }
+        
+        [StaticExtensionMethod]
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s, int redix) {
             object value;
             IPythonObject po = s as IPythonObject;
             if (po == null ||
                 !PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__long__", out value)) {
-                    value = ParseBigIntegerSign(s.MakeString(), 10);
+
+                    // Enable base using
+                    value = ParseBigIntegerSign(s.MakeString(), redix);
             }
 
             if (cls == TypeCache.BigInteger) {
@@ -80,9 +88,14 @@ namespace IronPython.Runtime.Operations {
         public static object __new__(CodeContext context, PythonType cls, object x) {
             Extensible<string> es;
 
-            if (x is string) {
+            if (x is string)
+            {
                 return ReturnObject(context, cls, ParseBigIntegerSign((string)x, 10));
-            } else if ((es = x as Extensible<string>) != null) {
+            }
+            else if (x is byte) {
+                return ReturnObject(context, cls, ParseBigIntegerSign((string)x, 10));
+            }
+            else if ((es = x as Extensible<string>) != null) {
                 object value;
                 if (PythonTypeOps.TryInvokeUnaryOperator(context, x, "__long__", out value)) {
                     return ReturnObject(context, cls, (BigInteger)value);
@@ -92,6 +105,7 @@ namespace IronPython.Runtime.Operations {
             }
             if (x is double) return ReturnObject(context, cls, DoubleOps.__long__((double)x));
             if (x is int) return ReturnObject(context, cls, (BigInteger)(int)x);
+            if (x is byte) return ReturnObject(context, cls, (BigInteger)(byte)x);
             if (x is BigInteger) return ReturnObject(context, cls, x);
             
             if (x is Complex) throw PythonOps.TypeError("can't convert complex to long; use long(abs(z))");
