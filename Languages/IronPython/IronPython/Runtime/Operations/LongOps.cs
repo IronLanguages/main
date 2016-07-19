@@ -53,7 +53,7 @@ namespace IronPython.Runtime.Operations {
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s) {
-            return __new__(context, cls, s, 0);
+            return __new__(context, cls, s, 10);
         }
         
         [StaticExtensionMethod]
