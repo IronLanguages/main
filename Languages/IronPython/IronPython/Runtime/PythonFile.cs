@@ -1208,7 +1208,7 @@ namespace IronPython.Runtime {
 
             // remember the original mode for error reporting
             string inMode = mode;
-            
+
             if (mode.IndexOf('U') != -1) {
                 mode = mode.Replace("U", String.Empty);
                 if (mode.Length == 0) {
@@ -1464,7 +1464,7 @@ namespace IronPython.Runtime {
 
         // Map a python mode string into a PythonFileMode.
         private static PythonFileMode MapFileMode(String mode) {
-            
+
             // Assume "mode" is in reasonable good shape, since we checked it in "Make"
             if (mode.Contains("b"))
                 return PythonFileMode.Binary;
