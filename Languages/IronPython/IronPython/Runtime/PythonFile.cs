@@ -1217,23 +1217,24 @@ namespace IronPython.Runtime {
                     mode = "r+";
                 } else if (mode[0] == 'w' || mode[0] == 'a') {
                     throw PythonOps.ValueError("universal newline mode can only be used with modes starting with 'r'");
-                } else {
+                } else if (mode[0] != 'r') {
                     mode = "r" + mode;
                 }
             }
 
-            // process read/write/append
+            // process read/write/append and remove char from mode
             seekEnd = false;
             switch (mode[0]) {
-                case 'r': fmode = FileMode.Open; break;
-                case 'w': fmode = FileMode.Create; break;
-                case 'a': fmode = FileMode.Append; break;
+                case 'r': fmode = FileMode.Open; mode = mode.Remove(0, 1); break;
+                case 'w': fmode = FileMode.Create; mode = mode.Remove(0, 1); break;
+                case 'a': fmode = FileMode.Append; mode = mode.Remove(0, 1); break;
                 default:
                     throw PythonOps.ValueError("mode string must begin with one of 'r', 'w', 'a' or 'U', not '{0}'", inMode);
             }
 
             // process +
             if (mode.IndexOf('+') != -1) {
+                mode = mode.Remove(mode.IndexOf('+'), 1);
                 faccess = FileAccess.ReadWrite;
                 if (fmode == FileMode.Append) {
                     fmode = FileMode.OpenOrCreate;
@@ -1245,6 +1246,13 @@ namespace IronPython.Runtime {
                     case FileMode.Open: faccess = FileAccess.Read; break;
                     case FileMode.Append: faccess = FileAccess.Write; break;
                     default: throw new InvalidOperationException();
+                }
+            }
+
+            // Make some additional mode check after processing all valid modes.
+            if (mode.Length > 0) {
+                if (mode[0] != 'U' && mode[0] != 'b' && mode[0] != 't') {
+                    throw PythonOps.ValueError("Invalid mode ('{0}')", inMode);
                 }
             }
         }
