@@ -22,12 +22,10 @@ using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Operations;
 
-namespace IronPython.Runtime.Types
-{
+namespace IronPython.Runtime.Types {
 
     // Used to map signatures to specific targets on the embedded reflected method.
-    public class BuiltinFunctionOverloadMapper : ICodeFormattable
-    {
+    public class BuiltinFunctionOverloadMapper : ICodeFormattable {
         private BuiltinFunction _function;
         private object _instance;
         private PythonTuple _allOverloads;  // overloads are stored here and may be bound to an instance
