@@ -60,8 +60,7 @@ namespace IronPython.Runtime.Types {
 
                     if (newTargets.Length == 0) {
                         ThrowOverloadException(sig, targets);
-                    }
-                    else {
+                    } else {
                         _function.OverloadDictionary[tl] = bf = new BuiltinFunction(_function.Name, newTargets, Function.DeclaringType, _function.FunctionType);
                     }
                 }
@@ -69,11 +68,9 @@ namespace IronPython.Runtime.Types {
 
             if (_instance != null) {
                 return bf.BindToInstance(_instance);
-            }
-            else if (wrapCtors) {
+            } else if (wrapCtors) {
                 return GetTargetFunction(bf);
-            }
-            else {
+            } else {
                 return bf;
             }
         }
@@ -90,8 +87,7 @@ namespace IronPython.Runtime.Types {
                 // Check each parameter type for an exact match.
                 bool match = true;
                 for (int i = 0; i < args; i++)
-                    if (pis[i].ParameterType != sig[i])
-                    {
+                    if (pis[i].ParameterType != sig[i]) {
                         match = false;
                         break;
                     }
