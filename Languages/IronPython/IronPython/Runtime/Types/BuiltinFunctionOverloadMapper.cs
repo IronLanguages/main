@@ -32,27 +32,22 @@ namespace IronPython.Runtime.Types
         private object _instance;
         private PythonTuple _allOverloads;  // overloads are stored here and may be bound to an instance
 
-        public BuiltinFunctionOverloadMapper(BuiltinFunction builtinFunction, object instance)
-        {
+        public BuiltinFunctionOverloadMapper(BuiltinFunction builtinFunction, object instance) {
             this._function = builtinFunction;
             this._instance = instance;
         }
 
-        public object this[params Type[] types]
-        {
-            get
-            {
+        public object this[params Type[] types] {
+            get {
                 return GetOverload(types, Targets);
             }
         }
 
-        protected object GetOverload(Type[] sig, IList<MethodBase> targets)
-        {
+        protected object GetOverload(Type[] sig, IList<MethodBase> targets) {
             return GetOverload(sig, targets, true);
         }
 
-        private object GetOverload(Type[] sig, IList<MethodBase> targets, bool wrapCtors)
-        {
+        private object GetOverload(Type[] sig, IList<MethodBase> targets, bool wrapCtors) {
             // We can still end up with more than one target since generic and non-generic
             // methods can share the same name and signature. So we'll build up a new
             // reflected method with all the candidate targets. A caller can then index this
@@ -61,29 +56,23 @@ namespace IronPython.Runtime.Types
             
             BuiltinFunction bf;
             BuiltinFunction.TypeList tl = new BuiltinFunction.TypeList(sig);
-            lock (_function.OverloadDictionary)
-            {
-                if (!_function.OverloadDictionary.TryGetValue(tl, out bf))
-                {
+            lock (_function.OverloadDictionary) {
+                if (!_function.OverloadDictionary.TryGetValue(tl, out bf)) {
                     MethodBase[] newTargets = FindMatchingTargets(sig, targets);
 
-                    if (newTargets.Length == 0)
-                    {
+                    if (newTargets.Length == 0) {
                         ThrowOverloadException(sig, targets);
                     }
-                    else
-                    {
+                    else {
                         _function.OverloadDictionary[tl] = bf = new BuiltinFunction(_function.Name, newTargets, Function.DeclaringType, _function.FunctionType);
                     }
                 }
             }
 
-            if (_instance != null)
-            {
+            if (_instance != null) {
                 return bf.BindToInstance(_instance);
             }
-            else if (wrapCtors)
-            {
+            else if (wrapCtors) {
                 return GetTargetFunction(bf);
             }
             else {
@@ -91,13 +80,11 @@ namespace IronPython.Runtime.Types
             }
         }
 
-        private static MethodBase[] FindMatchingTargets(Type[] sig, IList<MethodBase> targets)
-        {
+        private static MethodBase[] FindMatchingTargets(Type[] sig, IList<MethodBase> targets) {
             int args = sig.Length;
 
             List<MethodBase> res = new List<MethodBase>();
-            foreach (MethodBase mb in targets)
-            {
+            foreach (MethodBase mb in targets) {
                 ParameterInfo[] pis = mb.GetParameters();
                 if (pis.Length != args)
                     continue;
@@ -131,15 +118,12 @@ namespace IronPython.Runtime.Types
         /// Convert.ToInt32.Overloads[Double, Double](24)
         /// ]]></code>
         /// </example>
-        public void ThrowOverloadException(Type[] sig, IList<MethodBase> targets)
-        {
+        public void ThrowOverloadException(Type[] sig, IList<MethodBase> targets) {
             // Create info for given signature
             System.Text.StringBuilder sigInfo = new System.Text.StringBuilder();
             sigInfo.Append((targets.Count > 0 ? targets[0].Name : "") + "[");
-            foreach (var type in sig)
-            {
-                if (!sigInfo.ToString().endswith("["))
-                {
+            foreach (var type in sig) {
+                if (!sigInfo.ToString().endswith("[")) {
                     sigInfo.Append(", ");
                 }
 
@@ -150,18 +134,14 @@ namespace IronPython.Runtime.Types
             // Get possible overloads.
             System.Text.StringBuilder possibleOverloads = new System.Text.StringBuilder();
 
-            foreach (var overload in targets)
-            {
-                if (possibleOverloads.Length > 0)
-                {
+            foreach (var overload in targets) {
+                if (possibleOverloads.Length > 0) {
                     possibleOverloads.Append(", ");
                 }
 
                 possibleOverloads.Append("[");
-                foreach (var param in overload.GetParameters())
-                {
-                    if (!possibleOverloads.ToString().endswith("["))
-                    {
+                foreach (var param in overload.GetParameters()) {
+                    if (!possibleOverloads.ToString().endswith("[")) {
                         possibleOverloads.Append(", ");
                     }
                     possibleOverloads.Append(param.ParameterType.Name);
@@ -173,37 +153,28 @@ namespace IronPython.Runtime.Types
                 possibleOverloads.ToString()));
         }
 
-        public BuiltinFunction Function
-        {
-            get
-            {
+        public BuiltinFunction Function {
+            get {
                 return _function;
             }
         }
 
-        public virtual IList<MethodBase> Targets
-        {
-            get
-            {
+        public virtual IList<MethodBase> Targets {
+            get {
                 return _function.Targets;
             }
         }
 
-        public PythonTuple Functions
-        {
-            get
-            {
-                if (_allOverloads == null)
-                {
+        public PythonTuple Functions {
+            get {
+                if (_allOverloads == null) {
                     object[] res = new object[Targets.Count];
                     int writeIndex = 0;
-                    foreach (MethodBase mb in Targets)
-                    {
+                    foreach (MethodBase mb in Targets) {
                         ParameterInfo[] pis = mb.GetParameters();
                         Type[] types = new Type[pis.Length];
 
-                        for (int i = 0; i < pis.Length; i++)
-                        {
+                        for (int i = 0; i < pis.Length; i++) {
                             types[i] = pis[i].ParameterType;
                         }
 
@@ -217,17 +188,14 @@ namespace IronPython.Runtime.Types
             }
         }
 
-        protected virtual object GetTargetFunction(BuiltinFunction bf)
-        {
+        protected virtual object GetTargetFunction(BuiltinFunction bf) {
             return bf;
         }
 
-        public virtual string/*!*/ __repr__(CodeContext/*!*/ context)
-        {
+        public virtual string/*!*/ __repr__(CodeContext/*!*/ context) {
             PythonDictionary overloadList = new PythonDictionary();
 
-            foreach (MethodBase mb in Targets)
-            {
+            foreach (MethodBase mb in Targets) {
                 string key = DocBuilder.CreateAutoDoc(mb);
                 overloadList[key] = Function;
             }
@@ -235,28 +203,22 @@ namespace IronPython.Runtime.Types
         }
     }
 
-    public class ConstructorOverloadMapper : BuiltinFunctionOverloadMapper
-    {
+    public class ConstructorOverloadMapper : BuiltinFunctionOverloadMapper {
         public ConstructorOverloadMapper(ConstructorFunction builtinFunction, object instance)
-            : base(builtinFunction, instance)
-        {
+            : base(builtinFunction, instance) {
         }
 
-        public override IList<MethodBase> Targets
-        {
-            get
-            {
+        public override IList<MethodBase> Targets {
+            get {
                 return ((ConstructorFunction)Function).ConstructorTargets;
             }
         }
 
-        protected override object GetTargetFunction(BuiltinFunction bf)
-        {
+        protected override object GetTargetFunction(BuiltinFunction bf) {
             // return a function that's bound to the overloads, we'll
             // the user then calls this w/ the dynamic type, and the bound
             // function drops the class & calls the overload.
-            if (bf.Targets[0].DeclaringType != typeof(InstanceOps))
-            {
+            if (bf.Targets[0].DeclaringType != typeof(InstanceOps)) {
                 return new ConstructorFunction(InstanceOps.OverloadedNew, bf.Targets).BindToInstance(bf);
             }
 
