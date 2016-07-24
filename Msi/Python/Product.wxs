@@ -110,13 +110,6 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
           <ComponentGroupRef Id='IronPythonPlatformsNet45'/>
         </Feature>
 
-        <Feature Id='IronPython_Platforms_Sl5' AllowAdvertise='no' Level='1' Title='Silverlight 5' Description='Development assemblies for Silverlight 5.'>
-          <ComponentGroupRef Id='IronPythonPlatformsSl5'/>
-        </Feature>
-      </Feature>
-
-      <Feature Id='IronPython_SilverlightTools' AllowAdvertise='no' Level='1' Title='Silverlight Tools' Description='Tools for developing Silverlight apps with IronPython (Chiron.exe et al.).'>
-        <ComponentGroupRef Id='IronPythonSilverlightTools' />
       </Feature>
 
       <Feature Id='IronPython_Tools' AllowAdvertise='no' Level='1' Title='Scripts' Description='Some useful scripts that have been written for IronPython.'>
