@@ -76,6 +76,7 @@
 
     <IronPythonCompilerBins Include="ipyc.exe" />
     <IronPythonCompilerBins Include="ipyc.exe.config" />
+    <IronPythonCompilerBins Include="IKVM.Reflection.dll" />
 
     <!--
     <ChironBins Include="Chiron.exe" />
