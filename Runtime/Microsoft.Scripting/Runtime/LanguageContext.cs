@@ -15,7 +15,7 @@
 
 #if FEATURE_CORE_DLR
 using System.Linq.Expressions;
-#if !WIN8
+#if !WIN8 && !DOTNET
 using DynamicExpression = System.Linq.Expressions.Expression;
 #endif
 #else

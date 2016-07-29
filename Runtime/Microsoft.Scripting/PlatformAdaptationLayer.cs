@@ -54,7 +54,7 @@ namespace Microsoft.Scripting {
         public static readonly PlatformAdaptationLayer Default = new PlatformAdaptationLayer();
 
         public static readonly bool IsCompactFramework =
-#if WIN8
+#if WIN8 || DOTNET
             false;
 #else
             Environment.OSVersion.Platform == PlatformID.WinCE ||
@@ -138,7 +138,7 @@ namespace Microsoft.Scripting {
 #if WIN8
             throw new NotImplementedException();
 #elif !SILVERLIGHT
-            return Assembly.Load(name);
+            return Assembly.Load(new AssemblyName(name));
 #else
             return Assembly.Load(LookupFullName(name));
 #endif
@@ -147,7 +147,11 @@ namespace Microsoft.Scripting {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadFile")]
         public virtual Assembly LoadAssemblyFromPath(string path) {
 #if FEATURE_FILESYSTEM
+#if DOTNET
+            return System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyPath(path);
+#else
             return Assembly.LoadFile(path);
+#endif
 #else
             throw new NotImplementedException();
 #endif
@@ -168,8 +172,13 @@ namespace Microsoft.Scripting {
         private static bool IsSingleRootFileSystem {
             get {
 #if FEATURE_FILESYSTEM
+#if DOTNET
+                return RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+                    || RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+#else
                 return Environment.OSVersion.Platform == PlatformID.Unix
                     || Environment.OSVersion.Platform == PlatformID.MacOSX;
+#endif
 #else
                 return true;
 #endif
@@ -179,7 +188,11 @@ namespace Microsoft.Scripting {
         public virtual StringComparer PathComparer {
             get {
 #if FEATURE_FILESYSTEM
+#if DOTNET
+                return RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+#else
                 return Environment.OSVersion.Platform == PlatformID.Unix ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+#endif
 #else
                 return StringComparer.OrdinalIgnoreCase;
 #endif

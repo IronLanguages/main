@@ -80,8 +80,14 @@ namespace Microsoft.Scripting.Utils {
         }
 #else
         public static MethodInfo GetMethod(this Delegate d) {
+            return d.GetMethodInfo();
+        }
+
+#if !FEATURE_GET_METHOD_INFO
+        public static MethodInfo GetMethodInfo(this Delegate d) {
             return d.Method;
         }
+#endif
 
         public static IEnumerable<MethodInfo> GetDeclaredMethods(this Type type, string name) {
             return type.GetMember(name).OfType<MethodInfo>();
