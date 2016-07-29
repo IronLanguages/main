@@ -86,6 +86,12 @@
         <RegistryValue Id='VSNet20ReferenceAssemblyKey'
           Root='HKLM' Key='SOFTWARE\Microsoft\.NETFramework\v2.0.50727\AssemblyFoldersEx\$(var.ProductShortName)$(var.ReleaseSeries)' Type='string' Value='[INSTALLDIR]$(var.PlatformsNet35Dir)' />
       </Component>
+
+      <Component>
+        <RegistryValue Id='VSSl5ReferenceAssemblyKey'
+          Root='HKLM' Key='SOFTWARE\Microsoft\Microsoft SDKs\Silverlight\v5.0\AssemblyFoldersEx\$(var.ProductShortName)$(var.ReleaseSeries)' Type='string' Value='[INSTALLDIR]$(var.PlatformsSl5Dir)' />
+      </Component>
+
     </DirectoryRef>
 
     <DirectoryRef Id='GAC'>
@@ -130,6 +136,7 @@
       <ComponentRef Id="VSNet45ReferenceAssemblyKey"/>
       <ComponentRef Id="VSNet40ReferenceAssemblyKey"/>
       <ComponentRef Id="VSNet20ReferenceAssemblyKey"/>
+      <ComponentRef Id="VSSl5ReferenceAssemblyKey"/>
     </ComponentGroup>
 
     <ComponentGroup Id="IronPythonGac">

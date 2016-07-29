@@ -19,7 +19,7 @@
     <BuildDir>$(BinDir)\$(BaseConfiguration)</BuildDir>
     <v2BuildDir>$(BinDir)\v2$(BaseConfiguration)</v2BuildDir>
     <v45BuildDir>$(BinDir)\v45$(BaseConfiguration)</v45BuildDir>
-    <!--<Silverlight5BuildDir>$(BinDir)\Silverlight5$(BaseConfiguration)</Silverlight5BuildDir>-->
+    <Silverlight5BuildDir>$(BinDir)\Silverlight5$(BaseConfiguration)</Silverlight5BuildDir>
   </PropertyGroup>
   
   <ItemGroup>
@@ -32,11 +32,9 @@
     <BuildProject Include="$(Solution)" Condition=" '$(Mono)' != 'true' ">
       <Properties>Configuration=v45$(BaseConfiguration)</Properties>
     </BuildProject>
-    <!--
     <BuildProject Include="$(Solution)" Condition=" '$(Mono)' != 'true' ">
       <Properties>Configuration=Silverlight5$(BaseConfiguration)</Properties>
     </BuildProject>
-    -->
     <InstallerProject Include="$(BaseDir)\Msi\Python\IronPython.Installer.wixproj">
       <Properties>Configuration=$(BaseConfiguration);BaseInputPaths=$(StageDir);WixToolPath=$(UtilDir)\Wix35\;OutputPath=$(PackageDir);BuildDir=$(BuildDir)</Properties>
     </InstallerProject>
@@ -78,17 +76,13 @@
     <IronPythonCompilerBins Include="ipyc.exe.config" />
     <IronPythonCompilerBins Include="IKVM.Reflection.dll" />
 
-    <!--
     <ChironBins Include="Chiron.exe" />
     <ChironBins Include="Chiron.exe.config" />
-    -->
   </ItemGroup>
 
   <ItemGroup>
-    <!--
     <SilverlightScriptFiles Include="$(BaseDir)\Hosts\Silverlight\Public\script\*.*" />
     <SilverlightScriptTemplates Include="$(BaseDir)\Hosts\Silverlight\Public\script\templates\python\**\*.*" />
-     -->
 
     <MiscFiles Include="$(BaseDir)\Languages\IronPython\Public\License.html" />
     <MiscFiles Include="$(BaseDir)\Languages\IronPython\Public\License.rtf" />
@@ -160,7 +154,6 @@
     <Copy SourceFiles="@(TutorialFiles)" DestinationFiles="@(TutorialFiles->'$(StageDir)\Tutorial\%(RecursiveDir)%(Filename)%(Extension)')" />
 
     <!-- Continue to copy the Silverlight files here for compatibility with previous releases. -->
-    <!--
     <Copy SourceFiles="@(DlrLibs->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" />
     <Copy SourceFiles="@(SilverlightDlrLibs->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" />
     <Copy SourceFiles="@(IronPythonLibs->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" />
@@ -168,7 +161,6 @@
 
     <Copy SourceFiles="@(SilverlightScriptFiles)" DestinationFiles="@(SilverlightScriptFiles->'$(StageDir)\Silverlight\script\%(RecursiveDir)%(Filename)%(Extension)')" />
     <Copy SourceFiles="@(SilverlightScriptTemplates)" DestinationFiles="@(SilverlightScriptTemplates->'$(StageDir)\Silverlight\script\templates\python\%(RecursiveDir)%(Filename)%(Extension)')" />
-    -->
 
     <!-- .NET 4 -->
     <Copy SourceFiles="@(DlrLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net40" />
@@ -192,12 +184,10 @@
     <Copy SourceFiles="@(IronPythonModules->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" />
 
     <!-- Silverlight 5 -->
-    <!--
     <Copy SourceFiles="@(DlrLibs->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl5" />
     <Copy SourceFiles="@(SilverlightDlrLibs->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl5" />
     <Copy SourceFiles="@(IronPythonLibs->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl5" />
     <Copy SourceFiles="@(IronPythonModules->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl5" />
-    -->
   </Target>
   
   <Target Name="NuGetPackage" DependsOnTargets="Stage" Condition="'$(OS)' == 'Windows_NT'">

@@ -55,12 +55,12 @@
     <WixConstant Include="PlatformsNet45Dir">
       <Value>Platforms\Net45</Value>
     </WixConstant>
-    <!--<WixConstant Include="PlatformsSl5Dir">
+    <WixConstant Include="PlatformsSl5Dir">
       <Value>Platforms\Sl5</Value>
     </WixConstant>
     <WixConstant Include="SilverlightToolsDir">
       <Value>Silverlight</Value>
-    </WixConstant>-->
+    </WixConstant>
     <WixConstant Include="ToolsDir">
       <Value>Tools</Value>
     </WixConstant>
@@ -133,7 +133,6 @@
       <ComponentGroupName>IronPythonPlatformsNet45</ComponentGroupName>
       <PreprocessorVariable>var.PlatformsNet45Dir</PreprocessorVariable>
     </HarvestDirectory>
-    <!-- 
     <HarvestDirectory Include="$(BaseInputPaths)\Platforms\Sl5">
       <DirectoryRefId>IronPythonPlatformsDir</DirectoryRefId>
       <ComponentGroupName>IronPythonPlatformsSl5</ComponentGroupName>
@@ -145,7 +144,6 @@
       <ComponentGroupName>IronPythonSilverlightTools</ComponentGroupName>
       <PreprocessorVariable>var.SilverlightToolsDir</PreprocessorVariable>
     </HarvestDirectory>
-    -->
 
     <HarvestDirectory Include="$(BaseInputPaths)\Tools">
       <DirectoryRefId>INSTALLDIR</DirectoryRefId>
