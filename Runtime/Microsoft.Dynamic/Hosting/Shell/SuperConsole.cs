@@ -18,6 +18,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Microsoft.Scripting.Utils;
 using System.Text;
 
@@ -551,10 +552,12 @@ namespace Microsoft.Scripting.Hosting.Shell {
                         MoveEnd();
                         optionsObsolete = true;
                         break;
+#if !DOTNET
                     case ConsoleKey.LeftWindows:
                     case ConsoleKey.RightWindows:
                         // ignore these
                         continue;
+#endif
 
                     default:
                         if (key.KeyChar == '\x0D') goto case ConsoleKey.Enter;      // Ctrl-M
@@ -603,7 +606,11 @@ namespace Microsoft.Scripting.Hosting.Shell {
 
         string FinalLineText {
             get {
+#if DOTNET
+                return !RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && !RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "\x1A" : "\x04";
+#else
                 return Environment.OSVersion.Platform != PlatformID.Unix ? "\x1A" : "\x04";
+#endif
             }
         }
     }

@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-#if !WIN8
+#if !WIN8 && !DOTNET
 
 using System;
 using System.Collections.Generic;

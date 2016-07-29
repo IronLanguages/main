@@ -72,7 +72,7 @@ namespace Microsoft.Scripting.Generation {
                         throw Error.CantCreateDefaultTypeFor(type);
                     }
                 case TypeCode.Empty:
-                case TypeCode.DBNull:
+                case (TypeCode)2: // TypeCode.DBNull
                 case TypeCode.String:
                     return null;
 
@@ -215,8 +215,7 @@ namespace Microsoft.Scripting.Generation {
                     }
                 }
             }
-            return method;
-#else
+#elif !DOTNET // TODO: figure something out for DOTNET
             // maybe we can get it from an interface on the type this
             // method came from...
             foreach (Type iface in targetType.GetImplementedInterfaces()) {
@@ -228,8 +227,8 @@ namespace Microsoft.Scripting.Generation {
                     }
                 }
             }
-            return method;
 #endif
+            return method;
         }
 
         /// <summary>
@@ -284,7 +283,7 @@ namespace Microsoft.Scripting.Generation {
             return visible;
         }
 
-#if !WIN8
+#if !WIN8 && !DOTNET
         /// <summary>
         /// Sees if two MemberInfos point to the same underlying construct in IL.  This
         /// ignores the ReflectedType property which exists on MemberInfos which
@@ -378,7 +377,7 @@ namespace Microsoft.Scripting.Generation {
             }
 
             if (t.IsValueType()
-#if !SILVERLIGHT && !WIN8 && !WP75
+#if !SILVERLIGHT && !WIN8 && !WP75 && !DOTNET
                 && t != typeof(ArgIterator)
 #endif
 ) {
@@ -519,7 +518,7 @@ namespace Microsoft.Scripting.Generation {
             ContractUtils.RequiresNotNull(toType, "toType");
 
             // try available type conversions...
-            foreach (TypeConverterAttribute tca in toType.GetCustomAttributes(typeof(TypeConverterAttribute), true)) {
+            foreach (TypeConverterAttribute tca in toType.GetTypeInfo().GetCustomAttributes(typeof(TypeConverterAttribute), true)) {
                 try {
                     converter = Activator.CreateInstance(Type.GetType(tca.ConverterTypeName)) as TypeConverter;
                 } catch (Exception) {

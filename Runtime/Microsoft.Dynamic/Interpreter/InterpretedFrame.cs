@@ -29,7 +29,7 @@ using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
 
 namespace Microsoft.Scripting.Interpreter {
-#if WIN8
+#if WIN8 || DOTNET
     using InterpretedFrameThreadLocal = ThreadLocal<InterpretedFrame>;
 #else
     using InterpretedFrameThreadLocal = Microsoft.Scripting.Utils.ThreadLocal<InterpretedFrame>;
@@ -186,7 +186,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 #endif
 
-#if WIN8
+#if WIN8 || DOTNET
         internal InterpretedFrameThreadLocal Enter() {
             var currentFrame = InterpretedFrame.CurrentFrame;
             _parent = currentFrame.Value;

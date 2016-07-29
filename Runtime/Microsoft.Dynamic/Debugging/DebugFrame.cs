@@ -18,6 +18,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Debugging.CompilerServices;
 using Microsoft.Scripting.Hosting;

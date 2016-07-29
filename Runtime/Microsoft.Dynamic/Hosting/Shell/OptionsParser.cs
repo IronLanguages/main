@@ -150,8 +150,8 @@ namespace Microsoft.Scripting.Hosting.Shell {
 
 #if FEATURE_REFEMIT
         private bool _saveAssemblies = false;
-#endif
         private string _assembliesDir = null;
+#endif
 
         public OptionsParser() {
         }

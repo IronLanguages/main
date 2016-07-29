@@ -305,7 +305,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
         #endregion
 
         private void Execute() {
-#if !SILVERLIGHT
+#if FEATURE_APARTMENTSTATE
             if (_consoleOptions.IsMta) {
                 Thread thread = new Thread(ExecuteInternal);
                 thread.SetApartmentState(ApartmentState.MTA);
@@ -443,11 +443,20 @@ namespace Microsoft.Scripting.Hosting.Shell {
             Console.WriteLine("{0} {1} on {2}", Engine.Setup.DisplayName, Engine.LanguageVersion, GetRuntime());
         }
 
+        private static string GetEnvironmentVersion() {
+#if DOTNET
+            // TODO: does this make sense?
+            return System.Runtime.InteropServices.RuntimeInformation.OSDescription;
+#else
+            return Environment.Version.ToString();
+#endif
+        }
+
         private static string GetRuntime() {
-            Type mono = typeof(object).Assembly.GetType("Mono.Runtime");
+            Type mono = typeof(object).GetTypeInfo().Assembly.GetType("Mono.Runtime");
             return mono != null ?
                 (string)mono.GetMethod("GetDisplayName", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null)
-                : String.Format(CultureInfo.InvariantCulture, ".NET {0}", Environment.Version);
+                : String.Format(CultureInfo.InvariantCulture, ".NET {0}", GetEnvironmentVersion());
         }
 
         protected virtual void UnhandledException(ScriptEngine engine, Exception e) {

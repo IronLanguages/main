@@ -114,3 +114,11 @@ namespace System {
 }
 
 #endif
+
+
+#if !FEATURE_THREAD
+namespace System.Threading {
+    public class ThreadAbortException : Exception {
+    }
+}
+#endif
