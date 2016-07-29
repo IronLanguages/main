@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "frameworks": {
+    "wp75": {
+      "bin": {
+        "assembly": "../../Util/References/WindowsPhone/7.1/Microsoft.Phone.dll"
+      }
+    }
+  }
+}

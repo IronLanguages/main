@@ -1,0 +1,433 @@
+﻿{
+  "version": "1.1.0.21",
+  "buildOptions": {
+    "compile": {
+      "include": [ "../../Hosts/Silverlight/SilverlightVersion.cs" ],
+      "exclude": [ "RunTime/DynamicOperations.Generated.cs" ]
+    }
+  },
+  "configurations": {
+    "Debug": {
+      "buildOptions": {
+        "keyFile": "../../Solutions/Key.snk"
+      }
+    },
+    "Release": {
+      "buildOptions": {
+        "keyFile": "../../Solutions/DevelKey.snk"
+      }
+    }
+  },
+  "frameworks": {
+    "net35": {
+      "buildOptions": {
+        "define": [
+          "FEATURE_ANSICP",
+          "FEATURE_APARTMENTSTATE",
+          "FEATURE_APPLICATIONEXCEPTION",
+          "FEATURE_APTCA",
+          "FEATURE_ASSEMBLY_CODEBASE",
+          "FEATURE_ASSEMBLY_LOCATION",
+          "FEATURE_ASSEMBLY_RESOLVE",
+          "FEATURE_BASIC_CONSOLE",
+          "FEATURE_CODEDOM",
+          "FEATURE_COM",
+          "FEATURE_COMPRESSION",
+          "FEATURE_CONFIGURATION",
+          "FEATURE_CRYPTOGRAPHY",
+          "FEATURE_CUSTOM_MODIFIERS",
+          "FEATURE_CUSTOM_TYPE_DESCRIPTOR",
+          "FEATURE_DBNULL",
+          "FEATURE_DEFAULT_PARAMETER_VALUE",
+          "FEATURE_DRIVENOTFOUNDEXCEPTION",
+          "FEATURE_ENCODING",
+          "FEATURE_ENUM_NAMES_VALUES",
+          "FEATURE_EXCEPTION_STATE",
+          "FEATURE_FILESYSTEM",
+          "FEATURE_FULL_CONSOLE",
+          "FEATURE_FULL_CRYPTO",
+          "FEATURE_FULL_NET",
+          "FEATURE_GETINVALIDFILENAMECHARS",
+          "FEATURE_ICLONEABLE",
+          "FEATURE_LOADWITHPARTIALNAME",
+          "FEATURE_NATIVE",
+          "FEATURE_OS_SERVICEPACK",
+          "FEATURE_PDBEMIT",
+          "FEATURE_PROCESS",
+          "FEATURE_REFEMIT",
+          "FEATURE_REMOTING",
+          "FEATURE_SERIALIZATION",
+          "FEATURE_SORTKEY",
+          "FEATURE_STACK_TRACE",
+          "FEATURE_STOPWATCH",
+          "FEATURE_SYNC_SOCKETS",
+          "FEATURE_THREAD",
+          "FEATURE_TIMEZONE",
+          "FEATURE_TYPECONVERTER",
+          "FEATURE_WARNING_EXCEPTION",
+          "FEATURE_WIN32EXCEPTION",
+          "CLR2"
+        ]
+      },
+      "dependencies": {
+        "Microsoft.Scripting.Core": "1.0.0"
+      },
+      "frameworkAssemblies": {
+        "System.Configuration": "",
+        "System.Runtime.Remoting": "",
+        "System.Xml": ""
+      }
+    },
+    "net40": {
+      "buildOptions": {
+        "define": [
+          "FEATURE_ANSICP",
+          "FEATURE_APARTMENTSTATE",
+          "FEATURE_APPLICATIONEXCEPTION",
+          "FEATURE_APTCA",
+          "FEATURE_ASSEMBLY_CODEBASE",
+          "FEATURE_ASSEMBLY_LOCATION",
+          "FEATURE_ASSEMBLY_RESOLVE",
+          "FEATURE_BASIC_CONSOLE",
+          "FEATURE_CODEDOM",
+          "FEATURE_COM",
+          "FEATURE_COMPRESSION",
+          "FEATURE_CONFIGURATION",
+          "FEATURE_CORE_DLR",
+          "FEATURE_CRYPTOGRAPHY",
+          "FEATURE_CUSTOM_MODIFIERS",
+          "FEATURE_CUSTOM_TYPE_DESCRIPTOR",
+          "FEATURE_DBNULL",
+          "FEATURE_DEFAULT_PARAMETER_VALUE",
+          "FEATURE_DRIVENOTFOUNDEXCEPTION",
+          "FEATURE_ENCODING",
+          "FEATURE_ENUM_NAMES_VALUES",
+          "FEATURE_EXCEPTION_STATE",
+          "FEATURE_FILESYSTEM",
+          "FEATURE_FULL_CONSOLE",
+          "FEATURE_FULL_CRYPTO",
+          "FEATURE_FULL_NET",
+          "FEATURE_FUNCS_5_16",
+          "FEATURE_GETINVALIDFILENAMECHARS",
+          "FEATURE_ICLONEABLE",
+          "FEATURE_IPV6",
+          "FEATURE_LOADWITHPARTIALNAME",
+          "FEATURE_METADATA_READER",
+          "FEATURE_MMAP",
+          "FEATURE_NATIVE",
+          "FEATURE_NUMERICS",
+          "FEATURE_OS_SERVICEPACK",
+          "FEATURE_PDBEMIT",
+          "FEATURE_PROCESS",
+          "FEATURE_REFEMIT",
+          "FEATURE_REGISTRY",
+          "FEATURE_REMOTING",
+          "FEATURE_SECURITY_RULES",
+          "FEATURE_SERIALIZATION",
+          "FEATURE_SORTKEY",
+          "FEATURE_STACK_TRACE",
+          "FEATURE_STOPWATCH",
+          "FEATURE_SYNC_SOCKETS",
+          "FEATURE_TASKS",
+          "FEATURE_THREAD",
+          "FEATURE_TIMEZONE",
+          "FEATURE_TYPE_EQUIVALENCE",
+          "FEATURE_TYPECONVERTER",
+          "FEATURE_VALUE_EQUALITY",
+          "FEATURE_VARIANCE",
+          "FEATURE_WARNING_EXCEPTION",
+          "FEATURE_WIN32EXCEPTION",
+          "FEATURE_WPF",
+          "FEATURE_XMLDOC",
+          "CLR4"
+        ]
+      },
+      "frameworkAssemblies": {
+        "System.Configuration": "",
+        "System.Runtime.Remoting": "",
+        "System.Xml": ""
+      }
+    },
+    "net45": {
+      "buildOptions": {
+        "define": [
+          "FEATURE_ANSICP",
+          "FEATURE_APARTMENTSTATE",
+          "FEATURE_APPLICATIONEXCEPTION",
+          "FEATURE_APTCA",
+          "FEATURE_ASSEMBLY_CODEBASE",
+          "FEATURE_ASSEMBLY_LOCATION",
+          "FEATURE_ASSEMBLY_RESOLVE",
+          "FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY",
+          "FEATURE_ASYNC",
+          "FEATURE_BASIC_CONSOLE",
+          "FEATURE_CODEDOM",
+          "FEATURE_COM",
+          "FEATURE_COMPRESSION",
+          "FEATURE_CONFIGURATION",
+          "FEATURE_CORE_DLR",
+          "FEATURE_CRYPTOGRAPHY",
+          "FEATURE_CUSTOM_MODIFIERS",
+          "FEATURE_CUSTOM_TYPE_DESCRIPTOR",
+          "FEATURE_DBNULL",
+          "FEATURE_DEFAULT_PARAMETER_VALUE",
+          "FEATURE_DRIVENOTFOUNDEXCEPTION",
+          "FEATURE_DYNAMIC_EXPRESSION_VISITOR",
+          "FEATURE_ENCODING",
+          "FEATURE_ENUM_NAMES_VALUES",
+          "FEATURE_EXCEPTION_STATE",
+          "FEATURE_FILESYSTEM",
+          "FEATURE_FULL_CONSOLE",
+          "FEATURE_FULL_CRYPTO",
+          "FEATURE_FULL_NET",
+          "FEATURE_FUNCS_5_16",
+          "FEATURE_GETINVALIDFILENAMECHARS",
+          "FEATURE_GET_METHOD_INFO",
+          "FEATURE_ICLONEABLE",
+          "FEATURE_IPV6",
+          "FEATURE_LCG",
+          "FEATURE_LOADWITHPARTIALNAME",
+          "FEATURE_METADATA_READER",
+          "FEATURE_MMAP",
+          "FEATURE_NATIVE",
+          "FEATURE_NUMERICS",
+          "FEATURE_OS_SERVICEPACK",
+          "FEATURE_PDBEMIT",
+          "FEATURE_PROCESS",
+          "FEATURE_READONLY_DICTIONARY",
+          "FEATURE_REFEMIT",
+          "FEATURE_REGISTRY",
+          "FEATURE_REMOTING",
+          "FEATURE_SECURITY_RULES",
+          "FEATURE_SERIALIZATION",
+          "FEATURE_SORTKEY",
+          "FEATURE_STACK_TRACE",
+          "FEATURE_STOPWATCH",
+          "FEATURE_SYNC_SOCKETS",
+          "FEATURE_TASKS",
+          "FEATURE_THREAD",
+          "FEATURE_TIMEZONE",
+          "FEATURE_TYPE_EQUIVALENCE",
+          "FEATURE_GET_TYPE_INFO",
+          "FEATURE_TYPECONVERTER",
+          "FEATURE_VALUE_EQUALITY",
+          "FEATURE_VARIANCE",
+          "FEATURE_WARNING_EXCEPTION",
+          "FEATURE_WIN32EXCEPTION",
+          "FEATURE_WPF",
+          "FEATURE_XMLDOC",
+          "CLR4",
+          "CLR45"
+        ]
+      },
+      "frameworkAssemblies": {
+        "System.Configuration": "",
+        "System.Runtime.Remoting": "",
+        "System.Xml": ""
+      }
+    },
+    "wp75": {
+      "buildOptions": {
+        "define": [
+          "FEATURE_DBNULL",
+          "FEATURE_THREAD",
+          "FEATURE_STACK_TRACE",
+          "FEATURE_STOPWATCH",
+          "WP75"
+        ]
+      },
+      "dependencies": {
+        "Microsoft.Phone": "1.0.0",
+        "Microsoft.Scripting.Core": "1.0.0",
+        "mscorlib": "1.0.0",
+        "mscorlib.Extensions": "1.0.0",
+        "System": "1.0.0",
+        "System.Core": "1.0.0",
+        "System.Net": "1.0.0"
+      }
+    },
+    "sl4": {
+      "buildOptions": {
+        "define": [
+          "FEATURE_ASSEMBLY_LOCATION",
+          "FEATURE_ASSEMBLY_RESOLVE",
+          "FEATURE_BASIC_CONSOLE",
+          "FEATURE_CORE_DLR",
+          "FEATURE_CRYPTOGRAPHY",
+          "FEATURE_DBNULL",
+          "FEATURE_DEFAULT_PARAMETER_VALUE",
+          "FEATURE_FUNCS_5_16",
+          "FEATURE_IPV6",
+          "FEATURE_NUMERICS",
+          "FEATURE_PDBEMIT",
+          "FEATURE_REFEMIT",
+          "FEATURE_STACK_TRACE",
+          "FEATURE_THREAD",
+          "FEATURE_VALUE_EQUALITY",
+          "FEATURE_VARIANCE",
+          "SILVERLIGHT",
+          "SILVERLIGHT4",
+          "CLR4"
+        ]
+      },
+      "dependencies": {
+        "mscorlib": "1.0.0",
+        "System": "1.0.0",
+        "System.Core": "1.0.0",
+        "System.Net": "1.0.0",
+        "System.Numerics": "1.0.0",
+        "System.Xml": "1.0.0"
+      }
+    },
+    "sl5": {
+      "buildOptions": {
+        "define": [
+          "FEATURE_APTCA",
+          "FEATURE_ASSEMBLY_LOCATION",
+          "FEATURE_ASSEMBLY_RESOLVE",
+          "FEATURE_BASIC_CONSOLE",
+          "FEATURE_CORE_DLR",
+          "FEATURE_CRYPTOGRAPHY",
+          "FEATURE_DBNULL",
+          "FEATURE_DEFAULT_PARAMETER_VALUE",
+          "FEATURE_ENUM_NAMES_VALUES",
+          "FEATURE_FUNCS_5_16",
+          "FEATURE_IPV6",
+          "FEATURE_NUMERICS",
+          "FEATURE_PDBEMIT",
+          "FEATURE_REFEMIT",
+          "FEATURE_STACK_TRACE",
+          "FEATURE_TASKS",
+          "FEATURE_THREAD",
+          "FEATURE_VALUE_EQUALITY",
+          "FEATURE_VARIANCE",
+          "SILVERLIGHT",
+          "SILVERLIGHT5",
+          "CLR4"
+        ]
+      },
+      "dependencies": {
+        "mscorlib": "1.0.0",
+        "System": "1.0.0",
+        "System.Core": "1.0.0",
+        "System.Net": "1.0.0",
+        "System.Numerics": "1.0.0",
+        "System.Xml": "1.0.0"
+      }
+    },
+    "netcore45": {
+      "buildOptions": {
+        "define": [
+          "FEATURE_APARTMENTSTATE",
+          "FEATURE_APPLICATIONEXCEPTION",
+          "FEATURE_ASSEMBLY_CODEBASE",
+          "FEATURE_ASSEMBLY_LOCATION",
+          "FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY",
+          "FEATURE_CORE_DLR",
+          "FEATURE_DEFAULT_PARAMETER_VALUE",
+          "FEATURE_DRIVENOTFOUNDEXCEPTION",
+          "FEATURE_DYNAMIC_EXPRESSION_VISITOR",
+          "FEATURE_ENUM_NAMES_VALUES",
+          "FEATURE_FULL_NET",
+          "FEATURE_FUNCS_5_16",
+          "FEATURE_GETINVALIDFILENAMECHARS",
+          "FEATURE_IPV6",
+          "FEATURE_LOADWITHPARTIALNAME",
+          "FEATURE_NUMERICS",
+          "FEATURE_OS_SERVICEPACK",
+          "FEATURE_READONLY_DICTIONARY",
+          "FEATURE_STOPWATCH",
+          "FEATURE_TASKS",
+          "FEATURE_GET_TYPE_INFO",
+          "FEATURE_VALUE_EQUALITY",
+          "FEATURE_VARIANCE",
+          "FEATURE_WIN32EXCEPTION",
+          "CLR4",
+          "CLR45",
+          "WIN8"
+        ]
+      },
+      "frameworkAssemblies": {
+        "Microsoft.CSharp": "",
+        "mscorlib": "",
+        "System": "",
+        "System.Collections": "",
+        "System.Collections.Concurrent": "",
+        "System.Core": "",
+        "System.Diagnostics.Contracts": "",
+        "System.Diagnostics.Debug": "",
+        "System.Diagnostics.Tools": "",
+        "System.Dynamic.Runtime": "",
+        "System.Globalization": "",
+        "System.IO": "",
+        "System.Linq": "",
+        "System.Linq.Expressions": "",
+        "System.ObjectModel": "",
+        "System.Reflection": "",
+        "System.Reflection.Extensions": "",
+        "System.Reflection.Primitives": "",
+        "System.Resources.ResourceManager": "",
+        "System.Runtime": "",
+        "System.Runtime.Extensions": "",
+        "System.Runtime.InteropServices": "",
+        "System.Runtime.Numerics": "",
+        "System.Text.Encoding": "",
+        "System.Text.Encoding.Extensions": "",
+        "System.Text.RegularExpressions": "",
+        "System.Threading": "",
+        "System.Threading.Tasks": "",
+        "System.Threading.Tasks.Parallel": ""
+      },
+      "dependencies": {
+        "System.Reflection.Emit": "4.0.0",
+        "System.Reflection.Emit.ILGeneration": "4.0.0",
+        "System.Reflection.Emit.Lightweight": "4.0.0"
+      }
+    },
+    "netstandard1.6": {
+      "buildOptions": {
+        "define": [
+          "FEATURE_APTCA",
+          "FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY",
+          "FEATURE_BASIC_CONSOLE",
+          "FEATURE_COMPRESSION",
+          "FEATURE_CORE_DLR",
+          "FEATURE_CUSTOM_MODIFIERS",
+          "FEATURE_DEFAULT_PARAMETER_VALUE",
+          "FEATURE_DRIVENOTFOUNDEXCEPTION",
+          "FEATURE_DYNAMIC_EXPRESSION_VISITOR",
+          "FEATURE_ENUM_NAMES_VALUES",
+          "FEATURE_FILESYSTEM",
+          "FEATURE_FULL_CONSOLE",
+          "FEATURE_FULL_NET",
+          "FEATURE_FUNCS_5_16",
+          "FEATURE_GETINVALIDFILENAMECHARS",
+          "FEATURE_GET_METHOD_INFO",
+          "FEATURE_IPV6",
+          "FEATURE_NUMERICS",
+          "FEATURE_OS_SERVICEPACK",
+          "FEATURE_READONLY_DICTIONARY",
+          "FEATURE_STACK_TRACE",
+          "FEATURE_STOPWATCH",
+          "FEATURE_SYNC_SOCKETS",
+          "FEATURE_TASKS",
+          "FEATURE_GET_TYPE_INFO",
+          "FEATURE_TYPECONVERTER",
+          "FEATURE_VALUE_EQUALITY",
+          "FEATURE_VARIANCE",
+          "FEATURE_WIN32EXCEPTION",
+          "CLR4",
+          "CLR45",
+          "DOTNET"
+        ]
+      },
+      "dependencies": {
+        "NETStandard.Library": "1.6.0",
+        "System.Collections.NonGeneric": "4.0.1",
+        "System.Dynamic.Runtime": "4.0.11",
+        "System.Reflection.TypeExtensions": "4.1.0",
+        "System.Runtime.Loader": "4.0.0"
+      }
+    }
+  }
+}
