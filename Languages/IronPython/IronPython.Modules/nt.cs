@@ -360,7 +360,7 @@ namespace IronPython.Modules {
 
         public static List listdir(CodeContext/*!*/ context, [NotNull]string path) {
             if (path == String.Empty) {
-                path = ".";
+                throw PythonOps.WindowsError("The system cannot find the path specified: '{0}'", path);
             }
 
             List ret = PythonOps.MakeList();
