@@ -27,8 +27,10 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -786,7 +788,7 @@ namespace IronPython.Runtime
         }
 
         internal static Version GetPythonVersion() {
-            return new AssemblyName(typeof(PythonContext).Assembly.FullName).Version;
+            return new AssemblyName(typeof(PythonContext).GetTypeInfo().Assembly.FullName).Version;
         }
 
         internal FloatFormat FloatFormat {
@@ -1649,9 +1651,8 @@ namespace IronPython.Runtime
                 IList<System.Diagnostics.StackTrace> traces = ExceptionHelpers.GetExceptionStackTraces(e);
 
                 if (traces != null) {
-                    for (int i = 0; i < traces.Count; i++) {
-                        for (int j = 0; j < traces[i].FrameCount; j++) {
-                            StackFrame curFrame = traces[i].GetFrame(j);
+                    foreach (StackTrace trace in traces) {
+                        foreach (StackFrame curFrame in trace.GetFrames()) {
                             result += curFrame.ToString() + Environment.NewLine;
                         }
                     }
@@ -1846,7 +1847,7 @@ namespace IronPython.Runtime
             Dictionary<string, Type> builtinTable = new Dictionary<string, Type>();
 
             // We should register builtins, if any, from IronPython.dll
-            LoadBuiltins(builtinTable, typeof(PythonContext).Assembly, false);
+            LoadBuiltins(builtinTable, typeof(PythonContext).GetTypeInfo().Assembly, false);
 
             // Load builtins from IronPython.Modules
             Assembly ironPythonModules = null;
@@ -1861,7 +1862,11 @@ namespace IronPython.Runtime
                 LoadBuiltins(builtinTable, ironPythonModules, false);
 
 #if !WIN8
+#if DOTNET
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+#else
                 if (Environment.OSVersion.Platform == PlatformID.Unix) {
+#endif
                     // we make our nt package show up as a posix package
                     // on unix platforms.  Because we build on top of the 
                     // CLI for all file operations we should be good from
@@ -1878,10 +1883,13 @@ namespace IronPython.Runtime
         }
 
         internal void LoadBuiltins(Dictionary<string, Type> builtinTable, Assembly assem, bool updateSys) {
-            object[] attrs = assem.GetCustomAttributes(typeof(PythonModuleAttribute), false);
-            if (attrs.Length > 0) {
+            IEnumerable<PythonModuleAttribute> attrs = assem.GetCustomAttributes<PythonModuleAttribute>();
+            if (attrs.Any()) {
                 foreach (PythonModuleAttribute pma in attrs) {
-                    if (pma.InvalidPlatforms != null && Array.IndexOf(pma.InvalidPlatforms, Environment.OSVersion.Platform) < 0) {
+#if !DOTNET
+                    if (pma.InvalidPlatforms != null && Array.IndexOf(pma.InvalidPlatforms, Environment.OSVersion.Platform) < 0)
+#endif
+                    {
                         builtinTable[pma.Name] = pma.Type;
                         BuiltinModuleNames[pma.Type] = pma.Name;
                     }
@@ -1895,7 +1903,7 @@ namespace IronPython.Runtime
 
         public static string GetIronPythonAssembly(string/*!*/ baseName) {
             ContractUtils.RequiresNotNull(baseName, "baseName");
-            string fullName = typeof(PythonContext).Assembly.FullName;
+            string fullName = typeof(PythonContext).GetTypeInfo().Assembly.FullName;
             int firstComma = fullName.IndexOf(',');
             return firstComma > 0 ? baseName + fullName.Substring(firstComma) : baseName;
         }
@@ -1979,6 +1987,14 @@ namespace IronPython.Runtime
                     _initialVersionString ?? GetVersionString());
         }
 
+        private static string GetEnvironmentVersion() {
+#if DOTNET
+            return RuntimeInformation.OSDescription;
+#else
+            return Environment.Version.ToString();
+#endif
+        }
+
         internal static string GetVersionString() {
             string configuration = BuildInfo.IsDebug ? " DEBUG" : "";
             string platform = Type.GetType("Mono.Runtime") == null ? ".NET" : "Mono";
@@ -1987,7 +2003,7 @@ namespace IronPython.Runtime
             return String.Format("{0}{3} ({1}) on {4} {2} ({5}-bit)",
                                 PythonContext.IronPythonDisplayName,
                                 PythonContext.GetPythonVersion().ToString(),
-                                Environment.Version,
+                                GetEnvironmentVersion(),
                                 configuration,
                                 platform,
                                 bitness

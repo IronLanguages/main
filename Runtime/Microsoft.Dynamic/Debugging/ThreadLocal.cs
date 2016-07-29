@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-#if !WIN8 && !DOTNET
+#if !WIN8
 
 using System;
 using System.Collections.Generic;
@@ -83,7 +83,7 @@ namespace Microsoft.Scripting.Debugging {
 
         private StorageInfo CreateStorageInfo() {
             // we do our own locking, tell hosts this is a bad time to interrupt us.
-#if !SILVERLIGHT && !WP75
+#if !SILVERLIGHT && !WP75 && !DOTNET
             Thread.BeginCriticalRegion();
 #endif
             StorageInfo[] curStorage = Updating;
@@ -122,7 +122,7 @@ namespace Microsoft.Scripting.Debugging {
                     // let others access the storage again
                     Interlocked.Exchange(ref _stores, curStorage);
                 }
-#if !SILVERLIGHT && !WP75
+#if !SILVERLIGHT && !WP75 && !DOTNET
                 Thread.EndCriticalRegion();
 #endif
             }

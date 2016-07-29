@@ -217,6 +217,10 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
         }
 
         public static PythonTuple getwindowsversion() {
+#if DOTNET
+            // TODO: get proper version number
+            return new windows_version(0, 0, 0, 0, string.Empty);
+#else
             var osVer = Environment.OSVersion;
             return new windows_version(
                 osVer.Version.Major,
@@ -227,8 +231,9 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
                 , osVer.ServicePack
 #else
                 , ""
-#endif      
+#endif
                 );
+#endif
         }
 
         [PythonType("sys.getwindowsversion"), PythonHidden]
@@ -606,7 +611,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
             #endregion
 
-            # region comparison and hashing methods
+            #region comparison and hashing methods
 
             public static bool operator >(SysFlags f, PythonTuple t) {
                 return f._tuple > t;
@@ -635,7 +640,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
                 return _tuple.GetHashCode();
             }
 
-            # endregion
+            #endregion
 
             #region sys.flags API
 

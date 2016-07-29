@@ -1557,7 +1557,7 @@ namespace IronPython.Runtime.Types {
             // The addition is to a seperate cache that NewTypeMaker maintains.  TypeInfo consults this
             // cache when doing member lookup and includes these members in the returned members.
             foreach (MethodInfo mi in finishedType.GetMethods()) {
-                if (IsInstanceType(finishedType.BaseType) && IsInstanceType(mi.DeclaringType)) continue;
+                if (IsInstanceType(finishedType.GetTypeInfo().BaseType) && IsInstanceType(mi.DeclaringType)) continue;
 
                 string methodName = mi.Name;
                 if (methodName.StartsWith(BaseMethodPrefix) || methodName.StartsWith(FieldGetterPrefix) || methodName.StartsWith(FieldSetterPrefix)) {
@@ -1566,7 +1566,7 @@ namespace IronPython.Runtime.Types {
                             // if it's a property we want to override it
                             string propName = newName.Substring(4);
 
-                            MemberInfo[] defaults = finishedType.BaseType.GetDefaultMembers();
+                            MemberInfo[] defaults = finishedType.GetTypeInfo().BaseType.GetDefaultMembers();
                             if (defaults.Length > 0) {
                                 // if it's an indexer then we want to override get_Item/set_Item methods
                                 // which map to __getitem__ and __setitem__ as normal Python methods.
