@@ -85,7 +85,11 @@ namespace Microsoft.Scripting.Utils {
                     return null;
                 }
 
-                return data.First(entry => entry.Key == key).Value;
+                int index = data.FindIndex(entry => entry.Key == key);
+                if (index >= 0)
+                    return data[index].Value;
+
+                return null;                
             }
         }
 
