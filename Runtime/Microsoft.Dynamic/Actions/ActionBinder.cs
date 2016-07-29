@@ -19,7 +19,7 @@ using System.Linq.Expressions;
 using Microsoft.Scripting.Ast;
 #endif
 
-#if !FEATURE_GET_TYPE_INFO
+#if !FEATURE_TYPE_INFO
 using TypeInfo = System.Type;
 #endif
 

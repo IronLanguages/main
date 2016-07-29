@@ -17,7 +17,7 @@
 using Microsoft.Scripting.Metadata;
 #endif
 
-#if !FEATURE_GET_TYPE_INFO
+#if !FEATURE_TYPE_INFO
 using TypeInfo = System.Type;
 #endif
 
@@ -557,7 +557,7 @@ namespace Microsoft.Scripting.Utils {
         #region Declared Members
 
         public static IEnumerable<ConstructorInfo> GetDeclaredConstructors(this Type type) {
-#if FEATURE_GET_TYPE_INFO
+#if FEATURE_TYPE_INFO
             return type.GetTypeInfo().DeclaredConstructors;
 #else
             return type.GetConstructors(BindingFlags.DeclaredOnly | AllMembers);
@@ -571,7 +571,7 @@ namespace Microsoft.Scripting.Utils {
 #endif
 
         public static IEnumerable<MethodInfo> GetDeclaredMethods(this Type type, string name = null) {
-#if FEATURE_GET_TYPE_INFO
+#if FEATURE_TYPE_INFO
             if (name == null) {
                 return type.GetTypeInfo().DeclaredMethods;
             } else {
@@ -587,7 +587,7 @@ namespace Microsoft.Scripting.Utils {
         }
 
         public static IEnumerable<PropertyInfo> GetDeclaredProperties(this Type type) {
-#if FEATURE_GET_TYPE_INFO
+#if FEATURE_TYPE_INFO
             return type.GetTypeInfo().DeclaredProperties;
 #else
             return type.GetProperties(BindingFlags.DeclaredOnly | AllMembers);
@@ -596,7 +596,7 @@ namespace Microsoft.Scripting.Utils {
 
         public static PropertyInfo GetDeclaredProperty(this Type type, string name) {
             Debug.Assert(name != null);
-#if FEATURE_GET_TYPE_INFO
+#if FEATURE_TYPE_INFO
             return type.GetTypeInfo().GetDeclaredProperty(name);
 #else
             return type.GetProperty(name, BindingFlags.DeclaredOnly | AllMembers);
@@ -604,7 +604,7 @@ namespace Microsoft.Scripting.Utils {
         }
 
         public static IEnumerable<EventInfo> GetDeclaredEvents(this Type type) {
-#if FEATURE_GET_TYPE_INFO
+#if FEATURE_TYPE_INFO
             return type.GetTypeInfo().DeclaredEvents;
 #else
             return type.GetEvents(BindingFlags.DeclaredOnly | AllMembers);
@@ -613,7 +613,7 @@ namespace Microsoft.Scripting.Utils {
 
         public static EventInfo GetDeclaredEvent(this Type type, string name) {
             Debug.Assert(name != null);
-#if FEATURE_GET_TYPE_INFO
+#if FEATURE_TYPE_INFO
             return type.GetTypeInfo().GetDeclaredEvent(name);
 #else
             return type.GetEvent(name, BindingFlags.DeclaredOnly | AllMembers);
@@ -621,7 +621,7 @@ namespace Microsoft.Scripting.Utils {
         }
 
         public static IEnumerable<FieldInfo> GetDeclaredFields(this Type type) {
-#if FEATURE_GET_TYPE_INFO
+#if FEATURE_TYPE_INFO
             return type.GetTypeInfo().DeclaredFields;
 #else
             return type.GetFields(BindingFlags.DeclaredOnly | AllMembers);
@@ -630,7 +630,7 @@ namespace Microsoft.Scripting.Utils {
 
         public static FieldInfo GetDeclaredField(this Type type, string name) {
             Debug.Assert(name != null);
-#if FEATURE_GET_TYPE_INFO
+#if FEATURE_TYPE_INFO
             return type.GetTypeInfo().GetDeclaredField(name);
 #else
             return type.GetField(name, BindingFlags.DeclaredOnly | AllMembers);
@@ -638,7 +638,7 @@ namespace Microsoft.Scripting.Utils {
         }
 
         public static IEnumerable<TypeInfo> GetDeclaredNestedTypes(this Type type) {
-#if FEATURE_GET_TYPE_INFO
+#if FEATURE_TYPE_INFO
             return type.GetTypeInfo().DeclaredNestedTypes;
 #else
             return type.GetNestedTypes(BindingFlags.DeclaredOnly | AllMembers);
@@ -647,7 +647,7 @@ namespace Microsoft.Scripting.Utils {
 
         public static TypeInfo GetDeclaredNestedType(this Type type, string name) {
             Debug.Assert(name != null);
-#if FEATURE_GET_TYPE_INFO
+#if FEATURE_TYPE_INFO
             return type.GetTypeInfo().GetDeclaredNestedType(name);
 #else
             return type.GetNestedType(name, BindingFlags.DeclaredOnly | AllMembers);
@@ -655,7 +655,7 @@ namespace Microsoft.Scripting.Utils {
         }
 
         public static IEnumerable<MemberInfo> GetDeclaredMembers(this Type type, string name = null) {
-#if FEATURE_GET_TYPE_INFO
+#if FEATURE_TYPE_INFO
             var info = type.GetTypeInfo();
             if (name == null) {
                 return info.DeclaredMembers;
@@ -671,7 +671,7 @@ namespace Microsoft.Scripting.Utils {
 #endif
         }
 
-#if FEATURE_GET_TYPE_INFO
+#if FEATURE_TYPE_INFO
         private static IEnumerable<MemberInfo> GetDeclaredMembersWithName(TypeInfo info, string name) {
             MemberInfo member;
 
