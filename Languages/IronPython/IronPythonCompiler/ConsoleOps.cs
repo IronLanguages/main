@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace IronPythonCompiler {
     public static class ConsoleOps {
@@ -40,7 +39,7 @@ namespace IronPythonCompiler {
         public static void Usage(bool doExit = false) {
             Console.WriteLine(@"ipyc: The Command-Line IronPython Compiler
 
-Usage: ipc.exe [options] file [file ...]
+Usage: ipyc.exe [options] file [file ...]
 
 Options:
     /out:output_file                          Output file name (default is main_file.<extenstion>)
@@ -61,7 +60,7 @@ EXE/WinEXE specific options:
     /win32icon:file.ico                       Sets file.ico as the icon for the executable
 
 Example:
-    ipc.exe /main:Program.py Form.py /target:winexe");
+    ipyc.exe /main:Program.py Form.py /target:winexe");
             if (doExit) {
                 Environment.Exit(0);
             }

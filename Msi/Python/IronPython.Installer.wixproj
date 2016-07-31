@@ -133,7 +133,6 @@
       <ComponentGroupName>IronPythonPlatformsNet45</ComponentGroupName>
       <PreprocessorVariable>var.PlatformsNet45Dir</PreprocessorVariable>
     </HarvestDirectory>
-    
     <HarvestDirectory Include="$(BaseInputPaths)\Platforms\Sl5">
       <DirectoryRefId>IronPythonPlatformsDir</DirectoryRefId>
       <ComponentGroupName>IronPythonPlatformsSl5</ComponentGroupName>

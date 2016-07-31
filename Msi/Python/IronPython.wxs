@@ -26,6 +26,14 @@
         <File Id="ipy64.exe.config" />
       </Component>
 
+      <Component Guid="{F7E1626D-3007-405D-A656-1A971D172A07}">
+        <File Id="ipyc.exe" KeyPath="yes">
+          <netfx:NativeImage Id="ngen_ipyc.exe" Platform="all" AppBaseDirectory="INSTALLDIR"/>
+        </File>
+        <File Id="ipyc.exe.config" />
+        <File Id="IKVM.Reflection.dll" />
+      </Component>
+
       <Component Guid="{A9A13553-6EAD-4C92-9334-149F223F854C}">
         <File Id="ipyw.exe" KeyPath="yes">
           <netfx:NativeImage Id="ngen_ipyw.exe" Platform="all" AppBaseDirectory="INSTALLDIR"/>
@@ -78,11 +86,12 @@
         <RegistryValue Id='VSNet20ReferenceAssemblyKey'
           Root='HKLM' Key='SOFTWARE\Microsoft\.NETFramework\v2.0.50727\AssemblyFoldersEx\$(var.ProductShortName)$(var.ReleaseSeries)' Type='string' Value='[INSTALLDIR]$(var.PlatformsNet35Dir)' />
       </Component>
-      
+
       <Component>
         <RegistryValue Id='VSSl5ReferenceAssemblyKey'
           Root='HKLM' Key='SOFTWARE\Microsoft\Microsoft SDKs\Silverlight\v5.0\AssemblyFoldersEx\$(var.ProductShortName)$(var.ReleaseSeries)' Type='string' Value='[INSTALLDIR]$(var.PlatformsSl5Dir)' />
       </Component>
+
     </DirectoryRef>
 
     <DirectoryRef Id='GAC'>
@@ -120,6 +129,7 @@
       <ComponentRef Id="IronPython.SQLite.dll"/>
       <ComponentRef Id="ipy.exe"/>
       <ComponentRef Id="ipyw.exe"/>
+      <ComponentRef Id="ipyc.exe"/>
       <ComponentRef Id="Readme.html"/>
       <ComponentRef Id="License.txt"/>
       <ComponentRef Id="InstallationKey"/>

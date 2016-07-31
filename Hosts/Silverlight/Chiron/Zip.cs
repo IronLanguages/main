@@ -510,6 +510,13 @@ namespace Chiron {
             }
         }
         /// <summary>
+        /// Zip entries can have an extra field
+        /// </summary>
+        public string ExtraField {
+            get { return extraField; }
+            set { extraField = value; }
+        }
+        /// <summary>
         /// The archive assoated with the ZipArchiveFile. 
         /// </summary>
         internal ZipArchive Archive { get { return archive; } }
@@ -598,6 +605,7 @@ namespace Chiron {
         private CompressionMethod compressionMethod;
         private ZipArchive archive;                // The archive this entry belongs to. 
         private uint headerOffset; // the location of the header
+        private string extraField;
 
         // To optimize for the common useage of read-only sequential access of the ZipArchive files we
         // don't uncompress the data immediately. We instead just remember where in the stream the 
@@ -863,12 +871,19 @@ namespace Chiron {
             newEntry.compressedLength = checked((int)header.ReadUInt32());
             newEntry.length = header.ReadUInt32();
             int fileNameLength = checked((int)header.ReadUInt16());
+            int extraFieldLength = checked((int)header.ReadUInt16());
 
             byte[] fileNameBuffer = new byte[fileNameLength];
             int fileNameCount = reader.Read(fileNameBuffer, 0, fileNameLength);
             newEntry.name = Encoding.UTF8.GetString(fileNameBuffer).Replace('/', Path.DirectorySeparatorChar);
             archive.entries[newEntry.name] = newEntry;
 
+            if (extraFieldLength > 0) {
+                byte[] extraFieldBuffer = new byte[extraFieldLength];
+                int extraFieldCount = reader.Read(extraFieldBuffer, 0, extraFieldLength);
+                newEntry.extraField = Encoding.UTF8.GetString(extraFieldBuffer).Replace('/', Path.DirectorySeparatorChar);
+            }
+            
             if (count != header.Length || fileNameCount != fileNameLength || fileNameLength == 0 || newEntry.LastWriteTime.Ticks == 0)
                 throw new ApplicationException("Bad Zip File Header");
             if (newEntry.Name.IndexOfAny(invalidPathChars) >= 0)
