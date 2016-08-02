@@ -7,12 +7,13 @@
   "configurations": {
     "Debug": {
       "buildOptions": {
-        "keyFile": "../../Solutions/Key.snk"
+        "define": [ "DEBUG" ],
+        "keyFile": "../../Solutions/DevelKey.snk"
       }
     },
     "Release": {
       "buildOptions": {
-        "keyFile": "../../Solutions/DevelKey.snk"
+        "keyFile": "../../Solutions/Key.snk"
       }
     }
   },
