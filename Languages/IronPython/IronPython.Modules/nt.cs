@@ -347,9 +347,13 @@ namespace IronPython.Modules {
         }
 
         private static bool IsWindows() {
+#if DOTNET
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+#else
             return Environment.OSVersion.Platform == PlatformID.Win32NT ||
                 Environment.OSVersion.Platform == PlatformID.Win32S ||
                 Environment.OSVersion.Platform == PlatformID.Win32Windows;
+#endif
         }
 
 #if FEATURE_PROCESS
@@ -423,7 +427,11 @@ namespace IronPython.Modules {
                 FileAccess access = FileAccessFromFlags(flag);
                 FileOptions options = FileOptionsFromFlags(flag);
                 Stream fs;
+#if DOTNET
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && String.Equals(filename, "nul", StringComparison.OrdinalIgnoreCase)) {
+#else
                 if (Environment.OSVersion.Platform == PlatformID.Win32NT && (String.Compare(filename, "nul", true) == 0)) {
+#endif
                     fs = Stream.Null;
                 } else if (access == FileAccess.Read && (fileMode == FileMode.CreateNew || fileMode == FileMode.Create || fileMode == FileMode.Append)) {
                     // .NET doesn't allow Create/CreateNew w/ access == Read, so create the file, then close it, then
@@ -1231,7 +1239,7 @@ namespace IronPython.Modules {
         }
 
         private static bool HasExecutableExtension(string path) {
-            string extension = Path.GetExtension(path).ToLower(CultureInfo.InvariantCulture);
+            string extension = Path.GetExtension(path).ToLowerInvariant();
             return (extension == ".exe" || extension == ".dll" || extension == ".com" || extension == ".bat");
         }
 
@@ -1442,7 +1450,11 @@ namespace IronPython.Modules {
 #endif
 
         public static object urandom(int n) {
-            RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
+#if SILVERLIGHT || WP75
+            RandomNumberGenerator rng = new RNGCryptoServiceProvider();
+#else
+            RandomNumberGenerator rng = RandomNumberGenerator.Create();
+#endif
             byte[] data = new byte[n];
             rng.GetBytes(data);
 
