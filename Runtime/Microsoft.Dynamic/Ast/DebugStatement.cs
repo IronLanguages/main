@@ -20,6 +20,7 @@ using Microsoft.Scripting.Ast;
 #endif
 
 using System.Diagnostics;
+using System.Reflection;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 

@@ -20,6 +20,7 @@ using Microsoft.Scripting.Ast;
 #endif
 
 using System.Diagnostics;
+using System.Reflection;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Generation {

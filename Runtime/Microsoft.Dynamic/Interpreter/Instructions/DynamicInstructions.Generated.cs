@@ -15,6 +15,7 @@
 
 
 using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Utils;
 
