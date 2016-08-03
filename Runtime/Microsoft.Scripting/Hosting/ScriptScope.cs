@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Dynamic;
+using System.Reflection;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 

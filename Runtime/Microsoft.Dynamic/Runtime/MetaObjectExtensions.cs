@@ -21,6 +21,7 @@ using Microsoft.Scripting.Ast;
 
 using System;
 using System.Dynamic;
+using System.Reflection;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
