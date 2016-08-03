@@ -7,18 +7,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPython.Wpf", "..\Langua
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPythonTest", "..\Languages\IronPython\IronPythonTest\IronPythonTest.csproj", "{B6B42537-07F8-4F6C-A99A-B155CAEB124E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPythonWindow", "..\Languages\IronPython\IronPythonWindow\IronPythonWindow.csproj", "{81DA19C7-4FEC-47E7-981B-D9310D549F95}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting.Silverlight", "..\Hosts\Silverlight\Microsoft.Scripting.Silverlight\Microsoft.Scripting.Silverlight.csproj", "{C86A7A7B-3086-4136-9B56-17E8DCB38C8D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chiron", "..\Hosts\Silverlight\Chiron\Chiron.csproj", "{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C86A7A7B-3086-4136-9B56-17E8DCB38C8D} = {C86A7A7B-3086-4136-9B56-17E8DCB38C8D}
 	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPythonConsoleAny", "..\Languages\IronPython\IronPythonConsoleAny\IronPythonConsoleAny.csproj", "{F1D861C5-D9D5-4CDA-968B-8275F5D9F6D2}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPythonWindowAny", "..\Languages\IronPython\IronPythonWindowAny\IronPythonWindowAny.csproj", "{7F6F9AB3-9943-4316-BD4C-A10F580BC75C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting.AspNet", "..\Hosts\MerlinWeb\Microsoft.Scripting.AspNet\Microsoft.Scripting.AspNet.csproj", "{3272E46C-F4D9-418D-9EE9-081A1B658EE4}"
 EndProject
@@ -65,6 +59,8 @@ Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Microsoft.Scripting.Core", 
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "IronPythonConsole", "..\Languages\IronPython\IronPythonConsole\IronPythonConsole.xproj", "{9AB2CA3E-459C-44A3-91C9-F8654B869EC5}"
 EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "IronPythonWindow", "..\Languages\IronPython\IronPythonWindow\IronPythonWindow.xproj", "{05B51A20-278C-4492-A699-4C2767DB2B0F}"
+EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Microsoft.Phone", "..\wrap\Microsoft.Phone\Microsoft.Phone.xproj", "{EF1CDC5C-C976-4AB7-98A2-92DC082ED88F}"
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "mscorlib", "..\wrap\mscorlib\mscorlib.xproj", "{A4122023-4335-44EB-8E04-5E365EBE0050}"
@@ -95,24 +91,12 @@ Global
 		{B6B42537-07F8-4F6C-A99A-B155CAEB124E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B6B42537-07F8-4F6C-A99A-B155CAEB124E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B6B42537-07F8-4F6C-A99A-B155CAEB124E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{81DA19C7-4FEC-47E7-981B-D9310D549F95}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{81DA19C7-4FEC-47E7-981B-D9310D549F95}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{81DA19C7-4FEC-47E7-981B-D9310D549F95}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{81DA19C7-4FEC-47E7-981B-D9310D549F95}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C86A7A7B-3086-4136-9B56-17E8DCB38C8D}.Debug|Any CPU.ActiveCfg = WP7Debug|Any CPU
 		{C86A7A7B-3086-4136-9B56-17E8DCB38C8D}.Release|Any CPU.ActiveCfg = WP7Release|Any CPU
 		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7D07B0CE-FFA3-4402-BFF2-5F42B4267D2A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F1D861C5-D9D5-4CDA-968B-8275F5D9F6D2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F1D861C5-D9D5-4CDA-968B-8275F5D9F6D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F1D861C5-D9D5-4CDA-968B-8275F5D9F6D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F1D861C5-D9D5-4CDA-968B-8275F5D9F6D2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7F6F9AB3-9943-4316-BD4C-A10F580BC75C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7F6F9AB3-9943-4316-BD4C-A10F580BC75C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7F6F9AB3-9943-4316-BD4C-A10F580BC75C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7F6F9AB3-9943-4316-BD4C-A10F580BC75C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3272E46C-F4D9-418D-9EE9-081A1B658EE4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3272E46C-F4D9-418D-9EE9-081A1B658EE4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3272E46C-F4D9-418D-9EE9-081A1B658EE4}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -185,6 +169,10 @@ Global
 		{850CBE8D-BBED-4437-A9F6-CBD4F0A69D1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{850CBE8D-BBED-4437-A9F6-CBD4F0A69D1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{850CBE8D-BBED-4437-A9F6-CBD4F0A69D1E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{05B51A20-278C-4492-A699-4C2767DB2B0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{05B51A20-278C-4492-A699-4C2767DB2B0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{05B51A20-278C-4492-A699-4C2767DB2B0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{05B51A20-278C-4492-A699-4C2767DB2B0F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

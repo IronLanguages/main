@@ -1,0 +1,38 @@
+{
+  "buildOptions": {
+    "compile": {
+      "include": [ "../AssemblyVersion.cs" ]
+    },
+    "emitEntryPoint": true
+  },
+  "commands": {
+    "IronPythonWindow": "IronPythonWindow"
+  },
+  "configurations": {
+    "Debug": {
+      "buildOptions": {
+        "keyFile": "../../../Solutions/Key.snk"
+      }
+    },
+    "Release": {
+      "buildOptions": {
+        "keyFile": "../../../Solutions/DevelKey.snk"
+      }
+    }
+  },
+  "dependencies": {
+    "IronPython": "2.7.6-rc2"
+  },
+  "frameworks": {
+    "net45": {
+      "buildOptions": {
+        "define": [
+          "CLR4"
+        ]
+      },
+      "frameworkAssemblies": {
+        "System.Windows.Forms": ""
+      }
+    }
+  }
+}
