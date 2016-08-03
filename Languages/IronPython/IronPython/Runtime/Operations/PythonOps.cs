@@ -1429,7 +1429,15 @@ namespace IronPython.Runtime.Operations {
                     }
                     bases = newBases;
                     break;
+                } else if(dt is PythonType) {
+                    PythonType pt = dt as PythonType;
+                    if (pt.Equals(PythonType.GetPythonType(typeof(Enum))) || pt.Equals(PythonType.GetPythonType(typeof(Array)))
+                    || pt.Equals(PythonType.GetPythonType(typeof(Delegate))) || pt.Equals(PythonType.GetPythonType(typeof(ValueType)))) {
+                        // .NET does not allow inheriting from these types
+                        throw PythonOps.TypeError("cannot derive from special class '{0}'", pt.FinalSystemType.FullName);
+                    }
                 }
+
             }
             PythonTuple tupleBases = PythonTuple.MakeTuple(bases);
 
