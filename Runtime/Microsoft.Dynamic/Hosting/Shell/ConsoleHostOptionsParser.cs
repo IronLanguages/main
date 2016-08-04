@@ -134,7 +134,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
             }
 
             if (name != null) {
-                name = name.ToLower(CultureInfo.InvariantCulture);
+                name = name.ToLowerInvariant();
             }
         }
 
