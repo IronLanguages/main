@@ -17,6 +17,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -1133,7 +1134,7 @@ namespace IronPython.Modules {
                         // known escape sequences, leave escaped.
                         break;
                     default:
-                        System.Globalization.UnicodeCategory charClass = Char.GetUnicodeCategory(curChar);
+                        System.Globalization.UnicodeCategory charClass = CharUnicodeInfo.GetUnicodeCategory(curChar);
                         switch (charClass) {
                             // recognized word characters, always unescape.
                             case System.Globalization.UnicodeCategory.ModifierLetter:

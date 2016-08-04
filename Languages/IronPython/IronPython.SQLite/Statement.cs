@@ -101,15 +101,15 @@ namespace IronPython.SQLite
 
                 string s = this.sql.TrimStart();
 
-                if(s.StartsWith("select", StringComparison.InvariantCultureIgnoreCase))
+                if(s.StartsWith("select", StringComparison.OrdinalIgnoreCase))
                     this._type = StatementType.Select;
-                else if(s.StartsWith("insert", StringComparison.InvariantCultureIgnoreCase))
+                else if(s.StartsWith("insert", StringComparison.OrdinalIgnoreCase))
                     this._type = StatementType.Insert;
-                else if(s.StartsWith("update", StringComparison.InvariantCultureIgnoreCase))
+                else if(s.StartsWith("update", StringComparison.OrdinalIgnoreCase))
                     this._type = StatementType.Update;
-                else if(s.StartsWith("delete", StringComparison.InvariantCultureIgnoreCase))
+                else if(s.StartsWith("delete", StringComparison.OrdinalIgnoreCase))
                     this._type = StatementType.Delete;
-                else if(s.StartsWith("replace", StringComparison.InvariantCultureIgnoreCase))
+                else if(s.StartsWith("replace", StringComparison.OrdinalIgnoreCase))
                     this._type = StatementType.Replace;
                 else
                     this._type = StatementType.Other;

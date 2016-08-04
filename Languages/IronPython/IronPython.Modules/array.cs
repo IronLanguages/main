@@ -876,7 +876,7 @@ namespace IronPython.Modules {
                     if (!(value is T)) {
                         object newVal;
                         if (!Converter.TryConvert(value, typeof(T), out newVal)) {
-                            if (value != null && typeof(T).IsPrimitive && typeof(T) != typeof(char))
+                            if (value != null && typeof(T).GetTypeInfo().IsPrimitive && typeof(T) != typeof(char))
                                 throw PythonOps.OverflowError("couldn't convert {1} to {0}",
                                     DynamicHelpers.GetPythonTypeFromType(typeof(T)).Name,
                                     DynamicHelpers.GetPythonType(value).Name);

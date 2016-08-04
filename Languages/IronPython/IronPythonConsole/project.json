@@ -1,0 +1,53 @@
+﻿{
+  "buildOptions": {
+    "compile": {
+      "include": [ "../AssemblyVersion.cs" ]
+    },
+    "emitEntryPoint": true
+  },
+  "commands": {
+    "IronPythonConsole": "IronPythonConsole"
+  },
+  "configurations": {
+    "Debug": {
+      "buildOptions": {
+        "keyFile": "../../../Solutions/Key.snk"
+      }
+    },
+    "Release": {
+      "buildOptions": {
+        "keyFile": "../../../Solutions/DevelKey.snk"
+      }
+    }
+  },
+  "dependencies": {
+    "IronPython": "2.7.6-rc2",
+    "IronPython.Modules": "2.7.6-rc2",
+    "Microsoft.Dynamic": "1.1.0.21",
+    "Microsoft.Scripting": "1.1.0.21"
+  },
+  "frameworks": {
+    "net45": {
+      "buildOptions": {
+        "define": [
+          "FEATURE_FULL_CONSOLE",
+          "CLR4"
+        ]
+      }
+    },
+    "netcoreapp1.0": {
+      "buildOptions": {
+        "define": [
+          "FEATURE_FULL_CONSOLE",
+          "CLR4"
+        ]
+      },
+      "dependencies": {
+        "Microsoft.NETCore.App": {
+          "type": "platform",
+          "version": "1.0.0"
+        }
+      }
+    }
+  }
+}

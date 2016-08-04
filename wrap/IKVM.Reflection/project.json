@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "frameworks": {
+    "net35": {
+      "bin": {
+        "assembly": "../../Util/IKVM/IKVM.Reflection.dll"
+      }
+    },
+    "net40": {
+      "bin": {
+        "assembly": "../../Util/IKVM/IKVM.Reflection.dll"
+      }
+    },
+    "net45": {
+      "bin": {
+        "assembly": "../../Util/IKVM/IKVM.Reflection.dll"
+      }
+    }
+  }
+}

@@ -12,6 +12,11 @@ bin/
 *.csproj.user
 *.wixproj.user
 *.pidb
+*.lock.json
+*.xproj.user
+
+# Visual Studio 2015 cache/options directory
+.vs/
 
 # Generated files
 BuildInfo.Generated.cs

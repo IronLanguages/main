@@ -37,7 +37,9 @@ namespace IronPython.Modules {
             context.DomainManager.LoadAssembly(typeof(XamlReader).Assembly);            // PresentationFramework
             context.DomainManager.LoadAssembly(typeof(Clipboard).Assembly);             // PresentationCore
             context.DomainManager.LoadAssembly(typeof(DependencyProperty).Assembly);    // WindowsBase
+#if !CLR2
             context.DomainManager.LoadAssembly(typeof(System.Xaml.XamlReader).Assembly);// System.Xaml
+#endif
         }
 
 #if !CLR2 && !SILVERLIGHT

@@ -262,7 +262,7 @@ namespace Microsoft.Scripting.Generation {
         }
 
 #if !SILVERLIGHT && !WP75
-#if !WIN8
+#if !WIN8 && !DOTNET
         /// <summary>
         /// Emits an unmanaged indirect call instruction.
         /// </summary>
@@ -1519,7 +1519,7 @@ namespace Microsoft.Scripting.Generation {
 
                 case TypeCode.Empty:
                 case TypeCode.String:
-                case TypeCode.DBNull:
+                case (TypeCode)2: // TypeCode.DBNull
                     Emit(OpCodes.Ldnull);
                     break;
 
@@ -1581,7 +1581,7 @@ namespace Microsoft.Scripting.Generation {
                     break;
 
                 case TypeCode.Empty:
-                case TypeCode.DBNull:
+                case (TypeCode)2: // TypeCode.DBNull
                     EmitNull();
                     break;
 

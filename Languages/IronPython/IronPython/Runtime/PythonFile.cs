@@ -1159,9 +1159,16 @@ namespace IronPython.Runtime {
             try {
                 Stream stream;
                 try {
+#if DOTNET
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && name == "nul") {
+                        stream = Stream.Null;
+                    }
+#else
                     if (Environment.OSVersion.Platform == PlatformID.Win32NT && name == "nul") {
                         stream = Stream.Null;
-                    } else if (buffering <= 0) {
+                    }
+#endif
+                    else if (buffering <= 0) {
                         stream = PythonContext.GetContext(context).DomainManager.Platform.OpenInputFileStream(name, fmode, faccess, fshare);
                     } else {
                         stream = PythonContext.GetContext(context).DomainManager.Platform.OpenInputFileStream(name, fmode, faccess, fshare, buffering);
@@ -1311,12 +1318,21 @@ namespace IronPython.Runtime {
         private PythonTextWriter/*!*/ CreateTextWriter(TextWriter/*!*/ writer) {
             PythonFileMode fileMode = _fileMode;
             if (_fileMode == PythonFileMode.UniversalNewline) {
+#if DOTNET
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    fileMode = PythonFileMode.TextLf;
+                }
+                else {
+                    fileMode = PythonFileMode.TextCrLf;
+                }
+#else
                 if (Environment.OSVersion.Platform == PlatformID.Unix) {
                     fileMode = PythonFileMode.TextLf;
                 } else {
                     fileMode = PythonFileMode.TextCrLf;
                 }
                 // TODO: Identify Mac?
+#endif
             }
 
             switch (fileMode) {

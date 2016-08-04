@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace Microsoft.Scripting.Utils {
@@ -88,7 +89,11 @@ namespace Microsoft.Scripting.Utils {
             if (!TryGetValue(key, out value)) {
                 var ctor = typeof(TValue).GetConstructor(new Type[] { });
                 if (ctor == null) {
+#if WIN8
+                    throw new MissingMemberException(string.Format("{0} does not have a default constructor.", typeof(TValue).Name));
+#else
                     throw new MissingMethodException(string.Format("{0} does not have a default constructor.", typeof(TValue).Name));
+#endif
                 }
 
                 value = (TValue)ctor.Invoke(new object[] { });

@@ -1,0 +1,60 @@
+﻿{
+  "buildOptions": {
+    "compile": {
+      "include": [ "../AssemblyVersion.cs" ]
+    },
+    "emitEntryPoint": true
+  },
+  "commands": {
+    "IronPythonCompiler": "IronPythonCompiler"
+  },
+  "configurations": {
+    "Debug": {
+      "buildOptions": {
+        "keyFile": "../../../Solutions/Key.snk"
+      }
+    },
+    "Release": {
+      "buildOptions": {
+        "keyFile": "../../../Solutions/DevelKey.snk"
+      }
+    }
+  },
+  "dependencies": {
+    "IKVM.Reflection": "1.0.0",
+    "IronPython": "2.7.6-rc2",
+    "Microsoft.Scripting": "1.1.0.21"
+  },
+  "frameworks": {
+    "net35": {
+      "buildOptions": {
+        "define": [
+          "CLR2"
+        ]
+      },
+      "frameworkAssemblies": {
+        "System.Windows.Forms": ""
+      }
+    },
+    "net40": {
+      "buildOptions": {
+        "define": [
+          "CLR4"
+        ]
+      },
+      "frameworkAssemblies": {
+        "System.Windows.Forms": ""
+      }
+    },
+    "net45": {
+      "buildOptions": {
+        "define": [
+          "CLR4"
+        ]
+      },
+      "frameworkAssemblies": {
+        "System.Windows.Forms": ""
+      }
+    }
+  }
+}

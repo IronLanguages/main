@@ -411,16 +411,7 @@ namespace Ionic.BZip2
             }
         }
 
-        /// <summary>
-        ///   Close the stream.
-        /// </summary>
-        /// <remarks>
-        ///   <para>
-        ///     This may or may not close the underlying stream.  Check the
-        ///     constructors that accept a bool value.
-        ///   </para>
-        /// </remarks>
-        public override void Close()
+        protected override void Dispose(bool disposing)
         {
             if (this.pendingException != null)
             {
@@ -433,25 +424,22 @@ namespace Ionic.BZip2
             if (this.handlingException)
                 return;
 
-            if (output == null)
-                return;
-
-            Stream o = this.output;
-
-            try
+            Stream output = this.output;
+            if (output != null)
             {
-                FlushOutput(true);
+                try
+                {
+                    FlushOutput(true);
+                    if (!leaveOpen)
+                        output.Dispose();
+                }
+                finally
+                {
+                    this.output = null;
+                    this.bw = null;
+                }
             }
-            finally
-            {
-                this.output = null;
-                this.bw = null;
-            }
-
-            if (!leaveOpen)
-                o.Close();
         }
-
 
         private void FlushOutput(bool lastInput)
         {

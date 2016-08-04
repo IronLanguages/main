@@ -155,8 +155,8 @@ namespace IronPython.Hosting {
             // TODO: must precede path initialization! (??? - test test_importpkg.py)
             int pathIndex = PythonContext.PythonOptions.SearchPaths.Count;
                         
-            Language.DomainManager.LoadAssembly(typeof(string).Assembly);
-            Language.DomainManager.LoadAssembly(typeof(System.Diagnostics.Debug).Assembly);
+            Language.DomainManager.LoadAssembly(typeof(string).GetTypeInfo().Assembly);
+            Language.DomainManager.LoadAssembly(typeof(System.Diagnostics.Debug).GetTypeInfo().Assembly);
 
             InitializePath(ref pathIndex);
             InitializeModules();
@@ -202,7 +202,9 @@ namespace IronPython.Hosting {
             }
 
             PythonContext.InsertIntoPath(0, fullPath);
+#if FEATURE_THREAD
             PythonContext.MainThread = Thread.CurrentThread;
+#endif
         }
 
         protected override Scope/*!*/ CreateScope() {

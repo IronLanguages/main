@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-#if WIN8
+#if WIN8 || DOTNET
 
 namespace System.Runtime.CompilerServices {
     /// <summary>

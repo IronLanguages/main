@@ -28,12 +28,15 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security;
+#if !DOTNET
 using System.Security.Policy;
+#endif
 using System.Text;
 using System.Threading;
-#if !CLR2 && !SILVERLIGHT
+#if !CLR2 && !SILVERLIGHT && !DOTNET
 using System.Windows.Markup;
 #endif
 
@@ -50,7 +53,7 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-#if !CLR2 && !SILVERLIGHT
+#if !CLR2 && !SILVERLIGHT && !DOTNET
 using DependencyObject = System.Windows.DependencyObject;
 #endif
 
@@ -64,12 +67,12 @@ namespace IronPythonTest {
         public static string InputTestDirectory;
 
         static Common() {
-            RuntimeDirectory = Path.GetDirectoryName(typeof(PythonContext).Assembly.Location);
+            RuntimeDirectory = Path.GetDirectoryName(typeof(PythonContext).GetTypeInfo().Assembly.Location);
             RootDirectory = Environment.GetEnvironmentVariable("DLR_ROOT");
             if (RootDirectory != null) {
                 ScriptTestDirectory = Path.Combine(RootDirectory, "Languages\\IronPython\\Tests");
             } else {
-                RootDirectory = new System.IO.FileInfo(System.Reflection.Assembly.GetEntryAssembly().GetFiles()[0].Name).Directory.FullName;
+                RootDirectory = new System.IO.FileInfo(System.Reflection.Assembly.GetEntryAssembly().CodeBase).Directory.FullName;
                 ScriptTestDirectory = Path.Combine(RootDirectory, "Src\\Tests");
             }
             InputTestDirectory = Path.Combine(ScriptTestDirectory, "Inputs");
@@ -92,7 +95,7 @@ namespace IronPythonTest {
     public delegate int RefIntDelegate(ref int arg);
     public delegate T GenericDelegate<T, U, V>(U arg1, V arg2);
 
-#if !CLR2 && !SILVERLIGHT
+#if !CLR2 && !SILVERLIGHT && !DOTNET
     [ContentProperty("Content")]
     public class XamlTestObject : DependencyObject {
         public event IntIntDelegate Event;
@@ -184,7 +187,7 @@ namespace IronPythonTest {
     }
 
     public class EngineTest
-#if !SILVERLIGHT // remoting not supported in Silverlight
+#if FEATURE_REMOTING
         : MarshalByRefObject
 #endif
     {
@@ -229,7 +232,7 @@ namespace IronPythonTest {
             return null;
         }
 
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !DOTNET
         public void ScenarioHostingHelpers() {
             AppDomain remote = AppDomain.CreateDomain("foo");
             Dictionary<string, object> options = new Dictionary<string,object>();
@@ -631,7 +634,7 @@ class K(object):
 
         public static void ScenarioInterfaceExtensions() {
             var engine = Python.CreateEngine();
-            engine.Runtime.LoadAssembly(typeof(Fooable).Assembly);
+            engine.Runtime.LoadAssembly(typeof(Fooable).GetTypeInfo().Assembly);
             ScriptSource src = engine.CreateScriptSourceFromString("x.Bar()");
             ScriptScope scope = engine.CreateScope();
             scope.SetVariable("x", new Fooable());
@@ -652,7 +655,7 @@ class K(object):
 
             public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
                 return new DynamicMetaObject(
-                    Expression.Dynamic(new MyInvokeBinder(CallInfo), typeof(object), DynamicUtils.GetExpressions(ArrayUtils.Insert(target, args))),
+                    DynamicExpression.Dynamic(new MyInvokeBinder(CallInfo), typeof(object), DynamicUtils.GetExpressions(ArrayUtils.Insert(target, args))),
                     target.Restrictions.Merge(BindingRestrictions.Combine(args))
                 );
             }
@@ -2286,7 +2289,7 @@ instOC = TestOC()
         // Options.DebugMode
 #endif
 
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !DOTNET
         public void ScenarioPartialTrust() {
             // basic check of running a host in partial trust
             
@@ -2775,7 +2778,7 @@ if r.sum != 110:
             if (expected == null && actual == null) return;
 
             if (!expected.Equals(actual)) {
-                Console.WriteLine("Expected: {0} Got: {1} from {2}", expected, actual, new StackTrace(true));
+                Console.WriteLine("Expected: {0} Got: {1} from {2}", expected, actual, new StackTrace((Exception)null, true));
                 throw new Exception();
             }
         }

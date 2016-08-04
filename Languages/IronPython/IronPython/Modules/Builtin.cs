@@ -965,12 +965,29 @@ namespace IronPython.Modules {
             }
         }
 
+#if DOTNET
+        private static ConditionalWeakTable<string, string> interStringTable = new ConditionalWeakTable<string, string>();
+#endif
+
+        private static string internString(string s) {
+#if DOTNET
+            string internString;
+            if (interStringTable.TryGetValue(s, out internString)) {
+                return internString;
+            }
+            interStringTable.Add(s, s);
+            return s;
+#else
+            return string.Intern(s);
+#endif
+        }
+
         public static string intern(object o) {
             string s = o as string;
             if (s == null) {
                 throw PythonOps.TypeError("intern: argument must be string");
             }
-            return string.Intern(s);
+            return internString(s);
         }
 
         public static bool isinstance(object o, [NotNull]PythonType typeinfo) {

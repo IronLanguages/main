@@ -916,7 +916,7 @@ namespace IronPython.Runtime {
 
             switch (t.GetTypeCode()) {
                 case TypeCode.DateTime:
-                case TypeCode.DBNull:
+                case (TypeCode)2: // TypeCode.DBNull
                 case TypeCode.Char:
                 case TypeCode.Empty:
                 case TypeCode.String:

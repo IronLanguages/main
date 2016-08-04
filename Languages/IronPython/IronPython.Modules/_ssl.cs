@@ -105,17 +105,17 @@ namespace IronPython.Modules {
             return CertificateToPython(context, cert, complete);
         }
 
-        internal static PythonDictionary CertificateToPython(CodeContext context, X509Certificate cert, bool complete) {
+        internal static PythonDictionary CertificateToPython(CodeContext context, X509Certificate2 cert, bool complete) {
             var dict = new CommonDictionaryStorage();
 
-            dict.AddNoLock("notAfter", ToPythonDateFormat(cert.GetExpirationDateString()));
+            dict.AddNoLock("notAfter", ToPythonDateFormat(cert.NotAfter.ToString()));
             dict.AddNoLock("subject", IssuerToPython(context, cert.Subject));
             if (complete) {
-                dict.AddNoLock("notBefore", ToPythonDateFormat(cert.GetEffectiveDateString()));
+                dict.AddNoLock("notBefore", ToPythonDateFormat(cert.NotBefore.ToString()));
                 dict.AddNoLock("serialNumber", SerialNumberToPython(cert));
                 dict.AddNoLock("version", cert.GetCertHashString());
                 dict.AddNoLock("issuer", IssuerToPython(context, cert.Issuer));
-                AddSubjectAltNames(dict, new X509Certificate2(cert));
+                AddSubjectAltNames(dict, cert);
             }
 
             return new PythonDictionary(dict);
@@ -144,6 +144,27 @@ namespace IronPython.Modules {
         private static string ToPythonDateFormat(string date) {
             return DateTime.Parse(date).ToUniversalTime().ToString("MMM d HH:mm:ss yyyy") + " GMT";
         }
+
+#if DOTNET
+        private static string ByteArrayToString(IEnumerable<byte> bytes) {
+            var builder = new StringBuilder();
+            foreach (byte b in bytes)
+                builder.Append(b.ToString("X2"));
+            return builder.ToString();
+        }
+
+        private static string GetSerialNumberString(this X509Certificate cert) {
+            return ByteArrayToString(cert.GetSerialNumber().Reverse()); // must be reversed
+        }
+
+        private static string GetCertHashString(this X509Certificate cert) {
+            return ByteArrayToString(cert.GetCertHash());
+        }
+
+        internal static byte[] GetRawCertData(this X509Certificate cert) {
+            return cert.Export(X509ContentType.Cert);
+        }
+#endif
 
         private static string SerialNumberToPython(X509Certificate cert) {
             var res = cert.GetSerialNumberString();
@@ -252,13 +273,16 @@ namespace IronPython.Modules {
             }
 
             if (cert != null) {
+#if !DOTNET
                 if (key != null) {
                     try {
                         cert.PrivateKey = key;
-                    } catch(CryptographicException e) {
+                    }
+                    catch (CryptographicException e) {
                         throw ErrorDecoding(context, filename, "cert and private key are incompatible", e);
                     }
                 }
+#endif
                 return cert;
             }
             throw ErrorDecoding(context, filename, "certificate not found");

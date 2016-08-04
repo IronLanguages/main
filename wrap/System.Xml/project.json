@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "frameworks": {
+    "sl4": {
+      "bin": {
+        "assembly": "../../Util/References/Silverlight/4.0/System.Xml.dll"
+      }
+    },
+    "sl5": {
+      "bin": {
+        "assembly": "../../Util/References/Silverlight/5.0/System.Xml.dll"
+      }
+    }
+  }
+}

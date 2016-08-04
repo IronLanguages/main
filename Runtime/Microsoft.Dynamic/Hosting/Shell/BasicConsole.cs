@@ -71,7 +71,9 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 if (e.SpecialKey == ConsoleSpecialKey.ControlC) {
                     e.Cancel = true;
                     _ctrlCEvent.Set();
+#if !DOTNET
                     _creatingThread.Abort(new KeyboardInterruptException(""));
+#endif
                 }
             };
 
@@ -156,7 +158,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 // delay when shutting down the process via ctrl-z, but it's
                 // not really perceptible.  In the ctrl-C case we will return
                 // as soon as the event is signaled.
-                if (_ctrlCEvent != null && _ctrlCEvent.WaitOne(100, false)) {
+                if (_ctrlCEvent != null && _ctrlCEvent.WaitOne(100)) {
                     // received ctrl-C
                     return "";
                 } else {
@@ -190,7 +192,11 @@ namespace Microsoft.Scripting.Hosting.Shell {
 
         public void Dispose() {
             if (_ctrlCEvent != null) {
+#if DOTNET
+                _ctrlCEvent.Dispose();
+#else
                 _ctrlCEvent.Close();
+#endif
             }
 
             GC.SuppressFinalize(this);
