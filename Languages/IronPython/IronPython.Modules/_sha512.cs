@@ -41,14 +41,14 @@ namespace IronPython.Modules {
 
         private static SHA512 GetHasher512() {
             if (_hasher512 == null) {
-                _hasher512 = SHA512Managed.Create();
+                _hasher512 = SHA512.Create();
             }
             return _hasher512;
         }
 
         private static SHA384 GetHasher384() {
             if (_hasher384 == null) {
-                _hasher384 = SHA384Managed.Create();
+                _hasher384 = SHA384.Create();
             }
             return _hasher384;
         }

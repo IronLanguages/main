@@ -34,11 +34,11 @@ namespace IronPython.Modules {
         public const string __doc__ = "MD5 hash algorithm";
 
         [ThreadStatic]
-        private static MD5CryptoServiceProvider _hasher;
+        private static MD5 _hasher;
 
-        private static MD5CryptoServiceProvider GetHasher() {
+        private static MD5 GetHasher() {
             if (_hasher == null) {
-                _hasher = new MD5CryptoServiceProvider();
+                _hasher = MD5.Create();
             }
             return _hasher;
         }
