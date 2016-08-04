@@ -25,6 +25,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq.Expressions;
+using System.Reflection;
 using Microsoft.Scripting.Debugging.CompilerServices;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;

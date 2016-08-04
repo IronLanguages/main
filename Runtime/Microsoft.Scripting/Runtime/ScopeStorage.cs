@@ -24,6 +24,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Dynamic;
+using System.Reflection;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting {
