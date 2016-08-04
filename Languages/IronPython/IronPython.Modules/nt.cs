@@ -1442,7 +1442,11 @@ namespace IronPython.Modules {
 #endif
 
         public static object urandom(int n) {
-            RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
+#if SILVERLIGHT || WP75
+            RandomNumberGenerator rng = new RNGCryptoServiceProvider();
+#else
+            RandomNumberGenerator rng = RandomNumberGenerator.Create();
+#endif
             byte[] data = new byte[n];
             rng.GetBytes(data);
 
