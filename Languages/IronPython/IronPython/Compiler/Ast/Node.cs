@@ -273,7 +273,7 @@ namespace IronPython.Compiler.Ast {
                         infos[i] = ParameterMappingInfo.Parameter(i);
                     }
                     
-                    res = Expression.Dynamic(
+                    res = DynamicExpression.Dynamic(
                         GlobalParent.PyContext.BinaryOperationRetType(
                             binder,
                             GlobalParent.PyContext.Convert(

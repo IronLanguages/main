@@ -36,7 +36,7 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Binding {
-    using Ast = Expression;
+    using Ast = DynamicExpression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     partial class MetaUserObject : MetaPythonObject, IPythonInvokable, IPythonConvertible, IPythonOperable {
