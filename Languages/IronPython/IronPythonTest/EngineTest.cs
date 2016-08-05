@@ -28,6 +28,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Security.Policy;
@@ -64,7 +65,7 @@ namespace IronPythonTest {
         public static string InputTestDirectory;
 
         static Common() {
-            RuntimeDirectory = Path.GetDirectoryName(typeof(PythonContext).Assembly.Location);
+            RuntimeDirectory = Path.GetDirectoryName(typeof(PythonContext).GetTypeInfo().Assembly.Location);
             RootDirectory = Environment.GetEnvironmentVariable("DLR_ROOT");
             if (RootDirectory != null) {
                 ScriptTestDirectory = Path.Combine(RootDirectory, "Languages\\IronPython\\Tests");
@@ -631,7 +632,7 @@ class K(object):
 
         public static void ScenarioInterfaceExtensions() {
             var engine = Python.CreateEngine();
-            engine.Runtime.LoadAssembly(typeof(Fooable).Assembly);
+            engine.Runtime.LoadAssembly(typeof(Fooable).GetTypeInfo().Assembly);
             ScriptSource src = engine.CreateScriptSourceFromString("x.Bar()");
             ScriptScope scope = engine.CreateScope();
             scope.SetVariable("x", new Fooable());

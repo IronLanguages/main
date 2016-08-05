@@ -26,6 +26,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Reflection;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
@@ -346,14 +347,14 @@ namespace IronPython.Runtime.Binding {
         }
 
         private static bool IsBuiltinConversion(CodeContext/*!*/ context, PythonTypeSlot/*!*/ pts, string name, PythonType/*!*/ selfType) {
-            Type baseType = selfType.UnderlyingSystemType.BaseType;
+            Type baseType = selfType.UnderlyingSystemType.GetTypeInfo().BaseType;
             Type tmpType = baseType;
             do {
-                if (tmpType.IsGenericType && tmpType.GetGenericTypeDefinition() == typeof(Extensible<>)) {
+                if (tmpType.GetTypeInfo().IsGenericType && tmpType.GetGenericTypeDefinition() == typeof(Extensible<>)) {
                     baseType = tmpType.GetGenericArguments()[0];
                     break;
                 }
-                tmpType = tmpType.BaseType;
+                tmpType = tmpType.GetTypeInfo().BaseType;
             } while (tmpType != null);
 
             PythonType ptBase = DynamicHelpers.GetPythonTypeFromType(baseType);

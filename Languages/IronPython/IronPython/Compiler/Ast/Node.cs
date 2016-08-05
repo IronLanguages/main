@@ -25,6 +25,7 @@ using MSAst = Microsoft.Scripting.Ast;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Ast;
@@ -296,7 +297,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal static bool CanAssign(Type/*!*/ to, Type/*!*/ from) {
-            return to.IsAssignableFrom(from) && (to.IsValueType == from.IsValueType);
+            return to.IsAssignableFrom(from) && (to.GetTypeInfo().IsValueType == from.GetTypeInfo().IsValueType);
         }
 
         internal static MSAst.Expression/*!*/ ConvertIfNeeded(MSAst.Expression/*!*/ expression, Type/*!*/ type) {
