@@ -1231,7 +1231,7 @@ namespace IronPython.Modules {
         }
 
         private static bool HasExecutableExtension(string path) {
-            string extension = Path.GetExtension(path).ToLower(CultureInfo.InvariantCulture);
+            string extension = Path.GetExtension(path).ToLowerInvariant();
             return (extension == ".exe" || extension == ".dll" || extension == ".com" || extension == ".bat");
         }
 
