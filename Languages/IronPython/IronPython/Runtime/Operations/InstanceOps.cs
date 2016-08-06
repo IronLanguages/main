@@ -240,7 +240,7 @@ namespace IronPython.Runtime.Operations {
             // add in the non-dynamic members from the dynamic objects base class.
             Type t = self.GetType();
             while (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(t)) {
-                t = t.BaseType;
+                t = t.GetTypeInfo().BaseType;
             }
 
             res.extend(DynamicHelpers.GetPythonTypeFromType(t).GetMemberNames(context));

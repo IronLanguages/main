@@ -498,7 +498,7 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         public static string capitalize(this string self) {
             if (self.Length == 0) return self;
-            return Char.ToUpper(self[0], CultureInfo.InvariantCulture) + self.Substring(1).ToLower(CultureInfo.InvariantCulture);
+            return Char.ToUpperInvariant(self[0]) + self.Substring(1).ToLowerInvariant();
         }
 
         //  default fillchar (padding char) is a space
@@ -895,7 +895,7 @@ namespace IronPython.Runtime.Operations {
         internal static string ToLowerAsciiTriggered(this string self) {
             for (int i = 0; i < self.Length; i++) {
                 if (self[i] >= 'A' && self[i] <= 'Z') {
-                    return self.ToLower(CultureInfo.InvariantCulture);
+                    return self.ToLowerInvariant();
                 }
             }
             return self;
@@ -1192,8 +1192,8 @@ namespace IronPython.Runtime.Operations {
             StringBuilder ret = new StringBuilder(self);
             for (int i = 0; i < ret.Length; i++) {
                 char ch = ret[i];
-                if (Char.IsUpper(ch)) ret[i] = Char.ToLower(ch, CultureInfo.InvariantCulture);
-                else if (Char.IsLower(ch)) ret[i] = Char.ToUpper(ch, CultureInfo.InvariantCulture);
+                if (Char.IsUpper(ch)) ret[i] = Char.ToLowerInvariant(ch);
+                else if (Char.IsLower(ch)) ret[i] = Char.ToUpperInvariant(ch);
             }
             return ret.ToString();
         }
@@ -1208,9 +1208,9 @@ namespace IronPython.Runtime.Operations {
             do {
                 if (Char.IsUpper(retchars[i]) || Char.IsLower(retchars[i])) {
                     if (!prevCharCased)
-                        retchars[i] = Char.ToUpper(retchars[i], CultureInfo.InvariantCulture);
+                        retchars[i] = Char.ToUpperInvariant(retchars[i]);
                     else
-                        retchars[i] = Char.ToLower(retchars[i], CultureInfo.InvariantCulture);
+                        retchars[i] = Char.ToLowerInvariant(retchars[i]);
                     currCharCased = true;
                 } else {
                     currCharCased = false;
@@ -1712,7 +1712,7 @@ namespace IronPython.Runtime.Operations {
             if (name == null) {
                 return null;
             }
-            return name.ToLower(CultureInfo.InvariantCulture).Replace('-', '_').Replace(' ', '_');
+            return name.ToLowerInvariant().Replace('-', '_').Replace(' ', '_');
         }
 
         private static string RawDecode(CodeContext/*!*/ context, string s, object encodingType, string errors) {
@@ -1936,7 +1936,7 @@ namespace IronPython.Runtime.Operations {
 #if DEBUG
                 // all codecs should be stored in lowercase because we only look up from lowercase strings
                 foreach (KeyValuePair<string, EncodingInfoWrapper> kvp in d) {
-                    Debug.Assert(kvp.Key.ToLower(CultureInfo.InvariantCulture) == kvp.Key);
+                    Debug.Assert(kvp.Key.ToLowerInvariant() == kvp.Key);
                 }
 #endif
                 return d;

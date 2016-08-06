@@ -35,7 +35,7 @@ namespace IronPython.Modules {
             if (encInt == (int)PythonRegex.UNICODE) {
                 return (int)Char.ToLower((char)charVal);
             } else {
-                return (int)Char.ToLower((char)charVal, CultureInfo.InvariantCulture);
+                return (int)Char.ToLowerInvariant((char)charVal);
             }
         }
 
