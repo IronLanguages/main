@@ -535,7 +535,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         private static bool TryReplaceExtensibleWithBase(Type curType, out Type newType) {
-            if (curType.IsGenericType &&
+            if (curType.GetTypeInfo().IsGenericType &&
                 curType.GetGenericTypeDefinition() == typeof(Extensible<>)) {
                 newType = curType.GetGenericArguments()[0];
                 return true;
@@ -2517,7 +2517,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             if (hasExplicitIface) {
                 // add any non-colliding interfaces into the MRO
                 foreach (Type t in nonCollidingInterfaces) {
-                    Debug.Assert(t.IsInterface);
+                    Debug.Assert(t.GetTypeInfo().IsInterface);
 
                     mro.Add(DynamicHelpers.GetPythonTypeFromType(t));
                 }

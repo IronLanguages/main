@@ -154,10 +154,10 @@ namespace IronPython.Runtime.Types {
 #if FEATURE_XMLDOC
             GetXmlDoc(t, out summary);
 #endif
-            if (t.IsEnum) {
+            if (t.GetTypeInfo().IsEnum) {
 
 #if FEATURE_ENUM_NAMES_VALUES // GetNames/GetValues
-                                string[] names = Enum.GetNames(t);
+                string[] names = Enum.GetNames(t);
                 Array values = Enum.GetValues(t);
                 for (int i = 0; i < names.Length; i++) {
                     names[i] = String.Concat(names[i],
@@ -495,7 +495,7 @@ namespace IronPython.Runtime.Types {
         /// converted down to their generic type definition.
         /// </summary>
         private static void AppendTypeFormat(Type curType, StringBuilder res) {
-            if (curType.IsGenericType) {
+            if (curType.GetTypeInfo().IsGenericType) {
                 curType = curType.GetGenericTypeDefinition();
             }
 

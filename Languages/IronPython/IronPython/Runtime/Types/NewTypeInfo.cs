@@ -61,12 +61,12 @@ namespace IronPython.Runtime.Types {
                 IList<Type> baseInterfaces = ReflectionUtils.EmptyTypes;
                 Type curTypeToExtend = curBasePythonType.ExtensionType;
 
-                if (curBasePythonType.ExtensionType.IsInterface) {
+                if (curBasePythonType.ExtensionType.GetTypeInfo().IsInterface) {
                     baseInterfaces = new Type[] { curTypeToExtend };
                     curTypeToExtend = typeof(object);
                 } else if (NewTypeMaker.IsInstanceType(curTypeToExtend)) {
                     baseInterfaces = new List<Type>();
-                    curTypeToExtend = GetBaseTypeFromUserType(curBasePythonType, baseInterfaces, curTypeToExtend.BaseType);
+                    curTypeToExtend = GetBaseTypeFromUserType(curBasePythonType, baseInterfaces, curTypeToExtend.GetTypeInfo().BaseType);
                 }
 
                 if (curTypeToExtend == null || typeof(BuiltinFunction).IsAssignableFrom(curTypeToExtend) || typeof(PythonFunction).IsAssignableFrom(curTypeToExtend))
@@ -130,7 +130,7 @@ namespace IronPython.Runtime.Types {
                 foreach (PythonType dt in walking.BaseTypes) {
                     if (dt.ExtensionType == curTypeToExtend || curTypeToExtend.IsSubclassOf(dt.ExtensionType)) continue;
 
-                    if (dt.ExtensionType.IsInterface) {
+                    if (dt.ExtensionType.GetTypeInfo().IsInterface) {
                         baseInterfaces.Add(dt.ExtensionType);
                     } else if (NewTypeMaker.IsInstanceType(dt.ExtensionType)) {
                         processing.Enqueue(dt);

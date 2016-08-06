@@ -56,7 +56,7 @@ namespace System.IO {
 #else
 namespace System {
     public static class TypeExtensions {
-#if !FEATURE_GET_TYPE_INFO
+#if !FEATURE_TYPE_INFO
         public static Type GetTypeInfo(this Type type) {
             return type;
         }

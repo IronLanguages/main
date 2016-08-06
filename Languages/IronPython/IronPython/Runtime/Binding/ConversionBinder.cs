@@ -195,7 +195,7 @@ namespace IronPython.Runtime.Binding {
                     // !!! Deferral?
                     if (type.IsArray && self.Value is PythonTuple && type.GetArrayRank() == 1) {
                         res = MakeToArrayConversion(self, type);
-                    } else if (type.IsGenericType && !type.IsAssignableFrom(CompilerHelpers.GetType(self.Value))) {
+                    } else if (type.GetTypeInfo().IsGenericType && !type.IsAssignableFrom(CompilerHelpers.GetType(self.Value))) {
                         Type genTo = type.GetGenericTypeDefinition();
 
                         // Interface conversion helpers...

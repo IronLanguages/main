@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !WIN8
+#if !FEATURE_TYPE_INFO
 using TypeInfo = System.Type;
 #endif
 

@@ -786,7 +786,7 @@ namespace IronPython.Runtime
         }
 
         internal static Version GetPythonVersion() {
-            return new AssemblyName(typeof(PythonContext).Assembly.FullName).Version;
+            return new AssemblyName(typeof(PythonContext).GetTypeInfo().Assembly.FullName).Version;
         }
 
         internal FloatFormat FloatFormat {
@@ -1846,7 +1846,7 @@ namespace IronPython.Runtime
             Dictionary<string, Type> builtinTable = new Dictionary<string, Type>();
 
             // We should register builtins, if any, from IronPython.dll
-            LoadBuiltins(builtinTable, typeof(PythonContext).Assembly, false);
+            LoadBuiltins(builtinTable, typeof(PythonContext).GetTypeInfo().Assembly, false);
 
             // Load builtins from IronPython.Modules
             Assembly ironPythonModules = null;
@@ -1895,7 +1895,7 @@ namespace IronPython.Runtime
 
         public static string GetIronPythonAssembly(string/*!*/ baseName) {
             ContractUtils.RequiresNotNull(baseName, "baseName");
-            string fullName = typeof(PythonContext).Assembly.FullName;
+            string fullName = typeof(PythonContext).GetTypeInfo().Assembly.FullName;
             int firstComma = fullName.IndexOf(',');
             return firstComma > 0 ? baseName + fullName.Substring(firstComma) : baseName;
         }
