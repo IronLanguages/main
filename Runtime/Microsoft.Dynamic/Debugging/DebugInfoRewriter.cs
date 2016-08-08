@@ -250,7 +250,7 @@ namespace Microsoft.Scripting.Debugging {
                     node.Body,
                     newFinally != null ? newFinally : node.Finally,
                     node.Fault,
-                    newHandlers != null ? newHandlers : newHandlers
+                    newHandlers != null ? newHandlers : node.Handlers
                 );
             }
 

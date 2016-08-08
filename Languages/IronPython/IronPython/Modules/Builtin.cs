@@ -1642,7 +1642,7 @@ namespace IronPython.Modules {
             }
 
             object end = AttrCollectionPop(kwargs, "end", "\n");
-            if (sep != null && !(sep is string)) {
+            if (end != null && !(end is string)) {
                 throw PythonOps.TypeError("end must be None or str, not {0}", PythonTypeOps.GetName(end));
             }
 

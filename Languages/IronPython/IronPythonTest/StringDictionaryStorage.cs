@@ -137,7 +137,7 @@ namespace IronPythonTest {
                 IDictionary<string, object> dict;
 #if FEATURE_ICLONEABLE
                 ICloneable cloneable = _dict as ICloneable;
-                if (_dict != null) {
+                if (cloneable != null) {
                     dict = (IDictionary<string, object>)cloneable.Clone();
                 } else 
 #endif
