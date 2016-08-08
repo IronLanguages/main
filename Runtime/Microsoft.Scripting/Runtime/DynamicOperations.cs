@@ -650,7 +650,7 @@ namespace Microsoft.Scripting.Runtime {
                         siteArgs[i + 2] = Expression.ArrayIndex(args, Expression.Constant(i));
                     }
 
-                    var getOrCreateSiteFunc = new Func<CallSiteBinder, CallSite<Func<object>>>(GetOrCreateSite<Func<object>>).Method.GetGenericMethodDefinition();
+                    var getOrCreateSiteFunc = new Func<CallSiteBinder, CallSite<Func<object>>>(GetOrCreateSite<Func<object>>).GetMethodInfo().GetGenericMethodDefinition();
                     _invokers[paramCount] = invoker = Expression.Lambda<Func<DynamicOperations, CallSiteBinder, object, object[], object>>(
                         Expression.Block(
                             new[] { site },

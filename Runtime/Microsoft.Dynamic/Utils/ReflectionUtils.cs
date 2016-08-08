@@ -96,6 +96,12 @@ namespace System.Reflection {
         public static IEnumerable<MethodInfo> GetRuntimeMethods(this Type type) {
             return type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
         }
+
+#if !FEATURE_GET_METHOD_INFO
+        public static MethodInfo GetMethodInfo(this Delegate d) {
+            return d.Method;
+        }
+#endif
     }
 }
 #endif
@@ -812,10 +818,6 @@ namespace Microsoft.Scripting.Utils {
             return builder.CreateTypeInfo().AsType();
         }
 
-        public static MethodInfo GetMethod(this Delegate d) {
-            return ((dynamic)d).Method;
-        }
-
         public static object GetRawConstantValue(this FieldInfo field) {
             return ((dynamic)field).GetRawConstantValue();
         }
@@ -893,10 +895,6 @@ namespace Microsoft.Scripting.Utils {
             return Type.GetTypeCode(type);
         }
 
-        public static MethodInfo GetMethod(this Delegate d) {
-            return d.Method;
-        }
-        
         public static int GetMetadataToken(this MemberInfo member) {
             return member.MetadataToken;
         }
@@ -925,6 +923,10 @@ namespace Microsoft.Scripting.Utils {
             return Attribute.GetCustomAttributes(member, typeof(T), inherit).Cast<T>();
         }
 #endif
+
+        public static MethodInfo GetMethod(this Delegate d) {
+            return d.GetMethodInfo();
+        }
 
         public static bool ContainsGenericParameters(this Type type) {
             return type.GetTypeInfo().ContainsGenericParameters;
