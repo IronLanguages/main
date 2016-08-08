@@ -185,7 +185,7 @@ namespace IronPythonTest {
     }
 
     public class EngineTest
-#if !SILVERLIGHT // remoting not supported in Silverlight
+#if FEATURE_REMOTING
         : MarshalByRefObject
 #endif
     {
