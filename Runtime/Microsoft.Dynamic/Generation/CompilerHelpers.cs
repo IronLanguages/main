@@ -57,6 +57,7 @@ namespace Microsoft.Scripting.Generation {
             if (type.IsByRef) type = type.GetElementType();
             if (type.IsEnum()) return Activator.CreateInstance(type);
 
+            const TypeCode TypeCodeDbNull = (TypeCode)2; // TypeCode.DBNull
             switch (type.GetTypeCode()) {
                 default:
                 case TypeCode.Object:
@@ -72,7 +73,7 @@ namespace Microsoft.Scripting.Generation {
                         throw Error.CantCreateDefaultTypeFor(type);
                     }
                 case TypeCode.Empty:
-                case TypeCode.DBNull:
+                case TypeCodeDbNull:
                 case TypeCode.String:
                     return null;
 
