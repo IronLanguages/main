@@ -221,7 +221,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 _scope = _engine.CreateScope();
             }
 
-#if !SILVERLIGHT // Remote console
+#if FEATURE_REMOTING
             string remoteRuntimeChannel = _options.RemoteRuntimeChannel;
             if (remoteRuntimeChannel != null) {
                 // Publish the ScriptScope so that the host can use it

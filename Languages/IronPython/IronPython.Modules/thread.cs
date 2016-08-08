@@ -68,7 +68,7 @@ namespace IronPython.Modules {
             return t.ManagedThreadId;
         }
 
-#if !SILVERLIGHT && !WP75
+#if FEATURE_THREAD && !SILVERLIGHT && !WP75
         /// <summary>
         /// Stops execution of Python or other .NET code on the main thread.  If the thread is
         /// blocked in native code the thread will be interrupted after it returns back to Python

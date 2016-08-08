@@ -305,7 +305,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
         #endregion
 
         private void Execute() {
-#if !SILVERLIGHT
+#if FEATURE_APARTMENTSTATE
             if (_consoleOptions.IsMta) {
                 Thread thread = new Thread(ExecuteInternal);
                 thread.SetApartmentState(ApartmentState.MTA);
