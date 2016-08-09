@@ -235,13 +235,13 @@ namespace Microsoft.Scripting.Utils {
         }
 
 #if !WIN8
-#if SILVERLIGHT || WP75
+#if SILVERLIGHT || WP75 || NETSTANDARD
         private static Dictionary<string, CultureInfo> _cultureInfoCache = new Dictionary<string, CultureInfo>();
 #endif
 
         // Aims to be equivalent to Culture.GetCultureInfo for Silverlight
         public static CultureInfo GetCultureInfo(string name) {
-#if SILVERLIGHT || WP75
+#if SILVERLIGHT || WP75 || NETSTANDARD
             lock (_cultureInfoCache) {
                 CultureInfo result;
                 if (_cultureInfoCache.TryGetValue(name, out result)) {

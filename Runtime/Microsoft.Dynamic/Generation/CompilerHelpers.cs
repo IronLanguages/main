@@ -379,7 +379,7 @@ namespace Microsoft.Scripting.Generation {
             }
 
             if (t.IsValueType()
-#if !SILVERLIGHT && !WIN8 && !WP75
+#if !SILVERLIGHT && !WIN8 && !WP75 && !NETSTANDARD
                 && t != typeof(ArgIterator)
 #endif
 ) {

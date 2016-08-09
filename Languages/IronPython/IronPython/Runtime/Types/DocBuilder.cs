@@ -214,9 +214,9 @@ namespace IronPython.Runtime.Types {
                     returnCount++;
 
                     var typeAttrs = mi.ReturnParameter.GetCustomAttributes(typeof(SequenceTypeInfoAttribute), true);
-                    if (typeAttrs.Length > 0) {
+                    if (typeAttrs.Any()) {
                         retType.Append(" (of ");
-                        SequenceTypeInfoAttribute typeAttr = (SequenceTypeInfoAttribute)typeAttrs[0];
+                        SequenceTypeInfoAttribute typeAttr = (SequenceTypeInfoAttribute)typeAttrs.First();
                         for (int curTypeAttr = 0; curTypeAttr < typeAttr.Types.Count; curTypeAttr++) {
                             if (curTypeAttr != 0) {
                                 retType.Append(", ");
@@ -228,8 +228,8 @@ namespace IronPython.Runtime.Types {
                     }
 
                     var dictTypeAttrs = mi.ReturnParameter.GetCustomAttributes(typeof(DictionaryTypeInfoAttribute), true);
-                    if (dictTypeAttrs.Length > 0) {
-                        var dictTypeAttr = (DictionaryTypeInfoAttribute)dictTypeAttrs[0];
+                    if (dictTypeAttrs.Any()) {
+                        var dictTypeAttr = (DictionaryTypeInfoAttribute)dictTypeAttrs.First();
                         retType.Append(String.Format(" (of {0} to {1})", GetPythonTypeName(dictTypeAttr.KeyType), GetPythonTypeName(dictTypeAttr.ValueType)));
                     }
                 }

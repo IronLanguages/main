@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-#if WIN8
+#if WIN8 || NETSTANDARD
 
 namespace System.Runtime.CompilerServices {
     /// <summary>

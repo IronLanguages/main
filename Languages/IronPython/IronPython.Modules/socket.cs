@@ -313,7 +313,7 @@ namespace IronPython.Modules {
                 try {
                     _socket.Connect(remoteEP);
                 } catch (SocketException e) {
-                    return e.ErrorCode;
+                    return (int)e.SocketErrorCode;
                 }
                 return (int)SocketError.Success;
             }
@@ -1368,7 +1368,7 @@ namespace IronPython.Modules {
                 try {
                     hostEntry = Dns.GetHostEntry(host);
                 } catch (SocketException e) {
-                    throw PythonExceptions.CreateThrowable(gaierror(context), e.ErrorCode, "no IPv4 addresses associated with host");
+                    throw PythonExceptions.CreateThrowable(gaierror(context), (int)e.SocketErrorCode, "no IPv4 addresses associated with host");
                 }
                 hostname = hostEntry.HostName;
                 aliases = PythonOps.MakeList(hostEntry.Aliases);
@@ -1453,7 +1453,7 @@ namespace IronPython.Modules {
                     throw PythonExceptions.CreateThrowable(error(context), "sockaddr resolved to zero addresses");
                 }
             } catch (SocketException e) {
-                throw PythonExceptions.CreateThrowable(gaierror(context), e.ErrorCode, e.Message);
+                throw PythonExceptions.CreateThrowable(gaierror(context), (int)e.SocketErrorCode, e.Message);
             } catch (IndexOutOfRangeException) {
                 throw PythonExceptions.CreateThrowable(gaierror(context), "sockaddr resolved to zero addresses");
             }
@@ -1480,7 +1480,7 @@ namespace IronPython.Modules {
             try {
                 hostEntry = Dns.GetHostEntry(addrs[0]);
             } catch (SocketException e) {
-                throw PythonExceptions.CreateThrowable(gaierror(context), e.ErrorCode, e.Message);
+                throw PythonExceptions.CreateThrowable(gaierror(context), (int)e.SocketErrorCode, e.Message);
             }
             if ((flags & (int)NI_NUMERICHOST) != 0) {
                 resultHost = addrs[0].ToString();
@@ -1978,9 +1978,9 @@ namespace IronPython.Modules {
                 switch (se.SocketErrorCode) {
                     case SocketError.NotConnected:  // CPython times out when the socket isn't connected.
                     case SocketError.TimedOut:
-                        return PythonExceptions.CreateThrowable(timeout(context), se.ErrorCode, se.Message);
+                        return PythonExceptions.CreateThrowable(timeout(context), (int)se.SocketErrorCode, se.Message);
                     default:
-                        return PythonExceptions.CreateThrowable(error(context), se.ErrorCode, se.Message);
+                        return PythonExceptions.CreateThrowable(error(context), (int)se.SocketErrorCode, se.Message);
                 }
             } else if (exception is ObjectDisposedException) {
                 return PythonExceptions.CreateThrowable(error(context), (int)EBADF, "the socket is closed");
@@ -2116,7 +2116,7 @@ namespace IronPython.Modules {
                 }
                 throw new SocketException((int)SocketError.HostNotFound);
             } catch (SocketException e) {
-                throw PythonExceptions.CreateThrowable(gaierror(context), e.ErrorCode, "no addresses of the specified family associated with host");
+                throw PythonExceptions.CreateThrowable(gaierror(context), (int)e.SocketErrorCode, "no addresses of the specified family associated with host");
             }
         }
 
@@ -2326,7 +2326,7 @@ namespace IronPython.Modules {
                 }
                 _sock = socket;
                
-                base.__init__(stream, System.Text.Encoding.Default, mode);
+                base.__init__(stream, Encoding.GetEncoding(0), mode);
 
                 _isOpen = socket != null;
                 _close = (socket == null) ? false : close;
@@ -2861,11 +2861,11 @@ namespace IronPython.Modules {
         static extern Int32 WSAStartup(Int16 wVersionRequested, out WSAData wsaData);
         [DllImport("ws2_32.dll", SetLastError = true, CharSet = CharSet.Ansi)]
         private static extern IntPtr getservbyname(string name, string proto);
-        [DllImport("ws2_32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        [DllImport("ws2_32.dll", SetLastError = true, CharSet = CharSet.Ansi)]
         private static extern IntPtr getservbyport(ushort port, string proto);
-        [DllImport("Ws2_32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        [DllImport("Ws2_32.dll", SetLastError = true)]
         private static extern Int32 WSAGetLastError();
-        [DllImport("ws2_32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        [DllImport("ws2_32.dll", SetLastError = true)]
         static extern Int32 WSACleanup();
 
         public static string GetServiceByPortWindows(ushort port, string protocol) {

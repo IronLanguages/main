@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Dynamic;
+using System.Linq;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting;
@@ -720,9 +721,9 @@ namespace IronPython.Runtime.Operations {
 
         internal static string GetDocumentation(Type type) {
             // Python documentation
-            object[] docAttr = type.GetCustomAttributes(typeof(DocumentationAttribute), false);
-            if (docAttr != null && docAttr.Length > 0) {
-                return ((DocumentationAttribute)docAttr[0]).Documentation;
+            var docAttr = type.GetTypeInfo().GetCustomAttributes(typeof(DocumentationAttribute), false);
+            if (docAttr != null && docAttr.Any()) {
+                return ((DocumentationAttribute)docAttr.First()).Documentation;
             }
 
             if (type == typeof(DynamicNull)) return null;
