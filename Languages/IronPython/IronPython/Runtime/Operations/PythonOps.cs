@@ -878,6 +878,27 @@ namespace IronPython.Runtime.Operations {
             throw TypeError("oct() argument cannot be converted to octal");
         }
 
+        public static object Index(object o) {
+            if (o is int) {
+                return Int32Ops.__index__((int)o);
+            } else if (o is BigInteger) {
+                return BigIntegerOps.__index__((BigInteger)o);
+            }
+
+            object index;
+
+            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default,
+                o,
+                "__index__",
+                out index)) {
+                if (!(index is int) && !(index is double))
+                    throw PythonOps.TypeError("__index__ returned non-(int,long) (type {0})", PythonTypeOps.GetName(index));
+
+                return index;
+            }
+            throw TypeError("'{0}' object cannot be interpreted as an index", PythonTypeOps.GetName(o));
+        }
+
         public static int Length(object o) {
             string s = o as string;
             if (s != null) {

@@ -207,6 +207,17 @@ namespace IronPython.Modules {
             throw PythonOps.TypeError("'float' object cannot be interpreted as an index");
         }
 
+        public static string bin(CodeContext context, object obj) {
+            object res = PythonOps.Index(obj);
+            if (res is int) {
+                return bin((int)res);
+            } else if (res is double) {
+                return bin((double)res);
+            }
+
+            throw PythonOps.TypeError("__index__ returned non-(int, long) (type {0})", PythonOps.GetPythonTypeName(res));
+        }
+
         public static PythonType @bool {
             get {
                 return DynamicHelpers.GetPythonTypeFromType(typeof(bool));
