@@ -190,29 +190,17 @@ namespace IronPython.Modules {
                 return DynamicHelpers.GetPythonTypeFromType(typeof(_basestring));
             }
         }
+        
+        public static string bin(object obj) {
+            if (obj is int) return Int32Ops.ToBinary((int)obj);
+            if (obj is Index) return Int32Ops.ToBinary(Converter.ConvertToIndex((Index)obj));
+            if (obj is BigInteger) return BigIntegerOps.ToBinary((BigInteger)obj);
 
-        public static string bin(int number) {
-            return Int32Ops.ToBinary(number);
-        }
-
-        public static string bin(Index number) {
-            return Int32Ops.ToBinary(Converter.ConvertToIndex(number));
-        }
-
-        public static string bin(BigInteger number) {
-            return BigIntegerOps.ToBinary(number);
-        }
-
-        public static string bin(double number) {
-            throw PythonOps.TypeError("'float' object cannot be interpreted as an index");
-        }
-
-        public static string bin(CodeContext context, object obj) {
             object res = PythonOps.Index(obj);
             if (res is int) {
-                return bin((int)res);
-            } else if (res is double) {
-                return bin((double)res);
+                return Int32Ops.ToBinary((int)res);
+            } else if (res is BigInteger) {
+                return BigIntegerOps.ToBinary((BigInteger)res);
             }
 
             throw PythonOps.TypeError("__index__ returned non-(int, long) (type {0})", PythonOps.GetPythonTypeName(res));
