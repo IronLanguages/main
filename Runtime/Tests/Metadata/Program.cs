@@ -265,7 +265,7 @@ namespace Metadata {
 
         private static void DumpGenericParameters(MetadataTableView genericParams, MetadataRecord owner) {
             foreach (GenericParamDef gp in genericParams) {
-                _output.WriteLine("  generic parameter #{0}: {1}", gp.Index, gp.Name, gp.Attributes);
+                _output.WriteLine("  generic parameter #{0}: {1}({2})", gp.Index, gp.Name, gp.Attributes);
                 Debug.Assert(gp.Owner.Equals(owner));
                 foreach (GenericParamConstraint gpc in gp.Constraints) {
                     _output.WriteLine("    constraint {0}", TypeToString(gpc.Constraint));
@@ -431,7 +431,7 @@ namespace Metadata {
             if (tables.AssemblyRefs.GetCount() > 0) {
                 _output.WriteLine("AssemblyRefs:");
                 foreach (AssemblyRef a in tables.AssemblyRefs) {
-                    _output.WriteLine("  {0} {1} {2} {3} {5}",
+                    _output.WriteLine("  {0} {1} {2} {3} {4} {5}",
                         a.Name, a.Version, a.Culture, a.NameFlags, BitConverter.ToString(a.GetHashValue()), BitConverter.ToString(a.GetPublicKeyOrToken())
                     );
                 }

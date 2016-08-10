@@ -15,13 +15,9 @@
 
 #if FEATURE_CORE_DLR
 using System.Linq.Expressions;
-#if !WIN8
-using DynamicExpression = System.Linq.Expressions.Expression;
-#endif
 #else
 using Microsoft.Scripting.Ast;
 using dynamic = System.Object;
-using DynamicExpression = Microsoft.Scripting.Ast.Expression;
 #endif
 
 using System;

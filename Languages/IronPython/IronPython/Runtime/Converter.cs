@@ -914,9 +914,10 @@ namespace IronPython.Runtime {
         internal static bool IsNumeric(Type t) {
             if (t.IsEnum()) return false;
 
+            const TypeCode TypeCodeDbNull = (TypeCode)2; // TypeCode.DBNull
             switch (t.GetTypeCode()) {
                 case TypeCode.DateTime:
-                case TypeCode.DBNull:
+                case TypeCodeDbNull:
                 case TypeCode.Char:
                 case TypeCode.Empty:
                 case TypeCode.String:

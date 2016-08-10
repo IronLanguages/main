@@ -25,6 +25,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq.Expressions;
+using System.Reflection;
 using Microsoft.Scripting.Debugging.CompilerServices;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
@@ -249,7 +250,7 @@ namespace Microsoft.Scripting.Debugging {
                     node.Body,
                     newFinally != null ? newFinally : node.Finally,
                     node.Fault,
-                    newHandlers != null ? newHandlers : newHandlers
+                    newHandlers != null ? (IEnumerable<MSAst.CatchBlock>)newHandlers : node.Handlers
                 );
             }
 

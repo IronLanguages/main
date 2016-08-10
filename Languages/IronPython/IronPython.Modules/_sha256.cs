@@ -40,7 +40,11 @@ namespace IronPython.Modules {
 
         private static SHA256 GetHasher() {
             if (_hasher256 == null) {
-                _hasher256 = new SHA256Managed();
+#if SILVERLIGHT || WP75
+                 _hasher256 = new SHA256Managed();
+#else
+                _hasher256 = SHA256.Create();
+#endif
             }
             return _hasher256;
         }

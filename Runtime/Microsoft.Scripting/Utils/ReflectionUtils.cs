@@ -74,17 +74,19 @@ namespace Microsoft.Scripting.Utils {
         public static Type CreateType(this TypeBuilder builder) {
             return builder.CreateTypeInfo().AsType();
         }
-
-        public static MethodInfo GetMethod(this Delegate d) {
-            return ((dynamic)d).Method;
-        }
 #else
-        public static MethodInfo GetMethod(this Delegate d) {
-            return d.Method;
-        }
-
         public static IEnumerable<MethodInfo> GetDeclaredMethods(this Type type, string name) {
             return type.GetMember(name).OfType<MethodInfo>();
+        }
+#endif
+
+        public static MethodInfo GetMethod(this Delegate d) {
+            return d.GetMethodInfo();
+        }
+
+#if !FEATURE_GET_METHOD_INFO
+        public static MethodInfo GetMethodInfo(this Delegate d) {
+            return d.Method;
         }
 #endif
     }

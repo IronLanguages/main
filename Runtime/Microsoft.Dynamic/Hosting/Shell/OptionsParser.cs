@@ -150,8 +150,8 @@ namespace Microsoft.Scripting.Hosting.Shell {
 
 #if FEATURE_REFEMIT
         private bool _saveAssemblies = false;
-#endif
         private string _assembliesDir = null;
+#endif
 
         public OptionsParser() {
         }
@@ -205,11 +205,11 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 //#endif
 
 #if DEBUG
+#if FEATURE_REFEMIT
                 case "-X:AssembliesDir":
                     _assembliesDir = PopNextArg();
                     break;
 
-#if FEATURE_REFEMIT
                 case "-X:SaveAssemblies":
                     _saveAssemblies = true;
                     break;

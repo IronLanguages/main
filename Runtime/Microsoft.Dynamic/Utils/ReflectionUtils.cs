@@ -17,7 +17,7 @@
 using Microsoft.Scripting.Metadata;
 #endif
 
-#if !WIN8
+#if !FEATURE_TYPE_INFO
 using TypeInfo = System.Type;
 #endif
 
@@ -96,6 +96,12 @@ namespace System.Reflection {
         public static IEnumerable<MethodInfo> GetRuntimeMethods(this Type type) {
             return type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
         }
+
+#if !FEATURE_GET_METHOD_INFO
+        public static MethodInfo GetMethodInfo(this Delegate d) {
+            return d.Method;
+        }
+#endif
     }
 }
 #endif
@@ -641,7 +647,7 @@ namespace Microsoft.Scripting.Utils {
 #if WIN8
             return type.GetTypeInfo().DeclaredNestedTypes;
 #else
-            return type.GetNestedTypes(BindingFlags.DeclaredOnly | AllMembers);
+            return type.GetNestedTypes(BindingFlags.DeclaredOnly | AllMembers).Select(t => t.GetTypeInfo());
 #endif
         }
 
@@ -650,7 +656,7 @@ namespace Microsoft.Scripting.Utils {
 #if WIN8
             return type.GetTypeInfo().GetDeclaredNestedType(name);
 #else
-            return type.GetNestedType(name, BindingFlags.DeclaredOnly | AllMembers);
+            return type.GetNestedType(name, BindingFlags.DeclaredOnly | AllMembers).GetTypeInfo();
 #endif
         }
 
@@ -812,10 +818,6 @@ namespace Microsoft.Scripting.Utils {
             return builder.CreateTypeInfo().AsType();
         }
 
-        public static MethodInfo GetMethod(this Delegate d) {
-            return ((dynamic)d).Method;
-        }
-
         public static object GetRawConstantValue(this FieldInfo field) {
             return ((dynamic)field).GetRawConstantValue();
         }
@@ -893,10 +895,6 @@ namespace Microsoft.Scripting.Utils {
             return Type.GetTypeCode(type);
         }
 
-        public static MethodInfo GetMethod(this Delegate d) {
-            return d.Method;
-        }
-        
         public static int GetMetadataToken(this MemberInfo member) {
             return member.MetadataToken;
         }
@@ -925,6 +923,10 @@ namespace Microsoft.Scripting.Utils {
             return Attribute.GetCustomAttributes(member, typeof(T), inherit).Cast<T>();
         }
 #endif
+
+        public static MethodInfo GetMethod(this Delegate d) {
+            return d.GetMethodInfo();
+        }
 
         public static bool ContainsGenericParameters(this Type type) {
             return type.GetTypeInfo().ContainsGenericParameters;
@@ -1449,7 +1451,7 @@ namespace Microsoft.Scripting.Utils {
 
                 foreach (var type in moduleTypes) {
                     if (type != null) {
-                        yield return type;
+                        yield return type.GetTypeInfo();
                     }
                 }
             }
@@ -1468,7 +1470,7 @@ namespace Microsoft.Scripting.Utils {
 #if WIN8
                 return assembly.ExportedTypes.Select(t => t.GetTypeInfo());
 #else
-                return assembly.GetExportedTypes();
+                return assembly.GetExportedTypes().Select(t => t.GetTypeInfo());
 #endif
             } catch (NotSupportedException) {
                 // GetExportedTypes does not work with dynamic assemblies

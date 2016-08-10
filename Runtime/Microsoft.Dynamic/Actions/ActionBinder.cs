@@ -19,7 +19,7 @@ using System.Linq.Expressions;
 using Microsoft.Scripting.Ast;
 #endif
 
-#if !WIN8
+#if !FEATURE_TYPE_INFO
 using TypeInfo = System.Type;
 #endif
 

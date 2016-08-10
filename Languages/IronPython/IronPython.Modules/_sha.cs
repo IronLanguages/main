@@ -34,12 +34,16 @@ namespace IronPython.Modules {
         public const string __doc__ = "implements the SHA1 hash algorithm";
 
         [ThreadStatic]
-        private static SHA1Managed _hasher;
+        private static SHA1 _hasher;
         private const int blockSize = 64;
 
-        private static SHA1Managed GetHasher() {
+        private static SHA1 GetHasher() {
             if (_hasher == null) {
-                _hasher = new SHA1Managed();
+#if SILVERLIGHT || WP75
+                 _hasher = new SHA1Managed();
+#else
+                _hasher = SHA1.Create();
+#endif
             }
             return _hasher;
         }

@@ -22,7 +22,7 @@ using IronPython.Hosting;
 namespace IronPythonTest.Stress {
 
     public class Engine
-#if !SILVERLIGHT // remoting not supported in Silverlight
+#if FEATURE_REMOTING
         : MarshalByRefObject
 #endif
     {
