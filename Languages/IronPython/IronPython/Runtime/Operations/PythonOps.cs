@@ -4072,8 +4072,12 @@ namespace IronPython.Runtime.Operations {
 
         public static Exception AttributeErrorForMissingAttribute(object o, string name) {
             PythonType dt = o as PythonType;
-            if (dt != null)
+            if (dt != null) {
                 return PythonOps.AttributeErrorForMissingAttribute(dt.Name, name);
+            }
+            else if (o is NamespaceTracker) {
+                return PythonOps.AttributeErrorForMissingAttribute(PythonTypeOps.GetName(o), name);
+            }
 
             return AttributeErrorForReadonlyAttribute(PythonTypeOps.GetName(o), name);
         }
