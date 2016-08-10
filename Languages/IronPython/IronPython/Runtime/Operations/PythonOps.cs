@@ -2084,7 +2084,16 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static bool TryGetEnumerator(CodeContext/*!*/ context, object enumerable, out IEnumerator enumerator) {
+
             enumerator = null;
+
+            if (enumerable is PythonType) {
+                var ptEnumerable = (PythonType)enumerable;
+                if (!ptEnumerable.IsIterable(context)) {
+                    return false;
+                }
+            }
+
             IEnumerable enumer;
             if (PythonContext.GetContext(context).TryConvertToIEnumerable(enumerable, out enumer)) {
                 enumerator = enumer.GetEnumerator();
