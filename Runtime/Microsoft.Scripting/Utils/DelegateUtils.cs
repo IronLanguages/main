@@ -38,7 +38,7 @@ namespace Microsoft.Scripting.Utils {
         private static TypeBuilder DefineDelegateType(string name) {
             if (_assembly == null) {
                 AssemblyBuilder newAssembly;
-#if WIN8
+#if FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY
                 newAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("DynamicDelegates"), AssemblyBuilderAccess.Run);
 #else
                 newAssembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("DynamicDelegates"), AssemblyBuilderAccess.Run);

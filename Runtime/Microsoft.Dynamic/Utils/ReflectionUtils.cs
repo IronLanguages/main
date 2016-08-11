@@ -1487,11 +1487,8 @@ namespace Microsoft.Scripting.Utils {
         #region Type Builder
 #if FEATURE_REFEMIT
 
-#if WIN8 // TODO: what is ReservedMask?
-        private const MethodAttributes MethodAttributesToEraseInOveride = MethodAttributes.Abstract | (MethodAttributes)0xD000;
-#else
-        private const MethodAttributes MethodAttributesToEraseInOveride = MethodAttributes.Abstract | MethodAttributes.ReservedMask;
-#endif
+        private const MethodAttributes MethodAttributesReservedMask = (MethodAttributes)0xD000; // MethodAttributes.ReservedMask
+        private const MethodAttributes MethodAttributesToEraseInOveride = MethodAttributes.Abstract | MethodAttributesReservedMask;
 
         public static MethodBuilder DefineMethodOverride(TypeBuilder tb, MethodAttributes extra, MethodInfo decl) {
             MethodAttributes finalAttrs = (decl.Attributes & ~MethodAttributesToEraseInOveride) | extra;
