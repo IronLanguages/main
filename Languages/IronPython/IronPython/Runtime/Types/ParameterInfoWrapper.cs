@@ -18,6 +18,8 @@ using System.Reflection;
 using Microsoft.Scripting.Utils;
 using System.Collections.Generic;
 
+#if FEATURE_REFEMIT
+
 namespace Microsoft.Scripting.Generation {
     /// <summary>
     /// This helper type lets us build a fake ParameterInfo object with a specific type and name
@@ -66,3 +68,5 @@ namespace Microsoft.Scripting.Generation {
 #endif
     }
 }
+
+#endif

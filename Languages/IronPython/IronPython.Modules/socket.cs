@@ -2868,6 +2868,14 @@ namespace IronPython.Modules {
         [DllImport("ws2_32.dll", SetLastError = true)]
         static extern Int32 WSACleanup();
 
+        private static T PtrToStructure<T>(IntPtr result) {
+#if NETSTANDARD
+            return Marshal.PtrToStructure<T>(result);
+#else
+            return (T)Marshal.PtrToStructure(result, typeof(T));
+#endif
+        }
+
         public static string GetServiceByPortWindows(ushort port, string protocol) {
 
             var test = Socket.OSSupportsIPv6; // make sure Winsock library is initiliazed
@@ -2877,7 +2885,7 @@ namespace IronPython.Modules {
             if (IntPtr.Zero == result)
                 throw new SocketUtilException(string.Format("Could not resolve service for port {0}", port));
 
-            var srvent = (servent)Marshal.PtrToStructure(result, typeof(servent));
+            var srvent = PtrToStructure<servent>(result);
             return srvent.s_name;
         }
 
@@ -2888,7 +2896,7 @@ namespace IronPython.Modules {
                 throw new SocketUtilException(
                     string.Format("Could not resolve service for port {0}", port));
             }
-            var srvent = (servent)Marshal.PtrToStructure(result, typeof(servent));
+            var srvent = PtrToStructure<servent>(result);
             return srvent.s_name;
         }
 
@@ -2908,7 +2916,7 @@ namespace IronPython.Modules {
             if (IntPtr.Zero == result)
                 throw new SocketUtilException(string.Format("Could not resolve port for service {0}", service));
 
-            var srvent = (servent)Marshal.PtrToStructure(result, typeof(servent));
+            var srvent = PtrToStructure<servent>(result);
             var hostport = IPAddress.NetworkToHostOrder(unchecked((short)srvent.s_port));
             return unchecked((ushort)hostport);
 
@@ -2922,7 +2930,7 @@ namespace IronPython.Modules {
                     string.Format("Could not resolve port for service {0}", service));
             }
 
-            var srvent = (servent)Marshal.PtrToStructure(result, typeof(servent));
+            var srvent = PtrToStructure<servent>(result);
             var hostport = IPAddress.NetworkToHostOrder(unchecked((short)srvent.s_port));
             return unchecked((ushort)hostport);
 

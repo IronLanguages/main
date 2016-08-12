@@ -216,7 +216,6 @@ namespace Microsoft.Scripting.Generation {
                     }
                 }
             }
-            return method;
 #else
             // maybe we can get it from an interface on the type this
             // method came from...
@@ -229,8 +228,8 @@ namespace Microsoft.Scripting.Generation {
                     }
                 }
             }
-            return method;
 #endif
+            return method;
         }
 
         /// <summary>
@@ -285,7 +284,7 @@ namespace Microsoft.Scripting.Generation {
             return visible;
         }
 
-#if !WIN8
+#if !WIN8 && !NETSTANDARD
         /// <summary>
         /// Sees if two MemberInfos point to the same underlying construct in IL.  This
         /// ignores the ReflectedType property which exists on MemberInfos which
@@ -520,7 +519,7 @@ namespace Microsoft.Scripting.Generation {
             ContractUtils.RequiresNotNull(toType, "toType");
 
             // try available type conversions...
-            foreach (TypeConverterAttribute tca in toType.GetCustomAttributes(typeof(TypeConverterAttribute), true)) {
+            foreach (TypeConverterAttribute tca in toType.GetTypeInfo().GetCustomAttributes(typeof(TypeConverterAttribute), true)) {
                 try {
                     converter = Activator.CreateInstance(Type.GetType(tca.ConverterTypeName)) as TypeConverter;
                 } catch (Exception) {
