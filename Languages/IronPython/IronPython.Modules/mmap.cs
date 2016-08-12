@@ -16,6 +16,7 @@
 #if FEATURE_MMAP
 
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -73,9 +74,12 @@ namespace IronPython.Modules {
             );
         }
 
+        private static string FormatError(int errorCode) {
+            return new Win32Exception(errorCode).Message;
+        }
+
         private static Exception WindowsError(int code) {
-            string message = CTypes.FormatError(code);
-            return PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, code, message);
+            return PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, code, FormatError(code));
         }
 
         [PythonType]

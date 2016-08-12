@@ -31,10 +31,12 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security;
+#if !NETSTANDARD
 using System.Security.Policy;
+#endif
 using System.Text;
 using System.Threading;
-#if !CLR2 && !SILVERLIGHT
+#if FEATURE_WPF
 using System.Windows.Markup;
 #endif
 
@@ -51,7 +53,7 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-#if !CLR2 && !SILVERLIGHT
+#if FEATURE_WPF
 using DependencyObject = System.Windows.DependencyObject;
 #endif
 
@@ -93,7 +95,7 @@ namespace IronPythonTest {
     public delegate int RefIntDelegate(ref int arg);
     public delegate T GenericDelegate<T, U, V>(U arg1, V arg2);
 
-#if !CLR2 && !SILVERLIGHT
+#if FEATURE_WPF
     [ContentProperty("Content")]
     public class XamlTestObject : DependencyObject {
         public event IntIntDelegate Event;
@@ -230,7 +232,7 @@ namespace IronPythonTest {
             return null;
         }
 
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !NETSTANDARD
         public void ScenarioHostingHelpers() {
             AppDomain remote = AppDomain.CreateDomain("foo");
             Dictionary<string, object> options = new Dictionary<string,object>();
@@ -2287,7 +2289,7 @@ instOC = TestOC()
         // Options.DebugMode
 #endif
 
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !NETSTANDARD
         public void ScenarioPartialTrust() {
             // basic check of running a host in partial trust
             

@@ -215,10 +215,8 @@ namespace IronPython.Modules {
 
                 flush(context);
                 _closed = true;
-                _readStream.Close();
                 _readStream.Dispose();
                 if (!object.ReferenceEquals(_readStream, _writeStream)) {
-                    _writeStream.Close();
                     _writeStream.Dispose();
                 }
 

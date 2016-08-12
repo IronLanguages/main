@@ -2358,7 +2358,7 @@ namespace IronPython.Modules {
                     _socket.close();
                 }
                 else if (this._stream != null && _close) {
-                    _stream.Close();
+                    _stream.Dispose();
                 }
                 _isOpen = false;
                 var obj = base.close();
@@ -2642,7 +2642,7 @@ namespace IronPython.Modules {
             }
 
             public socket shutdown() {
-                _sslStream.Close();
+                _sslStream.Dispose();
                 return _socket;
             }
 

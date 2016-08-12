@@ -72,7 +72,7 @@ Finish the compression process and return what is left in internal buffers.
 You must not use the compressor object after calling this method.
 ")]
             public Bytes flush() {
-                this.bz2Output.Close();
+                this.bz2Output.Dispose();
 
                 return new Bytes(this.GetLatestData());
             }

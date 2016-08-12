@@ -179,7 +179,7 @@ namespace IronPython.Runtime.Types {
                 summary = String.Concat(
                     summary,
                     Environment.NewLine, Environment.NewLine, 
-                    "enum ", t.IsDefined(typeof(FlagsAttribute), false) ? "(flags) ": "", GetPythonTypeName(t), ", values: ", 
+                    "enum ", t.GetTypeInfo().IsDefined(typeof(FlagsAttribute), false) ? "(flags) ": "", GetPythonTypeName(t), ", values: ", 
                     String.Join(", ", names));
             }
             return summary;
@@ -502,7 +502,7 @@ namespace IronPython.Runtime.Types {
             if (curType.IsGenericParameter) {
                 res.Append(ReflectionUtils.GenericArityDelimiter);
                 res.Append(curType.GenericParameterPosition);
-            } else if (curType.ContainsGenericParameters) {
+            } else if (curType.GetTypeInfo().ContainsGenericParameters) {
                 res.Append(curType.Namespace);
                 res.Append('.');
                 res.Append(curType.Name.Substring(0, curType.Name.Length - 2));
@@ -550,7 +550,7 @@ namespace IronPython.Runtime.Types {
         /// Gets the XPathDocument for the specified assembly, or null if one is not available.
         /// </summary>
         private static XPathDocument GetXPathDocument(Assembly asm) {
-            System.Globalization.CultureInfo ci = System.Threading.Thread.CurrentThread.CurrentCulture;
+            System.Globalization.CultureInfo ci = System.Globalization.CultureInfo.CurrentCulture;
 
             string location = GetXmlDocLocation(asm);
             if (location == null) {
@@ -569,7 +569,7 @@ namespace IronPython.Runtime.Types {
                 if (!System.IO.File.Exists(xml)) {
                     xml = Path.Combine(baseDir, baseFile);
                     if (!System.IO.File.Exists(xml)) {
-#if !CLR2
+#if !CLR2 && !NETSTANDARD
                         // On .NET 4.0 documentation is in the reference assembly location
                         // for 64-bit processes, we need to look in Program Files (x86)
                         xml = Path.Combine(
@@ -614,7 +614,7 @@ namespace IronPython.Runtime.Types {
             returns = null;
             parameters = null;
 
-            XPathDocument xpd = GetXPathDocument(info.DeclaringType.Assembly);
+            XPathDocument xpd = GetXPathDocument(info.DeclaringType.GetTypeInfo().Assembly);
             if (xpd == null) return;
 
             XPathNavigator xpn = xpd.CreateNavigator();
@@ -652,7 +652,7 @@ namespace IronPython.Runtime.Types {
         private static void GetXmlDoc(Type type, out string summary) {
             summary = null;
 
-            XPathDocument xpd = GetXPathDocument(type.Assembly);
+            XPathDocument xpd = GetXPathDocument(type.GetTypeInfo().Assembly);
             if (xpd == null) return;
 
             XPathNavigator xpn = xpd.CreateNavigator();
@@ -673,7 +673,7 @@ namespace IronPython.Runtime.Types {
             summary = null;
             returns = null;
 
-            XPathDocument xpd = GetXPathDocument(declaringType.Assembly);
+            XPathDocument xpd = GetXPathDocument(declaringType.GetTypeInfo().Assembly);
             if (xpd == null) return;
 
             XPathNavigator xpn = xpd.CreateNavigator();
@@ -695,7 +695,7 @@ namespace IronPython.Runtime.Types {
             summary = null;
             returns = null;
 
-            XPathDocument xpd = GetXPathDocument(info.DeclaringType.Assembly);
+            XPathDocument xpd = GetXPathDocument(info.DeclaringType.GetTypeInfo().Assembly);
             if (xpd == null) return;
 
             XPathNavigator xpn = xpd.CreateNavigator();
