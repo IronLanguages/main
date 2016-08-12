@@ -790,7 +790,7 @@ namespace IronPython.Runtime.Operations {
             string v = self;
             bool prevCharCased = false, currCharCased = false, containsUpper = false;
             for (int i = 0; i < v.Length; i++) {
-                if (Char.IsUpper(v, i) || Char.GetUnicodeCategory(v, i) == UnicodeCategory.TitlecaseLetter) {
+                if (Char.IsUpper(v, i) || CharUnicodeInfo.GetUnicodeCategory(v, i) == UnicodeCategory.TitlecaseLetter) {
                     containsUpper = true;
                     if (prevCharCased)
                         return false;
@@ -889,7 +889,7 @@ namespace IronPython.Runtime.Operations {
         private static CultureInfo CasingCultureInfo = new CultureInfo("en");
 
         public static string lower(this string self) {
-            return self.ToLower(CasingCultureInfo);
+            return CasingCultureInfo.TextInfo.ToLower(self);
         }
 
         internal static string ToLowerAsciiTriggered(this string self) {
@@ -1286,7 +1286,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static string upper(this string self) {
-            return self.ToUpper(CasingCultureInfo);
+            return CasingCultureInfo.TextInfo.ToUpper(self);
         }
 
         public static string zfill(this string self, int width) {

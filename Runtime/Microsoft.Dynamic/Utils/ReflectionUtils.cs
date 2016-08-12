@@ -827,7 +827,7 @@ namespace Microsoft.Scripting.Utils {
         }
 
         public static Module GetModule(this MemberInfo member) {
-            return ((dynamic)member).Module;
+            return member.Module;
         }
 
         public static Type[] GetGenericArguments(this Type type) {

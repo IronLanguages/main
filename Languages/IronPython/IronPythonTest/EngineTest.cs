@@ -653,7 +653,7 @@ class K(object):
 
             public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
                 return new DynamicMetaObject(
-                    Expression.Dynamic(new MyInvokeBinder(CallInfo), typeof(object), DynamicUtils.GetExpressions(ArrayUtils.Insert(target, args))),
+                    DynamicExpression.Dynamic(new MyInvokeBinder(CallInfo), typeof(object), DynamicUtils.GetExpressions(ArrayUtils.Insert(target, args))),
                     target.Restrictions.Merge(BindingRestrictions.Combine(args))
                 );
             }
@@ -2776,7 +2776,7 @@ if r.sum != 110:
             if (expected == null && actual == null) return;
 
             if (!expected.Equals(actual)) {
-                Console.WriteLine("Expected: {0} Got: {1} from {2}", expected, actual, new StackTrace(true));
+                Console.WriteLine("Expected: {0} Got: {1} from {2}", expected, actual, new StackTrace((Exception)null, true));
                 throw new Exception();
             }
         }
