@@ -22,7 +22,7 @@ using IronPython.Hosting;
 namespace IronPythonTest.Stress {
 
     public class Engine
-#if !SILVERLIGHT // remoting not supported in Silverlight
+#if FEATURE_REMOTING
         : MarshalByRefObject
 #endif
     {
@@ -80,7 +80,7 @@ namespace IronPythonTest.Stress {
             if (expected == null && actual == null) return;
 
             if (!expected.Equals(actual)) {
-                Console.WriteLine("Expected: {0} Got: {1} from {2}", expected, actual, new StackTrace(true));
+                Console.WriteLine("Expected: {0} Got: {1} from {2}", expected, actual, new StackTrace((Exception)null, true));
                 throw new Exception();
             }
         }

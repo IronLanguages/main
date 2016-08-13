@@ -1207,65 +1207,6 @@ def test_missing():
 def test_cp29914():
 	AreEqual(dict(o=42), {'o':42})
 
-def test_dict_comp():
-    pass
-    
-def test_dict_comp():
-    AreEqual({locals()['x'] : locals()['x'] for x in (2,3,4)}, {2:2, 3:3, 4:4})
-    
-    x = 100
-    {x:x for x in (2,3,4)}
-    AreEqual(x, 100)
-    
-    class C:
-        {x:x for x in (2,3,4)}
-    
-    AreEqual(hasattr(C, 'x'), False)
-    
-    class C:
-        abc = {locals()['x']:locals()['x'] for x in (2,3,4)}
-    
-    AreEqual(C.abc, {2:2,3:3,4:4})
-
-    d = {}
-    exec compile("abc = {locals()['x']:locals()['x'] for x in (2,3,4)}", 'exec', 'exec') in d, d
-    AreEqual(d['abc'], {2:2,3:3,4:4})
-    
-    d = {'y':42}
-    exec compile("abc = {y:y for x in (2,3,4)}", 'exec', 'exec') in d, d
-    AreEqual(d['abc'], {42:42})
-
-    d = {'y':42, 't':(2,3,42)}
-    exec compile("abc = {y:y for x in t if x == y}", 'exec', 'exec') in d, d
-    AreEqual(d['abc'], {42:42})
-
-    t = (2,3,4)
-    v = 2
-    abc = {v:v for x in t}
-    AreEqual(abc, {2:2})
-
-    abc = {x:x for x in t if x == v}
-    AreEqual(abc, {2:2})
-    
-    def f():
-        abc = {x:x for x in t if x == v}
-        AreEqual(abc, {2:2})
-        
-    f()
-    
-    def f():
-        abc = {v:v for x in t}
-        AreEqual(abc, {2:2})
-        
-        
-    class C:
-        abc = {v:v for x in t}
-        AreEqual(abc, {2:2})
-        
-    class C:
-        abc = {x:x for x in t if x == v}
-        AreEqual(abc, {2:2})
-
 def test_cp32527():
     '''test for duplicate key in dict under specific hash value conditions'''
     d = {'1': 1, '2': 1, '3': 1, 'a7': 1, 'a8': 1}

@@ -28,6 +28,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Security.Policy;
@@ -64,7 +65,7 @@ namespace IronPythonTest {
         public static string InputTestDirectory;
 
         static Common() {
-            RuntimeDirectory = Path.GetDirectoryName(typeof(PythonContext).Assembly.Location);
+            RuntimeDirectory = Path.GetDirectoryName(typeof(PythonContext).GetTypeInfo().Assembly.Location);
             RootDirectory = Environment.GetEnvironmentVariable("DLR_ROOT");
             if (RootDirectory != null) {
                 ScriptTestDirectory = Path.Combine(RootDirectory, "Languages\\IronPython\\Tests");
@@ -184,7 +185,7 @@ namespace IronPythonTest {
     }
 
     public class EngineTest
-#if !SILVERLIGHT // remoting not supported in Silverlight
+#if FEATURE_REMOTING
         : MarshalByRefObject
 #endif
     {
@@ -631,7 +632,7 @@ class K(object):
 
         public static void ScenarioInterfaceExtensions() {
             var engine = Python.CreateEngine();
-            engine.Runtime.LoadAssembly(typeof(Fooable).Assembly);
+            engine.Runtime.LoadAssembly(typeof(Fooable).GetTypeInfo().Assembly);
             ScriptSource src = engine.CreateScriptSourceFromString("x.Bar()");
             ScriptScope scope = engine.CreateScope();
             scope.SetVariable("x", new Fooable());
@@ -652,7 +653,7 @@ class K(object):
 
             public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
                 return new DynamicMetaObject(
-                    Expression.Dynamic(new MyInvokeBinder(CallInfo), typeof(object), DynamicUtils.GetExpressions(ArrayUtils.Insert(target, args))),
+                    DynamicExpression.Dynamic(new MyInvokeBinder(CallInfo), typeof(object), DynamicUtils.GetExpressions(ArrayUtils.Insert(target, args))),
                     target.Restrictions.Merge(BindingRestrictions.Combine(args))
                 );
             }
@@ -2775,7 +2776,7 @@ if r.sum != 110:
             if (expected == null && actual == null) return;
 
             if (!expected.Equals(actual)) {
-                Console.WriteLine("Expected: {0} Got: {1} from {2}", expected, actual, new StackTrace(true));
+                Console.WriteLine("Expected: {0} Got: {1} from {2}", expected, actual, new StackTrace((Exception)null, true));
                 throw new Exception();
             }
         }

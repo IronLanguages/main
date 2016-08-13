@@ -550,7 +550,7 @@ namespace IronPython.Runtime {
 
 #if FEATURE_CUSTOM_TYPE_DESCRIPTOR
             // try available type conversions...
-            object[] tcas = toType.GetCustomAttributes(typeof(TypeConverterAttribute), true);
+            var tcas = toType.GetTypeInfo().GetCustomAttributes(typeof(TypeConverterAttribute), true);
             foreach (TypeConverterAttribute tca in tcas) {
                 TypeConverter tc = GetTypeConverter(tca);
 
@@ -914,9 +914,10 @@ namespace IronPython.Runtime {
         internal static bool IsNumeric(Type t) {
             if (t.IsEnum()) return false;
 
+            const TypeCode TypeCodeDbNull = (TypeCode)2; // TypeCode.DBNull
             switch (t.GetTypeCode()) {
                 case TypeCode.DateTime:
-                case TypeCode.DBNull:
+                case TypeCodeDbNull:
                 case TypeCode.Char:
                 case TypeCode.Empty:
                 case TypeCode.String:

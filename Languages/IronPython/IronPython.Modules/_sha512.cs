@@ -41,14 +41,14 @@ namespace IronPython.Modules {
 
         private static SHA512 GetHasher512() {
             if (_hasher512 == null) {
-                _hasher512 = SHA512Managed.Create();
+                _hasher512 = SHA512.Create();
             }
             return _hasher512;
         }
 
         private static SHA384 GetHasher384() {
             if (_hasher384 == null) {
-                _hasher384 = SHA384Managed.Create();
+                _hasher384 = SHA384.Create();
             }
             return _hasher384;
         }
@@ -97,7 +97,11 @@ namespace IronPython.Modules {
         }
 
         [PythonHidden]
-        public sealed class Sha384Object : HashBase, ICloneable {
+        public sealed class Sha384Object : HashBase
+#if FEATURE_ICLONEABLE
+            , ICloneable
+#endif
+        {
             internal Sha384Object() : this(new byte[0]) { }
 
             internal Sha384Object(object initialData) {
@@ -121,9 +125,11 @@ namespace IronPython.Modules {
                 return new Sha384Object(_bytes);
             }
 
+#if FEATURE_ICLONEABLE
             object ICloneable.Clone() {
                 return copy();
             }
+#endif
 
             public const int block_size = 128;
             public const int digest_size = 48;
@@ -132,7 +138,11 @@ namespace IronPython.Modules {
         }
 
         [PythonHidden]
-        public sealed class Sha512Object : HashBase, ICloneable {
+        public sealed class Sha512Object : HashBase
+#if FEATURE_ICLONEABLE
+            , ICloneable
+#endif
+        {
             internal Sha512Object() : this(new byte[0]) { }
 
             internal Sha512Object(object initialData) {
@@ -156,9 +166,11 @@ namespace IronPython.Modules {
                 return new Sha512Object(_bytes);
             }
 
+#if FEATURE_ICLONEABLE
             object ICloneable.Clone() {
                 return copy();
             }
+#endif
 
             public const int block_size = 128;
             public const int digest_size = 64;

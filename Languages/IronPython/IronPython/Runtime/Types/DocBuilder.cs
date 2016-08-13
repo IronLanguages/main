@@ -154,10 +154,10 @@ namespace IronPython.Runtime.Types {
 #if FEATURE_XMLDOC
             GetXmlDoc(t, out summary);
 #endif
-            if (t.IsEnum) {
+            if (t.GetTypeInfo().IsEnum) {
 
 #if FEATURE_ENUM_NAMES_VALUES // GetNames/GetValues
-                                string[] names = Enum.GetNames(t);
+                string[] names = Enum.GetNames(t);
                 Array values = Enum.GetValues(t);
                 for (int i = 0; i < names.Length; i++) {
                     names[i] = String.Concat(names[i],
@@ -214,9 +214,9 @@ namespace IronPython.Runtime.Types {
                     returnCount++;
 
                     var typeAttrs = mi.ReturnParameter.GetCustomAttributes(typeof(SequenceTypeInfoAttribute), true);
-                    if (typeAttrs.Length > 0) {
+                    if (typeAttrs.Any()) {
                         retType.Append(" (of ");
-                        SequenceTypeInfoAttribute typeAttr = (SequenceTypeInfoAttribute)typeAttrs[0];
+                        SequenceTypeInfoAttribute typeAttr = (SequenceTypeInfoAttribute)typeAttrs.First();
                         for (int curTypeAttr = 0; curTypeAttr < typeAttr.Types.Count; curTypeAttr++) {
                             if (curTypeAttr != 0) {
                                 retType.Append(", ");
@@ -228,8 +228,8 @@ namespace IronPython.Runtime.Types {
                     }
 
                     var dictTypeAttrs = mi.ReturnParameter.GetCustomAttributes(typeof(DictionaryTypeInfoAttribute), true);
-                    if (dictTypeAttrs.Length > 0) {
-                        var dictTypeAttr = (DictionaryTypeInfoAttribute)dictTypeAttrs[0];
+                    if (dictTypeAttrs.Any()) {
+                        var dictTypeAttr = (DictionaryTypeInfoAttribute)dictTypeAttrs.First();
                         retType.Append(String.Format(" (of {0} to {1})", GetPythonTypeName(dictTypeAttr.KeyType), GetPythonTypeName(dictTypeAttr.ValueType)));
                     }
                 }
@@ -495,7 +495,7 @@ namespace IronPython.Runtime.Types {
         /// converted down to their generic type definition.
         /// </summary>
         private static void AppendTypeFormat(Type curType, StringBuilder res) {
-            if (curType.IsGenericType) {
+            if (curType.GetTypeInfo().IsGenericType) {
                 curType = curType.GetGenericTypeDefinition();
             }
 

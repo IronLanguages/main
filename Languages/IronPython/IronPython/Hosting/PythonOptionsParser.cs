@@ -279,7 +279,7 @@ namespace IronPython.Hosting {
             }
             
             int[] indicies = indiciesList.ToArray();
-            Array.Sort(optName.ToArray(), indicies, StringComparer.InvariantCulture);
+            Array.Sort(optName.ToArray(), indicies, StringComparer.OrdinalIgnoreCase);
 
             options = new string[allOptions.Length / 2, 2];
             for (int i = 0; i < indicies.Length; i++) {

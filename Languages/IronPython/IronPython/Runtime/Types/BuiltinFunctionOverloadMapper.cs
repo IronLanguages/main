@@ -51,18 +51,18 @@ namespace IronPython.Runtime.Types {
             // reflected method with all the candidate targets. A caller can then index this
             // reflected method if necessary in order to provide generic type arguments and
             // fully disambiguate the target.
-
-            // Search for targets with the right number of arguments.
+            
             BuiltinFunction bf;
             BuiltinFunction.TypeList tl = new BuiltinFunction.TypeList(sig);
             lock (_function.OverloadDictionary) {
                 if (!_function.OverloadDictionary.TryGetValue(tl, out bf)) {
                     MethodBase[] newTargets = FindMatchingTargets(sig, targets);
 
-                    if (targets == null)
-                        throw ScriptingRuntimeHelpers.SimpleTypeError(String.Format("No match found for the method signature {0}", sig));    // TODO: Sig to usable display
-
-                    _function.OverloadDictionary[tl] = bf = new BuiltinFunction(_function.Name, newTargets, Function.DeclaringType, _function.FunctionType);
+                    if (newTargets.Length == 0) {
+                        ThrowOverloadException(sig, targets);
+                    } else {
+                        _function.OverloadDictionary[tl] = bf = new BuiltinFunction(_function.Name, newTargets, Function.DeclaringType, _function.FunctionType);
+                    }
                 }
             }
 
@@ -98,6 +98,53 @@ namespace IronPython.Runtime.Types {
                 res.Add(mb);
             }
             return res.ToArray();
+        }
+
+        /// <summary>
+        /// Throws a formatted exception if no overload matchs.
+        /// </summary>
+        /// <param name="sig">Passed signature which should be used</param>
+        /// <param name="targets">Given targets, which does not fit to the signature</param>
+        /// <example>
+        /// <code language="cs" title="Cause overload exceptiob"><![CDATA[
+        /// # Will cause an exception:
+        /// from System import Convert, Double
+        /// Convert.ToInt32.Overloads[Double, Double](24)
+        /// ]]></code>
+        /// </example>
+        public void ThrowOverloadException(Type[] sig, IList<MethodBase> targets) {
+            // Create info for given signature
+            System.Text.StringBuilder sigInfo = new System.Text.StringBuilder();
+            sigInfo.Append((targets.Count > 0 ? targets[0].Name : "") + "[");
+            foreach (var type in sig) {
+                if (!sigInfo.ToString().endswith("[")) {
+                    sigInfo.Append(", ");
+                }
+
+                sigInfo.Append(type.Name);
+            }
+            sigInfo.Append("]");
+
+            // Get possible overloads.
+            System.Text.StringBuilder possibleOverloads = new System.Text.StringBuilder();
+
+            foreach (var overload in targets) {
+                if (possibleOverloads.Length > 0) {
+                    possibleOverloads.Append(", ");
+                }
+
+                possibleOverloads.Append("[");
+                foreach (var param in overload.GetParameters()) {
+                    if (!possibleOverloads.ToString().endswith("[")) {
+                        possibleOverloads.Append(", ");
+                    }
+                    possibleOverloads.Append(param.ParameterType.Name);
+                }
+                possibleOverloads.Append("]");
+            }
+
+            throw ScriptingRuntimeHelpers.SimpleTypeError(String.Format("No match found for the method signature {0}. Expected {1}", sigInfo.ToString(),
+                possibleOverloads.ToString()));
         }
 
         public BuiltinFunction Function {

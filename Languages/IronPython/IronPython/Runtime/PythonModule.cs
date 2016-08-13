@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -228,7 +229,7 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeError("readonly attribute");
         }
 
-        internal Scope Scope {
+        public Scope Scope {
             get {
                 if (_scope == null) {
                     Interlocked.CompareExchange(ref _scope, new Scope(new ObjectDictionaryExpando(_dict)), null);

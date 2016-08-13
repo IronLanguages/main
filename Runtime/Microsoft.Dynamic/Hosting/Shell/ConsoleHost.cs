@@ -305,7 +305,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
         #endregion
 
         private void Execute() {
-#if !SILVERLIGHT
+#if FEATURE_APARTMENTSTATE
             if (_consoleOptions.IsMta) {
                 Thread thread = new Thread(ExecuteInternal);
                 thread.SetApartmentState(ApartmentState.MTA);
@@ -444,7 +444,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
         }
 
         private static string GetRuntime() {
-            Type mono = typeof(object).Assembly.GetType("Mono.Runtime");
+            Type mono = typeof(object).GetTypeInfo().Assembly.GetType("Mono.Runtime");
             return mono != null ?
                 (string)mono.GetMethod("GetDisplayName", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null)
                 : String.Format(CultureInfo.InvariantCulture, ".NET {0}", Environment.Version);

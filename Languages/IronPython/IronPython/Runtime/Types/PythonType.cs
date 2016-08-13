@@ -55,7 +55,7 @@ namespace IronPython.Runtime.Types {
     [PythonType("type")]
     [Documentation(@"type(object) -> gets the type of the object
 type(name, bases, dict) -> creates a new type instance with the given name, base classes, and members from the dictionary")]
-    public partial class PythonType : IPythonMembersList, IDynamicMetaObjectProvider, IWeakReferenceable, ICodeFormattable, IFastGettable, IFastSettable, IFastInvokable {
+    public partial class PythonType : IPythonMembersList, IDynamicMetaObjectProvider, IWeakReferenceable, IWeakReferenceableByProxy, ICodeFormattable, IFastGettable, IFastSettable, IFastInvokable {
         private Type/*!*/ _underlyingSystemType;            // the underlying CLI system type for this type
         private string _name;                               // the name of the type
         private Dictionary<string, PythonTypeSlot> _dict;   // type-level slots & attributes
@@ -101,10 +101,10 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         [MultiRuntimeAware]
         private static int MasterVersion = 1;
         private static readonly CommonDictionaryStorage _pythonTypes = new CommonDictionaryStorage();
-        internal static PythonType _pythonTypeType = DynamicHelpers.GetPythonTypeFromType(typeof(PythonType));
+        internal static readonly PythonType _pythonTypeType = DynamicHelpers.GetPythonTypeFromType(typeof(PythonType));
         private static readonly WeakReference[] _emptyWeakRef = new WeakReference[0];
         private static object _subtypesLock = new object();
-        internal static Func<string, Exception> DefaultMakeException = (message) => new Exception(message);
+        internal static readonly Func<string, Exception> DefaultMakeException = (message) => new Exception(message);
 
         /// <summary>
         /// Provides delegates that will invoke a parameterless type ctor.  The first key provides
@@ -342,7 +342,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                     meta = metaCls;
                     continue;
                 }
-                throw PythonOps.TypeError("metaclass conflict {0} and {1}", metaCls.Name, meta.Name);
+                throw PythonOps.TypeError("Error when calling the metaclass bases\n    metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases");
             }
             return meta;
         }
@@ -420,6 +420,25 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             _flags = res;
             return true;
+        }
+
+        /// <summary>
+        /// Check whether the current type is iterabel
+        /// </summary>
+        /// <param name="context"></param>
+        /// <returns>True if it is iterable</returns>
+        internal bool IsIterable(CodeContext context)
+        {
+            object _dummy = null;
+            if (PythonOps.TryGetBoundAttr(context,  this, "__iter__", out _dummy) &&
+                    !Object.ReferenceEquals(_dummy, NotImplementedType.Value)
+                && PythonOps.TryGetBoundAttr(context, this, "next", out _dummy) &&
+                    !Object.ReferenceEquals(_dummy, NotImplementedType.Value))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private void ClearAbstractMethodFlags(string name) {
@@ -535,7 +554,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         private static bool TryReplaceExtensibleWithBase(Type curType, out Type newType) {
-            if (curType.IsGenericType &&
+            if (curType.GetTypeInfo().IsGenericType &&
                 curType.GetGenericTypeDefinition() == typeof(Extensible<>)) {
                 newType = curType.GetGenericArguments()[0];
                 return true;
@@ -2517,7 +2536,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             if (hasExplicitIface) {
                 // add any non-colliding interfaces into the MRO
                 foreach (Type t in nonCollidingInterfaces) {
-                    Debug.Assert(t.IsInterface);
+                    Debug.Assert(t.GetTypeInfo().IsInterface);
 
                     mro.Add(DynamicHelpers.GetPythonTypeFromType(t));
                 }
@@ -2693,11 +2712,60 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         bool IWeakReferenceable.SetWeakRef(WeakRefTracker value) {
-            return Interlocked.CompareExchange<WeakRefTracker>(ref _weakrefTracker, value, null) == null;
+            if (!IsSystemType) {
+                return Interlocked.CompareExchange<WeakRefTracker>(ref _weakrefTracker, value, null) == null;
+            } else {
+                return false;
+            }
         }
 
         void IWeakReferenceable.SetFinalizer(WeakRefTracker value) {
-            _weakrefTracker = value;
+            if (!IsSystemType) {
+                _weakrefTracker = value;
+            } else {
+                // do nothing, system types are never collected
+            }
+        }
+
+        IWeakReferenceable IWeakReferenceableByProxy.GetWeakRefProxy(PythonContext context) {
+            return new WeakReferenceProxy(context, this);
+        }
+
+        class WeakReferenceProxy : IWeakReferenceable {
+            private readonly PythonContext context;
+            private readonly PythonType type;
+
+            internal WeakReferenceProxy(PythonContext context, PythonType type) {
+                this.type = type;
+                this.context = context;
+            }
+
+            public WeakRefTracker GetWeakRef() {
+                if(type.IsSystemType) {
+                    return this.context.GetSystemPythonTypeWeakRef(type);
+                } else {
+                    IWeakReferenceable weakref = (IWeakReferenceable)type;
+                    return weakref.GetWeakRef();
+                }
+            }
+
+            public void SetFinalizer(WeakRefTracker value) {
+                if(type.IsSystemType) {
+                    this.context.SetSystemPythonTypeFinalizer(type, value);
+                } else {
+                    IWeakReferenceable weakref = (IWeakReferenceable)type;
+                    weakref.SetFinalizer(value);
+                }
+            }
+
+            public bool SetWeakRef(WeakRefTracker value) {
+                if(type.IsSystemType) {
+                    return this.context.SetSystemPythonTypeWeakRef(type, value);
+                } else {
+                    IWeakReferenceable weakref = (IWeakReferenceable)type;
+                    return weakref.SetWeakRef(value);
+                }
+            }
         }
 
         #endregion

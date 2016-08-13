@@ -128,7 +128,7 @@ import Namespace.")]
         }
 #endif
 
-#if FEATURE_FILESYSTEM
+#if FEATURE_ASSEMBLY_RESOLVE && FEATURE_FILESYSTEM
         [Documentation(@"Adds a reference to a .NET assembly.  Parameters are a full path to an. 
 assembly on disk. After the load the assemblies namespaces and top-level types 
 will be available via import Namespace.")]
@@ -398,10 +398,10 @@ the assembly object.")]
         private static void AddReferenceToFile(CodeContext/*!*/ context, string file) {
             if (file == null) throw new TypeErrorException("Expected string, got NoneType");
 
-#if !FEATURE_FILESYSTEM
-            Assembly asm = context.LanguageContext.DomainManager.Platform.LoadAssemblyFromPath(file);
-#else
+#if FEATURE_ASSEMBLY_RESOLVE && FEATURE_FILESYSTEM
             Assembly asm = LoadAssemblyFromFile(context, file);
+#else
+            Assembly asm = context.LanguageContext.DomainManager.Platform.LoadAssemblyFromPath(file);
 #endif
             if (asm == null) {
                 throw new IOException(String.Format("Could not add reference to assembly {0}", file));
@@ -476,7 +476,7 @@ the assembly object.")]
 
         #region Runtime Type Checking support
 
-#if FEATURE_FILESYSTEM
+#if FEATURE_ASSEMBLY_RESOLVE && FEATURE_FILESYSTEM
         [Documentation(@"Adds a reference to a .NET assembly.  One or more assembly names can
 be provided which are fully qualified names to the file on disk.  The 
 directory is added to sys.path and AddReferenceToFile is then called. After the 
@@ -953,11 +953,11 @@ import Namespace.")]
                 Type clrBaseType = info.BaseType;
                 Type tempType = clrBaseType;
                 while (tempType != null) {
-                    if (tempType.IsGenericType && tempType.GetGenericTypeDefinition() == typeof(Extensible<>)) {
+                    if (tempType.GetTypeInfo().IsGenericType && tempType.GetGenericTypeDefinition() == typeof(Extensible<>)) {
                         clrBaseType = tempType.GetGenericArguments()[0];
                         break;
                     }
-                    tempType = tempType.BaseType;
+                    tempType = tempType.GetTypeInfo().BaseType;
                 }
 
                 PythonType baseType = DynamicHelpers.GetPythonTypeFromType(clrBaseType);

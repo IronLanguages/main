@@ -645,6 +645,8 @@ class ReTests(unittest.TestCase):
         self.assertEqual([item.group(0) for item in iter],
                          [":", "::", ":::"])
 
+	
+    @unittest.skipIf(sys.platform == 'cli', 'Strings are unicode in IronPython')
     def test_bug_926075(self):
         try:
             unicode

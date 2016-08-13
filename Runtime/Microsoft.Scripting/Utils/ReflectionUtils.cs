@@ -70,21 +70,25 @@ namespace Microsoft.Scripting.Utils {
         public static FieldInfo GetField(this Type type, string name) {
             return type.GetTypeInfo().GetDeclaredField(name);
         }
+#else
+        public static IEnumerable<MethodInfo> GetDeclaredMethods(this Type type, string name) {
+            return type.GetMember(name).OfType<MethodInfo>();
+        }
+#endif
 
+#if WIN8 || NETSTANDARD
         public static Type CreateType(this TypeBuilder builder) {
             return builder.CreateTypeInfo().AsType();
         }
+#endif
 
         public static MethodInfo GetMethod(this Delegate d) {
-            return ((dynamic)d).Method;
+            return d.GetMethodInfo();
         }
-#else
-        public static MethodInfo GetMethod(this Delegate d) {
+
+#if !FEATURE_GET_METHOD_INFO
+        public static MethodInfo GetMethodInfo(this Delegate d) {
             return d.Method;
-        }
-
-        public static IEnumerable<MethodInfo> GetDeclaredMethods(this Type type, string name) {
-            return type.GetMember(name).OfType<MethodInfo>();
         }
 #endif
     }

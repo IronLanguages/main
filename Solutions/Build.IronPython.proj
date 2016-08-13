@@ -72,6 +72,10 @@
     <IronPythonBins Include="ipyw64.exe" />
     <IronPythonBins Include="ipyw64.exe.config" />
 
+    <IronPythonCompilerBins Include="ipyc.exe" />
+    <IronPythonCompilerBins Include="ipyc.exe.config" />
+    <IronPythonCompilerBins Include="IKVM.Reflection.dll" />
+
     <ChironBins Include="Chiron.exe" />
     <ChironBins Include="Chiron.exe.config" />
   </ItemGroup>
@@ -137,6 +141,7 @@
     <Copy SourceFiles="@(ClrDlrLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)" />
     <Copy SourceFiles="@(IronPythonLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)" />
     <Copy SourceFiles="@(IronPythonBins->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)" />
+    <Copy SourceFiles="@(IronPythonCompilerBins->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)" />
     <Copy SourceFiles="@(v4IronPythonModules->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\DLLs" />
     <Copy SourceFiles="@(IronPythonModules->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\DLLs" />
     <Copy SourceFiles="@(MiscFiles)" DestinationFolder="$(StageDir)" />

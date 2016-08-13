@@ -20,6 +20,7 @@ using MSAst = Microsoft.Scripting.Ast;
 #endif
 
 using System.Collections.Generic;
+using System.Reflection;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Debugging {

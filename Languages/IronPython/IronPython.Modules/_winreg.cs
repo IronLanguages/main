@@ -38,7 +38,7 @@ using System.Numerics;
 using Microsoft.Scripting.Math;
 #endif
 
-[assembly: PythonModule("_winreg", typeof(IronPython.Modules.PythonWinReg))]
+[assembly: PythonModule("_winreg", typeof(IronPython.Modules.PythonWinReg), PlatformID.MacOSX, PlatformID.Unix)]
 namespace IronPython.Modules {
     public static class PythonWinReg {
         public const string __doc__ = "Provides access to the Windows registry.";

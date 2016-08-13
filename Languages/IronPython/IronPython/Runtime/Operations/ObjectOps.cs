@@ -219,9 +219,9 @@ namespace IronPython.Runtime.Operations {
             FieldInfo[] fields = t.GetFields(System.Reflection.BindingFlags.FlattenHierarchy | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
             int res = 0;
             foreach (FieldInfo fi in fields) {
-                if (fi.FieldType.IsClass || fi.FieldType.IsInterface) {
+                if (fi.FieldType.GetTypeInfo().IsClass || fi.FieldType.GetTypeInfo().IsInterface) {
                     res += AdjustPointerSize(4);
-                } else if (fi.FieldType.IsPrimitive) {
+                } else if (fi.FieldType.GetTypeInfo().IsPrimitive) {
                     return System.Runtime.InteropServices.Marshal.SizeOf(fi.FieldType);
                 } else {
                     res += GetTypeSize(fi.FieldType);
@@ -295,7 +295,11 @@ namespace IronPython.Runtime.Operations {
                     typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(BuiltinFunction)), null);
 
                     // type dict needs to be ensured to be fully initialized before assigning back
+#if NETSTANDARD
+                    Interlocked.MemoryBarrier();
+#else
                     Thread.MemoryBarrier();
+#endif
                     _nativelyPickleableTypes = typeDict;
                 }
                 return _nativelyPickleableTypes;

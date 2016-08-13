@@ -34,11 +34,11 @@ namespace IronPython.Modules {
         public const string __doc__ = "MD5 hash algorithm";
 
         [ThreadStatic]
-        private static MD5CryptoServiceProvider _hasher;
+        private static MD5 _hasher;
 
-        private static MD5CryptoServiceProvider GetHasher() {
+        private static MD5 GetHasher() {
             if (_hasher == null) {
-                _hasher = new MD5CryptoServiceProvider();
+                _hasher = MD5.Create();
             }
             return _hasher;
         }
@@ -75,7 +75,11 @@ namespace IronPython.Modules {
 
         [Documentation("new([data]) -> object (object used to calculate MD5 hash)")]
         [PythonType]
-        public class MD5Type : ICloneable {
+        public class MD5Type
+#if FEATURE_ICLONEABLE
+            : ICloneable
+#endif
+        {
             private byte[] _bytes;
             private byte[] _hash;
             public const int digest_size = 16, digestsize = 16;
@@ -93,11 +97,13 @@ namespace IronPython.Modules {
                 }
             }
 
+#if !NETSTANDARD // TODO: InputBlockSize is currently slotted for .NET Core 1.2
             public int block_size {
                 get {
                     return GetHasher().InputBlockSize;
                 }
             }
+#endif
 
             internal MD5Type(IList<byte> initialBytes) {
                 _bytes = new byte[0];
@@ -151,9 +157,11 @@ namespace IronPython.Modules {
                 return new MD5Type(_bytes);
             }
 
+#if FEATURE_ICLONEABLE
             object ICloneable.Clone() {
                 return copy();
             }
+#endif
         }
     }
 }

@@ -360,7 +360,7 @@ namespace IronPython.Modules {
 
         public static List listdir(CodeContext/*!*/ context, [NotNull]string path) {
             if (path == String.Empty) {
-                path = ".";
+                throw PythonOps.WindowsError("The system cannot find the path specified: '{0}'", path);
             }
 
             List ret = PythonOps.MakeList();
@@ -1231,7 +1231,7 @@ namespace IronPython.Modules {
         }
 
         private static bool HasExecutableExtension(string path) {
-            string extension = Path.GetExtension(path).ToLower(CultureInfo.InvariantCulture);
+            string extension = Path.GetExtension(path).ToLowerInvariant();
             return (extension == ".exe" || extension == ".dll" || extension == ".com" || extension == ".bat");
         }
 
@@ -1442,7 +1442,11 @@ namespace IronPython.Modules {
 #endif
 
         public static object urandom(int n) {
-            RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
+#if SILVERLIGHT || WP75
+            RandomNumberGenerator rng = new RNGCryptoServiceProvider();
+#else
+            RandomNumberGenerator rng = RandomNumberGenerator.Create();
+#endif
             byte[] data = new byte[n];
             rng.GetBytes(data);
 

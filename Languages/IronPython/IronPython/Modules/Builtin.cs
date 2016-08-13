@@ -178,26 +178,32 @@ namespace IronPython.Modules {
             return context.LanguageContext.CallWithKeywords(func, args, kws);
         }
 
-        public static PythonType basestring {
-            get {
-                return DynamicHelpers.GetPythonTypeFromType(typeof(string));
+        [PythonType("basestring"), PythonHidden]
+        public class _basestring {
+            public static void __new__(CodeContext/*!*/ context, object cls, [ParamDictionary]IDictionary<object, object> kwargs, params object[] args) {
+                throw PythonOps.TypeError("The basestring type cannot be instantiated");
             }
         }
 
-        public static string bin(int number) {
-            return Int32Ops.ToBinary(number);
+        public static PythonType basestring {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(_basestring));
+            }
         }
+        
+        public static string bin(object obj) {
+            if (obj is int) return Int32Ops.ToBinary((int)obj);
+            if (obj is Index) return Int32Ops.ToBinary(Converter.ConvertToIndex((Index)obj));
+            if (obj is BigInteger) return BigIntegerOps.ToBinary((BigInteger)obj);
 
-        public static string bin(Index number) {
-            return Int32Ops.ToBinary(Converter.ConvertToIndex(number));
-        }
+            object res = PythonOps.Index(obj);
+            if (res is int) {
+                return Int32Ops.ToBinary((int)res);
+            } else if (res is BigInteger) {
+                return BigIntegerOps.ToBinary((BigInteger)res);
+            }
 
-        public static string bin(BigInteger number) {
-            return BigIntegerOps.ToBinary(number);
-        }
-
-        public static string bin(double number) {
-            throw PythonOps.TypeError("'float' object cannot be interpreted as an index");
+            throw PythonOps.TypeError("__index__ returned non-(int, long) (type {0})", PythonOps.GetPythonTypeName(res));
         }
 
         public static PythonType @bool {
@@ -1635,7 +1641,7 @@ namespace IronPython.Modules {
             }
 
             object end = AttrCollectionPop(kwargs, "end", "\n");
-            if (sep != null && !(sep is string)) {
+            if (end != null && !(end is string)) {
                 throw PythonOps.TypeError("end must be None or str, not {0}", PythonTypeOps.GetName(end));
             }
 

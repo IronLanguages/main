@@ -262,7 +262,7 @@ namespace Microsoft.Scripting.Generation {
         }
 
 #if !SILVERLIGHT && !WP75
-#if !WIN8
+#if !WIN8 && !NETSTANDARD
         /// <summary>
         /// Emits an unmanaged indirect call instruction.
         /// </summary>
@@ -1496,6 +1496,7 @@ namespace Microsoft.Scripting.Generation {
         /// Semantics match C# compiler behavior
         /// </summary>
         internal void EmitDefault(Type type) {
+            const TypeCode TypeCodeDbNull = (TypeCode)2; // TypeCode.DBNull
             switch (type.GetTypeCode()) {
                 case TypeCode.Object:
                 case TypeCode.DateTime:
@@ -1519,7 +1520,7 @@ namespace Microsoft.Scripting.Generation {
 
                 case TypeCode.Empty:
                 case TypeCode.String:
-                case TypeCode.DBNull:
+                case TypeCodeDbNull:
                     Emit(OpCodes.Ldnull);
                     break;
 
@@ -1561,6 +1562,7 @@ namespace Microsoft.Scripting.Generation {
         public void EmitMissingValue(Type type) {
             LocalBuilder lb;
 
+            const TypeCode TypeCodeDbNull = (TypeCode)2; // TypeCode.DBNull
             switch (type.GetTypeCode()) {
                 default:
                 case TypeCode.Object:
@@ -1581,7 +1583,7 @@ namespace Microsoft.Scripting.Generation {
                     break;
 
                 case TypeCode.Empty:
-                case TypeCode.DBNull:
+                case TypeCodeDbNull:
                     EmitNull();
                     break;
 

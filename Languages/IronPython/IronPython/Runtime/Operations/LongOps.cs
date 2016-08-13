@@ -53,11 +53,18 @@ namespace IronPython.Runtime.Operations {
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s) {
+            return __new__(context, cls, s, 10);
+        }
+        
+        [StaticExtensionMethod]
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s, int redix) {
             object value;
             IPythonObject po = s as IPythonObject;
             if (po == null ||
                 !PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__long__", out value)) {
-                    value = ParseBigIntegerSign(s.MakeString(), 10);
+
+                    // Enable base using
+                    value = ParseBigIntegerSign(s.MakeString(), redix);
             }
 
             if (cls == TypeCache.BigInteger) {
@@ -1012,7 +1019,7 @@ namespace IronPython.Runtime.Operations {
                         goto case 'd';
                     }
 
-                    digits = ToCultureString(val, PythonContext.GetContext(context).NumericCulture);
+                    digits = FormattingHelper.ToCultureString(val, PythonContext.GetContext(context).NumericCulture.NumberFormat, spec);
                     break;
 #if !FEATURE_NUMERICS
                 case null:
@@ -1060,8 +1067,18 @@ namespace IronPython.Runtime.Operations {
                 case null:
                 case 'd':
                     if (spec.ThousandsComma) {
+                        var width = spec.Width ?? 0;
+                        // If we're inserting commas, and we're padding with leading zeros.
+                        // AlignNumericText won't know where to place the commas,
+                        // so force .Net to help us out here.
+                        if (spec.Fill.HasValue && spec.Fill.Value == '0' && width > 1) {
+                            digits = val.ToString(FormattingHelper.ToCultureString(self, FormattingHelper.InvariantCommaNumberInfo, spec));
+                        }
+                        else {
                         digits = val.ToString("#,0", CultureInfo.InvariantCulture);
-                    } else {
+                        }
+                    }
+                    else {
                         digits = val.ToString("D", CultureInfo.InvariantCulture);
                     }
                     break;
@@ -1098,7 +1115,7 @@ namespace IronPython.Runtime.Operations {
                     if (val >= 1000000) {
                         digits = val.ToString("0.#####e+00", CultureInfo.InvariantCulture);
                     } else if (spec.ThousandsComma) {
-                        digits = val.ToString("#,0", CultureInfo.InvariantCulture);
+                        goto case 'd';
                     } else {
                         digits = val.ToString(CultureInfo.InvariantCulture);
                     }
@@ -1107,7 +1124,7 @@ namespace IronPython.Runtime.Operations {
                     if (val >= 1000000) {
                         digits = val.ToString("0.#####E+00", CultureInfo.InvariantCulture);
                     } else if (spec.ThousandsComma) {
-                        digits = val.ToString("#,0", CultureInfo.InvariantCulture);
+                        goto case 'd';
                     } else {
                         digits = val.ToString(CultureInfo.InvariantCulture);
                     }
@@ -1171,45 +1188,6 @@ namespace IronPython.Runtime.Operations {
             if (includeType) {
                 digits = (lowercase ? "0b" : "0B") + digits;
             }
-            return digits;
-        }
-
-        private static string/*!*/ ToCultureString(BigInteger/*!*/ val, CultureInfo/*!*/ ci) {
-            string digits;
-            string separator = ci.NumberFormat.NumberGroupSeparator;
-            int[] separatorLocations = ci.NumberFormat.NumberGroupSizes;
-            digits = val.ToString();
-
-            if (separatorLocations.Length > 0) {
-                StringBuilder res = new StringBuilder(digits);
-
-                int curGroup = 0, curDigit = digits.Length - 1;
-                while (curDigit > 0) {
-                    // insert the seperator
-                    int groupLen = separatorLocations[curGroup];
-                    if (groupLen == 0) {
-                        break;
-                    }
-                    curDigit -= groupLen;
-
-                    if (curDigit >= 0) {
-                        res.Insert(curDigit + 1, separator);
-                    }
-
-                    // advance the group
-                    if (curGroup + 1 < separatorLocations.Length) {
-                        if (separatorLocations[curGroup + 1] == 0) {
-                            // last value doesn't propagate
-                            break;
-                        }
-
-                        curGroup++;
-                    }
-                }
-
-                digits = res.ToString();
-            }
-
             return digits;
         }
 

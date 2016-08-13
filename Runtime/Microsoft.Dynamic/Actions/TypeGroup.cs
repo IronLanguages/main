@@ -18,14 +18,13 @@ using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
 #endif
-#if CLR45
-using System.Collections.ObjectModel;
-#endif
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;

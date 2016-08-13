@@ -16,7 +16,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+
+#if WIN8
+using MissingMethodException = System.MissingMemberException;
+#endif
 
 namespace Microsoft.Scripting.Utils {
     /// <summary>
