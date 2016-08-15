@@ -159,7 +159,7 @@ namespace IronPython.Runtime.Operations {
                 Debug.Assert(iwr != null);
 
                 InstanceFinalizer nif = new InstanceFinalizer(context, newObject);
-                iwr.SetFinalizer(new WeakRefTracker(nif, nif));
+                iwr.SetFinalizer(new WeakRefTracker(iwr, nif, nif));
             }
         }
 
