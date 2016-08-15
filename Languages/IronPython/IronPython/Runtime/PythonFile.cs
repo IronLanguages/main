@@ -985,7 +985,7 @@ namespace IronPython.Runtime {
         public void CloseIfLast(int fd, Stream stream) {
             objMapping.RemoveOnId(fd);
             if (-1 == objMapping.GetIdFromObject(stream)) {
-                stream.Close();
+                ((IDisposable)stream).Dispose();
             }
         }
 
@@ -1516,7 +1516,7 @@ namespace IronPython.Runtime {
                 _isOpen = false;
 
                 if (!IsConsole) {
-                    _stream.Close();
+                    ((IDisposable)_stream).Dispose();
                 }
 
                 PythonFileManager myManager = _context.RawFileManager;

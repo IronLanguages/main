@@ -190,7 +190,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
 
         public void Dispose() {
             if (_ctrlCEvent != null) {
-                _ctrlCEvent.Close();
+                ((IDisposable)_ctrlCEvent).Dispose();
             }
 
             GC.SuppressFinalize(this);
