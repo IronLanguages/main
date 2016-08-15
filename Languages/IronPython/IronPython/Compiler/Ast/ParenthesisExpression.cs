@@ -41,7 +41,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override MSAst.Expression Reduce() {
-            return _expression;
+            return AppendLine(_expression);
         }
 
         internal override MSAst.Expression TransformSet(SourceSpan span, MSAst.Expression right, PythonOperationKind op) {

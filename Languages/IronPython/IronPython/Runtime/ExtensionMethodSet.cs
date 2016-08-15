@@ -131,7 +131,7 @@ namespace IronPython.Runtime {
                     var ns = Namespaces;
                     
                     foreach (var type in _asm.GetExportedTypes()) {
-                        if (type.IsExtension()) {
+                        if (type.GetTypeInfo().IsExtension()) {
                             if (ns != null && ns.Contains(type.Namespace)) {
                                 loadedTypes.Add(DynamicHelpers.GetPythonTypeFromType(type));
                             }

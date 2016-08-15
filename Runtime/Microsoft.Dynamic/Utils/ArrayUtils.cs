@@ -44,7 +44,7 @@ namespace Microsoft.Scripting.Utils {
             return new FunctorComparer<T>(comparison);
         }
 
-        public static TOutput[] ConvertAll<TInput, TOutput>(TInput[] input, Converter<TInput, TOutput> conv) {
+        public static TOutput[] ConvertAll<TInput, TOutput>(TInput[] input, Func<TInput, TOutput> conv) {
             ContractUtils.RequiresNotNull(input, "input");
             ContractUtils.RequiresNotNull(conv, "conv");
 

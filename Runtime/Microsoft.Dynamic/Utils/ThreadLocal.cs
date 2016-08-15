@@ -173,7 +173,7 @@ namespace Microsoft.Scripting.Utils {
         /// </summary>
         private StorageInfo CreateStorageInfo() {
             // we do our own locking, tell hosts this is a bad time to interrupt us.
-#if !SILVERLIGHT && !WP75
+#if !SILVERLIGHT && !WP75 && !NETSTANDARD
             Thread.BeginCriticalRegion();
 #endif
             StorageInfo[] curStorage = Updating;
@@ -212,7 +212,7 @@ namespace Microsoft.Scripting.Utils {
                     // let others access the storage again
                     Interlocked.Exchange(ref _stores, curStorage);
                 }
-#if !SILVERLIGHT && !WP75
+#if !SILVERLIGHT && !WP75 && !NETSTANDARD
                 Thread.EndCriticalRegion();
 #endif
             }

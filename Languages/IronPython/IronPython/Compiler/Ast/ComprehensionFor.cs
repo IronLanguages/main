@@ -48,7 +48,7 @@ namespace IronPython.Compiler.Ast {
 
             return Ast.Block(
                 new[] { temp },
-                ForStatement.TransformFor(Parent, temp, _list, _lhs, body, null, Span, GlobalParent.IndexToLocation(_lhs.EndIndex), null, null, false)
+                ForStatement.TransformFor(Parent, temp, _list, _lhs, body, null, Span, IndexToLocation(_lhs.EndIndex), null, null, false)
             );
         }
 

@@ -246,7 +246,7 @@ namespace Microsoft.Scripting.Utils {
         }
 
 
-#if SILVERLIGHT || WIN8 || WP75
+#if SILVERLIGHT || WIN8 || WP75 || NETSTANDARD
         // HashSet.CreateSetComparer not available on Silverlight
         public static IEqualityComparer<HashSet<T>> CreateSetComparer<T>() {
             return new HashSetEqualityComparer<T>();

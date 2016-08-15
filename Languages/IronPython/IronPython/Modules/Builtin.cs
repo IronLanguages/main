@@ -300,7 +300,7 @@ namespace IronPython.Modules {
                 if (astOnly) {
                     return source;
                 } else {
-                    PythonAst ast = _ast.ConvertToPythonAst(context, (_ast.AST) source);
+                    PythonAst ast = _ast.ConvertToPythonAst(context, (_ast.AST)source, filename);
                     ast.Bind();
                     ScriptCode code = ast.ToScriptCode();
                     return ((RunnableScriptCode)code).GetFunctionCode(true);
@@ -318,7 +318,7 @@ namespace IronPython.Modules {
                 text = ((Bytes)source).ToString();
             else 
                 // cpython accepts either AST or readable buffer object
-                throw PythonOps.TypeError("srouce can be either AST or string, actual argument: {0}", source.GetType());
+                throw PythonOps.TypeError("source can be either AST or string, actual argument: {0}", source.GetType());
             
             if (text.IndexOf('\0') != -1) {
                 throw PythonOps.TypeError("compile() expected string without null bytes");

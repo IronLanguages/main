@@ -66,7 +66,7 @@ namespace IronPython.Compiler.Ast {
                         Parent.LocalContext
                     );
                 }
-                return GlobalParent.AddDebugInfo(result, Span);
+                return AppendLine(GlobalParent.AddDebugInfo(result, Span));
             } else {
                 // Create list for the individual statements
                 ReadOnlyCollectionBuilder<MSAst.Expression> statements = new ReadOnlyCollectionBuilder<MSAst.Expression>();
@@ -110,7 +110,7 @@ namespace IronPython.Compiler.Ast {
                 } else {
                     res = Ast.Block(statements.ToReadOnlyCollection());
                 }
-                return GlobalParent.AddDebugInfo(res, Span);
+                return AppendLine(GlobalParent.AddDebugInfo(res, Span));
             }
         }
 

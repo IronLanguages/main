@@ -77,7 +77,7 @@ namespace Microsoft.Scripting.Generation {
             // mark the assembly transparent so that it works in partial trust:
             CustomAttributeBuilder[] attributes = new CustomAttributeBuilder[] { 
                 new CustomAttributeBuilder(typeof(SecurityTransparentAttribute).GetConstructor(ReflectionUtils.EmptyTypes), new object[0]),
-#if !CLR2 && !ANDROID
+#if FEATURE_SECURITY_RULES
                 new CustomAttributeBuilder(typeof(SecurityRulesAttribute).GetConstructor(new[] { typeof(SecurityRuleSet) }), new object[] { SecurityRuleSet.Level1 }),
 #endif
             };
@@ -159,7 +159,7 @@ namespace Microsoft.Scripting.Generation {
             try {
                 string pythonPath = new FileInfo(Assembly.GetEntryAssembly().Location).DirectoryName;
 
-                string assemblyFile = Path.Combine(outDir, outFileName).ToLower(CultureInfo.InvariantCulture);
+                string assemblyFile = Path.Combine(outDir, outFileName).ToLowerInvariant();
                 string assemblyName = Path.GetFileNameWithoutExtension(outFileName);
                 string assemblyExtension = Path.GetExtension(outFileName);
                 Random rnd = new System.Random();

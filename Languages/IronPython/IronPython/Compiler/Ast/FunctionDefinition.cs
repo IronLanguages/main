@@ -135,7 +135,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         public SourceLocation Header {
-            get { return GlobalParent.IndexToLocation(_headerIndex); }
+            get { return IndexToLocation(_headerIndex); }
         }
 
         public int HeaderIndex {
@@ -339,7 +339,7 @@ namespace IronPython.Compiler.Ast {
             MSAst.Expression function = MakeFunctionExpression();
             return GlobalParent.AddDebugInfoAndVoid(
                 AssignValue(Parent.GetVariableExpression(_variable), function),
-                new SourceSpan(GlobalParent.IndexToLocation(StartIndex), GlobalParent.IndexToLocation(HeaderIndex))
+                new SourceSpan(Start, Header)
             );
         }
         
@@ -615,7 +615,7 @@ namespace IronPython.Compiler.Ast {
 
             List<MSAst.Expression> statements = new List<MSAst.Expression>();
             // add beginning sequence point
-            var start = GlobalParent.IndexToLocation(StartIndex);
+            var start = Start;
             statements.Add(GlobalParent.AddDebugInfo(
                 AstUtils.Empty(),
                 new SourceSpan(new SourceLocation(0, start.Line, start.Column), new SourceLocation(0, start.Line, Int32.MaxValue))));

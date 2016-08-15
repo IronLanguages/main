@@ -894,7 +894,7 @@ namespace IronPython.Runtime.Types {
 
         private void AddFinalizer(CodeContext/*!*/ context) {
             InstanceFinalizer oif = new InstanceFinalizer(context, this);
-            _weakRef = new WeakRefTracker(oif, oif);
+            _weakRef = new WeakRefTracker(this, oif, oif);
         }
 
         private void ClearFinalizer() {

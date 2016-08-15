@@ -41,13 +41,13 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override MSAst.Expression Reduce() {
-            return Expression.Call(
+            return AppendLine(Expression.Call(
                 AstMethods.MakeSet,
                 Ast.NewArrayInit(
                     typeof(object),
                     ArrayUtils.ConvertAll(_items, x => AstUtils.Convert(x, typeof(object)))
                 )
-            );
+            ));
         }
 
         public override void Walk(PythonWalker walker) {

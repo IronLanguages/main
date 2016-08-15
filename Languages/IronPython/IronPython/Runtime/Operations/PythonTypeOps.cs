@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Dynamic;
+using System.Linq;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting;
@@ -158,7 +159,7 @@ namespace IronPython.Runtime.Operations {
                 Debug.Assert(iwr != null);
 
                 InstanceFinalizer nif = new InstanceFinalizer(context, newObject);
-                iwr.SetFinalizer(new WeakRefTracker(nif, nif));
+                iwr.SetFinalizer(new WeakRefTracker(iwr, nif, nif));
             }
         }
 
@@ -202,6 +203,13 @@ namespace IronPython.Runtime.Operations {
 
         // note: returns "instance" rather than type name if o is an OldInstance
         internal static string GetName(object o) {
+            // Resolve Namespace-Tracker name, which would end in `namespace#` if 
+            // it is not handled indivdualy
+            if (o is NamespaceTracker)
+            {
+                return ((NamespaceTracker)o).Name;
+            }
+
             return DynamicHelpers.GetPythonType(o).Name;
         }
 
@@ -720,9 +728,9 @@ namespace IronPython.Runtime.Operations {
 
         internal static string GetDocumentation(Type type) {
             // Python documentation
-            object[] docAttr = type.GetCustomAttributes(typeof(DocumentationAttribute), false);
-            if (docAttr != null && docAttr.Length > 0) {
-                return ((DocumentationAttribute)docAttr[0]).Documentation;
+            var docAttr = type.GetTypeInfo().GetCustomAttributes(typeof(DocumentationAttribute), false);
+            if (docAttr != null && docAttr.Any()) {
+                return ((DocumentationAttribute)docAttr.First()).Documentation;
             }
 
             if (type == typeof(DynamicNull)) return null;

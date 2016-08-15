@@ -262,7 +262,7 @@ namespace Microsoft.Scripting.Generation {
         }
 
 #if !SILVERLIGHT && !WP75
-#if !WIN8
+#if !WIN8 && !NETSTANDARD
         /// <summary>
         /// Emits an unmanaged indirect call instruction.
         /// </summary>

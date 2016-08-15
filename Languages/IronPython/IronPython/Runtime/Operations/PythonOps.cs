@@ -1389,7 +1389,7 @@ namespace IronPython.Runtime.Operations {
             Debug.Assert(iwr != null);
 
             InstanceFinalizer nif = new InstanceFinalizer(context, newObject);
-            iwr.SetFinalizer(new WeakRefTracker(nif, nif));
+            iwr.SetFinalizer(new WeakRefTracker(iwr, nif, nif));
         }
 
         private static object FindMetaclass(CodeContext/*!*/ context, PythonTuple bases, PythonDictionary dict) {
@@ -2084,7 +2084,16 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static bool TryGetEnumerator(CodeContext/*!*/ context, object enumerable, out IEnumerator enumerator) {
+
             enumerator = null;
+
+            if (enumerable is PythonType) {
+                var ptEnumerable = (PythonType)enumerable;
+                if (!ptEnumerable.IsIterable(context)) {
+                    return false;
+                }
+            }
+
             IEnumerable enumer;
             if (PythonContext.GetContext(context).TryConvertToIEnumerable(enumerable, out enumer)) {
                 enumerator = enumer.GetEnumerator();
@@ -4072,8 +4081,12 @@ namespace IronPython.Runtime.Operations {
 
         public static Exception AttributeErrorForMissingAttribute(object o, string name) {
             PythonType dt = o as PythonType;
-            if (dt != null)
+            if (dt != null) {
                 return PythonOps.AttributeErrorForMissingAttribute(dt.Name, name);
+            }
+            else if (o is NamespaceTracker) {
+                return PythonOps.AttributeErrorForMissingAttribute(PythonTypeOps.GetName(o), name);
+            }
 
             return AttributeErrorForReadonlyAttribute(PythonTypeOps.GetName(o), name);
         }

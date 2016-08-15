@@ -34,7 +34,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override MSAst.Expression Reduce() {
-            return _function.MakeFunctionExpression();
+            return AppendLine(_function.MakeFunctionExpression());
         }
 
         public override void Walk(PythonWalker walker) {
