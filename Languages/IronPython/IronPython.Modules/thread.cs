@@ -193,7 +193,7 @@ namespace IronPython.Modules {
             private void CreateBlockEvent() {
                 AutoResetEvent are = new AutoResetEvent(false);
                 if (Interlocked.CompareExchange<AutoResetEvent>(ref blockEvent, are, null) != null) {
-                    are.Close();
+                    ((IDisposable)are).Dispose();
                 }
             }
         }

@@ -271,7 +271,7 @@ namespace IronPython.Modules {
                         }
                     }
 
-                    _socket.Close();
+                    ((IDisposable)_socket).Dispose();
                     _referenceCount = 0;
                 }
             }
@@ -2239,13 +2239,6 @@ namespace IronPython.Modules {
                 get { return true; }
             }
 
-            public override void Close() {
-                object closeObj;
-                if(PythonOps.TryGetBoundAttr(_userSocket,"close",out closeObj))
-                    PythonCalls.Call(closeObj);
-                Dispose(false); 
-            }
-
             public override void Flush() {
                 if (_data.Count > 0) {
                     StringBuilder res = new StringBuilder();
@@ -2295,6 +2288,12 @@ namespace IronPython.Modules {
             }
 
             protected override void Dispose(bool disposing) {
+                if (disposing) {
+                    object closeObj;
+                    if (PythonOps.TryGetBoundAttr(_userSocket, "close", out closeObj))
+                        PythonCalls.Call(closeObj);
+                }
+
                 base.Dispose(disposing);
             }
         }
@@ -2633,7 +2632,7 @@ namespace IronPython.Modules {
                         _sslStream.AuthenticateAsClient(_socket._hostName, collection, GetProtocolType(_protocol), false);
                     }
                 } catch (AuthenticationException e) {
-                    _socket._socket.Close();
+                    ((IDisposable)_socket._socket).Dispose();
                     throw PythonExceptions.CreateThrowable(PythonSsl.SSLError(_context), "errors while performing handshake: ", e.ToString());
                 }
 
