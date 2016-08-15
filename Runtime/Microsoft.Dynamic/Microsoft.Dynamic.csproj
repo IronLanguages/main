@@ -132,6 +132,7 @@
     <Compile Include="Debugging\TracePipeline\TracePipeline.cs" />
     <Compile Include="Debugging\VariableInfo.cs" />
     <Compile Include="Generation\SymbolGuids.cs" />
+    <Compile Include="ThreadAbortException.cs" />
     <Compile Include="Utils\IRuntimeVariables.cs" />
     <Compile Include="Utils\ReadOnlyCollectionBuilder.cs" />
     <Compile Include="Utils\ThreadingUtils.cs" />

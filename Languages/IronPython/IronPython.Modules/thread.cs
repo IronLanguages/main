@@ -201,7 +201,7 @@ namespace IronPython.Modules {
         #region Internal Implementation details
 
         private static Thread CreateThread(CodeContext/*!*/ context, ThreadStart start) {
-#if !SILVERLIGHT && !WP75
+#if !SILVERLIGHT && !WP75 && !NETSTANDARD
             int size = GetStackSize(context);
             return (size != 0) ? new Thread(start, size) : new Thread(start);
 #else

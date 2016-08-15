@@ -71,7 +71,9 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 if (e.SpecialKey == ConsoleSpecialKey.ControlC) {
                     e.Cancel = true;
                     _ctrlCEvent.Set();
+#if !NETSTANDARD
                     _creatingThread.Abort(new KeyboardInterruptException(""));
+#endif
                 }
             };
 

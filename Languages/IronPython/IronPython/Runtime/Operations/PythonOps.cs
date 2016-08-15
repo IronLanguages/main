@@ -30,6 +30,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
@@ -4123,6 +4124,19 @@ namespace IronPython.Runtime.Operations {
         public static Exception UnicodeEncodeError(string format, params object[] args) {
             return new System.Text.EncoderFallbackException(string.Format(format, args));
         }
+
+#if NETSTANDARD
+        private static ConstructorInfo GetConstructor(this Type type, BindingFlags bindingAttr, object binder, Type[] types, object[] modifiers) {
+            ConstructorInfo[] ctors = type.GetConstructors(bindingAttr);
+            foreach (ConstructorInfo ctor in ctors) {
+                ParameterInfo[] parameters = ctor.GetParameters();
+                if (parameters.Length == types.Length && Enumerable.SequenceEqual(types, parameters.Select(p => p.ParameterType))) {
+                    return ctor;
+                }
+            }
+            return null;
+        }
+#endif
 
         public static Exception UnicodeEncodeError(string encoding, char charUnkown, int index,
             string format, params object[] args) {

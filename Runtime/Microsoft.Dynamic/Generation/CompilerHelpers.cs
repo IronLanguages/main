@@ -223,7 +223,7 @@ namespace Microsoft.Scripting.Generation {
                 InterfaceMapping mapping = targetType.GetTypeInfo().GetRuntimeInterfaceMap(iface);
                 for (int i = 0; i < mapping.TargetMethods.Length; i++) {
                     MethodInfo targetMethod = mapping.TargetMethods[i];
-                    if (targetMethod != null && targetMethod.MethodHandle == method.MethodHandle) {
+                    if (targetMethod != null && targetMethod.MetadataToken == method.MetadataToken && targetMethod.Module == method.Module) {
                         return mapping.InterfaceMethods[i];
                     }
                 }

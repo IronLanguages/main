@@ -147,7 +147,11 @@ namespace Microsoft.Scripting {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadFile")]
         public virtual Assembly LoadAssemblyFromPath(string path) {
 #if FEATURE_FILESYSTEM
+#if NETSTANDARD
+            return System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyPath(path);
+#else
             return Assembly.LoadFile(path);
+#endif
 #else
             throw new NotImplementedException();
 #endif

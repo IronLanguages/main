@@ -718,7 +718,7 @@ namespace IronPython.Runtime.Types {
                 for (; ; ) {
                     switch (xr.NodeType) {
                         case XmlNodeType.Text:
-                            text.Append(xr.ReadString());
+                            text.Append(xr.ReadContentAsString());
                             continue;
                         case XmlNodeType.Element:
                             switch (xr.Name) {
