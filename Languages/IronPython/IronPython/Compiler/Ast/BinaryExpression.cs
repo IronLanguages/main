@@ -151,7 +151,7 @@ namespace IronPython.Compiler.Ast {
                 var folded = ConstantFold();
                 if (folded != null) {
                     folded.Parent = Parent;
-                    return AstUtils.Convert(folded.Reduce(), typeof(object));
+                    return AppendLine(AstUtils.Convert(folded.Reduce(), typeof(object)));
                 }
             } 
             
@@ -168,20 +168,20 @@ namespace IronPython.Compiler.Ast {
                     method = AstMethods.FormatString;
                 }
 
-                return Expression.Call(
+                return AppendLine(Expression.Call(
                     method,
                     Parent.LocalContext,
                     _left,
                     AstUtils.Convert(_right, typeof(object))
-                );
+                ));
             }
 
             if (NeedComparisonTransformation()) {
                 // This is a compound comparison like: (a < b < c)
-                return FinishCompare(_left);
+                return AppendLine(FinishCompare(_left));
             } else {
                 // Simple binary operator.
-                return MakeBinaryOperation(_op, _left, _right, Span);
+                return AppendLine(MakeBinaryOperation(_op, _left, _right, Span));
             }
         }
 

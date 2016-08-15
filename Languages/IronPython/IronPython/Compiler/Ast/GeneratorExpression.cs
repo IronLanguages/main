@@ -40,11 +40,11 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override MSAst.Expression Reduce() {
-            return Ast.Call(
+            return AppendLine(Ast.Call(
                 AstMethods.MakeGeneratorExpression,
                 _function.MakeFunctionExpression(),
                 _iterable
-            );
+            ));
         }
 
         public FunctionDefinition Function {

@@ -45,8 +45,13 @@ namespace IronPython.Compiler.Ast {
             _var = var;
             _body = body;
         }
+        
+        public SourceLocation Header {
+            get { return IndexToLocation(_headerIndex); }
+        }
 
         public int HeaderIndex {
+            get { return _headerIndex; }
             set { _headerIndex = value; }
         }
 
@@ -103,7 +108,7 @@ namespace IronPython.Compiler.Ast {
                         manager,
                         _contextManager
                     ),
-                    new SourceSpan(GlobalParent.IndexToLocation(StartIndex), GlobalParent.IndexToLocation(_headerIndex))
+                    new SourceSpan(Start, Header)
                 )
             );
 
@@ -140,7 +145,7 @@ namespace IronPython.Compiler.Ast {
                             )
                         )
                     ),
-                    new SourceSpan(GlobalParent.IndexToLocation(StartIndex), GlobalParent.IndexToLocation(_headerIndex))
+                    new SourceSpan(Start, Header)
                 )
             );
 
@@ -259,7 +264,7 @@ namespace IronPython.Compiler.Ast {
             );
 
             statements.Add(AstUtils.Empty());
-            return Ast.Block(variables.ToReadOnlyCollection(), statements.ToReadOnlyCollection());
+            return AppendLine(Ast.Block(variables.ToReadOnlyCollection(), statements.ToReadOnlyCollection()));
         }
 
         private MSAst.Expression MakeExitCall(MSAst.ParameterExpression exit, MSAst.Expression exception) {
