@@ -503,6 +503,8 @@ namespace IronPython.Modules
                         return BitOr.Instance;
                     case PyOperator.Divide:
                         return Div.Instance;
+                    case PyOperator.TrueDivide:
+                        return TrueDivide.Instance;
                     case PyOperator.Equal:
                         return Eq.Instance;
                     case PyOperator.FloorDivide:
@@ -1655,6 +1657,12 @@ namespace IronPython.Modules
         public class Div : @operator
         {
             internal static Div Instance = new Div();
+        }
+
+        [PythonType]
+        public class TrueDivide : @operator 
+        {
+            internal static TrueDivide Instance = new TrueDivide();
         }
 
         [PythonType]
