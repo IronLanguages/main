@@ -2,7 +2,11 @@
 # Copyright (C) 2005 Martin v. Löwis
 # Licensed to PSF under a Contributor Agreement.
 from _msi import *
-import os, string, re, sys
+import glob
+import os
+import re
+import string
+import sys
 
 AMD64 = "AMD64" in sys.version
 Itanium = "Itanium" in sys.version
@@ -326,7 +330,7 @@ class Directory:
 
     def add_file(self, file, src=None, version=None, language=None):
         """Add a file to the current component of the directory, starting a new one
-        one if there is no current component. By default, the file name in the source
+        if there is no current component. By default, the file name in the source
         and the file table will be identical. If the src file is specified, it is
         interpreted relative to the current directory. Optionally, a version and a
         language can be specified for the entry in the File table."""

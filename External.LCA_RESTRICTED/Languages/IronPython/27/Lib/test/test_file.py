@@ -88,8 +88,8 @@ class AutoFileTests(unittest.TestCase):
     def testErrors(self):
         f = self.f
         self.assertEqual(f.name, TESTFN)
-        self.assertTrue(not f.isatty())
-        self.assertTrue(not f.closed)
+        self.assertFalse(f.isatty())
+        self.assertFalse(f.closed)
 
         if hasattr(f, "readinto"):
             self.assertRaises((IOError, TypeError), f.readinto, "")
@@ -153,16 +153,6 @@ class OtherFileTests(unittest.TestCase):
             else:
                 f.close()
                 self.fail('%r is an invalid file mode' % mode)
-
-    def testStdin(self):
-        # This causes the interpreter to exit on OSF1 v5.1.
-        if sys.platform != 'osf1V5':
-            self.assertRaises((IOError, ValueError), sys.stdin.seek, -1)
-        else:
-            print((
-                '  Skipping sys.stdin.seek(-1), it may crash the interpreter.'
-                ' Test manually.'), file=sys.__stdout__)
-        self.assertRaises((IOError, ValueError), sys.stdin.truncate)
 
     def testBadModeArgument(self):
         # verify that we get a sensible error message for bad mode argument
@@ -310,6 +300,7 @@ class OtherFileTests(unittest.TestCase):
                 self.fail("readlines() after next() with empty buffer "
                           "failed. Got %r, expected %r" % (line, testline))
             # Reading after iteration hit EOF shouldn't hurt either
+            f.close()
             f = self.open(TESTFN, 'rb')
             try:
                 for line in f:

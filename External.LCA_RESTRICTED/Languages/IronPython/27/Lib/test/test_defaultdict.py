@@ -150,7 +150,6 @@ class TestDefaultDict(unittest.TestCase):
         else:
             self.fail("expected KeyError")
 
-    @unittest.skipIf(sys.platform == 'cli', 'StackOverflowException on ipy.')
     def test_recursive_repr(self):
         # Issue2045: stack overflow when default_factory is a bound method
         class sub(defaultdict):
@@ -174,6 +173,8 @@ class TestDefaultDict(unittest.TestCase):
         finally:
             os.remove(tfn)
 
+    def test_callable_arg(self):
+        self.assertRaises(TypeError, defaultdict, {})
 
 def test_main():
     test_support.run_unittest(TestDefaultDict)

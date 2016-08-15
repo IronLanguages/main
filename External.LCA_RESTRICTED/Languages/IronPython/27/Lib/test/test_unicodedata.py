@@ -230,14 +230,14 @@ class UnicodeMiscTest(UnicodeDatabaseTest):
         # This program should raise a SyntaxError in the eval.
         code = "import sys;" \
             "sys.modules['unicodedata'] = None;" \
-            """eval("u'\\N{SOFT HYPHEN}'")"""
+            """eval("u'\N{SOFT HYPHEN}'")"""
         args = [sys.executable, "-c", code]
         # We use a subprocess because the unicodedata module may already have
         # been loaded in this process.
         popen = subprocess.Popen(args, stderr=subprocess.PIPE)
         popen.wait()
         self.assertEqual(popen.returncode, 1)
-        error = "SyntaxError: (unicode error) \\N escapes not supported " \
+        error = "SyntaxError: (unicode error) \N escapes not supported " \
             "(can't load unicodedata module)"
         self.assertIn(error, popen.stderr.read())
 

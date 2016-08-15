@@ -1,11 +1,12 @@
-#!/usr/bin/env python
-#
 # test_multibytecodec_support.py
 #   Common Unittest Routines for CJK codecs
 #
 
-import sys, codecs
-import unittest, re
+import codecs
+import os
+import re
+import sys
+import unittest
 from httplib import HTTPException
 from test import test_support
 from StringIO import StringIO
@@ -19,7 +20,7 @@ class TestBase:
     roundtriptest   = 1    # set if roundtrip is possible with unicode
     has_iso10646    = 0    # set if this encoding contains whole iso10646 map
     xmlcharnametest = None # string to test xmlcharrefreplace
-    unmappedunicode = u'\udeee' # a unicode codepoint that is not mapped.
+    unmappedunicode = u'\udeee' # a unicode code point that is not mapped.
 
     def setUp(self):
         if self.codec is None:
@@ -41,19 +42,30 @@ class TestBase:
 
     def test_errorhandle(self):
         for source, scheme, expected in self.codectests:
-            if type(source) == type(''):
+            if isinstance(source, bytes):
                 func = self.decode
             else:
                 func = self.encode
             if expected:
                 result = func(source, scheme)[0]
-                self.assertEqual(result, expected)
+                if func is self.decode:
+                    self.assertTrue(type(result) is unicode, type(result))
+                    self.assertEqual(result, expected,
+                                     '%r.decode(%r, %r)=%r != %r'
+                                     % (source, self.encoding, scheme, result,
+                                        expected))
+                else:
+                    self.assertTrue(type(result) is bytes, type(result))
+                    self.assertEqual(result, expected,
+                                     '%r.encode(%r, %r)=%r != %r'
+                                     % (source, self.encoding, scheme, result,
+                                        expected))
             else:
                 self.assertRaises(UnicodeError, func, source, scheme)
 
     def test_xmlcharrefreplace(self):
         if self.has_iso10646:
-            return
+            self.skipTest('encoding contains full ISO 10646 map')
 
         s = u"\u0b13\u0b23\u0b60 nd eggs"
         self.assertEqual(
@@ -63,7 +75,7 @@ class TestBase:
 
     def test_customreplace_encode(self):
         if self.has_iso10646:
-            return
+            self.skipTest('encoding contains full ISO 10646 map')
 
         from htmlentitydefs import codepoint2name
 
@@ -248,6 +260,7 @@ class TestBase_Mapping(unittest.TestCase):
     pass_enctest = []
     pass_dectest = []
     supmaps = []
+    codectests = []
 
     def __init__(self, *args, **kw):
         unittest.TestCase.__init__(self, *args, **kw)
@@ -326,6 +339,34 @@ class TestBase_Mapping(unittest.TestCase):
                 self.fail('Decoding failed while testing %s -> %s: %s' % (
                             repr(csetch), repr(unich), exc.reason))
 
-def load_teststring(encoding):
-    from test import cjkencodings_test
-    return cjkencodings_test.teststring[encoding]
+    def test_errorhandle(self):
+        for source, scheme, expected in self.codectests:
+            if isinstance(source, bytes):
+                func = source.decode
+            else:
+                func = source.encode
+            if expected:
+                if isinstance(source, bytes):
+                    result = func(self.encoding, scheme)
+                    self.assertTrue(type(result) is unicode, type(result))
+                    self.assertEqual(result, expected,
+                                     '%r.decode(%r, %r)=%r != %r'
+                                     % (source, self.encoding, scheme, result,
+                                        expected))
+                else:
+                    result = func(self.encoding, scheme)
+                    self.assertTrue(type(result) is bytes, type(result))
+                    self.assertEqual(result, expected,
+                                     '%r.encode(%r, %r)=%r != %r'
+                                     % (source, self.encoding, scheme, result,
+                                        expected))
+            else:
+                self.assertRaises(UnicodeError, func, self.encoding, scheme)
+
+def load_teststring(name):
+    dir = os.path.join(os.path.dirname(__file__), 'cjkencodings')
+    with open(os.path.join(dir, name + '.txt'), 'rb') as f:
+        encoded = f.read()
+    with open(os.path.join(dir, name + '-utf8.txt'), 'rb') as f:
+        utf8 = f.read()
+    return encoded, utf8

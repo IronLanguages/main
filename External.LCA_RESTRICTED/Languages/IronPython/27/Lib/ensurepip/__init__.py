@@ -3,9 +3,10 @@ from __future__ import print_function
 import os
 import os.path
 import pkgutil
+import shutil
 import sys
 import tempfile
-import shutil
+
 
 __all__ = ["version", "bootstrap"]
 
@@ -64,7 +65,7 @@ def _disable_pip_configuration_settings():
 
 
 def bootstrap(root=None, upgrade=False, user=False,
-              altinstall=False, default_pip=False,
+              altinstall=False, default_pip=True,
               verbosity=0):
     """
     Bootstrap pip into the current Python installation (or the given root
@@ -122,8 +123,8 @@ def bootstrap(root=None, upgrade=False, user=False,
 
         _run_pip(args + [p[0] for p in _PROJECTS], additional_paths)
     finally:
-        shutil.rmtree(tmpdir)
-        pass
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
 
 def _uninstall_helper(verbosity=0):
     """Helper to support a clean default uninstall process on Windows
@@ -210,9 +211,16 @@ def _main(argv=None):
     parser.add_argument(
         "--default-pip",
         action="store_true",
-        default=False,
-        help=("Make a default pip install, installing the unqualified pip "
-              "and easy_install in addition to the versioned scripts"),
+        default=True,
+        dest="default_pip",
+        help=argparse.SUPPRESS,
+    )
+    parser.add_argument(
+        "--no-default-pip",
+        action="store_false",
+        dest="default_pip",
+        help=("Make a non default install, installing only the X and X.Y "
+              "versioned scripts."),
     )
 
     args = parser.parse_args(argv)

@@ -41,7 +41,7 @@ class FixerTestCase(support.TestCase):
 
     def warns(self, before, after, message, unchanged=False):
         tree = self._check(before, after)
-        self.assertTrue(message in "".join(self.fixer_log))
+        self.assertIn(message, "".join(self.fixer_log))
         if not unchanged:
             self.assertTrue(tree.was_changed)
 
@@ -1405,27 +1405,27 @@ class Test_dict(FixerTestCase):
         a = "d.values()"
         self.check(b, a)
 
-    def test_14(self):
+    def test_28(self):
         b = "[i for i in d.viewkeys()]"
         a = "[i for i in d.keys()]"
         self.check(b, a)
 
-    def test_15(self):
+    def test_29(self):
         b = "(i for i in d.viewkeys())"
         a = "(i for i in d.keys())"
         self.check(b, a)
 
-    def test_17(self):
+    def test_30(self):
         b = "iter(d.viewkeys())"
         a = "iter(d.keys())"
         self.check(b, a)
 
-    def test_18(self):
+    def test_31(self):
         b = "list(d.viewkeys())"
         a = "list(d.keys())"
         self.check(b, a)
 
-    def test_19(self):
+    def test_32(self):
         b = "sorted(d.viewkeys())"
         a = "sorted(d.keys())"
         self.check(b, a)
@@ -2824,6 +2824,43 @@ class Test_unicode(FixerTestCase):
         a = """R'''x''' """
         self.check(b, a)
 
+    def test_native_literal_escape_u(self):
+        b = """'\\\\\\u20ac\\U0001d121\\\\u20ac'"""
+        a = """'\\\\\\\\u20ac\\\\U0001d121\\\\u20ac'"""
+        self.check(b, a)
+
+        b = """r'\\\\\\u20ac\\U0001d121\\\\u20ac'"""
+        a = """r'\\\\\\u20ac\\U0001d121\\\\u20ac'"""
+        self.check(b, a)
+
+    def test_bytes_literal_escape_u(self):
+        b = """b'\\\\\\u20ac\\U0001d121\\\\u20ac'"""
+        a = """b'\\\\\\u20ac\\U0001d121\\\\u20ac'"""
+        self.check(b, a)
+
+        b = """br'\\\\\\u20ac\\U0001d121\\\\u20ac'"""
+        a = """br'\\\\\\u20ac\\U0001d121\\\\u20ac'"""
+        self.check(b, a)
+
+    def test_unicode_literal_escape_u(self):
+        b = """u'\\\\\\u20ac\\U0001d121\\\\u20ac'"""
+        a = """'\\\\\\u20ac\\U0001d121\\\\u20ac'"""
+        self.check(b, a)
+
+        b = """ur'\\\\\\u20ac\\U0001d121\\\\u20ac'"""
+        a = """r'\\\\\\u20ac\\U0001d121\\\\u20ac'"""
+        self.check(b, a)
+
+    def test_native_unicode_literal_escape_u(self):
+        f = 'from __future__ import unicode_literals\n'
+        b = f + """'\\\\\\u20ac\\U0001d121\\\\u20ac'"""
+        a = f + """'\\\\\\u20ac\\U0001d121\\\\u20ac'"""
+        self.check(b, a)
+
+        b = f + """r'\\\\\\u20ac\\U0001d121\\\\u20ac'"""
+        a = f + """r'\\\\\\u20ac\\U0001d121\\\\u20ac'"""
+        self.check(b, a)
+
 class Test_callable(FixerTestCase):
     fixer = "callable"
 
@@ -2981,6 +3018,10 @@ class Test_filter(FixerTestCase):
         self.unchanged(a)
         a = """sorted(filter(f, 'abc'), key=blah)[0]"""
         self.unchanged(a)
+        a = """enumerate(filter(f, 'abc'))"""
+        self.unchanged(a)
+        a = """enumerate(filter(f, 'abc'), start=1)"""
+        self.unchanged(a)
         a = """for i in filter(f, 'abc'): pass"""
         self.unchanged(a)
         a = """[x for x in filter(f, 'abc')]"""
@@ -3089,6 +3130,10 @@ class Test_map(FixerTestCase):
         self.unchanged(a)
         a = """sorted(map(f, 'abc'), key=blah)[0]"""
         self.unchanged(a)
+        a = """enumerate(map(f, 'abc'))"""
+        self.unchanged(a)
+        a = """enumerate(map(f, 'abc'), start=1)"""
+        self.unchanged(a)
         a = """for i in map(f, 'abc'): pass"""
         self.unchanged(a)
         a = """[x for x in map(f, 'abc')]"""
@@ -3152,6 +3197,10 @@ class Test_zip(FixerTestCase):
         self.unchanged(a)
         a = """sorted(zip(a, b), key=blah)[0]"""
         self.unchanged(a)
+        a = """enumerate(zip(a, b))"""
+        self.unchanged(a)
+        a = """enumerate(zip(a, b), start=1)"""
+        self.unchanged(a)
         a = """for i in zip(a, b): pass"""
         self.unchanged(a)
         a = """[x for x in zip(a, b)]"""
@@ -3212,6 +3261,10 @@ class Test_types(FixerTestCase):
 
         b = """types.NoneType"""
         a = """type(None)"""
+        self.check(b, a)
+
+        b = "types.StringTypes"
+        a = "(str,)"
         self.check(b, a)
 
 class Test_idioms(FixerTestCase):
@@ -4527,3 +4580,53 @@ class Test_exitfunc(FixerTestCase):
     def test_unchanged(self):
         s = """f(sys.exitfunc)"""
         self.unchanged(s)
+
+
+class Test_asserts(FixerTestCase):
+
+    fixer = "asserts"
+
+    def test_deprecated_names(self):
+        tests = [
+            ('self.assert_(True)', 'self.assertTrue(True)'),
+            ('self.assertEquals(2, 2)', 'self.assertEqual(2, 2)'),
+            ('self.assertNotEquals(2, 3)', 'self.assertNotEqual(2, 3)'),
+            ('self.assertAlmostEquals(2, 3)', 'self.assertAlmostEqual(2, 3)'),
+            ('self.assertNotAlmostEquals(2, 8)', 'self.assertNotAlmostEqual(2, 8)'),
+            ('self.failUnlessEqual(2, 2)', 'self.assertEqual(2, 2)'),
+            ('self.failIfEqual(2, 3)', 'self.assertNotEqual(2, 3)'),
+            ('self.failUnlessAlmostEqual(2, 3)', 'self.assertAlmostEqual(2, 3)'),
+            ('self.failIfAlmostEqual(2, 8)', 'self.assertNotAlmostEqual(2, 8)'),
+            ('self.failUnless(True)', 'self.assertTrue(True)'),
+            ('self.failUnlessRaises(foo)', 'self.assertRaises(foo)'),
+            ('self.failIf(False)', 'self.assertFalse(False)'),
+        ]
+        for b, a in tests:
+            self.check(b, a)
+
+    def test_variants(self):
+        b = 'eq = self.assertEquals'
+        a = 'eq = self.assertEqual'
+        self.check(b, a)
+        b = 'self.assertEquals(2, 3, msg="fail")'
+        a = 'self.assertEqual(2, 3, msg="fail")'
+        self.check(b, a)
+        b = 'self.assertEquals(2, 3, msg="fail") # foo'
+        a = 'self.assertEqual(2, 3, msg="fail") # foo'
+        self.check(b, a)
+        b = 'self.assertEquals (2, 3)'
+        a = 'self.assertEqual (2, 3)'
+        self.check(b, a)
+        b = '  self.assertEquals (2, 3)'
+        a = '  self.assertEqual (2, 3)'
+        self.check(b, a)
+        b = 'with self.failUnlessRaises(Explosion): explode()'
+        a = 'with self.assertRaises(Explosion): explode()'
+        self.check(b, a)
+        b = 'with self.failUnlessRaises(Explosion) as cm: explode()'
+        a = 'with self.assertRaises(Explosion) as cm: explode()'
+        self.check(b, a)
+
+    def test_unchanged(self):
+        self.unchanged('self.assertEqualsOnSaturday')
+        self.unchanged('self.assertEqualsOnSaturday(3, 5)')

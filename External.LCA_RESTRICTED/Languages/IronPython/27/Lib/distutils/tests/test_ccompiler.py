@@ -4,7 +4,8 @@ import unittest
 from test.test_support import captured_stdout
 
 from distutils.ccompiler import (gen_lib_options, CCompiler,
-                                 get_default_compiler, customize_compiler)
+                                 get_default_compiler)
+from distutils.sysconfig import customize_compiler
 from distutils import debug
 from distutils.tests import support
 
@@ -54,12 +55,9 @@ class CCompilerTestCase(support.EnvironGuard, unittest.TestCase):
         finally:
             debug.DEBUG = False
 
+    @unittest.skipUnless(get_default_compiler() == 'unix',
+                         'not testing if default compiler is not unix')
     def test_customize_compiler(self):
-
-        # not testing if default compiler is not unix
-        if get_default_compiler() != 'unix':
-            return
-
         os.environ['AR'] = 'my_ar'
         os.environ['ARFLAGS'] = '-arflags'
 

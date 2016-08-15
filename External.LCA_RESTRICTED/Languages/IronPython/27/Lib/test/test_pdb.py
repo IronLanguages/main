@@ -6,10 +6,79 @@ import sys
 import os
 import unittest
 import subprocess
+import textwrap
 
 from test import test_support
 # This little helper class is essential for testing pdb under doctest.
 from test_doctest import _FakeInput
+
+
+class PdbTestCase(unittest.TestCase):
+
+    def run_pdb(self, script, commands):
+        """Run 'script' lines with pdb and the pdb 'commands'."""
+        filename = 'main.py'
+        with open(filename, 'w') as f:
+            f.write(textwrap.dedent(script))
+        self.addCleanup(test_support.unlink, filename)
+        cmd = [sys.executable, '-m', 'pdb', filename]
+        stdout = stderr = None
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                   stdin=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT,
+                                   )
+        stdout, stderr = proc.communicate(commands)
+        proc.stdout.close()
+        proc.stdin.close()
+        return stdout, stderr
+
+    def test_issue13183(self):
+        script = """
+            from bar import bar
+
+            def foo():
+                bar()
+
+            def nope():
+                pass
+
+            def foobar():
+                foo()
+                nope()
+
+            foobar()
+        """
+        commands = """
+            from bar import bar
+            break bar
+            continue
+            step
+            step
+            quit
+        """
+        bar = """
+            def bar():
+                pass
+        """
+        with open('bar.py', 'w') as f:
+            f.write(textwrap.dedent(bar))
+        self.addCleanup(test_support.unlink, 'bar.py')
+        self.addCleanup(test_support.unlink, 'bar.pyc')
+        stdout, stderr = self.run_pdb(script, commands)
+        self.assertTrue(
+            any('main.py(5)foo()->None' in l for l in stdout.splitlines()),
+            'Fail to step into the caller after a return')
+
+    def test_issue16180(self):
+        # A syntax error in the debuggee.
+        script = "def f: pass\n"
+        commands = ''
+        expected = "SyntaxError:"
+        stdout, stderr = self.run_pdb(script, commands)
+        self.assertIn(expected, stdout,
+            '\n\nExpected:\n{}\nGot:\n{}\n'
+            'Fail to handle a syntax error in the debuggee.'
+            .format(expected, stdout))
 
 
 class PdbTestInput(object):
@@ -280,35 +349,38 @@ def test_pdb_continue_in_bottomframe():
     4
     """
 
-class Tester7750(unittest.TestCase):
-    # if the filename has something that resolves to a python
-    #  escape character (such as \t), it will fail
-    test_fn = '.\\test7750.py'
+class ModuleInitTester(unittest.TestCase):
 
-    msg = "issue7750 only applies when os.sep is a backslash"
-    @unittest.skipUnless(os.path.sep == '\\', msg)
-    def test_issue7750(self):
-        with open(self.test_fn, 'w') as f:
-            f.write('print("hello world")')
-        cmd = [sys.executable, '-m', 'pdb', self.test_fn,]
+    def test_filename_correct(self):
+        """
+        In issue 7750, it was found that if the filename has a sequence that
+        resolves to an escape character in a Python string (such as \t), it
+        will be treated as the escaped character.
+        """
+        # the test_fn must contain something like \t
+        # on Windows, this will create 'test_mod.py' in the current directory.
+        # on Unix, this will create '.\test_mod.py' in the current directory.
+        test_fn = '.\\test_mod.py'
+        code = 'print("testing pdb")'
+        with open(test_fn, 'w') as f:
+            f.write(code)
+        self.addCleanup(os.remove, test_fn)
+        cmd = [sys.executable, '-m', 'pdb', test_fn,]
         proc = subprocess.Popen(cmd,
             stdout=subprocess.PIPE,
             stdin=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             )
         stdout, stderr = proc.communicate('quit\n')
-        self.assertNotIn('IOError', stdout, "pdb munged the filename")
-
-    def tearDown(self):
-        if os.path.isfile(self.test_fn):
-            os.remove(self.test_fn)
+        self.assertIn(code, stdout, "pdb munged the filename")
 
 
 def test_main():
     from test import test_pdb
     test_support.run_doctest(test_pdb, verbosity=True)
-
+    test_support.run_unittest(
+        PdbTestCase,
+        ModuleInitTester)
 
 if __name__ == '__main__':
     test_main()
-    unittest.main()

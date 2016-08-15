@@ -444,21 +444,20 @@ unicodestringnl = ArgumentDescriptor(
 
 def read_unicodestring4(f):
     r"""
-    # bug 24549
-    #>>> import StringIO
-    #>>> s = u'abcd\uabcd'
-    #>>> enc = s.encode('utf-8')
-    #>>> enc
-    #'abcd\xea\xaf\x8d'
-    #>>> n = chr(len(enc)) + chr(0) * 3  # little-endian 4-byte length
-    #>>> t = read_unicodestring4(StringIO.StringIO(n + enc + 'junk'))
-    #>>> s == t
-    #True
-    #
-    #>>> read_unicodestring4(StringIO.StringIO(n + enc[:-1]))
-    #Traceback (most recent call last):
-    #...
-    #ValueError: expected 7 bytes in a unicodestring4, but only 6 remain
+    >>> import StringIO
+    >>> s = u'abcd\uabcd'
+    >>> enc = s.encode('utf-8')
+    >>> enc
+    'abcd\xea\xaf\x8d'
+    >>> n = chr(len(enc)) + chr(0) * 3  # little-endian 4-byte length
+    >>> t = read_unicodestring4(StringIO.StringIO(n + enc + 'junk'))
+    >>> s == t
+    True
+
+    >>> read_unicodestring4(StringIO.StringIO(n + enc[:-1]))
+    Traceback (most recent call last):
+    ...
+    ValueError: expected 7 bytes in a unicodestring4, but only 6 remain
     """
 
     n = read_int4(f)
@@ -584,12 +583,12 @@ floatnl = ArgumentDescriptor(
 
 def read_float8(f):
     r"""
-    #>>> import StringIO, struct
-    #>>> raw = struct.pack(">d", -1.25)
-    #>>> raw
-    #'\xbf\xf4\x00\x00\x00\x00\x00\x00'
-    #>>> read_float8(StringIO.StringIO(raw + "\n"))
-    #-1.25
+    >>> import StringIO, struct
+    >>> raw = struct.pack(">d", -1.25)
+    >>> raw
+    '\xbf\xf4\x00\x00\x00\x00\x00\x00'
+    >>> read_float8(StringIO.StringIO(raw + "\n"))
+    -1.25
     """
 
     data = f.read(8)
@@ -805,7 +804,7 @@ stackslice = StackObject(
                  obtype=StackObject,
                  doc="""An object representing a contiguous slice of the stack.
 
-                 This is used in conjuction with markobject, to represent all
+                 This is used in conjunction with markobject, to represent all
                  of the stack following the topmost markobject.  For example,
                  the POP_MARK opcode changes the stack from
 
@@ -1930,7 +1929,7 @@ def dis(pickle, out=None, memo=None, indentlevel=4):
 
     stack = []          # crude emulation of unpickler stack
     if memo is None:
-        memo = {}       # crude emulation of unpicker memo
+        memo = {}       # crude emulation of unpickler memo
     maxproto = -1       # max protocol number seen
     markstack = []      # bytecode positions of MARK opcodes
     indentchunk = ' ' * indentlevel
@@ -2034,123 +2033,109 @@ _dis_test = r"""
 >>> import pickle
 >>> x = [1, 2, (3, 4), {'abc': u"def"}]
 >>> pkl = pickle.dumps(x, 0)
+>>> dis(pkl)
+    0: (    MARK
+    1: l        LIST       (MARK at 0)
+    2: p    PUT        0
+    5: I    INT        1
+    8: a    APPEND
+    9: I    INT        2
+   12: a    APPEND
+   13: (    MARK
+   14: I        INT        3
+   17: I        INT        4
+   20: t        TUPLE      (MARK at 13)
+   21: p    PUT        1
+   24: a    APPEND
+   25: (    MARK
+   26: d        DICT       (MARK at 25)
+   27: p    PUT        2
+   30: S    STRING     'abc'
+   37: p    PUT        3
+   40: V    UNICODE    u'def'
+   45: p    PUT        4
+   48: s    SETITEM
+   49: a    APPEND
+   50: .    STOP
+highest protocol among opcodes = 0
 
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#>>> dis(pkl)
-#    0: (    MARK
-#    1: l        LIST       (MARK at 0)
-#    2: p    PUT        0
-#    5: I    INT        1
-#    8: a    APPEND
-#    9: I    INT        2
-#   12: a    APPEND
-#   13: (    MARK
-#   14: I        INT        3
-#   17: I        INT        4
-#   20: t        TUPLE      (MARK at 13)
-#   21: p    PUT        1
-#   24: a    APPEND
-#   25: (    MARK
-#   26: d        DICT       (MARK at 25)
-#   27: p    PUT        2
-#   30: S    STRING     'abc'
-#   37: p    PUT        3
-#   40: V    UNICODE    u'def'
-#   45: p    PUT        4
-#   48: s    SETITEM
-#   49: a    APPEND
-#   50: .    STOP
-#highest protocol among opcodes = 0
-#
-#Try again with a "binary" pickle.
-#
+Try again with a "binary" pickle.
 
 >>> pkl = pickle.dumps(x, 1)
+>>> dis(pkl)
+    0: ]    EMPTY_LIST
+    1: q    BINPUT     0
+    3: (    MARK
+    4: K        BININT1    1
+    6: K        BININT1    2
+    8: (        MARK
+    9: K            BININT1    3
+   11: K            BININT1    4
+   13: t            TUPLE      (MARK at 8)
+   14: q        BINPUT     1
+   16: }        EMPTY_DICT
+   17: q        BINPUT     2
+   19: U        SHORT_BINSTRING 'abc'
+   24: q        BINPUT     3
+   26: X        BINUNICODE u'def'
+   34: q        BINPUT     4
+   36: s        SETITEM
+   37: e        APPENDS    (MARK at 3)
+   38: .    STOP
+highest protocol among opcodes = 1
 
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#>>> dis(pkl)
-#    0: ]    EMPTY_LIST
-#    1: q    BINPUT     0
-#    3: (    MARK
-#    4: K        BININT1    1
-#    6: K        BININT1    2
-#    8: (        MARK
-#    9: K            BININT1    3
-#   11: K            BININT1    4
-#   13: t            TUPLE      (MARK at 8)
-#   14: q        BINPUT     1
-#   16: }        EMPTY_DICT
-#   17: q        BINPUT     2
-#   19: U        SHORT_BINSTRING 'abc'
-#   24: q        BINPUT     3
-#   26: X        BINUNICODE u'def'
-#   34: q        BINPUT     4
-#   36: s        SETITEM
-#   37: e        APPENDS    (MARK at 3)
-#   38: .    STOP
-#highest protocol among opcodes = 1
-#
-#Exercise the INST/OBJ/BUILD family.
-#
+Exercise the INST/OBJ/BUILD family.
 
->>> import random
-
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#>>> dis(pickle.dumps(pickletools.dis, 0))
-#    0: c    GLOBAL     'pickletools dis'
-#   17: p    PUT        0
-#   20: .    STOP
-#highest protocol among opcodes = 0
-#
+>>> import pickletools
+>>> dis(pickle.dumps(pickletools.dis, 0))
+    0: c    GLOBAL     'pickletools dis'
+   17: p    PUT        0
+   20: .    STOP
+highest protocol among opcodes = 0
 
 >>> from pickletools import _Example
 >>> x = [_Example(42)] * 2
+>>> dis(pickle.dumps(x, 0))
+    0: (    MARK
+    1: l        LIST       (MARK at 0)
+    2: p    PUT        0
+    5: (    MARK
+    6: i        INST       'pickletools _Example' (MARK at 5)
+   28: p    PUT        1
+   31: (    MARK
+   32: d        DICT       (MARK at 31)
+   33: p    PUT        2
+   36: S    STRING     'value'
+   45: p    PUT        3
+   48: I    INT        42
+   52: s    SETITEM
+   53: b    BUILD
+   54: a    APPEND
+   55: g    GET        1
+   58: a    APPEND
+   59: .    STOP
+highest protocol among opcodes = 0
 
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#>>> dis(pickle.dumps(x, 0))
-#    0: (    MARK
-#    1: l        LIST       (MARK at 0)
-#    2: p    PUT        0
-#    5: (    MARK
-#    6: i        INST       'pickletools _Example' (MARK at 5)
-#   28: p    PUT        1
-#   31: (    MARK
-#   32: d        DICT       (MARK at 31)
-#   33: p    PUT        2
-#   36: S    STRING     'value'
-#   45: p    PUT        3
-#   48: I    INT        42
-#   52: s    SETITEM
-#   53: b    BUILD
-#   54: a    APPEND
-#   55: g    GET        1
-#   58: a    APPEND
-#   59: .    STOP
-#highest protocol among opcodes = 0
-#
-
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#>>> dis(pickle.dumps(x, 1))
-#    0: ]    EMPTY_LIST
-#    1: q    BINPUT     0
-#    3: (    MARK
-#    4: (        MARK
-#    5: c            GLOBAL     'pickletools _Example'
-#   27: q            BINPUT     1
-#   29: o            OBJ        (MARK at 4)
-#   30: q        BINPUT     2
-#   32: }        EMPTY_DICT
-#   33: q        BINPUT     3
-#   35: U        SHORT_BINSTRING 'value'
-#   42: q        BINPUT     4
-#   44: K        BININT1    42
-#   46: s        SETITEM
-#   47: b        BUILD
-#   48: h        BINGET     2
-#   50: e        APPENDS    (MARK at 3)
-#   51: .    STOP
-#highest protocol among opcodes = 1
-#
+>>> dis(pickle.dumps(x, 1))
+    0: ]    EMPTY_LIST
+    1: q    BINPUT     0
+    3: (    MARK
+    4: (        MARK
+    5: c            GLOBAL     'pickletools _Example'
+   27: q            BINPUT     1
+   29: o            OBJ        (MARK at 4)
+   30: q        BINPUT     2
+   32: }        EMPTY_DICT
+   33: q        BINPUT     3
+   35: U        SHORT_BINSTRING 'value'
+   42: q        BINPUT     4
+   44: K        BININT1    42
+   46: s        SETITEM
+   47: b        BUILD
+   48: h        BINGET     2
+   50: e        APPENDS    (MARK at 3)
+   51: .    STOP
+highest protocol among opcodes = 1
 
 Try "the canonical" recursive-object test.
 
@@ -2165,101 +2150,88 @@ True
 True
 >>> T[0][0] is T
 True
+>>> dis(pickle.dumps(L, 0))
+    0: (    MARK
+    1: l        LIST       (MARK at 0)
+    2: p    PUT        0
+    5: (    MARK
+    6: g        GET        0
+    9: t        TUPLE      (MARK at 5)
+   10: p    PUT        1
+   13: a    APPEND
+   14: .    STOP
+highest protocol among opcodes = 0
 
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#>>> dis(pickle.dumps(L, 0))
-#    0: (    MARK
-#    1: l        LIST       (MARK at 0)
-#    2: p    PUT        0
-#    5: (    MARK
-#    6: g        GET        0
-#    9: t        TUPLE      (MARK at 5)
-#   10: p    PUT        1
-#   13: a    APPEND
-#   14: .    STOP
-#highest protocol among opcodes = 0
-#
-
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#>>> dis(pickle.dumps(L, 1))
-#    0: ]    EMPTY_LIST
-#    1: q    BINPUT     0
-#    3: (    MARK
-#    4: h        BINGET     0
-#    6: t        TUPLE      (MARK at 3)
-#    7: q    BINPUT     1
-#    9: a    APPEND
-#   10: .    STOP
-#highest protocol among opcodes = 1
-#
+>>> dis(pickle.dumps(L, 1))
+    0: ]    EMPTY_LIST
+    1: q    BINPUT     0
+    3: (    MARK
+    4: h        BINGET     0
+    6: t        TUPLE      (MARK at 3)
+    7: q    BINPUT     1
+    9: a    APPEND
+   10: .    STOP
+highest protocol among opcodes = 1
 
 Note that, in the protocol 0 pickle of the recursive tuple, the disassembler
 has to emulate the stack in order to realize that the POP opcode at 16 gets
 rid of the MARK at 0.
 
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#>>> dis(pickle.dumps(T, 0))
-#    0: (    MARK
-#    1: (        MARK
-#    2: l            LIST       (MARK at 1)
-#    3: p        PUT        0
-#    6: (        MARK
-#    7: g            GET        0
-#   10: t            TUPLE      (MARK at 6)
-#   11: p        PUT        1
-#   14: a        APPEND
-#   15: 0        POP
-#   16: 0        POP        (MARK at 0)
-#   17: g    GET        1
-#   20: .    STOP
-#highest protocol among opcodes = 0
-#
+>>> dis(pickle.dumps(T, 0))
+    0: (    MARK
+    1: (        MARK
+    2: l            LIST       (MARK at 1)
+    3: p        PUT        0
+    6: (        MARK
+    7: g            GET        0
+   10: t            TUPLE      (MARK at 6)
+   11: p        PUT        1
+   14: a        APPEND
+   15: 0        POP
+   16: 0        POP        (MARK at 0)
+   17: g    GET        1
+   20: .    STOP
+highest protocol among opcodes = 0
 
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#>>> dis(pickle.dumps(T, 1))
-#    0: (    MARK
-#    1: ]        EMPTY_LIST
-#    2: q        BINPUT     0
-#    4: (        MARK
-#    5: h            BINGET     0
-#    7: t            TUPLE      (MARK at 4)
-#    8: q        BINPUT     1
-#   10: a        APPEND
-#   11: 1        POP_MARK   (MARK at 0)
-#   12: h    BINGET     1
-#   14: .    STOP
-#highest protocol among opcodes = 1
-#
+>>> dis(pickle.dumps(T, 1))
+    0: (    MARK
+    1: ]        EMPTY_LIST
+    2: q        BINPUT     0
+    4: (        MARK
+    5: h            BINGET     0
+    7: t            TUPLE      (MARK at 4)
+    8: q        BINPUT     1
+   10: a        APPEND
+   11: 1        POP_MARK   (MARK at 0)
+   12: h    BINGET     1
+   14: .    STOP
+highest protocol among opcodes = 1
 
 Try protocol 2.
 
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#>>> dis(pickle.dumps(L, 2))
-#    0: \x80 PROTO      2
-#    2: ]    EMPTY_LIST
-#    3: q    BINPUT     0
-#    5: h    BINGET     0
-#    7: \x85 TUPLE1
-#    8: q    BINPUT     1
-#   10: a    APPEND
-#   11: .    STOP
-#highest protocol among opcodes = 2
-#
+>>> dis(pickle.dumps(L, 2))
+    0: \x80 PROTO      2
+    2: ]    EMPTY_LIST
+    3: q    BINPUT     0
+    5: h    BINGET     0
+    7: \x85 TUPLE1
+    8: q    BINPUT     1
+   10: a    APPEND
+   11: .    STOP
+highest protocol among opcodes = 2
 
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#>>> dis(pickle.dumps(T, 2))
-#    0: \x80 PROTO      2
-#    2: ]    EMPTY_LIST
-#    3: q    BINPUT     0
-#    5: h    BINGET     0
-#    7: \x85 TUPLE1
-#    8: q    BINPUT     1
-#   10: a    APPEND
-#   11: 0    POP
-#   12: h    BINGET     1
-#   14: .    STOP
-#highest protocol among opcodes = 2
-
+>>> dis(pickle.dumps(T, 2))
+    0: \x80 PROTO      2
+    2: ]    EMPTY_LIST
+    3: q    BINPUT     0
+    5: h    BINGET     0
+    7: \x85 TUPLE1
+    8: q    BINPUT     1
+   10: a    APPEND
+   11: 0    POP
+   12: h    BINGET     1
+   14: .    STOP
+highest protocol among opcodes = 2
 """
 
 _memo_test = r"""
@@ -2272,26 +2244,22 @@ _memo_test = r"""
 >>> p.dump(x)
 >>> f.seek(0)
 >>> memo = {}
-
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#>>> dis(f, memo=memo)
-#    0: \x80 PROTO      2
-#    2: ]    EMPTY_LIST
-#    3: q    BINPUT     0
-#    5: (    MARK
-#    6: K        BININT1    1
-#    8: K        BININT1    2
-#   10: K        BININT1    3
-#   12: e        APPENDS    (MARK at 5)
-#   13: .    STOP
-#highest protocol among opcodes = 2
-
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#>>> dis(f, memo=memo)
-#   14: \x80 PROTO      2
-#   16: h    BINGET     0
-#   18: .    STOP
-#highest protocol among opcodes = 2
+>>> dis(f, memo=memo)
+    0: \x80 PROTO      2
+    2: ]    EMPTY_LIST
+    3: q    BINPUT     0
+    5: (    MARK
+    6: K        BININT1    1
+    8: K        BININT1    2
+   10: K        BININT1    3
+   12: e        APPENDS    (MARK at 5)
+   13: .    STOP
+highest protocol among opcodes = 2
+>>> dis(f, memo=memo)
+   14: \x80 PROTO      2
+   16: h    BINGET     0
+   18: .    STOP
+highest protocol among opcodes = 2
 """
 
 __test__ = {'disassembler_test': _dis_test,

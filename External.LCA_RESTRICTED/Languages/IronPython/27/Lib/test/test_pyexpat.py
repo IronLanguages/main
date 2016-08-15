@@ -13,27 +13,42 @@ from test.test_support import sortdict, run_unittest
 class SetAttributeTest(unittest.TestCase):
     def setUp(self):
         self.parser = expat.ParserCreate(namespace_separator='!')
-        self.set_get_pairs = [
-            [0, 0],
-            [1, 1],
-            [2, 1],
-            [0, 0],
-            ]
+
+    def test_buffer_text(self):
+        self.assertIs(self.parser.buffer_text, False)
+        for x in 0, 1, 2, 0:
+            self.parser.buffer_text = x
+            self.assertIs(self.parser.buffer_text, bool(x))
+
+    def test_namespace_prefixes(self):
+        self.assertIs(self.parser.namespace_prefixes, False)
+        for x in 0, 1, 2, 0:
+            self.parser.namespace_prefixes = x
+            self.assertIs(self.parser.namespace_prefixes, bool(x))
 
     def test_returns_unicode(self):
-        for x, y in self.set_get_pairs:
+        self.assertIs(self.parser.returns_unicode, test_support.have_unicode)
+        for x in 0, 1, 2, 0:
             self.parser.returns_unicode = x
-            self.assertEqual(self.parser.returns_unicode, y)
+            self.assertIs(self.parser.returns_unicode, bool(x))
 
     def test_ordered_attributes(self):
-        for x, y in self.set_get_pairs:
+        self.assertIs(self.parser.ordered_attributes, False)
+        for x in 0, 1, 2, 0:
             self.parser.ordered_attributes = x
-            self.assertEqual(self.parser.ordered_attributes, y)
+            self.assertIs(self.parser.ordered_attributes, bool(x))
 
     def test_specified_attributes(self):
-        for x, y in self.set_get_pairs:
+        self.assertIs(self.parser.specified_attributes, False)
+        for x in 0, 1, 2, 0:
             self.parser.specified_attributes = x
-            self.assertEqual(self.parser.specified_attributes, y)
+            self.assertIs(self.parser.specified_attributes, bool(x))
+
+    def test_invalid_attributes(self):
+        with self.assertRaises(AttributeError):
+            self.parser.foo = 1
+        with self.assertRaises(AttributeError):
+            self.parser.foo
 
 
 data = '''\
@@ -228,6 +243,17 @@ class ParseTest(unittest.TestCase):
         finally:
             test_support.unlink(test_support.TESTFN)
 
+    def test_parse_again(self):
+        parser = expat.ParserCreate()
+        file = StringIO.StringIO(data)
+        parser.ParseFile(file)
+        # Issue 6676: ensure a meaningful exception is raised when attempting
+        # to parse more than one XML document per xmlparser instance,
+        # a limitation of the Expat library.
+        with self.assertRaises(expat.error) as cm:
+            parser.ParseFile(file)
+        self.assertEqual(expat.ErrorString(cm.exception.code),
+                          expat.errors.XML_ERROR_FINISHED)
 
 class NamespaceSeparatorTest(unittest.TestCase):
     def test_legal(self):
@@ -458,12 +484,14 @@ class ChardataBufferTest(unittest.TestCase):
     def test_wrong_size(self):
         parser = expat.ParserCreate()
         parser.buffer_text = 1
-        def f(size):
-            parser.buffer_size = size
-
-        self.assertRaises(TypeError, f, sys.maxint+1)
-        self.assertRaises(ValueError, f, -1)
-        self.assertRaises(ValueError, f, 0)
+        with self.assertRaises(ValueError):
+            parser.buffer_size = -1
+        with self.assertRaises(ValueError):
+            parser.buffer_size = 0
+        with self.assertRaises(TypeError):
+            parser.buffer_size = 512.0
+        with self.assertRaises(TypeError):
+            parser.buffer_size = sys.maxint+1
 
     def test_unchanged_size(self):
         xml1 = ("<?xml version='1.0' encoding='iso8859'?><s>%s" % ('a' * 512))
@@ -588,6 +616,58 @@ class MalformedInputText(unittest.TestCase):
         except expat.ExpatError as e:
             self.assertEqual(str(e), 'XML declaration not well-formed: line 1, column 14')
 
+class ForeignDTDTests(unittest.TestCase):
+    """
+    Tests for the UseForeignDTD method of expat parser objects.
+    """
+    def test_use_foreign_dtd(self):
+        """
+        If UseForeignDTD is passed True and a document without an external
+        entity reference is parsed, ExternalEntityRefHandler is first called
+        with None for the public and system ids.
+        """
+        handler_call_args = []
+        def resolve_entity(context, base, system_id, public_id):
+            handler_call_args.append((public_id, system_id))
+            return 1
+
+        parser = expat.ParserCreate()
+        parser.UseForeignDTD(True)
+        parser.SetParamEntityParsing(expat.XML_PARAM_ENTITY_PARSING_ALWAYS)
+        parser.ExternalEntityRefHandler = resolve_entity
+        parser.Parse("<?xml version='1.0'?><element/>")
+        self.assertEqual(handler_call_args, [(None, None)])
+
+        # test UseForeignDTD() is equal to UseForeignDTD(True)
+        handler_call_args[:] = []
+
+        parser = expat.ParserCreate()
+        parser.UseForeignDTD()
+        parser.SetParamEntityParsing(expat.XML_PARAM_ENTITY_PARSING_ALWAYS)
+        parser.ExternalEntityRefHandler = resolve_entity
+        parser.Parse("<?xml version='1.0'?><element/>")
+        self.assertEqual(handler_call_args, [(None, None)])
+
+    def test_ignore_use_foreign_dtd(self):
+        """
+        If UseForeignDTD is passed True and a document with an external
+        entity reference is parsed, ExternalEntityRefHandler is called with
+        the public and system ids from the document.
+        """
+        handler_call_args = []
+        def resolve_entity(context, base, system_id, public_id):
+            handler_call_args.append((public_id, system_id))
+            return 1
+
+        parser = expat.ParserCreate()
+        parser.UseForeignDTD(True)
+        parser.SetParamEntityParsing(expat.XML_PARAM_ENTITY_PARSING_ALWAYS)
+        parser.ExternalEntityRefHandler = resolve_entity
+        parser.Parse(
+            "<?xml version='1.0'?><!DOCTYPE foo PUBLIC 'bar' 'baz'><element/>")
+        self.assertEqual(handler_call_args, [("bar", "baz")])
+
+
 def test_main():
     run_unittest(SetAttributeTest,
                  ParseTest,
@@ -598,7 +678,8 @@ def test_main():
                  PositionTest,
                  sf1296433Test,
                  ChardataBufferTest,
-                 MalformedInputText)
+                 MalformedInputText,
+                 ForeignDTDTests)
 
 if __name__ == "__main__":
     test_main()

@@ -10,7 +10,7 @@ import unittest
 PORT = None
 
 def make_request_and_skipIf(condition, reason):
-    # If we skip the test, we have to make a request because the
+    # If we skip the test, we have to make a request because
     # the server created in setUp blocks expecting one to come in.
     if not condition:
         return lambda func: func
@@ -100,7 +100,7 @@ class DocXMLRPCHTTPGETServer(unittest.TestCase):
         self.assertEqual(response.status, 200)
         self.assertEqual(response.getheader("Content-type"), "text/html")
 
-        # Server throws an exception if we don't start to read the data
+        # Server raises an exception if we don't start to read the data
         response.read()
 
     def test_invalid_get_response(self):

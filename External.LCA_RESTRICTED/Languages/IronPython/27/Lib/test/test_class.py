@@ -350,6 +350,19 @@ class ClassTests(unittest.TestCase):
         AllTests.__delslice__ = delslice
 
 
+    @test_support.cpython_only
+    def testDelItem(self):
+        class A:
+            ok = False
+            def __delitem__(self, key):
+                self.ok = True
+        a = A()
+        # Subtle: we need to call PySequence_SetItem, not PyMapping_SetItem.
+        from _testcapi import sequence_delitem
+        sequence_delitem(a, 2)
+        self.assertTrue(a.ok)
+
+
     def testUnaryOps(self):
         testme = AllTests()
 
@@ -614,6 +627,13 @@ class ClassTests(unittest.TestCase):
         # the following triggers a SystemError in 2.4
         a = A(hash(A.f.im_func)^(-1))
         hash(a.f)
+
+    def testAttrSlots(self):
+        class C:
+            pass
+        for c in C, C():
+            self.assertRaises(TypeError, type(c).__getattribute__, c, [])
+            self.assertRaises(TypeError, type(c).__setattr__, c, [], [])
 
 def test_main():
     with test_support.check_py3k_warnings(

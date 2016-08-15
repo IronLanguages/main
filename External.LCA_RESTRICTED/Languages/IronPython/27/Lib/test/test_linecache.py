@@ -9,7 +9,7 @@ from test import test_support as support
 FILENAME = linecache.__file__
 INVALID_NAME = '!@$)(!@#_1'
 EMPTY = ''
-TESTS = 'cjkencodings_test inspect_fodder inspect_fodder2 mapping_tests'
+TESTS = 'inspect_fodder inspect_fodder2 mapping_tests'
 TESTS = TESTS.split()
 TEST_PATH = os.path.dirname(support.__file__)
 MODULES = "linecache abc".split()
@@ -123,6 +123,22 @@ class LineCacheTests(unittest.TestCase):
             for index, line in enumerate(source):
                 self.assertEqual(line, getline(source_name, index + 1))
                 source_list.append(line)
+
+    def test_memoryerror(self):
+        lines = linecache.getlines(FILENAME)
+        self.assertTrue(lines)
+        def raise_memoryerror(*args, **kwargs):
+            raise MemoryError
+        with support.swap_attr(linecache, 'updatecache', raise_memoryerror):
+            lines2 = linecache.getlines(FILENAME)
+        self.assertEqual(lines2, lines)
+
+        linecache.clearcache()
+        with support.swap_attr(linecache, 'updatecache', raise_memoryerror):
+            lines3 = linecache.getlines(FILENAME)
+        self.assertEqual(lines3, [])
+        self.assertEqual(linecache.getlines(FILENAME), lines)
+
 
 def test_main():
     support.run_unittest(LineCacheTests)

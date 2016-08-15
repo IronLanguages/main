@@ -12,7 +12,6 @@ import sys, os, time, errno
 if sys.platform in ('os2', 'riscos'):
     raise unittest.SkipTest("Can't test signal on %s" % sys.platform)
 
-mswindows = (sys.platform == "win32" or os.name == 'nt')
 
 class HandlerBCalled(Exception):
     pass
@@ -37,7 +36,7 @@ def ignoring_eintr(__func, *args, **kwargs):
         return None
 
 
-@unittest.skipIf(mswindows, "Not valid on Windows")
+@unittest.skipIf(sys.platform == "win32", "Not valid on Windows")
 class InterProcessSignalTests(unittest.TestCase):
     MAX_DURATION = 20   # Entire test should last at most 20 sec.
 
@@ -110,7 +109,7 @@ class InterProcessSignalTests(unittest.TestCase):
             # This wait should be interrupted by the signal's exception.
             self.wait(child)
             time.sleep(1)  # Give the signal time to be delivered.
-            self.fail('HandlerBCalled exception not thrown')
+            self.fail('HandlerBCalled exception not raised')
         except HandlerBCalled:
             self.assertTrue(self.b_called)
             self.assertFalse(self.a_called)
@@ -149,7 +148,7 @@ class InterProcessSignalTests(unittest.TestCase):
         # test-running process from all the signals. It then
         # communicates with that child process over a pipe and
         # re-raises information about any exceptions the child
-        # throws. The real work happens in self.run_test().
+        # raises. The real work happens in self.run_test().
         os_done_r, os_done_w = os.pipe()
         with closing(os.fdopen(os_done_r)) as done_r, \
              closing(os.fdopen(os_done_w, 'w')) as done_w:
@@ -187,7 +186,7 @@ class InterProcessSignalTests(unittest.TestCase):
                           self.MAX_DURATION)
 
 
-@unittest.skipIf(mswindows, "Not valid on Windows")
+@unittest.skipIf(sys.platform == "win32", "Not valid on Windows")
 class BasicSignalTests(unittest.TestCase):
     def trivial_signal_handler(self, *args):
         pass
@@ -210,7 +209,7 @@ class BasicSignalTests(unittest.TestCase):
         self.assertEqual(signal.getsignal(signal.SIGHUP), hup)
 
 
-@unittest.skipUnless(mswindows, "Windows specific")
+@unittest.skipUnless(sys.platform == "win32", "Windows specific")
 class WindowsSignalTests(unittest.TestCase):
     def test_issue9324(self):
         # Updated for issue #10003, adding SIGBREAK
@@ -228,7 +227,14 @@ class WindowsSignalTests(unittest.TestCase):
             signal.signal(7, handler)
 
 
-@unittest.skipIf(mswindows, "Not valid on Windows")
+class WakeupFDTests(unittest.TestCase):
+
+    def test_invalid_fd(self):
+        fd = test_support.make_bad_fd()
+        self.assertRaises(ValueError, signal.set_wakeup_fd, fd)
+
+
+@unittest.skipIf(sys.platform == "win32", "Not valid on Windows")
 class WakeupSignalTests(unittest.TestCase):
     TIMEOUT_FULL = 10
     TIMEOUT_HALF = 5
@@ -274,7 +280,7 @@ class WakeupSignalTests(unittest.TestCase):
         os.close(self.write)
         signal.signal(signal.SIGALRM, self.alrm)
 
-@unittest.skipIf(mswindows, "Not valid on Windows")
+@unittest.skipIf(sys.platform == "win32", "Not valid on Windows")
 class SiginterruptTest(unittest.TestCase):
 
     def setUp(self):
@@ -376,7 +382,7 @@ class SiginterruptTest(unittest.TestCase):
         self.assertFalse(i)
 
 
-@unittest.skipIf(mswindows, "Not valid on Windows")
+@unittest.skipIf(sys.platform == "win32", "Not valid on Windows")
 class ItimerTest(unittest.TestCase):
     def setUp(self):
         self.hndl_called = False
@@ -486,8 +492,9 @@ class ItimerTest(unittest.TestCase):
 
 def test_main():
     test_support.run_unittest(BasicSignalTests, InterProcessSignalTests,
-                              WakeupSignalTests, SiginterruptTest,
-                              ItimerTest, WindowsSignalTests)
+                              WakeupFDTests, WakeupSignalTests,
+                              SiginterruptTest, ItimerTest,
+                              WindowsSignalTests)
 
 
 if __name__ == "__main__":

@@ -5,6 +5,11 @@
 import re
 import string
 
+import warnings
+warnings.warn("The xmllib module is obsolete.  Use xml.sax instead.",
+              DeprecationWarning, 2)
+del warnings
+
 version = '0.3'
 
 class Error(RuntimeError):

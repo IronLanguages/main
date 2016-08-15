@@ -24,6 +24,7 @@
 
 import unittest
 import sqlite3 as sqlite
+from test import test_support
 
 def func_returntext():
     return "foo"
@@ -36,7 +37,10 @@ def func_returnfloat():
 def func_returnnull():
     return None
 def func_returnblob():
-    return buffer("blob")
+    with test_support.check_py3k_warnings():
+        return buffer("blob")
+def func_returnlonglong():
+    return 1<<31
 def func_raiseexception():
     5 // 0
 
@@ -50,6 +54,8 @@ def func_isnone(v):
     return type(v) is type(None)
 def func_isblob(v):
     return type(v) is buffer
+def func_islonglong(v):
+    return isinstance(v, (int, long)) and v >= 1<<31
 
 class AggrNoStep:
     def __init__(self):
@@ -126,6 +132,7 @@ class FunctionTests(unittest.TestCase):
         self.con.create_function("returnfloat", 0, func_returnfloat)
         self.con.create_function("returnnull", 0, func_returnnull)
         self.con.create_function("returnblob", 0, func_returnblob)
+        self.con.create_function("returnlonglong", 0, func_returnlonglong)
         self.con.create_function("raiseexception", 0, func_raiseexception)
 
         self.con.create_function("isstring", 1, func_isstring)
@@ -133,6 +140,7 @@ class FunctionTests(unittest.TestCase):
         self.con.create_function("isfloat", 1, func_isfloat)
         self.con.create_function("isnone", 1, func_isnone)
         self.con.create_function("isblob", 1, func_isblob)
+        self.con.create_function("islonglong", 1, func_islonglong)
 
     def tearDown(self):
         self.con.close()
@@ -196,8 +204,15 @@ class FunctionTests(unittest.TestCase):
         cur = self.con.cursor()
         cur.execute("select returnblob()")
         val = cur.fetchone()[0]
-        self.assertEqual(type(val), buffer)
-        self.assertEqual(val, buffer("blob"))
+        with test_support.check_py3k_warnings():
+            self.assertEqual(type(val), buffer)
+            self.assertEqual(val, buffer("blob"))
+
+    def CheckFuncReturnLongLong(self):
+        cur = self.con.cursor()
+        cur.execute("select returnlonglong()")
+        val = cur.fetchone()[0]
+        self.assertEqual(val, 1<<31)
 
     def CheckFuncException(self):
         cur = self.con.cursor()
@@ -234,7 +249,14 @@ class FunctionTests(unittest.TestCase):
 
     def CheckParamBlob(self):
         cur = self.con.cursor()
-        cur.execute("select isblob(?)", (buffer("blob"),))
+        with test_support.check_py3k_warnings():
+            cur.execute("select isblob(?)", (buffer("blob"),))
+        val = cur.fetchone()[0]
+        self.assertEqual(val, 1)
+
+    def CheckParamLongLong(self):
+        cur = self.con.cursor()
+        cur.execute("select islonglong(?)", (1<<42,))
         val = cur.fetchone()[0]
         self.assertEqual(val, 1)
 
@@ -251,8 +273,9 @@ class AggregateTests(unittest.TestCase):
                 b blob
                 )
             """)
-        cur.execute("insert into test(t, i, f, n, b) values (?, ?, ?, ?, ?)",
-            ("foo", 5, 3.14, None, buffer("blob"),))
+        with test_support.check_py3k_warnings():
+            cur.execute("insert into test(t, i, f, n, b) values (?, ?, ?, ?, ?)",
+                ("foo", 5, 3.14, None, buffer("blob"),))
 
         self.con.create_aggregate("nostep", 1, AggrNoStep)
         self.con.create_aggregate("nofinalize", 1, AggrNoFinalize)
@@ -344,7 +367,8 @@ class AggregateTests(unittest.TestCase):
 
     def CheckAggrCheckParamBlob(self):
         cur = self.con.cursor()
-        cur.execute("select checkType('blob', ?)", (buffer("blob"),))
+        with test_support.check_py3k_warnings():
+            cur.execute("select checkType('blob', ?)", (buffer("blob"),))
         val = cur.fetchone()[0]
         self.assertEqual(val, 1)
 
@@ -356,14 +380,15 @@ class AggregateTests(unittest.TestCase):
         val = cur.fetchone()[0]
         self.assertEqual(val, 60)
 
-def authorizer_cb(action, arg1, arg2, dbname, source):
-    if action != sqlite.SQLITE_SELECT:
-        return sqlite.SQLITE_DENY
-    if arg2 == 'c2' or arg1 == 't2':
-        return sqlite.SQLITE_DENY
-    return sqlite.SQLITE_OK
-
 class AuthorizerTests(unittest.TestCase):
+    @staticmethod
+    def authorizer_cb(action, arg1, arg2, dbname, source):
+        if action != sqlite.SQLITE_SELECT:
+            return sqlite.SQLITE_DENY
+        if arg2 == 'c2' or arg1 == 't2':
+            return sqlite.SQLITE_DENY
+        return sqlite.SQLITE_OK
+
     def setUp(self):
         self.con = sqlite.connect(":memory:")
         self.con.executescript("""
@@ -376,12 +401,12 @@ class AuthorizerTests(unittest.TestCase):
         # For our security test:
         self.con.execute("select c2 from t2")
 
-        self.con.set_authorizer(authorizer_cb)
+        self.con.set_authorizer(self.authorizer_cb)
 
     def tearDown(self):
         pass
 
-    def CheckTableAccess(self):
+    def test_table_access(self):
         try:
             self.con.execute("select * from t2")
         except sqlite.DatabaseError, e:
@@ -390,7 +415,7 @@ class AuthorizerTests(unittest.TestCase):
             return
         self.fail("should have raised an exception due to missing privileges")
 
-    def CheckColumnAccess(self):
+    def test_column_access(self):
         try:
             self.con.execute("select c2 from t1")
         except sqlite.DatabaseError, e:
@@ -399,11 +424,46 @@ class AuthorizerTests(unittest.TestCase):
             return
         self.fail("should have raised an exception due to missing privileges")
 
+class AuthorizerRaiseExceptionTests(AuthorizerTests):
+    @staticmethod
+    def authorizer_cb(action, arg1, arg2, dbname, source):
+        if action != sqlite.SQLITE_SELECT:
+            raise ValueError
+        if arg2 == 'c2' or arg1 == 't2':
+            raise ValueError
+        return sqlite.SQLITE_OK
+
+class AuthorizerIllegalTypeTests(AuthorizerTests):
+    @staticmethod
+    def authorizer_cb(action, arg1, arg2, dbname, source):
+        if action != sqlite.SQLITE_SELECT:
+            return 0.0
+        if arg2 == 'c2' or arg1 == 't2':
+            return 0.0
+        return sqlite.SQLITE_OK
+
+class AuthorizerLargeIntegerTests(AuthorizerTests):
+    @staticmethod
+    def authorizer_cb(action, arg1, arg2, dbname, source):
+        if action != sqlite.SQLITE_SELECT:
+            return 2**32
+        if arg2 == 'c2' or arg1 == 't2':
+            return 2**32
+        return sqlite.SQLITE_OK
+
+
 def suite():
     function_suite = unittest.makeSuite(FunctionTests, "Check")
     aggregate_suite = unittest.makeSuite(AggregateTests, "Check")
-    authorizer_suite = unittest.makeSuite(AuthorizerTests, "Check")
-    return unittest.TestSuite((function_suite, aggregate_suite, authorizer_suite))
+    authorizer_suite = unittest.makeSuite(AuthorizerTests)
+    return unittest.TestSuite((
+            function_suite,
+            aggregate_suite,
+            authorizer_suite,
+            unittest.makeSuite(AuthorizerRaiseExceptionTests),
+            unittest.makeSuite(AuthorizerIllegalTypeTests),
+            unittest.makeSuite(AuthorizerLargeIntegerTests),
+        ))
 
 def test():
     runner = unittest.TextTestRunner()

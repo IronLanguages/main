@@ -4,22 +4,15 @@
 import os, sys
 import errno
 from pprint import pprint
+import string
 import unittest
 
 from test_all import db, test_support, verbose, get_new_environment_path, get_new_database_path
-
-letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 
 #----------------------------------------------------------------------
 
 class SimpleRecnoTestCase(unittest.TestCase):
-    if sys.version_info < (2, 4) :
-        def assertFalse(self, expr, msg=None) :
-            return self.failIf(expr,msg=msg)
-        def assertTrue(self, expr, msg=None) :
-            return self.assertTrue(expr, msg=msg)
-
     if (sys.version_info < (2, 7)) or ((sys.version_info >= (3, 0)) and
             (sys.version_info < (3, 2))) :
         def assertIsInstance(self, obj, datatype, msg=None) :
@@ -45,7 +38,7 @@ class SimpleRecnoTestCase(unittest.TestCase):
 
         d.open(self.filename, db.DB_RECNO, db.DB_CREATE)
 
-        for x in letters:
+        for x in string.ascii_letters:
             recno = d.append(x * 60)
             self.assertIsInstance(recno, int)
             self.assertGreaterEqual(recno, 1)
@@ -236,7 +229,9 @@ class SimpleRecnoTestCase(unittest.TestCase):
         d.close()
 
         # get the text from the backing source
-        text = open(source, 'r').read()
+        f = open(source, 'r')
+        text = f.read()
+        f.close()
         text = text.strip()
         if verbose:
             print text
@@ -256,7 +251,9 @@ class SimpleRecnoTestCase(unittest.TestCase):
         d.sync()
         d.close()
 
-        text = open(source, 'r').read()
+        f = open(source, 'r')
+        text = f.read()
+        f.close()
         text = text.strip()
         if verbose:
             print text
@@ -272,7 +269,7 @@ class SimpleRecnoTestCase(unittest.TestCase):
         d.set_re_pad(45)  # ...test both int and char
         d.open(self.filename, db.DB_RECNO, db.DB_CREATE)
 
-        for x in letters:
+        for x in string.ascii_letters:
             d.append(x * 35)    # These will be padded
 
         d.append('.' * 40)      # this one will be exact
@@ -297,6 +294,18 @@ class SimpleRecnoTestCase(unittest.TestCase):
 
         c.close()
         d.close()
+
+    def test04_get_size_empty(self) :
+        d = db.DB()
+        d.open(self.filename, dbtype=db.DB_RECNO, flags=db.DB_CREATE)
+
+        row_id = d.append(' ')
+        self.assertEqual(1, d.get_size(key=row_id))
+        row_id = d.append('')
+        self.assertEqual(0, d.get_size(key=row_id))
+
+
+
 
 
 #----------------------------------------------------------------------

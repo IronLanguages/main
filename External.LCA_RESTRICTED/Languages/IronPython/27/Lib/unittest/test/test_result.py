@@ -176,7 +176,7 @@ class Test_TestResult(unittest.TestCase):
         self.assertEqual(result.shouldStop, False)
 
         test_case, formatted_exc = result.failures[0]
-        self.assertTrue(test_case is test)
+        self.assertIs(test_case, test)
         self.assertIsInstance(formatted_exc, str)
 
     # "addError(test, err)"
@@ -224,7 +224,7 @@ class Test_TestResult(unittest.TestCase):
         self.assertEqual(result.shouldStop, False)
 
         test_case, formatted_exc = result.errors[0]
-        self.assertTrue(test_case is test)
+        self.assertIs(test_case, test)
         self.assertIsInstance(formatted_exc, str)
 
     def testGetDescriptionWithoutDocstring(self):
@@ -503,7 +503,7 @@ class TestOutputBuffering(unittest.TestCase):
         class Foo(unittest.TestCase):
             @classmethod
             def setUpClass(cls):
-                1/0
+                1//0
             def test_foo(self):
                 pass
         suite = unittest.TestSuite([Foo('test_foo')])
@@ -517,7 +517,7 @@ class TestOutputBuffering(unittest.TestCase):
         class Foo(unittest.TestCase):
             @classmethod
             def tearDownClass(cls):
-                1/0
+                1//0
             def test_foo(self):
                 pass
         suite = unittest.TestSuite([Foo('test_foo')])
@@ -534,7 +534,7 @@ class TestOutputBuffering(unittest.TestCase):
         class Module(object):
             @staticmethod
             def setUpModule():
-                1/0
+                1//0
 
         Foo.__module__ = 'Module'
         sys.modules['Module'] = Module
@@ -553,7 +553,7 @@ class TestOutputBuffering(unittest.TestCase):
         class Module(object):
             @staticmethod
             def tearDownModule():
-                1/0
+                1//0
 
         Foo.__module__ = 'Module'
         sys.modules['Module'] = Module

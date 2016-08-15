@@ -131,12 +131,14 @@ class bdist_msi (Command):
         self.no_target_optimize = 0
         self.target_version = None
         self.dist_dir = None
-        self.skip_build = 0
+        self.skip_build = None
         self.install_script = None
         self.pre_install_script = None
         self.versions = None
 
     def finalize_options (self):
+        self.set_undefined_options('bdist', ('skip_build', 'skip_build'))
+
         if self.bdist_dir is None:
             bdist_base = self.get_finalized_command('bdist').bdist_base
             self.bdist_dir = os.path.join(bdist_base, 'msi')

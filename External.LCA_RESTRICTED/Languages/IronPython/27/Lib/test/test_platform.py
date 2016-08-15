@@ -67,6 +67,22 @@ class PlatformTest(unittest.TestCase):
              ('IronPython', '1.0.60816', '', '', '', '', '.NET 2.0.50727.42')),
             ('IronPython 1.0 (1.0.61005.1977) on .NET 2.0.50727.42',
              ('IronPython', '1.0.0', '', '', '', '', '.NET 2.0.50727.42')),
+            ('2.4.3 (truncation, date, t) \n[GCC]',
+             ('CPython', '2.4.3', '', '', 'truncation', 'date t', 'GCC')),
+            ('2.4.3 (truncation, date, ) \n[GCC]',
+             ('CPython', '2.4.3', '', '', 'truncation', 'date', 'GCC')),
+            ('2.4.3 (truncation, date,) \n[GCC]',
+             ('CPython', '2.4.3', '', '', 'truncation', 'date', 'GCC')),
+            ('2.4.3 (truncation, date) \n[GCC]',
+             ('CPython', '2.4.3', '', '', 'truncation', 'date', 'GCC')),
+            ('2.4.3 (truncation, d) \n[GCC]',
+             ('CPython', '2.4.3', '', '', 'truncation', 'd', 'GCC')),
+            ('2.4.3 (truncation, ) \n[GCC]',
+             ('CPython', '2.4.3', '', '', 'truncation', '', 'GCC')),
+            ('2.4.3 (truncation,) \n[GCC]',
+             ('CPython', '2.4.3', '', '', 'truncation', '', 'GCC')),
+            ('2.4.3 (truncation) \n[GCC]',
+             ('CPython', '2.4.3', '', '', 'truncation', '', 'GCC')),
             ):
             # branch and revision are not "parsed", but fetched
             # from sys.subversion.  Ignore them
@@ -88,6 +104,17 @@ class PlatformTest(unittest.TestCase):
             :
                 ("IronPython", "2.0.0", "", "", ("", ""),
                  ".NET 2.0.50727.3053"),
+
+            ("2.6.1 (IronPython 2.6.1 (2.6.10920.0) on .NET 2.0.50727.1433)", None, "cli")
+            :
+                ("IronPython", "2.6.1", "", "", ("", ""),
+                 ".NET 2.0.50727.1433"),
+
+            ("2.7.4 (IronPython 2.7.4 (2.7.0.40) on Mono 4.0.30319.1 (32-bit))", None, "cli")
+            :
+                ("IronPython", "2.7.4", "", "", ("", ""),
+                 "Mono 4.0.30319.1 (32-bit)"),
+
             ("2.5 (trunk:6107, Mar 26 2009, 13:02:18) \n[Java HotSpot(TM) Client VM (\"Apple Computer, Inc.\")]",
             ('Jython', 'trunk', '6107'), "java1.5.0_16")
             :
@@ -127,7 +154,7 @@ class PlatformTest(unittest.TestCase):
         res = platform.uname()
         self.assertTrue(any(res))
 
-    @unittest.skipUnless(sys.platform.startswith('win') or os.name == 'nt', "windows only test")
+    @unittest.skipUnless(sys.platform.startswith('win'), "windows only test")
     def test_uname_win32_ARCHITEW6432(self):
         # Issue 7860: make sure we get architecture from the correct variable
         # on 64 bit Windows: if PROCESSOR_ARCHITEW6432 exists we should be
@@ -191,7 +218,7 @@ class PlatformTest(unittest.TestCase):
             self.assertEqual(res[1], ('', '', ''))
 
             if sys.byteorder == 'little':
-                self.assertEqual(res[2], 'i386')
+                self.assertIn(res[2], ('i386', 'x86_64'))
             else:
                 self.assertEqual(res[2], 'PowerPC')
 

@@ -1,35 +1,23 @@
 """Class for printing reports on profiled python code."""
 
-# Class for printing reports on profiled python code. rev 1.0  4/1/94
-#
+# Written by James Roskind
 # Based on prior profile module by Sjoerd Mullender...
 #   which was hacked somewhat by: Guido van Rossum
-#
-# see profile.py for more info.
 
-# Copyright 1994, by InfoSeek Corporation, all rights reserved.
-# Written by James Roskind
+# Copyright Disney Enterprises, Inc.  All Rights Reserved.
+# Licensed to PSF under a Contributor Agreement
 #
-# Permission to use, copy, modify, and distribute this Python software
-# and its associated documentation for any purpose (subject to the
-# restriction in the following sentence) without fee is hereby granted,
-# provided that the above copyright notice appears in all copies, and
-# that both that copyright notice and this permission notice appear in
-# supporting documentation, and that the name of InfoSeek not be used in
-# advertising or publicity pertaining to distribution of the software
-# without specific, written prior permission.  This permission is
-# explicitly restricted to the copying and modification of the software
-# to remain in Python, compiled Python, or other languages (such as C)
-# wherein the modified or derived code is exclusively imported into a
-# Python module.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# INFOSEEK CORPORATION DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
-# SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-# FITNESS. IN NO EVENT SHALL INFOSEEK CORPORATION BE LIABLE FOR ANY
-# SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
-# RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
-# CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
-# CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied.  See the License for the specific language
+# governing permissions and limitations under the License.
 
 
 import sys
@@ -72,7 +60,7 @@ class Stats:
     """
 
     def __init__(self, *args, **kwds):
-        # I can't figure out how to explictly specify a stream keyword arg
+        # I can't figure out how to explicitly specify a stream keyword arg
         # with *args:
         #   def __init__(self, *args, stream=sys.stdout): ...
         # so I use **kwds and sqauwk if something unexpected is passed in.
@@ -132,8 +120,8 @@ class Stats:
             self.stats = arg.stats
             arg.stats = {}
         if not self.stats:
-            raise TypeError,  "Cannot create or construct a %r object from '%r''" % (
-                              self.__class__, arg)
+            raise TypeError("Cannot create or construct a %r object from %r"
+                            % (self.__class__, arg))
         return
 
     def get_top_level_stats(self):
@@ -184,15 +172,19 @@ class Stats:
     # along with some printable description
     sort_arg_dict_default = {
               "calls"     : (((1,-1),              ), "call count"),
+              "ncalls"    : (((1,-1),              ), "call count"),
+              "cumtime"   : (((3,-1),              ), "cumulative time"),
               "cumulative": (((3,-1),              ), "cumulative time"),
               "file"      : (((4, 1),              ), "file name"),
+              "filename"  : (((4, 1),              ), "file name"),
               "line"      : (((5, 1),              ), "line number"),
               "module"    : (((4, 1),              ), "file name"),
               "name"      : (((6, 1),              ), "function name"),
               "nfl"       : (((6, 1),(4, 1),(5, 1),), "name/file/line"),
-              "pcalls"    : (((0,-1),              ), "call count"),
+              "pcalls"    : (((0,-1),              ), "primitive call count"),
               "stdname"   : (((7, 1),              ), "standard name"),
               "time"      : (((2,-1),              ), "internal time"),
+              "tottime"   : (((2,-1),              ), "internal time"),
               }
 
     def get_sort_arg_defs(self):

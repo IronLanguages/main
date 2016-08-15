@@ -19,12 +19,6 @@ if have_threads :
 #----------------------------------------------------------------------
 
 class LockingTestCase(unittest.TestCase):
-    import sys
-    if sys.version_info < (2, 4) :
-        def assertTrue(self, expr, msg=None):
-            self.failUnless(expr,msg=msg)
-
-
     def setUp(self):
         self.homeDir = get_new_environment_path()
         self.env = db.DBEnv()
@@ -47,7 +41,7 @@ class LockingTestCase(unittest.TestCase):
             print "locker ID: %s" % anID
         lock = self.env.lock_get(anID, "some locked thing", db.DB_LOCK_WRITE)
         if verbose:
-            print "Aquired lock: %s" % lock
+            print "Acquired lock: %s" % lock
         self.env.lock_put(lock)
         if verbose:
             print "Released lock: %s" % lock
@@ -89,7 +83,6 @@ class LockingTestCase(unittest.TestCase):
         for t in threads:
             t.join()
 
-    if db.version() >= (4, 2) :
         def test03_lock_timeout(self):
             self.env.set_timeout(0, db.DB_SET_LOCK_TIMEOUT)
             self.assertEqual(self.env.get_timeout(db.DB_SET_LOCK_TIMEOUT), 0)
@@ -165,7 +158,7 @@ class LockingTestCase(unittest.TestCase):
         for i in xrange(1000) :
             lock = self.env.lock_get(anID, "some locked thing", lockType)
             if verbose:
-                print "%s: Aquired %s lock: %s" % (name, lt, lock)
+                print "%s: Acquired %s lock: %s" % (name, lt, lock)
 
             self.env.lock_put(lock)
             if verbose:

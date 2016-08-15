@@ -102,14 +102,23 @@ import sys
 import time
 import urlparse
 import bisect
+import warnings
 
 try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
 
+# check for SSL
+try:
+    import ssl
+except ImportError:
+    _have_ssl = False
+else:
+    _have_ssl = True
+
 from urllib import (unwrap, unquote, splittype, splithost, quote,
-     addinfourl, splitport, splittag,
+     addinfourl, splitport, splittag, toBytes,
      splitattr, ftpwrapper, splituser, splitpasswd, splitvalue)
 
 # support for FileHandler, proxies via environment variables
@@ -119,11 +128,30 @@ from urllib import localhost, url2pathname, getproxies, proxy_bypass
 __version__ = sys.version[:3]
 
 _opener = None
-def urlopen(url, data=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
+def urlopen(url, data=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
+            cafile=None, capath=None, cadefault=False, context=None):
     global _opener
-    if _opener is None:
-        _opener = build_opener()
-    return _opener.open(url, data, timeout)
+    if cafile or capath or cadefault:
+        if context is not None:
+            raise ValueError(
+                "You can't pass both context and any of cafile, capath, and "
+                "cadefault"
+            )
+        if not _have_ssl:
+            raise ValueError('SSL support not available')
+        context = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH,
+                                             cafile=cafile,
+                                             capath=capath)
+        https_handler = HTTPSHandler(context=context)
+        opener = build_opener(https_handler)
+    elif context:
+        https_handler = HTTPSHandler(context=context)
+        opener = build_opener(https_handler)
+    elif _opener is None:
+        _opener = opener = build_opener()
+    else:
+        opener = _opener
+    return opener.open(url, data, timeout)
 
 def install_opener(opener):
     global _opener
@@ -165,6 +193,15 @@ class HTTPError(URLError, addinfourl):
 
     def __str__(self):
         return 'HTTP Error %s: %s' % (self.code, self.msg)
+
+    # since URLError specifies a .reason attribute, HTTPError should also
+    #  provide this attribute. See issue13211 fo discussion.
+    @property
+    def reason(self):
+        return self.msg
+
+    def info(self):
+        return self.hdrs
 
 # copied from cookielib.py
 _cut_port_re = re.compile(r":\d+$")
@@ -211,11 +248,9 @@ class Request:
         # methods getting called in a non-standard order.  this may be
         # too complicated and/or unnecessary.
         # XXX should the __r_XXX attributes be public?
-        if attr[:12] == '_Request__r_':
-            name = attr[12:]
-            if hasattr(Request, 'get_' + name):
-                getattr(self, 'get_' + name)()
-                return getattr(self, attr)
+        if attr in ('_Request__r_type', '_Request__r_host'):
+            getattr(self, 'get_' + attr[12:])()
+            return self.__dict__[attr]
         raise AttributeError, attr
 
     def get_method(self):
@@ -574,7 +609,7 @@ class HTTPRedirectHandler(BaseHandler):
 
         # fix a possible malformed URL
         urlparts = urlparse.urlparse(newurl)
-        if not urlparts.path:
+        if not urlparts.path and urlparts.netloc:
             urlparts = list(urlparts)
             urlparts[2] = "/"
         newurl = urlparse.urlunparse(urlparts)
@@ -822,7 +857,7 @@ class AbstractBasicAuthHandler:
     # allow for double- and single-quoted realm values
     # (single quotes are a violation of the RFC, but appear in the wild)
     rx = re.compile('(?:.*,)*[ \t]*([^ \t]+)[ \t]+'
-                    'realm=(["\'])(.*?)\\2', re.I)
+                    'realm=(["\']?)([^"\']*)\\2', re.I)
 
     # XXX could pre-emptively send auth info already accepted (RFC 2617,
     # end of section 2, and section 1.2 immediately after "credentials"
@@ -833,10 +868,7 @@ class AbstractBasicAuthHandler:
             password_mgr = HTTPPasswordMgr()
         self.passwd = password_mgr
         self.add_password = self.passwd.add_password
-        self.retried = 0
 
-    def reset_retry_count(self):
-        self.retried = 0
 
     def http_error_auth_reqed(self, authreq, host, req, headers):
         # host may be an authority (without userinfo) or a URL with an
@@ -844,29 +876,22 @@ class AbstractBasicAuthHandler:
         # XXX could be multiple headers
         authreq = headers.get(authreq, None)
 
-        if self.retried > 5:
-            # retry sending the username:password 5 times before failing.
-            raise HTTPError(req.get_full_url(), 401, "basic auth failed",
-                            headers, None)
-        else:
-            self.retried += 1
-
         if authreq:
             mo = AbstractBasicAuthHandler.rx.search(authreq)
             if mo:
                 scheme, quote, realm = mo.groups()
+                if quote not in ['"', "'"]:
+                    warnings.warn("Basic Auth Realm was unquoted",
+                                  UserWarning, 2)
                 if scheme.lower() == 'basic':
-                    response = self.retry_http_basic_auth(host, req, realm)
-                    if response and response.code != 401:
-                        self.retried = 0
-                    return response
+                    return self.retry_http_basic_auth(host, req, realm)
 
     def retry_http_basic_auth(self, host, req, realm):
         user, pw = self.passwd.find_user_password(realm, host)
         if pw is not None:
             raw = "%s:%s" % (user, pw)
             auth = 'Basic %s' % base64.b64encode(raw).strip()
-            if req.headers.get(self.auth_header, None) == auth:
+            if req.get_header(self.auth_header, None) == auth:
                 return None
             req.add_unredirected_header(self.auth_header, auth)
             return self.parent.open(req, timeout=req.timeout)
@@ -882,7 +907,6 @@ class HTTPBasicAuthHandler(AbstractBasicAuthHandler, BaseHandler):
         url = req.get_full_url()
         response = self.http_error_auth_reqed('www-authenticate',
                                               url, req, headers)
-        self.reset_retry_count()
         return response
 
 
@@ -898,7 +922,6 @@ class ProxyBasicAuthHandler(AbstractBasicAuthHandler, BaseHandler):
         authority = req.get_host()
         response = self.http_error_auth_reqed('proxy-authenticate',
                                           authority, req, headers)
-        self.reset_retry_count()
         return response
 
 
@@ -1048,6 +1071,9 @@ class AbstractDigestAuthHandler:
         elif algorithm == 'SHA':
             H = lambda x: hashlib.sha1(x).hexdigest()
         # XXX MD5-sess
+        else:
+            raise ValueError("Unsupported digest authentication "
+                             "algorithm %r" % algorithm.lower())
         KD = lambda s, d: H("%s:%s" % (s, d))
         return H, KD
 
@@ -1123,7 +1149,7 @@ class AbstractHTTPHandler(BaseHandler):
 
         return request
 
-    def do_open(self, http_class, req):
+    def do_open(self, http_class, req, **http_conn_args):
         """Return an addinfourl object for the request, using http_class.
 
         http_class must implement the HTTPConnection API from httplib.
@@ -1137,7 +1163,8 @@ class AbstractHTTPHandler(BaseHandler):
         if not host:
             raise URLError('no host given')
 
-        h = http_class(host, timeout=req.timeout) # will parse host:port
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
         h.set_debuglevel(self._debuglevel)
 
         headers = dict(req.unredirected_hdrs)
@@ -1166,12 +1193,14 @@ class AbstractHTTPHandler(BaseHandler):
 
         try:
             h.request(req.get_method(), req.get_selector(), req.data, headers)
+        except socket.error, err: # XXX what error?
+            h.close()
+            raise URLError(err)
+        else:
             try:
                 r = h.getresponse(buffering=True)
-            except TypeError: #buffering kw not supported
+            except TypeError: # buffering kw not supported
                 r = h.getresponse()
-        except socket.error, err: # XXX what error?
-            raise URLError(err)
 
         # Pick apart the HTTPResponse object to get the addinfourl
         # object initialized properly.
@@ -1203,8 +1232,13 @@ class HTTPHandler(AbstractHTTPHandler):
 if hasattr(httplib, 'HTTPS'):
     class HTTPSHandler(AbstractHTTPHandler):
 
+        def __init__(self, debuglevel=0, context=None):
+            AbstractHTTPHandler.__init__(self, debuglevel)
+            self._context = context
+
         def https_open(self, req):
-            return self.do_open(httplib.HTTPSConnection, req)
+            return self.do_open(httplib.HTTPSConnection, req,
+                context=self._context)
 
         https_request = AbstractHTTPHandler.do_request_
 
@@ -1397,7 +1431,8 @@ class FTPHandler(BaseHandler):
             raise URLError, ('ftp error: %s' % msg), sys.exc_info()[2]
 
     def connect_ftp(self, user, passwd, host, port, dirs, timeout):
-        fw = ftpwrapper(user, passwd, host, port, dirs, timeout)
+        fw = ftpwrapper(user, passwd, host, port, dirs, timeout,
+                        persistent=False)
 ##        fw.ftp.set_debuglevel(1)
         return fw
 
@@ -1446,3 +1481,9 @@ class CacheFTPHandler(FTPHandler):
                     del self.timeout[k]
                     break
             self.soonest = min(self.timeout.values())
+
+    def clear_cache(self):
+        for conn in self.cache.values():
+            conn.close()
+        self.cache.clear()
+        self.timeout.clear()

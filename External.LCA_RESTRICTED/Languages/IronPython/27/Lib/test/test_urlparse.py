@@ -1,5 +1,3 @@
-#! /usr/bin/env python
-
 from test import test_support
 import unittest
 import urlparse
@@ -9,7 +7,7 @@ RFC2396_BASE = "http://a/b/c/d;p?q"
 RFC3986_BASE = 'http://a/b/c/d;p?q'
 SIMPLE_BASE  = 'http://a/b/c/d'
 
-# A list of test cases.  Each test case is a a two-tuple that contains
+# A list of test cases.  Each test case is a two-tuple that contains
 # a string with the query and a dictionary with the expected result.
 
 parse_qsl_test_cases = [
@@ -24,6 +22,49 @@ parse_qsl_test_cases = [
     ("&a=b", [('a', 'b')]),
     ("a=a+b&b=b+c", [('a', 'a b'), ('b', 'b c')]),
     ("a=1&a=2", [('a', '1'), ('a', '2')]),
+    (";", []),
+    (";;", []),
+    (";a=b", [('a', 'b')]),
+    ("a=a+b;b=b+c", [('a', 'a b'), ('b', 'b c')]),
+    ("a=1;a=2", [('a', '1'), ('a', '2')]),
+    (b";", []),
+    (b";;", []),
+    (b";a=b", [(b'a', b'b')]),
+    (b"a=a+b;b=b+c", [(b'a', b'a b'), (b'b', b'b c')]),
+    (b"a=1;a=2", [(b'a', b'1'), (b'a', b'2')]),
+]
+
+parse_qs_test_cases = [
+    ("", {}),
+    ("&", {}),
+    ("&&", {}),
+    ("=", {'': ['']}),
+    ("=a", {'': ['a']}),
+    ("a", {'a': ['']}),
+    ("a=", {'a': ['']}),
+    ("&a=b", {'a': ['b']}),
+    ("a=a+b&b=b+c", {'a': ['a b'], 'b': ['b c']}),
+    ("a=1&a=2", {'a': ['1', '2']}),
+    (b"", {}),
+    (b"&", {}),
+    (b"&&", {}),
+    (b"=", {b'': [b'']}),
+    (b"=a", {b'': [b'a']}),
+    (b"a", {b'a': [b'']}),
+    (b"a=", {b'a': [b'']}),
+    (b"&a=b", {b'a': [b'b']}),
+    (b"a=a+b&b=b+c", {b'a': [b'a b'], b'b': [b'b c']}),
+    (b"a=1&a=2", {b'a': [b'1', b'2']}),
+    (";", {}),
+    (";;", {}),
+    (";a=b", {'a': ['b']}),
+    ("a=a+b;b=b+c", {'a': ['a b'], 'b': ['b c']}),
+    ("a=1;a=2", {'a': ['1', '2']}),
+    (b";", {}),
+    (b";;", {}),
+    (b";a=b", {b'a': [b'b']}),
+    (b"a=a+b;b=b+c", {b'a': [b'a b'], b'b': [b'b c']}),
+    (b"a=1;a=2", {b'a': [b'1', b'2']}),
 ]
 
 class UrlParseTestCase(unittest.TestCase):
@@ -82,7 +123,21 @@ class UrlParseTestCase(unittest.TestCase):
     def test_qsl(self):
         for orig, expect in parse_qsl_test_cases:
             result = urlparse.parse_qsl(orig, keep_blank_values=True)
-            self.assertEqual(result, expect, "Error parsing %s" % repr(orig))
+            self.assertEqual(result, expect, "Error parsing %r" % orig)
+            expect_without_blanks = [v for v in expect if len(v[1])]
+            result = urlparse.parse_qsl(orig, keep_blank_values=False)
+            self.assertEqual(result, expect_without_blanks,
+                    "Error parsing %r" % orig)
+
+    def test_qs(self):
+        for orig, expect in parse_qs_test_cases:
+            result = urlparse.parse_qs(orig, keep_blank_values=True)
+            self.assertEqual(result, expect, "Error parsing %r" % orig)
+            expect_without_blanks = dict(
+                    [(v, expect[v]) for v in expect if len(expect[v][0])])
+            result = urlparse.parse_qs(orig, keep_blank_values=False)
+            self.assertEqual(result, expect_without_blanks,
+                    "Error parsing %r" % orig)
 
     def test_roundtrips(self):
         testcases = [
@@ -331,6 +386,11 @@ class UrlParseTestCase(unittest.TestCase):
         self.checkJoin(SIMPLE_BASE, 'http:?y','http://a/b/c/d?y')
         self.checkJoin(SIMPLE_BASE, 'http:g?y','http://a/b/c/g?y')
         self.checkJoin(SIMPLE_BASE, 'http:g?y/./x','http://a/b/c/g?y/./x')
+        self.checkJoin('http:///', '..','http:///')
+        self.checkJoin('', 'http://a/b/c/g?y/./x','http://a/b/c/g?y/./x')
+        self.checkJoin('', 'http://a/./g', 'http://a/./g')
+        self.checkJoin('svn://pathtorepo/dir1','dir2','svn://pathtorepo/dir2')
+        self.checkJoin('svn+ssh://pathtorepo/dir1','dir2','svn+ssh://pathtorepo/dir2')
 
     def test_RFC2732(self):
         for url, hostname, port in [
@@ -353,6 +413,16 @@ class UrlParseTestCase(unittest.TestCase):
              'dead:beef:cafe:5417:affe:8fa3:deaf:feed', None),
             ('http://[::12.34.56.78]/foo/', '::12.34.56.78', None),
             ('http://[::ffff:12.34.56.78]/foo/',
+             '::ffff:12.34.56.78', None),
+            ('http://Test.python.org:/foo/', 'test.python.org', None),
+            ('http://12.34.56.78:/foo/', '12.34.56.78', None),
+            ('http://[::1]:/foo/', '::1', None),
+            ('http://[dead:beef::1]:/foo/', 'dead:beef::1', None),
+            ('http://[dead:beef::]:/foo/', 'dead:beef::', None),
+            ('http://[dead:beef:cafe:5417:affe:8FA3:deaf:feed]:/foo/',
+             'dead:beef:cafe:5417:affe:8fa3:deaf:feed', None),
+            ('http://[::12.34.56.78]:/foo/', '::12.34.56.78', None),
+            ('http://[::ffff:12.34.56.78]:/foo/',
              '::ffff:12.34.56.78', None),
             ]:
             urlparsed = urlparse.urlparse(url)
@@ -427,6 +497,51 @@ class UrlParseTestCase(unittest.TestCase):
         self.assertEqual(p.port, 80)
         self.assertEqual(p.geturl(), url)
 
+        # Verify an illegal port of value greater than 65535 is set as None
+        url = "http://www.python.org:65536"
+        p = urlparse.urlsplit(url)
+        self.assertEqual(p.port, None)
+
+    def test_issue14072(self):
+        p1 = urlparse.urlsplit('tel:+31-641044153')
+        self.assertEqual(p1.scheme, 'tel')
+        self.assertEqual(p1.path, '+31-641044153')
+
+        p2 = urlparse.urlsplit('tel:+31641044153')
+        self.assertEqual(p2.scheme, 'tel')
+        self.assertEqual(p2.path, '+31641044153')
+
+        # Assert for urlparse
+        p1 = urlparse.urlparse('tel:+31-641044153')
+        self.assertEqual(p1.scheme, 'tel')
+        self.assertEqual(p1.path, '+31-641044153')
+
+        p2 = urlparse.urlparse('tel:+31641044153')
+        self.assertEqual(p2.scheme, 'tel')
+        self.assertEqual(p2.path, '+31641044153')
+
+
+    def test_telurl_params(self):
+        p1 = urlparse.urlparse('tel:123-4;phone-context=+1-650-516')
+        self.assertEqual(p1.scheme, 'tel')
+        self.assertEqual(p1.path, '123-4')
+        self.assertEqual(p1.params, 'phone-context=+1-650-516')
+
+        p1 = urlparse.urlparse('tel:+1-201-555-0123')
+        self.assertEqual(p1.scheme, 'tel')
+        self.assertEqual(p1.path, '+1-201-555-0123')
+        self.assertEqual(p1.params, '')
+
+        p1 = urlparse.urlparse('tel:7042;phone-context=example.com')
+        self.assertEqual(p1.scheme, 'tel')
+        self.assertEqual(p1.path, '7042')
+        self.assertEqual(p1.params, 'phone-context=example.com')
+
+        p1 = urlparse.urlparse('tel:863-1234;phone-context=+1-914-555')
+        self.assertEqual(p1.scheme, 'tel')
+        self.assertEqual(p1.path, '863-1234')
+        self.assertEqual(p1.params, 'phone-context=+1-914-555')
+
 
     def test_attributes_bad_port(self):
         """Check handling of non-integer ports."""
@@ -483,6 +598,10 @@ class UrlParseTestCase(unittest.TestCase):
                          ('s3','foo.com','/stuff','','',''))
         self.assertEqual(urlparse.urlparse("x-newscheme://foo.com/stuff"),
                          ('x-newscheme','foo.com','/stuff','','',''))
+        self.assertEqual(urlparse.urlparse("x-newscheme://foo.com/stuff?query#fragment"),
+                         ('x-newscheme','foo.com','/stuff','','query','fragment'))
+        self.assertEqual(urlparse.urlparse("x-newscheme://foo.com/stuff?query"),
+                         ('x-newscheme','foo.com','/stuff','','query',''))
 
     def test_withoutscheme(self):
         # Test urlparse without scheme

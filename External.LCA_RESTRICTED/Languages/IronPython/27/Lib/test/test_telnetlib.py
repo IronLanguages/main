@@ -3,6 +3,7 @@ import telnetlib
 import time
 import Queue
 
+import unittest
 from unittest import TestCase
 from test import test_support
 threading = test_support.import_module('threading')
@@ -15,7 +16,6 @@ def server(evt, serv, dataq=None):
         1) set evt to true to let the parent know we are ready
         2) [optional] if is not False, write the list of data from dataq.get()
            to the socket.
-        3) set evt to true to let the parent know we're done
     """
     serv.listen(5)
     evt.set()
@@ -34,29 +34,25 @@ def server(evt, serv, dataq=None):
                     data += item
                 written = conn.send(data)
                 data = data[written:]
+        conn.close()
     except socket.timeout:
         pass
-    else:
-        conn.close()
     finally:
         serv.close()
-        evt.set()
 
 class GeneralTests(TestCase):
 
     def setUp(self):
         self.evt = threading.Event()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.settimeout(3)
+        self.sock.settimeout(60)  # Safety net. Look issue 11812
         self.port = test_support.bind_port(self.sock)
         self.thread = threading.Thread(target=server, args=(self.evt,self.sock))
+        self.thread.setDaemon(True)
         self.thread.start()
         self.evt.wait()
-        self.evt.clear()
-        time.sleep(.1)
 
     def tearDown(self):
-        self.evt.wait()
         self.thread.join()
 
     def testBasic(self):
@@ -68,7 +64,7 @@ class GeneralTests(TestCase):
         self.assertTrue(socket.getdefaulttimeout() is None)
         socket.setdefaulttimeout(30)
         try:
-            telnet = telnetlib.Telnet("localhost", self.port)
+            telnet = telnetlib.Telnet(HOST, self.port)
         finally:
             socket.setdefaulttimeout(None)
         self.assertEqual(telnet.sock.gettimeout(), 30)
@@ -86,30 +82,35 @@ class GeneralTests(TestCase):
         telnet.sock.close()
 
     def testTimeoutValue(self):
-        telnet = telnetlib.Telnet("localhost", self.port, timeout=30)
+        telnet = telnetlib.Telnet(HOST, self.port, timeout=30)
         self.assertEqual(telnet.sock.gettimeout(), 30)
         telnet.sock.close()
 
     def testTimeoutOpen(self):
         telnet = telnetlib.Telnet()
-        telnet.open("localhost", self.port, timeout=30)
+        telnet.open(HOST, self.port, timeout=30)
         self.assertEqual(telnet.sock.gettimeout(), 30)
+        telnet.sock.close()
+
+    def testGetters(self):
+        # Test telnet getter methods
+        telnet = telnetlib.Telnet(HOST, self.port, timeout=30)
+        t_sock = telnet.sock
+        self.assertEqual(telnet.get_socket(), t_sock)
+        self.assertEqual(telnet.fileno(), t_sock.fileno())
         telnet.sock.close()
 
 def _read_setUp(self):
     self.evt = threading.Event()
     self.dataq = Queue.Queue()
     self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    self.sock.settimeout(3)
+    self.sock.settimeout(10)
     self.port = test_support.bind_port(self.sock)
     self.thread = threading.Thread(target=server, args=(self.evt,self.sock, self.dataq))
     self.thread.start()
     self.evt.wait()
-    self.evt.clear()
-    time.sleep(.1)
 
 def _read_tearDown(self):
-    self.evt.wait()
     self.thread.join()
 
 class ReadTests(TestCase):
@@ -143,6 +144,28 @@ class ReadTests(TestCase):
         self.assertEqual(data, want[0])
         self.assertEqual(telnet.read_all(), 'not seen')
 
+    def test_read_until_with_poll(self):
+        """Use select.poll() to implement telnet.read_until()."""
+        want = ['x' * 10, 'match', 'y' * 10, EOF_sigil]
+        self.dataq.put(want)
+        telnet = telnetlib.Telnet(HOST, self.port)
+        if not telnet._has_poll:
+            raise unittest.SkipTest('select.poll() is required')
+        telnet._has_poll = True
+        self.dataq.join()
+        data = telnet.read_until('match')
+        self.assertEqual(data, ''.join(want[:-2]))
+
+    def test_read_until_with_select(self):
+        """Use select.select() to implement telnet.read_until()."""
+        want = ['x' * 10, 'match', 'y' * 10, EOF_sigil]
+        self.dataq.put(want)
+        telnet = telnetlib.Telnet(HOST, self.port)
+        telnet._has_poll = False
+        self.dataq.join()
+        data = telnet.read_until('match')
+        self.assertEqual(data, ''.join(want[:-2]))
+
     def test_read_all_A(self):
         """
         read_all()
@@ -154,7 +177,6 @@ class ReadTests(TestCase):
         self.dataq.join()
         data = telnet.read_all()
         self.assertEqual(data, ''.join(want[:-1]))
-        return
 
     def _test_blocking(self, func):
         self.dataq.put([self.block_long, EOF_sigil])
@@ -226,8 +248,8 @@ class ReadTests(TestCase):
         func = getattr(telnet, func_name)
         self.assertRaises(EOFError, func)
 
-    # read_eager and read_very_eager make the same gaurantees
-    # (they behave differently but we only test the gaurantees)
+    # read_eager and read_very_eager make the same guarantees
+    # (they behave differently but we only test the guarantees)
     def test_read_very_eager_A(self):
         self._test_read_any_eager_A('read_very_eager')
     def test_read_very_eager_B(self):
@@ -365,8 +387,75 @@ class OptionTests(TestCase):
         self.assertEqual('', telnet.read_sb_data())
         nego.sb_getter = None # break the nego => telnet cycle
 
+
+class ExpectTests(TestCase):
+    def setUp(self):
+        self.evt = threading.Event()
+        self.dataq = Queue.Queue()
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.settimeout(10)
+        self.port = test_support.bind_port(self.sock)
+        self.thread = threading.Thread(target=server, args=(self.evt,self.sock,
+                                                            self.dataq))
+        self.thread.start()
+        self.evt.wait()
+
+    def tearDown(self):
+        self.thread.join()
+
+    # use a similar approach to testing timeouts as test_timeout.py
+    # these will never pass 100% but make the fuzz big enough that it is rare
+    block_long = 0.6
+    block_short = 0.3
+    def test_expect_A(self):
+        """
+        expect(expected, [timeout])
+          Read until the expected string has been seen, or a timeout is
+          hit (default is no timeout); may block.
+        """
+        want = ['x' * 10, 'match', 'y' * 10, EOF_sigil]
+        self.dataq.put(want)
+        telnet = telnetlib.Telnet(HOST, self.port)
+        self.dataq.join()
+        (_,_,data) = telnet.expect(['match'])
+        self.assertEqual(data, ''.join(want[:-2]))
+
+    def test_expect_B(self):
+        # test the timeout - it does NOT raise socket.timeout
+        want = ['hello', self.block_long, 'not seen', EOF_sigil]
+        self.dataq.put(want)
+        telnet = telnetlib.Telnet(HOST, self.port)
+        self.dataq.join()
+        (_,_,data) = telnet.expect(['not seen'], self.block_short)
+        self.assertEqual(data, want[0])
+        self.assertEqual(telnet.read_all(), 'not seen')
+
+    def test_expect_with_poll(self):
+        """Use select.poll() to implement telnet.expect()."""
+        want = ['x' * 10, 'match', 'y' * 10, EOF_sigil]
+        self.dataq.put(want)
+        telnet = telnetlib.Telnet(HOST, self.port)
+        if not telnet._has_poll:
+            raise unittest.SkipTest('select.poll() is required')
+        telnet._has_poll = True
+        self.dataq.join()
+        (_,_,data) = telnet.expect(['match'])
+        self.assertEqual(data, ''.join(want[:-2]))
+
+    def test_expect_with_select(self):
+        """Use select.select() to implement telnet.expect()."""
+        want = ['x' * 10, 'match', 'y' * 10, EOF_sigil]
+        self.dataq.put(want)
+        telnet = telnetlib.Telnet(HOST, self.port)
+        telnet._has_poll = False
+        self.dataq.join()
+        (_,_,data) = telnet.expect(['match'])
+        self.assertEqual(data, ''.join(want[:-2]))
+
+
 def test_main(verbose=None):
-    test_support.run_unittest(GeneralTests, ReadTests, OptionTests)
+    test_support.run_unittest(GeneralTests, ReadTests, OptionTests,
+                              ExpectTests)
 
 if __name__ == '__main__':
     test_main()

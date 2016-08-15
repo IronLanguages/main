@@ -25,7 +25,7 @@ def get_tests_modules(basepath=this_dir_path, gui=True, packages=None):
     and are inside packages found in the path starting at basepath.
 
     If packages is specified it should contain package names that want
-    their tests colleted.
+    their tests collected.
     """
     py_ext = '.py'
 
@@ -67,5 +67,4 @@ def get_tests(text=True, gui=True, packages=None):
                 yield test
 
 if __name__ == "__main__":
-    test.test_support.use_resources = ['gui']
     test.test_support.run_unittest(*get_tests())

@@ -77,7 +77,7 @@ class GeneralTests(unittest.TestCase):
         smtp.close()
 
     def testTimeoutDefault(self):
-        self.assertTrue(socket.getdefaulttimeout() is None)
+        self.assertIsNone(socket.getdefaulttimeout())
         socket.setdefaulttimeout(30)
         try:
             smtp = smtplib.SMTP(HOST, self.port)
@@ -87,13 +87,13 @@ class GeneralTests(unittest.TestCase):
         smtp.close()
 
     def testTimeoutNone(self):
-        self.assertTrue(socket.getdefaulttimeout() is None)
+        self.assertIsNone(socket.getdefaulttimeout())
         socket.setdefaulttimeout(30)
         try:
             smtp = smtplib.SMTP(HOST, self.port, timeout=None)
         finally:
             socket.setdefaulttimeout(None)
-        self.assertTrue(smtp.sock.gettimeout() is None)
+        self.assertIsNone(smtp.sock.gettimeout())
         smtp.close()
 
     def testTimeoutValue(self):
@@ -292,6 +292,33 @@ class BadHELOServerTests(unittest.TestCase):
                             HOST, self.port, 'localhost', 3)
 
 
+@unittest.skipUnless(threading, 'Threading required for this test.')
+class TooLongLineTests(unittest.TestCase):
+    respdata = '250 OK' + ('.' * smtplib._MAXLINE * 2) + '\n'
+
+    def setUp(self):
+        self.old_stdout = sys.stdout
+        self.output = StringIO.StringIO()
+        sys.stdout = self.output
+
+        self.evt = threading.Event()
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.settimeout(15)
+        self.port = test_support.bind_port(self.sock)
+        servargs = (self.evt, self.respdata, self.sock)
+        threading.Thread(target=server, args=servargs).start()
+        self.evt.wait()
+        self.evt.clear()
+
+    def tearDown(self):
+        self.evt.wait()
+        sys.stdout = self.old_stdout
+
+    def testLineTooLong(self):
+        self.assertRaises(smtplib.SMTPResponseException, smtplib.SMTP,
+                          HOST, self.port, 'localhost', 3)
+
+
 sim_users = {'Mr.A@somewhere.com':'John A',
              'Ms.B@somewhere.com':'Sally B',
              'Mrs.C@somewhereesle.com':'Ruth C',
@@ -330,15 +357,14 @@ class SimSMTPChannel(smtpd.SMTPChannel):
         self.push(resp)
 
     def smtp_VRFY(self, arg):
-        raw_addr = email.utils.parseaddr(arg)[1]
-        quoted_addr = smtplib.quoteaddr(arg)
-        if raw_addr in sim_users:
-            self.push('250 %s %s' % (sim_users[raw_addr], quoted_addr))
+        # For max compatibility smtplib should be sending the raw address.
+        if arg in sim_users:
+            self.push('250 %s %s' % (sim_users[arg], smtplib.quoteaddr(arg)))
         else:
             self.push('550 No such user: %s' % arg)
 
     def smtp_EXPN(self, arg):
-        list_name = email.utils.parseaddr(arg)[1].lower()
+        list_name = arg.lower()
         if list_name in sim_lists:
             user_list = sim_lists[list_name]
             for n, user_email in enumerate(user_list):
@@ -454,7 +480,7 @@ class SMTPSimTests(unittest.TestCase):
             self.assertEqual(smtp.vrfy(email), expected_known)
 
         u = 'nobody@nowhere.com'
-        expected_unknown = (550, 'No such user: %s' % smtplib.quoteaddr(u))
+        expected_unknown = (550, 'No such user: %s' % u)
         self.assertEqual(smtp.vrfy(u), expected_unknown)
         smtp.quit()
 
@@ -508,11 +534,27 @@ class SMTPSimTests(unittest.TestCase):
     #TODO: add tests for correct AUTH method fallback now that the
     #test infrastructure can support it.
 
+    def test_quit_resets_greeting(self):
+        smtp = smtplib.SMTP(HOST, self.port,
+                            local_hostname='localhost',
+                            timeout=15)
+        code, message = smtp.ehlo()
+        self.assertEqual(code, 250)
+        self.assertIn('size', smtp.esmtp_features)
+        smtp.quit()
+        self.assertNotIn('size', smtp.esmtp_features)
+        smtp.connect(HOST, self.port)
+        self.assertNotIn('size', smtp.esmtp_features)
+        smtp.ehlo_or_helo_if_needed()
+        self.assertIn('size', smtp.esmtp_features)
+        smtp.quit()
+
 
 def test_main(verbose=None):
     test_support.run_unittest(GeneralTests, DebuggingServerTests,
                               NonConnectingTests,
-                              BadHELOServerTests, SMTPSimTests)
+                              BadHELOServerTests, SMTPSimTests,
+                              TooLongLineTests)
 
 if __name__ == '__main__':
     test_main()

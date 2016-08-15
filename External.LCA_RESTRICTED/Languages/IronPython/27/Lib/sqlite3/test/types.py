@@ -24,6 +24,7 @@
 import datetime
 import unittest
 import sqlite3 as sqlite
+from test import test_support
 try:
     import zlib
 except ImportError:
@@ -67,7 +68,8 @@ class SqliteTypeTests(unittest.TestCase):
         self.assertEqual(row[0], val)
 
     def CheckBlob(self):
-        val = buffer("Guglhupf")
+        with test_support.check_py3k_warnings():
+            val = buffer("Guglhupf")
         self.cur.execute("insert into test(b) values (?)", (val,))
         self.cur.execute("select b from test")
         row = self.cur.fetchone()
@@ -231,7 +233,8 @@ class DeclTypesTests(unittest.TestCase):
 
     def CheckBlob(self):
         # default
-        val = buffer("Guglhupf")
+        with test_support.check_py3k_warnings():
+            val = buffer("Guglhupf")
         self.cur.execute("insert into test(bin) values (?)", (val,))
         self.cur.execute("select bin from test")
         row = self.cur.fetchone()
@@ -244,7 +247,7 @@ class DeclTypesTests(unittest.TestCase):
         self.assertEqual(type(value), float)
 
     def CheckNumber2(self):
-        """Checks wether converter names are cut off at '(' characters"""
+        """Checks whether converter names are cut off at '(' characters"""
         self.cur.execute("insert into test(n2) values (5)")
         value = self.cur.execute("select n2 from test").fetchone()[0]
         # if the converter is not used, it's an int instead of a float
@@ -347,7 +350,8 @@ class BinaryConverterTests(unittest.TestCase):
 
     def CheckBinaryInputForConverter(self):
         testdata = "abcdefg" * 10
-        result = self.con.execute('select ? as "x [bin]"', (buffer(zlib.compress(testdata)),)).fetchone()[0]
+        with test_support.check_py3k_warnings():
+            result = self.con.execute('select ? as "x [bin]"', (buffer(zlib.compress(testdata)),)).fetchone()[0]
         self.assertEqual(testdata, result)
 
 class DateTimeTests(unittest.TestCase):

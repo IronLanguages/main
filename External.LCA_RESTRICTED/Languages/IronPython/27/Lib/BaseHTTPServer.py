@@ -244,14 +244,11 @@ class BaseHTTPRequestHandler(SocketServer.StreamRequestHandler):
         self.request_version = version = self.default_request_version
         self.close_connection = 1
         requestline = self.raw_requestline
-        if requestline[-2:] == '\r\n':
-            requestline = requestline[:-2]
-        elif requestline[-1:] == '\n':
-            requestline = requestline[:-1]
+        requestline = requestline.rstrip('\r\n')
         self.requestline = requestline
         words = requestline.split()
         if len(words) == 3:
-            [command, path, version] = words
+            command, path, version = words
             if version[:5] != 'HTTP/':
                 self.send_error(400, "Bad request version (%r)" % version)
                 return False
@@ -277,7 +274,7 @@ class BaseHTTPRequestHandler(SocketServer.StreamRequestHandler):
                           "Invalid HTTP Version (%s)" % base_version_number)
                 return False
         elif len(words) == 2:
-            [command, path] = words
+            command, path = words
             self.close_connection = 1
             if command != 'GET':
                 self.send_error(400,
@@ -365,14 +362,25 @@ class BaseHTTPRequestHandler(SocketServer.StreamRequestHandler):
             message = short
         explain = long
         self.log_error("code %d, message %s", code, message)
-        # using _quote_html to prevent Cross Site Scripting attacks (see bug #1100201)
-        content = (self.error_message_format %
-                   {'code': code, 'message': _quote_html(message), 'explain': explain})
         self.send_response(code, message)
-        self.send_header("Content-Type", self.error_content_type)
         self.send_header('Connection', 'close')
+
+        # Message body is omitted for cases described in:
+        #  - RFC7230: 3.3. 1xx, 204(No Content), 304(Not Modified)
+        #  - RFC7231: 6.3.6. 205(Reset Content)
+        content = None
+        if code >= 200 and code not in (204, 205, 304):
+            # HTML encode to prevent Cross Site Scripting attacks
+            # (see bug #1100201)
+            content = (self.error_message_format % {
+                'code': code,
+                'message': _quote_html(message),
+                'explain': explain
+            })
+            self.send_header("Content-Type", self.error_content_type)
         self.end_headers()
-        if self.command != 'HEAD' and code >= 200 and code not in (204, 304):
+
+        if self.command != 'HEAD' and content:
             self.wfile.write(content)
 
     error_message_format = DEFAULT_ERROR_MESSAGE
@@ -450,13 +458,13 @@ class BaseHTTPRequestHandler(SocketServer.StreamRequestHandler):
         specified as subsequent arguments (it's just like
         printf!).
 
-        The client host and current date/time are prefixed to
-        every message.
+        The client ip address and current date/time are prefixed to every
+        message.
 
         """
 
         sys.stderr.write("%s - - [%s] %s\n" %
-                         (self.address_string(),
+                         (self.client_address[0],
                           self.log_date_time_string(),
                           format%args))
 

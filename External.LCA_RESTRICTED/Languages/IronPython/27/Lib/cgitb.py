@@ -299,10 +299,14 @@ class Hook:
                 file = os.fdopen(fd, 'w')
                 file.write(doc)
                 file.close()
-                msg = '<p> %s contains the description of this error.' % path
+                msg = '%s contains the description of this error.' % path
             except:
-                msg = '<p> Tried to save traceback to %s, but failed.' % path
-            self.file.write(msg + '\n')
+                msg = 'Tried to save traceback to %s, but failed.' % path
+
+            if self.format == 'html':
+                self.file.write('<p>%s</p>\n' % msg)
+            else:
+                self.file.write(msg + '\n')
         try:
             self.file.flush()
         except: pass

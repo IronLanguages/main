@@ -33,6 +33,9 @@ class DictTest(unittest.TestCase):
         self.assertEqual(d.keys(), [])
         d = {'a': 1, 'b': 2}
         k = d.keys()
+        self.assertEqual(set(k), {'a', 'b'})
+        self.assertIn('a', k)
+        self.assertIn('b', k)
         self.assertTrue(d.has_key('a'))
         self.assertTrue(d.has_key('b'))
 
@@ -254,6 +257,14 @@ class DictTest(unittest.TestCase):
         d = dict(zip(range(6), range(6)))
         self.assertEqual(dict.fromkeys(d, 0), dict(zip(range(6), [0]*6)))
 
+        class baddict3(dict):
+            def __new__(cls):
+                return d
+        d = {i : i for i in range(10)}
+        res = d.copy()
+        res.update(a=None, b=None, c=None)
+        self.assertEqual(baddict3.fromkeys({"a", "b", "c"}), res)
+
     def test_copy(self):
         d = {1:1, 2:2, 3:3}
         self.assertEqual(d.copy(), {1:1, 2:2, 3:3})
@@ -298,6 +309,26 @@ class DictTest(unittest.TestCase):
         d[x] = 42
         x.fail = True
         self.assertRaises(Exc, d.setdefault, x, [])
+
+    def test_setdefault_atomic(self):
+        # Issue #13521: setdefault() calls __hash__ and __eq__ only once.
+        class Hashed(object):
+            def __init__(self):
+                self.hash_count = 0
+                self.eq_count = 0
+            def __hash__(self):
+                self.hash_count += 1
+                return 42
+            def __eq__(self, other):
+                self.eq_count += 1
+                return id(self) == id(other)
+        hashed1 = Hashed()
+        y = {hashed1: 5}
+        hashed2 = Hashed()
+        y.setdefault(hashed2, [])
+        self.assertEqual(hashed1.hash_count, 1)
+        self.assertEqual(hashed2.hash_count, 1)
+        self.assertEqual(hashed1.eq_count + hashed2.eq_count, 1)
 
     def test_popitem(self):
         # dict.popitem()
@@ -418,7 +449,7 @@ class DictTest(unittest.TestCase):
         # (D) subclass defines __missing__ method returning a value
         # (E) subclass defines __missing__ method raising RuntimeError
         # (F) subclass sets __missing__ instance variable (no effect)
-        # (G) subclass doesn't define __missing__ at a all
+        # (G) subclass doesn't define __missing__ at all
         class D(dict):
             def __missing__(self, key):
                 return 42
@@ -535,7 +566,6 @@ class DictTest(unittest.TestCase):
                  'f': None, 'g': None, 'h': None}
         d = {}
 
-    @test_support.cpython_only
     def test_container_iterator(self):
         # Bug #3680: tp_traverse was not implemented for dictiter objects
         class C(object):
@@ -652,6 +682,14 @@ class DictTest(unittest.TestCase):
         self._tracked(MyDict())
 
 
+    def test_free_after_iterating(self):
+        test_support.check_free_after_iterating(self, iter, dict)
+        test_support.check_free_after_iterating(self, lambda d: d.iterkeys(), dict)
+        test_support.check_free_after_iterating(self, lambda d: d.itervalues(), dict)
+        test_support.check_free_after_iterating(self, lambda d: d.iteritems(), dict)
+        test_support.check_free_after_iterating(self, lambda d: iter(d.viewkeys()), dict)
+        test_support.check_free_after_iterating(self, lambda d: iter(d.viewvalues()), dict)
+        test_support.check_free_after_iterating(self, lambda d: iter(d.viewitems()), dict)
 from test import mapping_tests
 
 class GeneralMappingTests(mapping_tests.BasicTestMappingProtocol):

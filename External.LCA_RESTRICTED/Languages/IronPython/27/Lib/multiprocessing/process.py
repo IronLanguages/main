@@ -262,10 +262,10 @@ class Process(object):
         except SystemExit, e:
             if not e.args:
                 exitcode = 1
-            elif type(e.args[0]) is int:
+            elif isinstance(e.args[0], int):
                 exitcode = e.args[0]
             else:
-                sys.stderr.write(e.args[0] + '\n')
+                sys.stderr.write(str(e.args[0]) + '\n')
                 sys.stderr.flush()
                 exitcode = 1
         except:
@@ -306,7 +306,7 @@ class _MainProcess(Process):
         self._popen = None
         self._counter = itertools.count(1)
         self._children = set()
-        self._authkey = AuthenticationString(bytes(os.urandom(32), 'latin-1'))
+        self._authkey = AuthenticationString(os.urandom(32))
         self._tempdir = None
 
 _current_process = _MainProcess()
