@@ -20,6 +20,11 @@ using System.Runtime.InteropServices.WindowsRuntime;
 #elif WINDOWS_PHONE || SQLITE_SILVERLIGHT  
 using System.IO.IsolatedStorage;
 #endif
+
+#if NETSTANDARD1_6
+using Environment = System.FakeEnvironment;
+#endif
+
 namespace Community.CsharpSqlite
 {
   public partial class Sqlite3

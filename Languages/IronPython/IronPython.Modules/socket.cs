@@ -47,6 +47,10 @@ using PythonArray = IronPython.Modules.ArrayModule.array;
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 using Microsoft.Scripting.Utils;
 
+#if NETSTANDARD1_6
+using Environment = System.FakeEnvironment;
+#endif
+
 [assembly: PythonModule("socket", typeof(IronPython.Modules.PythonSocket))]
 namespace IronPython.Modules {
     public static class PythonSocket {

@@ -38,6 +38,10 @@ using System.Numerics;
 using Microsoft.Scripting.Math;
 #endif
 
+#if NETSTANDARD1_6
+using Environment = System.FakeEnvironment;
+#endif
+
 [assembly: PythonModule("nt", typeof(IronPython.Modules.PythonNT))]
 namespace IronPython.Modules {
     public static class PythonNT {

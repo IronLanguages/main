@@ -29,6 +29,10 @@ using Microsoft.Scripting.Utils;
 using System.Runtime.CompilerServices;
 using System.Collections;
 
+#if NETSTANDARD1_6
+using Environment = System.FakeEnvironment;
+#endif
+
 namespace Microsoft.Scripting {
 
 #if !FEATURE_PROCESS

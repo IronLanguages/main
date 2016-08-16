@@ -29,6 +29,10 @@ using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+#if NETSTANDARD1_6
+using Environment = System.FakeEnvironment;
+#endif
+
 namespace Microsoft.Scripting.Hosting.Shell {
     /// <summary>
     /// Core functionality to implement an interactive console. This should be derived for concrete implementations
