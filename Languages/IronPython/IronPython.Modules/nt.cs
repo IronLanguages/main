@@ -641,7 +641,11 @@ namespace IronPython.Modules {
             object[] slicedArgs = ArrayUtils.RemoveFirst(args);
 
             Process process = MakeProcess();
+#if NETSTANDARD
+            SetEnvironment(process.StartInfo.Environment, env);
+#else
             SetEnvironment(process.StartInfo.EnvironmentVariables, env);
+#endif
 
             return SpawnProcessImpl(context, process, mode, path, slicedArgs);
         }
@@ -672,7 +676,11 @@ namespace IronPython.Modules {
         /// </summary>
         public static object spawnve(CodeContext/*!*/ context, int mode, string path, object args, object env) {
             Process process = MakeProcess();
+#if NETSTANDARD
+            SetEnvironment(process.StartInfo.Environment, env);
+#else
             SetEnvironment(process.StartInfo.EnvironmentVariables, env);
+#endif
 
             return SpawnProcessImpl(context, process, mode, path, args);
         }
@@ -700,7 +708,7 @@ namespace IronPython.Modules {
             if (mode == P_WAIT) {
                 process.WaitForExit();
                 int exitCode = process.ExitCode;
-                process.Close();
+                process.Dispose();
                 return exitCode;
             }
 
@@ -727,7 +735,11 @@ namespace IronPython.Modules {
         /// <summary>
         /// Copy elements from a Python mapping of dict environment variables to a StringDictionary.
         /// </summary>
+#if NETSTANDARD
+        private static void SetEnvironment(IDictionary<string, string> currentEnvironment, object newEnvironment) {
+#else
         private static void SetEnvironment(System.Collections.Specialized.StringDictionary currentEnvironment, object newEnvironment) {
+#endif
             PythonDictionary env = newEnvironment as PythonDictionary;
             if (env == null) {
                 throw PythonOps.TypeError("env argument must be a dict");
@@ -792,7 +804,9 @@ namespace IronPython.Modules {
             System.Diagnostics.Process process = new System.Diagnostics.Process();
             process.StartInfo.FileName = filename;
             process.StartInfo.UseShellExecute = true;
+#if !NETSTANDARD
             process.StartInfo.Verb = operation;
+#endif
             try {
 
                 process.Start();
@@ -1765,6 +1779,7 @@ are defined in the signal module.")]
                 return true;
             }
 
+#if !NETSTANDARD1_6
             // TODO: need revisit
             string sysdir = System.Environment.GetFolderPath(System.Environment.SpecialFolder.System);
             foreach (string suffix in new string[] { string.Empty, ".com", ".exe", "cmd", ".bat" }) {
@@ -1774,6 +1789,7 @@ are defined in the signal module.")]
                     return true;
                 }
             }
+#endif
 
             return false;
         }
