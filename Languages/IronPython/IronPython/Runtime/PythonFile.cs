@@ -31,7 +31,7 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-#if FEATURE_PROCESS
+#if FEATURE_PIPES
 using System.IO.Pipes;
 #endif
 
@@ -1084,7 +1084,7 @@ namespace IronPython.Runtime {
             return res;
         }
 
-#if FEATURE_PROCESS
+#if FEATURE_PIPES
         internal static PythonFile[] CreatePipe(CodeContext/*!*/ context, SafePipeHandle hRead, SafePipeHandle hWrite) {
             var pythonContext = PythonContext.GetContext(context);
             var encoding = pythonContext.DefaultEncoding;
@@ -2040,7 +2040,7 @@ namespace IronPython.Runtime {
         #endregion
     }
 
-#if FEATURE_PROCESS
+#if FEATURE_PIPES
     internal class AnonymousPipeStream : PipeStream {
         public AnonymousPipeStream(PipeDirection direction, SafePipeHandle sph) : base(direction, 0) {
             InitializeHandle(sph, true, false);

@@ -468,7 +468,7 @@ namespace IronPython.Modules {
         }
 #endif
 
-#if FEATURE_PROCESS
+#if FEATURE_PIPES
         public static PythonTuple pipe(CodeContext context) {
             return PythonFile.CreatePipeAsFd(context);
         }
