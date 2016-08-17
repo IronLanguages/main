@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #####################################################################################
 #
 #  Copyright (c) Microsoft Corporation. All rights reserved.
@@ -15,6 +16,12 @@
 
 from iptest.assert_util import *
 from iptest.misc_util import ip_supported_encodings
+
+def test_constructor():
+    AreEqual('', unicode())
+    AreEqual('None', unicode(None))
+    AreEqual('ä', unicode('ä'))
+    AreEqual('ä', unicode(b'\xc3\xa4', 'utf-8')) # TODO kunom: reasonable?
 
 def test_raw_unicode_escape():
     for raw_unicode_escape in ['raw-unicode-escape', 'raw unicode escape']:
@@ -66,7 +73,8 @@ def test_cp19005():
     foo = u'\xef\xbb\xbf'
     AreEqual(repr(foo), r"u'\xef\xbb\xbf'")
 
-def test_cpcp34689():
+@disabled('Conflicts with test_str.test_constructor. There is no reliable way to decide whether the client anticipates decoding or not.')
+def test_cp34689():
     xx_full_width_a = u'xx\uff21'
     caught = False
     try:
