@@ -35,7 +35,7 @@ namespace Microsoft.Scripting.Generation {
     public class FieldBuilderExpression : Expression {
         private readonly FieldBuilder _builder;
 
-#if SILVERLIGHT || WIN8
+#if SILVERLIGHT || WIN8 || NETSTANDARD
         private readonly StrongBox<Type> _finishedType;
 
         // Silverlight doesn't have ModuleInfo.ResolveField so we need to
@@ -75,7 +75,7 @@ namespace Microsoft.Scripting.Generation {
 
         private FieldInfo GetFieldInfo() {
             // turn the field builder back into a FieldInfo
-#if SILVERLIGHT || WIN8
+#if SILVERLIGHT || WIN8 || NETSTANDARD
             return _finishedType.Value.GetDeclaredField(_builder.Name);
 #else
             return _builder.DeclaringType.Module.ResolveField(
