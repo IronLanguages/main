@@ -66,13 +66,13 @@ namespace IronPython.Compiler.Ast {
             //    $gen.CheckThrowable() // <-- has return result from send            
             //  }
 
-            return AppendLine(Ast.Block(
+            return Ast.Block(
                 AstUtils.YieldReturn(
                     GeneratorLabel,
                     AstUtils.Convert(_expression, typeof(object))
                 ),
                 CreateCheckThrowExpression(Span) // emits ($gen.CheckThrowable())
-            ));
+            );
         }
 
         public override void Walk(PythonWalker walker) {

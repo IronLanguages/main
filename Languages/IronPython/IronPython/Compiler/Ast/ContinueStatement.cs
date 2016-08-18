@@ -30,7 +30,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override MSAst.Expression Reduce() {
-            return AppendLine(GlobalParent.AddDebugInfo(MSAst.Expression.Continue(_loop.ContinueLabel), Span));
+            return GlobalParent.AddDebugInfo(MSAst.Expression.Continue(_loop.ContinueLabel), Span);
         }
 
         public override void Walk(PythonWalker walker) {

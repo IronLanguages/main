@@ -48,13 +48,8 @@ namespace IronPython.Compiler.Ast {
             _body = body;
             _else = else_;
         }
-        
-        public SourceLocation Header {
-            get { return IndexToLocation(_headerIndex); }
-        }
 
         public int HeaderIndex {
-            get { return _headerIndex; }
             set { _headerIndex = value; }
         }
 
@@ -98,7 +93,7 @@ namespace IronPython.Compiler.Ast {
             // Temporary variable for the IEnumerator object
             MSAst.ParameterExpression enumerator = Ast.Variable(typeof(KeyValuePair<IEnumerator, IDisposable>), "foreach_enumerator");
 
-            return AppendLine(Ast.Block(new[] { enumerator }, TransformFor(Parent, enumerator, _list, _left, _body, _else, Span, Header, _break, _continue, true)));
+            return Ast.Block(new[] { enumerator }, TransformFor(Parent, enumerator, _list, _left, _body, _else, Span, GlobalParent.IndexToLocation(_headerIndex), _break, _continue, true));
         }
 
         public override void Walk(PythonWalker walker) {

@@ -50,9 +50,9 @@ namespace IronPython.Compiler.Ast {
 
         public override MSAst.Expression Reduce() {
             if (IsSlice) {
-                return AppendLine(GlobalParent.GetSlice(GetActionArgumentsForGetOrDelete()));
+                return GlobalParent.GetSlice(GetActionArgumentsForGetOrDelete());
             }
-            return AppendLine(GlobalParent.GetIndex(GetActionArgumentsForGetOrDelete()));
+            return GlobalParent.GetIndex(GetActionArgumentsForGetOrDelete());
         }
 
         private MSAst.Expression[] GetActionArgumentsForGetOrDelete() {

@@ -56,9 +56,9 @@ namespace IronPython.Compiler.Ast {
         public override MSAst.Expression Reduce() {
             if (_left.Length == 1) {
                 // Do not need temps for simple assignment
-                return AppendLine(AssignOne());
+                return AssignOne();
             } else {
-                return AppendLine(AssignComplex(_right));
+                return AssignComplex(_right);
             }
         }
 

@@ -44,7 +44,6 @@ namespace IronPython.Compiler.Ast {
 
     public abstract class Node : MSAst.Expression {
         private ScopeStatement _parent;
-        protected ScopeStatement _originalParent; // Holds the original scope if compiled from AST.
         private IndexSpan _span;
 
         internal static readonly MSAst.BlockExpression EmptyBlock = Ast.Block(AstUtils.Empty());
@@ -62,12 +61,7 @@ namespace IronPython.Compiler.Ast {
 
         public ScopeStatement Parent {
             get { return _parent; }
-            set {
-                if ((_parent is PythonAst) && (value is PythonAst) && (_parent != value)) {
-                    _originalParent = _parent;
-                }
-                _parent = value;
-            }
+            set { _parent = value; }
         }
         
         public void SetLoc(PythonAst globalParent, int start, int end) {
@@ -91,13 +85,13 @@ namespace IronPython.Compiler.Ast {
 
         public SourceLocation Start {
             get {
-                return IndexToLocation(StartIndex); 
+                return GlobalParent.IndexToLocation(StartIndex); 
             }
         }
 
         public SourceLocation End {
             get {
-                return IndexToLocation(EndIndex);
+                return GlobalParent.IndexToLocation(EndIndex);
             }
         }
 
@@ -124,7 +118,7 @@ namespace IronPython.Compiler.Ast {
                 return SourceLocation.Invalid;
             }
 
-            var locs = OriginalGlobalParent._lineLocations;
+            var locs = GlobalParent._lineLocations;
             int match = Array.BinarySearch(locs, index);
             if (match < 0) {
                 // If our index = -1, it means we're on the first line.
@@ -151,16 +145,6 @@ namespace IronPython.Compiler.Ast {
             get {
                 return GetType().Name;
             }
-        }
-
-        public MSAst.Expression AppendLine(MSAst.Expression reduced) {
-            if (GlobalParent.IsLightThrow) {
-                return reduced;
-            }
-            if (Parent is ClassDefinition) {
-                return reduced;
-            }
-            return Ast.Block(UpdateLineNumber(Start.Line), reduced);
         }
 
         #endregion
@@ -203,27 +187,6 @@ namespace IronPython.Compiler.Ast {
                 while (!(cur is PythonAst)) {
                     Debug.Assert(cur != null);
                     cur = cur.Parent;
-                }
-                return (PythonAst)cur;
-            }
-        }
-
-        internal PythonAst OriginalGlobalParent {
-            get {
-                Node cur = this;
-                while (!(cur is PythonAst)) {
-                    Debug.Assert(cur != null);
-                    if (cur._originalParent != null) {
-                        cur = cur._originalParent;
-                    } else {
-                        cur = cur.Parent;
-                    }
-                    if (cur == null) {
-                        return null;
-                    }
-                }
-                if ((cur._originalParent != null) && (cur._originalParent is PythonAst)) {
-                    return (PythonAst)cur._originalParent;
                 }
                 return (PythonAst)cur;
             }
@@ -348,7 +311,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal static MSAst.Expression TransformMaybeSingleLineSuite(Statement body, SourceLocation prevStart) {
-            if (body.Start.Line != prevStart.Line) {
+            if (body.GlobalParent.IndexToLocation(body.StartIndex).Line != prevStart.Line) {
                 return body;
             }
 

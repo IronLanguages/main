@@ -68,7 +68,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         public SourceLocation Header {
-            get { return IndexToLocation(_headerIndex); }
+            get { return GlobalParent.IndexToLocation(_headerIndex); }
         }
 
         public int HeaderIndex {
@@ -193,13 +193,13 @@ namespace IronPython.Compiler.Ast {
 
             classDef = AddDecorators(classDef, _decorators);
 
-            return AppendLine(GlobalParent.AddDebugInfoAndVoid(
+            return GlobalParent.AddDebugInfoAndVoid(
                 AssignValue(Parent.GetVariableExpression(_variable), classDef), 
                 new SourceSpan(
-                    Start,
-                    Header
+                    GlobalParent.IndexToLocation(StartIndex),
+                    GlobalParent.IndexToLocation(HeaderIndex)
                 )
-            ));
+            );
         }
 
         private Microsoft.Scripting.Ast.LightExpression<Func<CodeContext, CodeContext>> MakeClassBody() {

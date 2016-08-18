@@ -86,8 +86,6 @@ namespace IronPython.Compiler.Ast {
             ContractUtils.RequiresNotNull(body, "body");
 
             _body = body;
-            IndexSpan = body.IndexSpan;
-            _originalParent = body.OriginalGlobalParent;
             
             _lineLocations = lineLocations;
         }
@@ -328,7 +326,7 @@ namespace IronPython.Compiler.Ast {
         /// Reduces the PythonAst to a LambdaExpression of type Type.
         /// </summary>
         public override MSAst.Expression Reduce() {
-            return AppendLine(GetLambda());
+            return GetLambda();
         }
 
         internal override Microsoft.Scripting.Ast.LightLambdaExpression GetLambda() {
@@ -363,15 +361,6 @@ namespace IronPython.Compiler.Ast {
         public bool AbsoluteImports {
             get {
                 return (_languageFeatures & ModuleOptions.AbsoluteImports) != 0;
-            }
-        }
-
-        /// <summary>
-        /// True if light throw is enabled
-        /// </summary>
-        public bool IsLightThrow {
-            get {
-                return (_languageFeatures & ModuleOptions.LightThrow) != 0;
             }
         }
 
@@ -422,8 +411,8 @@ namespace IronPython.Compiler.Ast {
                     simpleBody = retStmt.Expression.Reduce();
                 }
 
-                var start = ret.Expression.Start;
-                var end = ret.Expression.End;
+                var start = IndexToLocation(ret.Expression.StartIndex);
+                var end = IndexToLocation(ret.Expression.EndIndex);
 
                 return Ast.Block(
                     Ast.DebugInfo(
@@ -781,7 +770,7 @@ namespace IronPython.Compiler.Ast {
 
         /// <summary>
         /// Rewrites the tree for performing lookups against globals instead of being bound
-        /// against the optimized scope.  This is used if the user compiles optimized code and then
+        /// against the optimized scope.  This is used if the user compiles optimied code and then
         /// runs it against a different scope.
         /// </summary>
         internal PythonAst MakeLookupCode() {
