@@ -1,2 +1,0 @@
-fails:Hash#include? returns false for objects with the same hash
-fails:Hash#include? returns true if argument is a key

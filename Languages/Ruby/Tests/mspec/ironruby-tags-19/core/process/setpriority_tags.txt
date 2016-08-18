@@ -1,3 +1,0 @@
-fails:Process.setpriority takes three arguments
-fails:Process.setpriority sets the scheduling priority for a specified process group
-fails:Process.setpriority sets the scheduling priority for a specified user

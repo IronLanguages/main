@@ -1,8 +1,0 @@
-fails:Array#sort does not call #<=> on contained objects when invoked with a block
-fails:Array#sort does not call #<=> on elements when invoked with a block even if Array is large (Rubinius #412)
-fails:Array#sort completes when supplied a block that always returns the same result
-fails:Array#sort raises an error if objects can't be compared
-fails:Array#sort! does not call #<=> on contained objects when invoked with a block
-fails:Array#sort! does not call #<=> on elements when invoked with a block even if Array is large (Rubinius #412)
-fails:Array#sort! completes when supplied a block that always returns the same result
-fails:Array#sort! ignores any changes of self which would take place during sort!ing

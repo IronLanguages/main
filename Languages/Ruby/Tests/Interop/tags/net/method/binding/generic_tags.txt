@@ -1,1 +1,0 @@
-fails:Generic Type inference on TxTParamsArry methods should work with differing types with a subclass relationship (Array)

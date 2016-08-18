@@ -1,8 +1,0 @@
-fails:Math#tan returns the tangent of the argument
-fails:Math#tan returns the tangent for Complex numbers
-fails:Math.tan returns the tangent of the argument
-fails:Math.tan returns the tangent for Complex numbers
-fails:"Math#tan returns the tangent of the argument"
-fails:"Math#tan returns the tangent for Complex numbers"
-fails:"Math.tan returns the tangent of the argument"
-fails:"Math.tan returns the tangent for Complex numbers"

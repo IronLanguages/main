@@ -1,2 +1,0 @@
-fails:Dir.new returns a Dir instance representing the specified directory
-fails:Dir.new calls #to_path on non-String arguments

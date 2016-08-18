@@ -1,1 +1,0 @@
-fails:Zlib::GzipWriter.wrap can be called without a block with a non-writable object

@@ -1,1 +1,0 @@
-fails:String#<< raises ArgumentError for negative length argument

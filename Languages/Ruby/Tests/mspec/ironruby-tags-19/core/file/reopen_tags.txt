@@ -1,2 +1,0 @@
-fails:File#reopen accepts an object that has a #to_path method
-fails:File#reopen resets the stream to a new file path

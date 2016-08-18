@@ -1,1 +1,0 @@
-fails:Net::HTTPGenericRequest#exec when passed socket, version, path when a body stream is set sends the request in chunks of 1024 bytes when 'Transfer-Encoding' is set to 'chunked'

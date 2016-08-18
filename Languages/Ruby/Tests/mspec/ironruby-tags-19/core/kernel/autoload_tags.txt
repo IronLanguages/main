@@ -1,1 +1,0 @@
-fails:Kernel.autoload calls #to_path on non-String filenames

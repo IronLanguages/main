@@ -1,2 +1,0 @@
-fails:Rational#inspect returns a string representation of self
-fails:"Rational#inspect returns a string representation of self"

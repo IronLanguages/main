@@ -1,2 +1,0 @@
-fails:CGI::QueryExtension#user_agent returns ENV['HTTP_USER_AGENT']
-fails:"CGI::QueryExtension#user_agent returns ENV['HTTP_USER_AGENT']"

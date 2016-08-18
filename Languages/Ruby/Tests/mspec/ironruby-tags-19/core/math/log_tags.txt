@@ -1,3 +1,0 @@
-fails:Math.log raises a TypeError if the argument cannot be coerced with Float()
-fails:Math.log raises a TypeError if the argument is nil
-fails:Math.log accepts any argument that can be coerced with Float()

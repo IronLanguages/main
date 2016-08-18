@@ -1,5 +1,0 @@
-fails:Enumerator#each_slice walks Enumerable elements strictly in forward direction, in parallel with iteration
-fails:Enumerator#each_slice allows Enumerable to change during the iteration
-fails:"Enumerator#each_slice walks Enumerable elements strictly in forward direction, in parallel with iteration"
-fails:"Enumerator#each_slice allows Enumerable to change during the iteration"
-fails:Enumerator#each_slice raises LocalJumpError if no block is given

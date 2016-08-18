@@ -1,1 +1,0 @@
-fails:File::Stat#blksize returns nil

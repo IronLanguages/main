@@ -1,6 +1,0 @@
-fails:->(){} can be be used as a Hash key
-fails:->(){} aliases each argument with a default value to the corresponding parameter
-fails:->(){} sets arguments to their default value if one wasn't supplied
-fails:->(){} assigns the given block to the parameter prefixed with an ampersand if such a parameter exists
-fails:->(){} sets parameters appropriately when a combination of parameter types is given between the parenthesis
-fails:->(){} uses lambda's 'rigid' argument handling

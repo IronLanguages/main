@@ -52,9 +52,6 @@
     <None Include="merlin_web_page_code_behind.py">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="user_commands.rb">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Include="register_user_commands.py">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

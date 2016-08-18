@@ -1,2 +1,0 @@
-fails:Digest::MD5#digest returns a digest
-fails:"Digest::MD5#digest returns a digest"

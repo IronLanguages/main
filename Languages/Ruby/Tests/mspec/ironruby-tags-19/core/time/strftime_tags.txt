@@ -1,2 +1,0 @@
-fails:Time#strftime ignores invalid or incomplete directives
-fails:Time#strftime supports GNU modificators
