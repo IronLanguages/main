@@ -1,2 +1,0 @@
-fails:Using interface groups works as the non-generic member when included
-fails:Using interface groups works as a module

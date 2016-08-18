@@ -1,4 +1,0 @@
-fails:Digest::SHA256#to_s returns a hexdigest
-fails:Digest::SHA256#to_s does not change the internal state
-fails:"Digest::SHA256#to_s returns a hexdigest"
-fails:"Digest::SHA256#to_s does not change the internal state"

@@ -1,2 +1,0 @@
-fails:Digest::MD5#inspect returns a Ruby object representation
-fails:"Digest::MD5#inspect returns a Ruby object representation"

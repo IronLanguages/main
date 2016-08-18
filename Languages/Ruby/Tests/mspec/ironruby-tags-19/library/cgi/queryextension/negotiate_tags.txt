@@ -1,2 +1,0 @@
-fails:CGI::QueryExtension#negotiate returns ENV['HTTP_NEGOTIATE']
-fails:"CGI::QueryExtension#negotiate returns ENV['HTTP_NEGOTIATE']"

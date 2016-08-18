@@ -1,1 +1,0 @@
-ruby run_syntax.rb -snap

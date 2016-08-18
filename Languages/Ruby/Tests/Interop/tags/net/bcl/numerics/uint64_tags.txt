@@ -1,4 +1,0 @@
-fails:System::UInt64 can be induced from a Float
-fails:System::UInt64 raises a RangeError if out of range for Float
-fails:System::UInt64 returns a Fixnum from the to_i method
-fails:System::UInt64 returns a Fixnum from the to_int method

@@ -1,1 +1,0 @@
-fails:TCPSocket#gethostbyname returns the canonical name as first value

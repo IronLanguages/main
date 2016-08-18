@@ -1,2 +1,0 @@
-fails:#to_enum returns a new enumerator
-fails:#to_enum defaults the first argument to :each

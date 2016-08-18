@@ -1,2 +1,0 @@
-fails:CGI::QueryExtension#accept_language returns ENV['HTTP_ACCEPT_LANGUAGE']
-fails:"CGI::QueryExtension#accept_language returns ENV['HTTP_ACCEPT_LANGUAGE']"

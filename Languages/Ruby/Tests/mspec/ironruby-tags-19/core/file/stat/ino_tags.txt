@@ -1,2 +1,0 @@
-fails:File::Stat#ino returns an Integer
-fails:File::Stat#ino should be able to determine the ino on a File::Stat object

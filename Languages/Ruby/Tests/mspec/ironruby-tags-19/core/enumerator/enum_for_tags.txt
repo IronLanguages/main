@@ -1,2 +1,0 @@
-fails:#enum_for returns a new enumerator
-fails:#enum_for defaults the first argument to :each

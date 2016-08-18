@@ -1,3 +1,0 @@
-describe "smoke" do
-
-end

@@ -1,1 +1,0 @@
-fails:Object#to_yaml doesn't quote strings that can be parsed as Ruby integer

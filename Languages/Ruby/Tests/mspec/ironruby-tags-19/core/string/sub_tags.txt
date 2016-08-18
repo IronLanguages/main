@@ -1,2 +1,0 @@
-fails:String#sub with pattern, replacement tries to convert replacement to a string using to_str
-fails:String#sub! with pattern and block raises a RuntimeError when self is frozen

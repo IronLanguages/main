@@ -1,1 +1,0 @@
-fails:IO#isatty return false when called on a standard stream redirected to a file or a pipe

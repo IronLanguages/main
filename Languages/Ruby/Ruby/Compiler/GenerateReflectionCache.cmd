@@ -1,1 +1,0 @@
-"%DLR_ROOT%\Bin\Debug\ClassInitGenerator" /refcache /out:%~dp0\ReflectionCache.Generated.cs

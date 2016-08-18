@@ -1,4 +1,0 @@
-fails:ERB#result return the result of compiled ruby code
-fails:ERB#result share local variables
-fails:ERB#result is able to h() or u() if ERB::Util is included
-fails:ERB#result use TOPLEVEL_BINDING if binding is not passed

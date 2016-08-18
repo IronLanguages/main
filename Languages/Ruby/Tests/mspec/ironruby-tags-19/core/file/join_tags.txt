@@ -1,1 +1,0 @@
-fails:File.join raises an ArgumentError if passed a recursive array

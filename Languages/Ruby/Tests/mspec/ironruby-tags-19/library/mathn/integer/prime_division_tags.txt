@@ -1,6 +1,0 @@
-fails:Integer#prime_division Performs a prime factorization of a positive integer
-fails:Integer#prime_division Performs a prime factorization of a negative integer
-fails:Integer#prime_division raises a ZeroDivisionError when is called on zero
-fails:"Integer#prime_division Performs a prime factorization of a positive integer"
-fails:"Integer#prime_division Performs a prime factorization of a negative integer"
-fails:"Integer#prime_division raises a ZeroDivisionError when is called on zero"

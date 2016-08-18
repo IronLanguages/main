@@ -1,9 +1,0 @@
-pkg/*
-*.rbc
-*.iml
-*.iws
-*.ipr
-*.sw?
-
-# ctags dir
-/tags

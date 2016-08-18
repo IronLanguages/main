@@ -1,1 +1,0 @@
-fails:System::String# == compares to arbitrary Objects

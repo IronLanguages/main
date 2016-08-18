@@ -1,6 +1,0 @@
-fails:Digest::SHA512#== should be equal to string representing its hexdigest
-fails:Digest::SHA512#== should be equal to appropriate object that responds to to_str
-fails:Digest::SHA512#== should be equal for same digest different object
-fails:"Digest::SHA512#== should be equal to string representing its hexdigest"
-fails:"Digest::SHA512#== should be equal to appropriate object that responds to to_str"
-fails:"Digest::SHA512#== should be equal for same digest different object"

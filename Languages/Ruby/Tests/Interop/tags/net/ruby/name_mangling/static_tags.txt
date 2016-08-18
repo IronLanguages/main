@@ -1,5 +1,0 @@
-fails:Name mangling on static methods works with mangled name (__LeadingCamelCase) if not conflicting
-fails:Name mangling on static methods works with mangled name (fNNBar) if not conflicting
-fails:Name mangling on static methods works with mangled name (foNBar) if not conflicting
-fails:Name mangling on static methods works with mangled name (NaNa) if not conflicting
-fails:Name mangling on static methods works with mangled name (Mixed_Snake_case) if not conflicting

@@ -1,8 +1,0 @@
-fails:OpenSSL::X509::Certificate#public_key raises OpenSSL::X509::CertificateError by default
-fails:OpenSSL::X509::Certificate#public_key returns the public_key
-fails:OpenSSL::X509::Certificate#public_key= raises TypeError if argument is nil
-fails:OpenSSL::X509::Certificate#public_key= raises TypeError if argument is not a OpenSSL::PKey::PKey
-fails:"OpenSSL::X509::Certificate#public_key raises OpenSSL::X509::CertificateError by default"
-fails:"OpenSSL::X509::Certificate#public_key returns the public_key"
-fails:"OpenSSL::X509::Certificate#public_key= raises TypeError if argument is nil"
-fails:"OpenSSL::X509::Certificate#public_key= raises TypeError if argument is not a OpenSSL::PKey::PKey"

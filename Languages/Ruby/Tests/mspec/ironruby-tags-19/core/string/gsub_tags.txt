@@ -1,4 +1,0 @@
-fails:String#gsub with pattern and replacement doesn't freak out when replacing ^
-fails:String#gsub with pattern and replacement tries to convert replacement to a string using to_str
-fails:String#gsub with pattern and Hash ignores non-String keys
-fails:String#gsub with pattern and Hash raises a TypeError if the hash has a default proc

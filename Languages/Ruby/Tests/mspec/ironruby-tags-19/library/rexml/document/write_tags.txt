@@ -1,2 +1,0 @@
-fails:REXML::Document#write returns document with transitive support
-fails:"REXML::Document#write returns document with transitive support"

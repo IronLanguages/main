@@ -1,2 +1,0 @@
-fails:TCPSocket.open connects to a listening server
-fails:TCPSocket.open requires local_port to be 0 when local_host is not specified

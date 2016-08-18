@@ -1,8 +1,0 @@
-fails:String#split with Regexp splits between characters when regexp matches a zero-length string
-fails:String#split with Regexp includes all captures in the result array
-fails:String#split with Regexp splits between characters when regexp matches a zero-length string
-fails:String#split with Regexp includes all captures in the result array
-fails:String#split with Regexp splits between characters when regexp matches a zero-length string
-fails:String#split with Regexp includes all captures in the result array
-fails:String#split with Regexp splits between characters when regexp matches a zero-length string
-fails:String#split with Regexp includes all captures in the result array
