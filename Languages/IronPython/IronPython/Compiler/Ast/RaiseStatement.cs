@@ -79,10 +79,10 @@ namespace IronPython.Compiler.Ast {
                 );
             }
 
-            return AppendLine(GlobalParent.AddDebugInfo(
+            return GlobalParent.AddDebugInfo(
                 Ast.Throw(raiseExpression),
                 Span
-            ));
+            );
         }
 
         internal bool InFinally {

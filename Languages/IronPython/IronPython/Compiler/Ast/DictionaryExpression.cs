@@ -48,7 +48,7 @@ namespace IronPython.Compiler.Ast {
             // create keys & values into array and then call helper function
             // which creates the dictionary
             if (_items.Length != 0) {
-                return AppendLine(ReduceConstant() ?? ReduceDictionaryWithItems());
+                return ReduceConstant() ?? ReduceDictionaryWithItems();
             }
 
             // empty dictionary

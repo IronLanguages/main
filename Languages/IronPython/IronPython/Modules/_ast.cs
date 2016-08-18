@@ -67,10 +67,10 @@ namespace IronPython.Modules
             }
         }
 
-        internal static PythonAst ConvertToPythonAst(CodeContext codeContext, AST source, string path) {
+        internal static PythonAst ConvertToPythonAst(CodeContext codeContext, AST source ) {
             Statement stmt;
             PythonCompilerOptions options = new PythonCompilerOptions(ModuleOptions.ExecOrEvalCode);
-            SourceUnit unit = new SourceUnit(codeContext.LanguageContext, NullTextContentProvider.Null, path, SourceCodeKind.AutoDetect);
+            SourceUnit unit = new SourceUnit(codeContext.LanguageContext, NullTextContentProvider.Null, "", SourceCodeKind.AutoDetect);
             CompilerContext compilerContext = new CompilerContext(unit, options, ErrorSink.Default);
             bool printExpression = false;
 
@@ -127,8 +127,6 @@ namespace IronPython.Modules
             private PythonTuple __attributes = new PythonTuple();   // Genshi assumes _fields in not None
             protected int? _lineno; // both lineno and col_offset are expected to be int, in cpython anything is accepted
             protected int? _col_offset;
-            protected ScopeStatement _parent; // Stores the parent for the span when reverting back to Node objects.
-            protected SourceSpan _span; // Stores the span to attach when reverting back to Node objects.
 
             public PythonTuple _fields {
                 get { return __fields; }
@@ -204,14 +202,11 @@ namespace IronPython.Modules
                 return __reduce__();
             }
 
-            internal void GetSourceLocation(Node node) {
+            protected void GetSourceLocation(Node node) {
                 _lineno = node.Start.Line;
 
                 // IronPython counts from 1; CPython counts from 0
                 _col_offset = node.Start.Column - 1;
-
-                _span = node.Span;
-                _parent = node.Parent;
             }
 
             internal static PythonList ConvertStatements(Statement stmt) {
@@ -305,9 +300,8 @@ namespace IronPython.Modules
                         body = PythonOps.MakeListNoCopy(tryExcept);
                     } else
                         body = ConvertStatements(stmt.Body);
-                    TryFinally tf = new TryFinally(body, ConvertStatements(stmt.Finally));
-                    tf.HeaderIndex = stmt.HeaderIndex;
-                    return tf;
+
+                    return new TryFinally(body, ConvertStatements(stmt.Finally));
                 }
 
                 return new TryExcept(stmt);
@@ -635,13 +629,13 @@ namespace IronPython.Modules
                 int argIdx = args.Count - 1;
                 for (int defIdx = defaults.Count - 1; defIdx >= 0; defIdx--, argIdx--) {
                     Name name = (Name)args[argIdx];
-                    Parameter p = name.AttachLoc(new Parameter(name.id));
+                    Parameter p = new Parameter(name.id);
                     p.DefaultValue = expr.Revert(defaults[defIdx]);
                     parameters.Add(p);
                 }
                 while (argIdx >= 0) {
                     Name name = (Name)args[argIdx--];
-                    parameters.Add(name.AttachLoc(new Parameter(name.id)));
+                    parameters.Add(new Parameter(name.id));
                 }
                 parameters.Reverse();
                 if (vararg != null)
@@ -780,23 +774,18 @@ namespace IronPython.Modules
             internal virtual AstExpression Revert() {
                 throw PythonOps.TypeError("Unexpected expr type: {0}", GetType());
             }
-            
-            internal AstExpression AttachLoc(AstExpression other) {
-                other.SetLoc(_parent as PythonAst, _span.Start.Index, _span.End.Index);
-                return other;
-            }
 
             internal static AstExpression Revert(expr ex) {
                 if (ex == null)
                     return null;
-                return ex.AttachLoc(ex.Revert());
+                return ex.Revert();
             }
 
             internal static AstExpression Revert(object ex) {
                 if (ex == null)
                     return null;
                 Debug.Assert(ex is expr);
-                return Revert((expr)ex);
+                return ((expr)ex).Revert();
             }
 
             internal static AstExpression[] RevertExprs(PythonList exprs) {
@@ -889,11 +878,6 @@ namespace IronPython.Modules
         [PythonType]
         public abstract class slice : AST
         {
-            internal AstExpression AttachLoc(AstExpression other)
-            {
-                other.SetLoc(_parent as PythonAst, _span.Start.Index, _span.End.Index);
-                return other;
-            }
         }
 
         [PythonType]
@@ -905,11 +889,6 @@ namespace IronPython.Modules
 
             internal virtual Statement Revert() {
                 throw PythonOps.TypeError("Unexpected statement type: {0}", GetType());
-            }
-            
-            internal Statement AttachLoc(Statement other) {
-                other.SetLoc(_parent as PythonAst, _span.Start.Index, _span.End.Index);
-                return other;
             }
 
             internal static Statement RevertStmts(PythonList stmts) {
@@ -976,7 +955,7 @@ namespace IronPython.Modules
             }
 
             internal override Statement Revert() {
-                return AttachLoc(new AssertStatement(expr.Revert(test), expr.Revert(msg)));
+                return new AssertStatement(expr.Revert(test), expr.Revert(msg));
             }
 
             public expr test {
@@ -1018,7 +997,7 @@ namespace IronPython.Modules
             }
             
             internal override Statement Revert() {
-                return AttachLoc(new AssignmentStatement(expr.RevertExprs(targets), expr.Revert(value)));
+                return new AssignmentStatement(expr.RevertExprs(targets), expr.Revert(value));
             }
 
             public PythonList targets {
@@ -1061,7 +1040,7 @@ namespace IronPython.Modules
             }
          
             internal override AstExpression Revert() {
-                return AttachLoc(new MemberExpression(expr.Revert(value), attr));
+                return new MemberExpression(expr.Revert(value), attr);
             }
 
             public expr value {
@@ -1109,7 +1088,7 @@ namespace IronPython.Modules
             }
 
             internal override Statement Revert() {
-                return AttachLoc(new AugmentedAssignStatement(op.Revert(), expr.Revert(target), expr.Revert(value)));
+                return new AugmentedAssignStatement(op.Revert(), expr.Revert(target), expr.Revert(value));
             }
 
             public expr target {
@@ -1172,7 +1151,7 @@ namespace IronPython.Modules
             }
 
             internal override AstExpression Revert() {
-                return AttachLoc(new BinaryExpression(op.Revert(), expr.Revert(left), expr.Revert(right)));
+                return new BinaryExpression(op.Revert(), expr.Revert(left), expr.Revert(right));
             }
 
             public expr left {
@@ -1279,7 +1258,7 @@ namespace IronPython.Modules
             }
 
             internal override Statement Revert() {
-                return AttachLoc(new BreakStatement());
+                return new BreakStatement();
             }
         }
 
@@ -1374,7 +1353,6 @@ namespace IronPython.Modules
             private PythonList _bases;
             private PythonList _body;
             private PythonList _decorator_list;
-            private int _headerIndex;
 
             public ClassDef() {
                 _fields = new PythonTuple(new[] { "name", "bases", "body", "decorator_list" });
@@ -1405,15 +1383,13 @@ namespace IronPython.Modules
                         _decorator_list.Add(Convert(expr));
                 } else
                     _decorator_list = PythonOps.MakeEmptyList(0);
-                _headerIndex = def.HeaderIndex;
             }
 
             internal override Statement Revert() {
                 ClassDefinition cd = new ClassDefinition(name, expr.RevertExprs(bases), RevertStmts(body));
                 if (decorator_list.Count != 0) 
                     cd.Decorators = expr.RevertExprs(decorator_list);
-                cd.HeaderIndex = _headerIndex;
-                return AttachLoc(cd);
+                return cd;
             }
 
             public string name {
@@ -1534,7 +1510,7 @@ namespace IronPython.Modules
             }
 
             internal override Statement Revert() {
-                return AttachLoc(new ContinueStatement());
+                return new ContinueStatement();
             }
         }
 
@@ -1568,7 +1544,7 @@ namespace IronPython.Modules
             }
 
             internal override Statement Revert() {
-                return AttachLoc(new DelStatement(expr.RevertExprs(targets)));
+                return new DelStatement(expr.RevertExprs(targets));
             }
 
             public PythonList targets {
@@ -1707,7 +1683,6 @@ namespace IronPython.Modules
             private expr _type;
             private expr _name;
             private PythonList _body;
-            private int _headerIndex;
 
             public ExceptHandler() {
                 _fields = new PythonTuple(new[] { "type", "name", "body" });
@@ -1731,18 +1706,10 @@ namespace IronPython.Modules
                     _name = Convert(stmt.Target, Store.Instance);
 
                 _body = ConvertStatements(stmt.Body);
-                _headerIndex = stmt.HeaderIndex;
-            }
-            
-            internal TryStatementHandler AttachLoc(TryStatementHandler other) {
-                other.SetLoc(_parent as PythonAst, _span.Start.Index, _span.End.Index);
-                return other;
             }
 
             internal TryStatementHandler RevertHandler() {
-                TryStatementHandler tsh = new TryStatementHandler(expr.Revert(type), expr.Revert(name), stmt.RevertStmts(body));
-                tsh.HeaderIndex = _headerIndex;
-                return AttachLoc(tsh);
+                return new TryStatementHandler(expr.Revert(type), expr.Revert(name), stmt.RevertStmts(body));
             }
 
             public expr type {
@@ -1792,7 +1759,7 @@ namespace IronPython.Modules
             }
 
             internal override Statement Revert() {
-                return AttachLoc(new ExecStatement(expr.Revert(body), expr.Revert(locals), expr.Revert(globals)));
+                return new ExecStatement(expr.Revert(body), expr.Revert(locals), expr.Revert(globals));
             }
 
             public expr body {
@@ -1833,7 +1800,7 @@ namespace IronPython.Modules
             }
 
             internal override Statement Revert() {
-                return AttachLoc(new ExpressionStatement(expr.Revert(value)));
+                return new ExpressionStatement(expr.Revert(value));
             }
 
             public expr value {
@@ -1911,7 +1878,6 @@ namespace IronPython.Modules
             private expr _iter;
             private PythonList _body;
             private PythonList _orelse; // Optional, default []
-            private int _headerIndex;
 
             public For() {
                 _fields = new PythonTuple(new[] { "target", "iter", "body", "orelse" });
@@ -1937,13 +1903,10 @@ namespace IronPython.Modules
                 _iter = Convert(stmt.List);
                 _body = ConvertStatements(stmt.Body);
                 _orelse = ConvertStatements(stmt.Else, true);
-                _headerIndex = stmt.HeaderIndex;
             }
 
             internal override Statement Revert() {
-                ForStatement fs = new ForStatement(expr.Revert(target), expr.Revert(iter), RevertStmts(body), RevertStmts(orelse));
-                fs.HeaderIndex = _headerIndex;
-                return AttachLoc(fs);
+                return new ForStatement(expr.Revert(target), expr.Revert(iter), RevertStmts(body), RevertStmts(orelse));
             }
 
             public expr target {
@@ -1974,7 +1937,6 @@ namespace IronPython.Modules
             private arguments _args;
             private PythonList _body;
             private PythonList _decorator_list;
-            private int _headerIndex;
 
             public FunctionDef() {
 				_fields = new PythonTuple(new[] { "name", "args", "body", "decorator_list" });
@@ -2003,7 +1965,6 @@ namespace IronPython.Modules
                         _decorator_list.Add(Convert(expr));
                 } else
                     _decorator_list = PythonOps.MakeEmptyList(0);
-                _headerIndex = def.HeaderIndex;
             }
 
             internal override Statement Revert() {
@@ -2012,8 +1973,7 @@ namespace IronPython.Modules
                 _containsYield = false;
                 if (decorator_list.Count != 0)
                     fd.Decorators = expr.RevertExprs(decorator_list);
-                fd.HeaderIndex = _headerIndex;
-                return AttachLoc(fd);
+                return fd;
             }
 
             public string name {
@@ -2191,7 +2151,7 @@ namespace IronPython.Modules
                 string[] newNames = new string[names.Count];
                 for (int i = 0; i < names.Count; i++)
                     newNames[i] = (string)names[i];
-                return AttachLoc(new GlobalStatement(newNames));
+                return new GlobalStatement(newNames);
             }
 
             public PythonList names {
@@ -2268,7 +2228,7 @@ namespace IronPython.Modules
                     tests.Add(new IfStatementTest(expr.Revert(orelse.test), RevertStmts(orelse.body)));
                     currIf = orelse;
                 }
-                return AttachLoc(new IfStatement(tests.ToArray(), RevertStmts(currIf.orelse)));
+                return new IfStatement(tests.ToArray(), RevertStmts(currIf.orelse));
             }
 
             public expr test {
@@ -2366,7 +2326,7 @@ namespace IronPython.Modules
                     moduleNames[i] = new ModuleName(alias.name.Split(MODULE_NAME_SPLITTER));
                     asNames[i] = alias.asname;
                 }
-                return AttachLoc(new ImportStatement(moduleNames, asNames, false));  // TODO: not so sure about the relative/absolute argument here
+                return new ImportStatement(moduleNames, asNames, false);  // TODO: not so sure about the relative/absolute argument here
             }
 
             public PythonList names {
@@ -2417,7 +2377,7 @@ namespace IronPython.Modules
                     }
 
                 if (names.Count == 1 && ((alias)names[0]).name == "*")
-                    return AttachLoc(new FromImportStatement(root, (string[])FromImportStatement.Star, null, false, absolute));
+                    return new FromImportStatement(root, (string[])FromImportStatement.Star, null, false, absolute);
 
                 String[] newNames = new String[names.Count];
                 String[] asNames = new String[names.Count];
@@ -2426,7 +2386,7 @@ namespace IronPython.Modules
                     newNames[i] = alias.name;
                     asNames[i] = alias.asname;
                 }
-                return AttachLoc(new FromImportStatement(root, newNames, asNames, false, absolute));
+                return new FromImportStatement(root, newNames, asNames, false, absolute);
             }
 
             public string module {
@@ -2772,11 +2732,6 @@ namespace IronPython.Modules
                 : this(expr.Name, ctx) {
                 GetSourceLocation(expr);
             }
-            
-            internal Parameter AttachLoc(Parameter other) {
-                other.SetLoc(_parent as PythonAst, _span.Start.Index, _span.End.Index);
-                return other;
-            }
 
             internal override AstExpression Revert() {
                 return new NameExpression(id);
@@ -2866,7 +2821,7 @@ namespace IronPython.Modules
             }
 
             internal override Statement Revert() {
-                return AttachLoc(new EmptyStatement());
+                return new EmptyStatement();
             }
         }
 
@@ -2910,7 +2865,7 @@ namespace IronPython.Modules
             }
 
             internal override Statement Revert() {
-                return AttachLoc(new PrintStatement(expr.Revert(dest), expr.RevertExprs(values), !nl));
+                return new PrintStatement(expr.Revert(dest), expr.RevertExprs(values), !nl);
             }
 
             public expr dest {
@@ -2961,7 +2916,7 @@ namespace IronPython.Modules
             }
 
             internal override Statement Revert() {
-                return AttachLoc(new RaiseStatement(expr.Revert(type), expr.Revert(inst), expr.Revert(tback)));
+                return new RaiseStatement(expr.Revert(type), expr.Revert(inst), expr.Revert(tback));
             }
 
             public expr type {
@@ -3038,7 +2993,7 @@ namespace IronPython.Modules
             }
 
             internal override Statement Revert() {
-                return AttachLoc(new ReturnStatement(expr.Revert(value)));
+                return new ReturnStatement(expr.Revert(value));
             }
 
             public expr value {
@@ -3284,7 +3239,7 @@ namespace IronPython.Modules
                 } else {
                     Debug.Assert(false, "Unexpected type when converting Subscript: " + slice.GetType());
                 }
-                return new IndexExpression(expr.Revert(value), slice.AttachLoc(index));
+                return new IndexExpression(expr.Revert(value), index);
             }
 
             public expr value {
@@ -3336,7 +3291,6 @@ namespace IronPython.Modules
             private PythonList _body;
             private PythonList _handlers;
             private PythonList _orelse; // Optional, default []
-            private int _headerIndex;
 
             public TryExcept() {
                 _fields = new PythonTuple(new[] { "body", "handlers", "orelse" });
@@ -3365,7 +3319,6 @@ namespace IronPython.Modules
                     _handlers.Add(Convert(tryStmt));
 
                 _orelse = ConvertStatements(stmt.Else, true);
-                _headerIndex = stmt.HeaderIndex;
             }
 
             internal override Statement Revert() {
@@ -3373,9 +3326,7 @@ namespace IronPython.Modules
                 for (int i = 0; i < handlers.Count; i++) {
                     tshs[i] = ((ExceptHandler)handlers[i]).RevertHandler();
                 }
-                TryStatement ts = new TryStatement(RevertStmts(body), tshs, RevertStmts(orelse), null);
-                ts.HeaderIndex = _headerIndex;
-                return AttachLoc(ts);
+                return new TryStatement(RevertStmts(body), tshs, RevertStmts(orelse), null);
             }
 
             public PythonList body {
@@ -3399,7 +3350,6 @@ namespace IronPython.Modules
         {
             private PythonList _body;
             private PythonList _finalbody;
-            private int _headerIndex;
 
             public TryFinally() {
                 _fields = new PythonTuple(new[] { "body", "finalbody" });
@@ -3421,24 +3371,16 @@ namespace IronPython.Modules
                 _finalbody = finalbody;
             }
 
-            internal int HeaderIndex {
-                get { return _headerIndex; }
-                set { _headerIndex = value; }
-            }
-
             internal override Statement Revert() {
-                TryStatement ts;
                 if (body.Count == 1 && body[0] is TryExcept) {
                     TryExcept te = (TryExcept)body[0];
                     TryStatementHandler[] tshs = new TryStatementHandler[te.handlers.Count];
                     for (int i = 0; i < te.handlers.Count; i++) {
                         tshs[i] = ((ExceptHandler)te.handlers[i]).RevertHandler();
                     }
-                    ts = new TryStatement(RevertStmts(te.body), tshs, RevertStmts(te.orelse), RevertStmts(finalbody));
-                } else {
-                    ts = new TryStatement(RevertStmts(body), null, null, RevertStmts(finalbody));
+                    return new TryStatement(RevertStmts(te.body), tshs, RevertStmts(te.orelse), RevertStmts(finalbody));
                 }
-                return AttachLoc(ts);
+                return new TryStatement(RevertStmts(body), null, null, RevertStmts(finalbody));
             }
 
             public PythonList body {
@@ -3588,7 +3530,6 @@ namespace IronPython.Modules
             private expr _test;
             private PythonList _body;
             private PythonList _orelse; // Optional, default []
-            private int _headerIndex;
 
             public While() {
                 _fields = new PythonTuple(new[] { "test", "body", "orelse" });
@@ -3612,13 +3553,10 @@ namespace IronPython.Modules
                 _test = Convert(stmt.Test);
                 _body = ConvertStatements(stmt.Body);
                 _orelse = ConvertStatements(stmt.ElseStatement, true);
-                _headerIndex = stmt.HeaderIndex;
             }
 
             internal override Statement Revert() {
-                WhileStatement ws = new WhileStatement(expr.Revert(test), RevertStmts(body), RevertStmts(orelse));
-                ws.HeaderIndex = _headerIndex;
-                return AttachLoc(ws);
+                return new WhileStatement(expr.Revert(test), RevertStmts(body), RevertStmts(orelse));
             }
 
             public expr test {
@@ -3643,7 +3581,6 @@ namespace IronPython.Modules
             private expr _context_expr;
             private expr _optional_vars; // Optional
             private PythonList _body;
-            private int _headerIndex;
 
             public With() {
                 _fields = new PythonTuple(new[] { "context_expr", "optional_vars", "body" });
@@ -3666,13 +3603,10 @@ namespace IronPython.Modules
                     _optional_vars = Convert(with.Variable);
 
                 _body = ConvertStatements(with.Body);
-                _headerIndex = with.HeaderIndex;
             }
 
             internal override Statement Revert() {
-                WithStatement ws = new WithStatement(expr.Revert(context_expr), expr.Revert(optional_vars), RevertStmts(body));
-                ws.HeaderIndex = _headerIndex;
-                return AttachLoc(ws);
+                return new WithStatement(expr.Revert(context_expr), expr.Revert(optional_vars), RevertStmts(body));
             }
 
             public expr context_expr {

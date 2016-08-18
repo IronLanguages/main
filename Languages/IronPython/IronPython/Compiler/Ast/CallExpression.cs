@@ -79,7 +79,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override MSAst.Expression Reduce() {
-            return AppendLine(UnicodeCall() ?? NormalCall(_target));
+            return UnicodeCall() ?? NormalCall(_target);
         }
 
         private MSAst.Expression NormalCall(MSAst.Expression target) {
