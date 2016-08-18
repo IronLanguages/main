@@ -24,10 +24,15 @@ if "site" in sys.modules:
 else:
     raise unittest.SkipTest("importation of site.py suppressed")
 
-if not os.path.isdir(site.USER_SITE):
+if site.ENABLE_USER_SITE and not os.path.isdir(site.USER_SITE):
     # need to add user site directory for tests
-    os.makedirs(site.USER_SITE)
-    site.addsitedir(site.USER_SITE)
+    try:
+        os.makedirs(site.USER_SITE)
+        site.addsitedir(site.USER_SITE)
+    except OSError as exc:
+        raise unittest.SkipTest('unable to create user site directory (%r): %s'
+                                % (site.USER_SITE, exc))
+
 
 class HelperFunctionsTests(unittest.TestCase):
     """Tests for helper functions.
@@ -161,6 +166,8 @@ class HelperFunctionsTests(unittest.TestCase):
         finally:
             pth_file.cleanup()
 
+    @unittest.skipUnless(site.ENABLE_USER_SITE, "requires access to PEP 370 "
+                          "user-site (site.ENABLE_USER_SITE)")
     def test_s_option(self):
         usersite = site.USER_SITE
         self.assertIn(usersite, sys.path)
@@ -226,7 +233,19 @@ class HelperFunctionsTests(unittest.TestCase):
             self.assertEqual(len(dirs), 1)
             wanted = os.path.join('xoxo', 'Lib', 'site-packages')
             self.assertEqual(dirs[0], wanted)
+        elif (sys.platform == "darwin" and
+            sysconfig.get_config_var("PYTHONFRAMEWORK")):
+            # OS X framework builds
+            site.PREFIXES = ['Python.framework']
+            dirs = site.getsitepackages()
+            self.assertEqual(len(dirs), 3)
+            wanted = os.path.join('/Library',
+                                  sysconfig.get_config_var("PYTHONFRAMEWORK"),
+                                  sys.version[:3],
+                                  'site-packages')
+            self.assertEqual(dirs[2], wanted)
         elif os.sep == '/':
+            # OS X non-framwework builds, Linux, FreeBSD, etc
             self.assertEqual(len(dirs), 2)
             wanted = os.path.join('xoxo', 'lib', 'python' + sys.version[:3],
                                   'site-packages')
@@ -234,23 +253,11 @@ class HelperFunctionsTests(unittest.TestCase):
             wanted = os.path.join('xoxo', 'lib', 'site-python')
             self.assertEqual(dirs[1], wanted)
         else:
+            # other platforms
             self.assertEqual(len(dirs), 2)
             self.assertEqual(dirs[0], 'xoxo')
             wanted = os.path.join('xoxo', 'lib', 'site-packages')
             self.assertEqual(dirs[1], wanted)
-
-        # let's try the specific Apple location
-        if (sys.platform == "darwin" and
-            sysconfig.get_config_var("PYTHONFRAMEWORK")):
-            site.PREFIXES = ['Python.framework']
-            dirs = site.getsitepackages()
-            self.assertEqual(len(dirs), 4)
-            wanted = os.path.join('~', 'Library', 'Python',
-                                  sys.version[:3], 'site-packages')
-            self.assertEqual(dirs[2], os.path.expanduser(wanted))
-            wanted = os.path.join('/Library', 'Python', sys.version[:3],
-                                  'site-packages')
-            self.assertEqual(dirs[3], wanted)
 
 class PthFile(object):
     """Helper class for handling testing of .pth files"""
@@ -341,6 +348,7 @@ class ImportSideEffectTests(unittest.TestCase):
             self.assertNotIn(path, seen_paths)
             seen_paths.add(path)
 
+    @unittest.skip('test not implemented')
     def test_add_build_dir(self):
         # Test that the build directory's Modules directory is used when it
         # should be.

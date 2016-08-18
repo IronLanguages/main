@@ -60,12 +60,12 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override MSAst.Expression Reduce() {
-            return Ast.Call(
+            return AppendLine(Ast.Call(
                 AstMethods.MakeSlice,                                    // method
                 TransformOrConstantNull(_sliceStart, typeof(object)),    // parameters
                 TransformOrConstantNull(_sliceStop, typeof(object)),
                 TransformOrConstantNull(_sliceStep, typeof(object))
-            );
+            ));
         }
 
         public override void Walk(PythonWalker walker) {

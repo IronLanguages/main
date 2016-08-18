@@ -37,7 +37,6 @@ __version__ = "2.6"
 from operator import attrgetter
 import sys
 import os
-import urllib
 import UserDict
 import urlparse
 
@@ -176,7 +175,7 @@ def parse(fp=None, environ=os.environ, keep_blank_values=0, strict_parsing=0):
 
 
 # parse query string function called from urlparse,
-# this is done in order to maintain backward compatiblity.
+# this is done in order to maintain backward compatibility.
 
 def parse_qs(qs, keep_blank_values=0, strict_parsing=0):
     """Parse a query given as a string argument."""
@@ -293,7 +292,7 @@ def _parseparam(s):
     while s[:1] == ';':
         s = s[1:]
         end = s.find(';')
-        while end > 0 and s.count('"', 0, end) % 2:
+        while end > 0 and (s.count('"', 0, end) - s.count('\\"', 0, end)) % 2:
             end = s.find(';', end + 1)
         if end < 0:
             end = len(s)
@@ -698,6 +697,9 @@ class FieldStorage:
             if not line:
                 self.done = -1
                 break
+            if delim == "\r":
+                line = delim + line
+                delim = ""
             if line[:2] == "--" and last_line_lfend:
                 strippedline = line.strip()
                 if strippedline == next:
@@ -714,6 +716,12 @@ class FieldStorage:
                 delim = "\n"
                 line = line[:-1]
                 last_line_lfend = True
+            elif line[-1] == "\r":
+                # We may interrupt \r\n sequences if they span the 2**16
+                # byte boundary
+                delim = "\r"
+                line = line[:-1]
+                last_line_lfend = False
             else:
                 delim = ""
                 last_line_lfend = False

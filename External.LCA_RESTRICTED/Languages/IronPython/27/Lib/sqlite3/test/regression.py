@@ -1,4 +1,4 @@
-#-*- coding: ISO-8859-1 -*-
+#-*- coding: iso-8859-1 -*-
 # pysqlite2/test/regression.py: pysqlite regression tests
 #
 # Copyright (C) 2006-2007 Gerhard Häring <gh@ghaering.de>
@@ -73,7 +73,7 @@ class RegressionTests(unittest.TestCase):
     def CheckStatementFinalizationOnCloseDb(self):
         # pysqlite versions <= 2.3.3 only finalized statements in the statement
         # cache when closing the database. statements that were still
-        # referenced in cursors weren't closed an could provoke "
+        # referenced in cursors weren't closed and could provoke "
         # "OperationalError: Unable to close due to unfinalised statements".
         con = sqlite.connect(":memory:")
         cursors = []
@@ -159,7 +159,8 @@ class RegressionTests(unittest.TestCase):
 
     def CheckCursorConstructorCallCheck(self):
         """
-        Verifies that cursor methods check wether base class __init__ was called.
+        Verifies that cursor methods check whether base class __init__ was
+        called.
         """
         class Cursor(sqlite.Cursor):
             def __init__(self, con):
@@ -177,7 +178,8 @@ class RegressionTests(unittest.TestCase):
 
     def CheckConnectionConstructorCallCheck(self):
         """
-        Verifies that connection methods check wether base class __init__ was called.
+        Verifies that connection methods check whether base class __init__ was
+        called.
         """
         class Connection(sqlite.Connection):
             def __init__(self, name):
@@ -263,6 +265,69 @@ class RegressionTests(unittest.TestCase):
         of the statement constructor.
         """
         self.assertRaises(sqlite.Warning, self.con, 1)
+
+    def CheckRecursiveCursorUse(self):
+        """
+        http://bugs.python.org/issue10811
+
+        Recursively using a cursor, such as when reusing it from a generator led to segfaults.
+        Now we catch recursive cursor usage and raise a ProgrammingError.
+        """
+        con = sqlite.connect(":memory:")
+
+        cur = con.cursor()
+        cur.execute("create table a (bar)")
+        cur.execute("create table b (baz)")
+
+        def foo():
+            cur.execute("insert into a (bar) values (?)", (1,))
+            yield 1
+
+        with self.assertRaises(sqlite.ProgrammingError):
+            cur.executemany("insert into b (baz) values (?)",
+                            ((i,) for i in foo()))
+
+    def CheckConvertTimestampMicrosecondPadding(self):
+        """
+        http://bugs.python.org/issue14720
+
+        The microsecond parsing of convert_timestamp() should pad with zeros,
+        since the microsecond string "456" actually represents "456000".
+        """
+
+        con = sqlite.connect(":memory:", detect_types=sqlite.PARSE_DECLTYPES)
+        cur = con.cursor()
+        cur.execute("CREATE TABLE t (x TIMESTAMP)")
+
+        # Microseconds should be 456000
+        cur.execute("INSERT INTO t (x) VALUES ('2012-04-04 15:06:00.456')")
+
+        # Microseconds should be truncated to 123456
+        cur.execute("INSERT INTO t (x) VALUES ('2012-04-04 15:06:00.123456789')")
+
+        cur.execute("SELECT * FROM t")
+        values = [x[0] for x in cur.fetchall()]
+
+        self.assertEqual(values, [
+            datetime.datetime(2012, 4, 4, 15, 6, 0, 456000),
+            datetime.datetime(2012, 4, 4, 15, 6, 0, 123456),
+        ])
+
+    def CheckInvalidIsolationLevelType(self):
+        # isolation level is a string, not an integer
+        self.assertRaises(TypeError,
+                          sqlite.connect, ":memory:", isolation_level=123)
+
+
+    def CheckNullCharacter(self):
+        # Issue #21147
+        con = sqlite.connect(":memory:")
+        self.assertRaises(ValueError, con, "\0select 1")
+        self.assertRaises(ValueError, con, "select 1\0")
+        cur = con.cursor()
+        self.assertRaises(ValueError, cur.execute, " \0select 2")
+        self.assertRaises(ValueError, cur.execute, "select 2\0")
+
 
 def suite():
     regression_suite = unittest.makeSuite(RegressionTests, "Check")

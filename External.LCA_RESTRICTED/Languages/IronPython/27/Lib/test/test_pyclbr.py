@@ -180,13 +180,18 @@ class PyclbrTest(TestCase):
         cm('pickle')
         cm('aifc', ignore=('openfp',))  # set with = in module
         cm('Cookie')
-        cm('sre_parse', ignore=('dump',)) # from sre_constants import *
+        cm('sre_parse', ignore=('dump', 'groups')) # from sre_constants import *; property
         cm('pdb')
         cm('pydoc')
 
         # Tests for modules inside packages
         cm('email.parser')
         cm('test.test_pyclbr')
+
+    def test_issue_14798(self):
+        # test ImportError is raised when the first part of a dotted name is
+        # not a package
+        self.assertRaises(ImportError, pyclbr.readmodule_ex, 'asyncore.foo')
 
 
 def test_main():

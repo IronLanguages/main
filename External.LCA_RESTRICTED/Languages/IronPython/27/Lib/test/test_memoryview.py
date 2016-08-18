@@ -10,6 +10,8 @@ import weakref
 import array
 from test import test_support
 import io
+import copy
+import pickle
 
 
 class AbstractMemoryTests:
@@ -63,7 +65,7 @@ class AbstractMemoryTests:
 
     def test_setitem_readonly(self):
         if not self.ro_type:
-            return
+            self.skipTest("no read-only type to test")
         b = self.ro_type(self._source)
         oldrefcount = sys.getrefcount(b)
         m = self._view(b)
@@ -77,7 +79,7 @@ class AbstractMemoryTests:
 
     def test_setitem_writable(self):
         if not self.rw_type:
-            return
+            self.skipTest("no writable type to test")
         tp = self.rw_type
         b = self.rw_type(self._source)
         oldrefcount = sys.getrefcount(b)
@@ -183,13 +185,13 @@ class AbstractMemoryTests:
 
     def test_attributes_readonly(self):
         if not self.ro_type:
-            return
+            self.skipTest("no read-only type to test")
         m = self.check_attributes_with_type(self.ro_type)
         self.assertEqual(m.readonly, True)
 
     def test_attributes_writable(self):
         if not self.rw_type:
-            return
+            self.skipTest("no writable type to test")
         m = self.check_attributes_with_type(self.rw_type)
         self.assertEqual(m.readonly, False)
 
@@ -236,7 +238,7 @@ class AbstractMemoryTests:
         # buffer as writable causing a segfault if using mmap
         tp = self.ro_type
         if tp is None:
-            return
+            self.skipTest("no read-only type to test")
         b = tp(self._source)
         m = self._view(b)
         i = io.BytesIO(b'ZZZZ')
@@ -352,6 +354,20 @@ class BytesMemorySliceSliceTest(unittest.TestCase,
 #class ArrayMemorySliceSliceTest(unittest.TestCase,
     #BaseMemorySliceSliceTests, BaseArrayMemoryTests):
     #pass
+
+
+class OtherTest(unittest.TestCase):
+    def test_copy(self):
+        m = memoryview(b'abc')
+        with self.assertRaises(TypeError):
+            copy.copy(m)
+
+    # See issue #22995
+    ## def test_pickle(self):
+    ##     m = memoryview(b'abc')
+    ##     for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+    ##         with self.assertRaises(TypeError):
+    ##             pickle.dumps(m, proto)
 
 
 def test_main():

@@ -75,7 +75,7 @@ namespace IronPython.Compiler.Ast {
                 );
             }
 
-            return GlobalParent.AddDebugInfo(call, Span);
+            return AppendLine(GlobalParent.AddDebugInfo(call, Span));
         }
 
         public override void Walk(PythonWalker walker) {

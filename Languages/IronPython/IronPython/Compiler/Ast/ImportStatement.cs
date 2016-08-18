@@ -79,7 +79,7 @@ namespace IronPython.Compiler.Ast {
             }
 
             statements.Add(AstUtils.Empty());
-            return GlobalParent.AddDebugInfo(Ast.Block(statements.ToReadOnlyCollection()), Span);
+            return AppendLine(GlobalParent.AddDebugInfo(Ast.Block(statements.ToReadOnlyCollection()), Span));
         }
 
         public override void Walk(PythonWalker walker) {

@@ -392,10 +392,8 @@ if sys.version_info[0] >= 3 :
             return self._dbenv.get_tmp_dir().decode(charset)
 
         def get_data_dirs(self) :
-            # Have to use a list comprehension and not
-            # generators, because we are supporting Python 2.3.
             return tuple(
-                [i.decode(charset) for i in self._dbenv.get_data_dirs()])
+                (i.decode(charset) for i in self._dbenv.get_data_dirs()))
 
     class DBSequence_py3k(object) :
         def __init__(self, db, *args, **kwargs) :
@@ -413,9 +411,6 @@ if sys.version_info[0] >= 3 :
 
         def get_dbp(self) :
             return self._db
-
-    import string
-    string.letters=[chr(i) for i in xrange(65,91)]
 
     bsddb._db.DBEnv_orig = bsddb._db.DBEnv
     bsddb._db.DB_orig = bsddb._db.DB
@@ -484,6 +479,8 @@ def print_versions():
     print '-=' * 38
     print db.DB_VERSION_STRING
     print 'bsddb.db.version():   %s' % (db.version(), )
+    if db.version() >= (5, 0) :
+        print 'bsddb.db.full_version(): %s' %repr(db.full_version())
     print 'bsddb.db.__version__: %s' % db.__version__
     print 'bsddb.db.cvsid:       %s' % db.cvsid
 
@@ -526,9 +523,10 @@ def get_new_database_path() :
     return path
 
 
-# This path can be overriden via "set_test_path_prefix()".
+# This path can be overridden via "set_test_path_prefix()".
 import os, os.path
-get_new_path.prefix=os.path.join(os.sep,"tmp","z-Berkeley_DB")
+get_new_path.prefix=os.path.join(os.environ.get("TMPDIR",
+    os.path.join(os.sep,"tmp")), "z-Berkeley_DB")
 get_new_path.num=0
 
 def get_test_path_prefix() :

@@ -2,8 +2,6 @@
 #
 # For more information about this module, see PEP 324.
 #
-# This module should remain compatible with Python 2.2, see PEP 291.
-#
 # Copyright (c) 2003-2005 by Peter Astrand <astrand@lysator.liu.se>
 #
 # Licensed to PSF under a Contributor Agreement.
@@ -13,7 +11,7 @@ r"""subprocess - Subprocesses with accessible I/O streams
 
 This module allows you to spawn processes, connect to their
 input/output/error pipes, and obtain their return codes.  This module
-intends to replace several other, older modules and functions, like:
+intends to replace several older modules and functions:
 
 os.system
 os.spawn*
@@ -145,7 +143,7 @@ Exceptions raised in the child process, before the new program has
 started to execute, will be re-raised in the parent.  Additionally,
 the exception object will have one extra attribute called
 'child_traceback', which is a string containing traceback information
-from the childs point of view.
+from the child's point of view.
 
 The most common exception raised is OSError.  This occurs, for
 example, when trying to execute a non-existent file.  Applications
@@ -389,7 +387,8 @@ except that:
 """
 
 import sys, os
-mswindows = (sys.platform == "win32" or (sys.platform == "cli" and os.name == 'nt'))
+mswindows = (sys.platform == "win32" or (sys.platform == "cli" and os.name == "nt"))
+mono = (sys.platform == "cli" and os.name == "posix")
 
 import types
 import traceback
@@ -424,6 +423,11 @@ if mswindows:
         wShowWindow = 0
     class pywintypes:
         error = IOError
+elif mono:
+    _has_poll = False
+    import clr
+    from System.Diagnostics import Process
+    from System.IO import MemoryStream
 else:
     import select
     _has_poll = hasattr(select, 'poll')
@@ -459,15 +463,13 @@ _active = []
 def _cleanup():
     for inst in _active[:]:
         res = inst._internal_poll(_deadstate=sys.maxint)
-        if res is not None and res >= 0:
+        if res is not None:
             try:
                 _active.remove(inst)
             except ValueError:
                 # This can happen if two threads create a new Popen instance.
                 # It's harmless that it was already removed, so ignore.
                 pass
-        else:
-            print inst.args
 
 PIPE = -1
 STDOUT = -2
@@ -477,10 +479,42 @@ def _eintr_retry_call(func, *args):
     while True:
         try:
             return func(*args)
-        except OSError, e:
+        except (OSError, IOError) as e:
             if e.errno == errno.EINTR:
                 continue
             raise
+
+
+# XXX This function is only used by multiprocessing and the test suite,
+# but it's here so that it can be imported when Python is compiled without
+# threads.
+
+def _args_from_interpreter_flags():
+    """Return a list of command-line arguments reproducing the current
+    settings in sys.flags and sys.warnoptions."""
+    flag_opt_map = {
+        'debug': 'd',
+        # 'inspect': 'i',
+        # 'interactive': 'i',
+        'optimize': 'O',
+        'dont_write_bytecode': 'B',
+        'no_user_site': 's',
+        'no_site': 'S',
+        'ignore_environment': 'E',
+        'verbose': 'v',
+        'bytes_warning': 'b',
+        'py3k_warning': '3',
+    }
+    args = []
+    for flag, opt in flag_opt_map.items():
+        v = getattr(sys.flags, flag)
+        if v > 0:
+            args.append('-' + opt * v)
+    if getattr(sys.flags, 'hash_randomization') != 0:
+        args.append('-R')
+    for opt in sys.warnoptions:
+        args.append('-W' + opt)
+    return args
 
 
 def call(*popenargs, **kwargs):
@@ -533,6 +567,8 @@ def check_output(*popenargs, **kwargs):
     ...              stderr=STDOUT)
     'ls: non_existent_file: No such file or directory\n'
     """
+    if mono:
+        raise NotImplementedError("check_output not currently supported on .NET platforms")
     if 'stdout' in kwargs:
         raise ValueError('stdout argument not allowed, it will be overridden.')
     process = Popen(stdout=PIPE, *popenargs, **kwargs)
@@ -617,6 +653,8 @@ def list2cmdline(seq):
 
 
 class Popen(object):
+    _child_created = False  # Set here since __del__ checks it
+
     def __init__(self, args, bufsize=0, executable=None,
                  stdin=None, stdout=None, stderr=None,
                  preexec_fn=None, close_fds=False, shell=False,
@@ -624,8 +662,7 @@ class Popen(object):
                  startupinfo=None, creationflags=0):
         """Create new Popen instance."""
         _cleanup()
-        self.args = args
-        self._child_created = False
+
         if not isinstance(bufsize, (int, long)):
             raise TypeError("bufsize must be an integer")
 
@@ -637,6 +674,27 @@ class Popen(object):
                               stderr is not None):
                 raise ValueError("close_fds is not supported on Windows "
                                  "platforms if you redirect stdin/stdout/stderr")
+        elif mono:
+            if preexec_fn:
+                raise ValueError("preexec_fn is not supported on .NET platforms")
+        
+            if close_fds:
+                raise ValueError("close_fds is not supported on .NET platforms")
+        
+            if universal_newlines:
+                raise ValueError("universal_newlines is not supported on .NET platforms")
+        
+            if startupinfo:
+                raise ValueError("startupinfo is not supported on .NET platforms")
+        
+            if creationflags:
+                raise ValueError("creationflags is not supported on .NET platforms")
+
+            if stdin is not None and stdin != PIPE:
+                raise NotImplementedError("Cannont redirect stdin yet.")
+        
+            if stderr == STDOUT:
+                raise NotImplementedError("Cannont redirect stderr to stdout yet.")
         else:
             # POSIX
             if startupinfo is not None:
@@ -670,14 +728,29 @@ class Popen(object):
 
         (p2cread, p2cwrite,
          c2pread, c2pwrite,
-         errread, errwrite) = self._get_handles(stdin, stdout, stderr)
+         errread, errwrite), to_close = self._get_handles(stdin, stdout, stderr)
 
-        self._execute_child(args, executable, preexec_fn, close_fds,
-                            cwd, env, universal_newlines,
-                            startupinfo, creationflags, shell,
-                            p2cread, p2cwrite,
-                            c2pread, c2pwrite,
-                            errread, errwrite)
+        try:
+            self._execute_child(args, executable, preexec_fn, close_fds,
+                                cwd, env, universal_newlines,
+                                startupinfo, creationflags, shell, to_close,
+                                p2cread, p2cwrite,
+                                c2pread, c2pwrite,
+                                errread, errwrite)
+        except Exception:
+            # Preserve original exception in case os.close raises.
+            exc_type, exc_value, exc_trace = sys.exc_info()
+
+            for fd in to_close:
+                try:
+                    if mswindows:
+                        fd.Close()
+                    else:
+                        os.close(fd)
+                except EnvironmentError:
+                    pass
+
+            raise exc_type, exc_value, exc_trace
 
         if mswindows:
             if p2cwrite is not None:
@@ -707,7 +780,10 @@ class Popen(object):
         return data
 
 
-    def __del__(self, _maxint=sys.maxint, _active=_active):
+    def __del__(self, _maxint=sys.maxint):
+        # If __init__ hasn't had a chance to execute (e.g. if it
+        # was passed an undeclared keyword argument), we don't
+        # have a _child_created attribute at all.
         if not self._child_created:
             # We didn't get to successfully create a child process.
             return
@@ -741,10 +817,10 @@ class Popen(object):
                             raise
                 self.stdin.close()
             elif self.stdout:
-                stdout = self.stdout.read()
+                stdout = _eintr_retry_call(self.stdout.read)
                 self.stdout.close()
             elif self.stderr:
-                stderr = self.stderr.read()
+                stderr = _eintr_retry_call(self.stderr.read)
                 self.stderr.close()
             self.wait()
             return (stdout, stderr)
@@ -764,8 +840,9 @@ class Popen(object):
             """Construct and return tuple with IO objects:
             p2cread, p2cwrite, c2pread, c2pwrite, errread, errwrite
             """
+            to_close = set()
             if stdin is None and stdout is None and stderr is None:
-                return (None, None, None, None, None, None)
+                return (None, None, None, None, None, None), to_close
 
             p2cread, p2cwrite = None, None
             c2pread, c2pwrite = None, None
@@ -783,6 +860,10 @@ class Popen(object):
                 # Assuming file-like object
                 p2cread = msvcrt.get_osfhandle(stdin.fileno())
             p2cread = self._make_inheritable(p2cread)
+            # We just duplicated the handle, it has to be closed at the end
+            to_close.add(p2cread)
+            if stdin == PIPE:
+                to_close.add(p2cwrite)
 
             if stdout is None:
                 c2pwrite = _subprocess.GetStdHandle(_subprocess.STD_OUTPUT_HANDLE)
@@ -796,6 +877,10 @@ class Popen(object):
                 # Assuming file-like object
                 c2pwrite = msvcrt.get_osfhandle(stdout.fileno())
             c2pwrite = self._make_inheritable(c2pwrite)
+            # We just duplicated the handle, it has to be closed at the end
+            to_close.add(c2pwrite)
+            if stdout == PIPE:
+                to_close.add(c2pread)
 
             if stderr is None:
                 errwrite = _subprocess.GetStdHandle(_subprocess.STD_ERROR_HANDLE)
@@ -811,10 +896,14 @@ class Popen(object):
                 # Assuming file-like object
                 errwrite = msvcrt.get_osfhandle(stderr.fileno())
             errwrite = self._make_inheritable(errwrite)
+            # We just duplicated the handle, it has to be closed at the end
+            to_close.add(errwrite)
+            if stderr == PIPE:
+                to_close.add(errread)
 
             return (p2cread, p2cwrite,
                     c2pread, c2pwrite,
-                    errread, errwrite)
+                    errread, errwrite), to_close
 
 
         def _make_inheritable(self, handle):
@@ -843,7 +932,7 @@ class Popen(object):
 
         def _execute_child(self, args, executable, preexec_fn, close_fds,
                            cwd, env, universal_newlines,
-                           startupinfo, creationflags, shell,
+                           startupinfo, creationflags, shell, to_close,
                            p2cread, p2cwrite,
                            c2pread, c2pwrite,
                            errread, errwrite):
@@ -860,7 +949,7 @@ class Popen(object):
                 startupinfo.hStdInput = p2cread
                 startupinfo.hStdOutput = c2pwrite
                 startupinfo.hStdError = errwrite
-            
+
             if shell:
                 startupinfo.dwFlags |= _subprocess.STARTF_USESHOWWINDOW
                 startupinfo.wShowWindow = _subprocess.SW_HIDE
@@ -881,6 +970,10 @@ class Popen(object):
                     # stability of your system.  Cost is Ctrl+C wont
                     # kill children.
                     creationflags |= _subprocess.CREATE_NEW_CONSOLE
+
+            def _close_in_parent(fd):
+                fd.Close()
+                to_close.remove(fd)
 
             # Start the process
             try:
@@ -906,11 +999,11 @@ class Popen(object):
                 # pipe will not close when the child process exits and the
                 # ReadFile will hang.
                 if p2cread is not None:
-                    p2cread.Close()
+                    _close_in_parent(p2cread)
                 if c2pwrite is not None:
-                    c2pwrite.Close()
+                    _close_in_parent(c2pwrite)
                 if errwrite is not None:
-                    errwrite.Close()
+                    _close_in_parent(errwrite)
 
             # Retain the process handle, but close the thread handle
             self._child_created = True
@@ -971,7 +1064,15 @@ class Popen(object):
                     try:
                         self.stdin.write(input)
                     except IOError as e:
-                        if e.errno != errno.EPIPE:
+                        if e.errno == errno.EPIPE:
+                            # communicate() should ignore broken pipe error
+                            pass
+                        elif (e.errno == errno.EINVAL
+                              and self.poll() is not None):
+                            # Issue #19612: stdin.write() fails with EINVAL
+                            # if the process already exited before the write
+                            pass
+                        else:
                             raise
                 self.stdin.close()
 
@@ -1014,9 +1115,100 @@ class Popen(object):
         def terminate(self):
             """Terminates the process
             """
-            _subprocess.TerminateProcess(self._handle, 1)
+            try:
+                _subprocess.TerminateProcess(self._handle, 1)
+            except OSError as e:
+                # ERROR_ACCESS_DENIED (winerror 5) is received when the
+                # process already died.
+                if e.winerror != 5:
+                    raise
+                rc = _subprocess.GetExitCodeProcess(self._handle)
+                if rc == _subprocess.STILL_ACTIVE:
+                    raise
+                self.returncode = rc
 
         kill = terminate
+
+    elif mono:
+        def _get_handles(self, stdin, stdout, stderr):
+            if stdin is None and stdout is None and stderr is None:
+                return (None, None, None, None, None, None)
+
+            p2cread, p2cwrite = None, None
+            c2pread, c2pwrite = None, None
+            errread, errwrite = None, None
+
+            return (p2cread, p2cwrite,
+                    c2pread, c2pwrite,
+                    errread, errwrite)
+
+
+        def _execute_child(self, args, executable, preexec_fn, close_fds,
+                           cwd, env, universal_newlines,
+                           startupinfo, creationflags, shell,
+                           p2cread, p2cwrite,
+                           c2pread, c2pwrite,
+                           errread, errwrite):
+            
+            args = args if not isinstance(args, str) else args.split()
+            self.process = Process()
+            self.process.StartInfo.UseShellExecute = False
+        
+            if not shell:
+                self.process.StartInfo.FileName = executable or args[0]
+                self.process.StartInfo.Arguments = list2cmdline(args[1:])
+            else:
+                self.process.StartInfo.FileName = executable or os.environ['COMSPEC']
+                self.process.StartInfo.Arguments = list2cmdline(['/C'] + args)
+        
+            if env:
+                self.process.StartInfo.EnvironmentVariables.Clear()
+                for k, v in env.items():
+                    self.process.StartInfo.EnvironmentVariables.Add(k, v)
+        
+            self.process.StartInfo.WorkingDirectory = cwd or os.getcwd()
+        
+            self.process.StartInfo.RedirectStandardInput = stdin is not None
+            self.process.StartInfo.RedirectStandardOutput = stdout is not None
+            self.process.StartInfo.RedirectStandardError = stderr is not None
+        
+            combinedOutput = file(MemoryStream()) if stdout == PIPE and stderr == STDOUT else None
+            #~ print combinedOutput
+        
+            if (stdout is not None and stdout != PIPE) or (stdout == PIPE and stderr == STDOUT):
+                self.process.OutputDataReceived += Redirector(combinedOutput or stdout, "stdout")
+        
+            if stderr is not None and stderr != PIPE:
+                self.process.ErrorDataReceived += Redirector(combinedOutput or stderr, "stderr")
+        
+            self.process.Start()
+            self.pid = self.process.Id
+        
+            if (stdout is not None and stdout != PIPE) or (stdout == PIPE and stderr == STDOUT):
+                #~ print "stdout: start async"
+                self.process.BeginOutputReadLine()
+        
+            if stderr is not None and stderr != PIPE:
+                #~ print "stderr: start async"
+                self.process.BeginErrorReadLine()
+        
+            self.stdin = file(self.process.StandardInput.BaseStream) if stdin == PIPE else None
+            self.stdout = combinedOutput or (file(self.process.StandardOutput.BaseStream) if stdout == PIPE else None)
+            self.stderr = combinedOutput or (file(self.process.StandardError.BaseStream) if stderr == PIPE else None)
+
+
+        def _internal_poll(self):
+            return self.process.ExitCode if self.process.HasExited else None
+
+        def wait(self):
+            """Wait for child process to terminate.  Returns returncode
+            attribute."""
+            self.process.WaitForExit()
+            return self.process.ExitCode
+
+
+        def _communicate(self, input):
+            raise NotImplementedError("Popen.communicate")
 
     else:
         #
@@ -1026,6 +1218,7 @@ class Popen(object):
             """Construct and return tuple with IO objects:
             p2cread, p2cwrite, c2pread, c2pwrite, errread, errwrite
             """
+            to_close = set()
             p2cread, p2cwrite = None, None
             c2pread, c2pwrite = None, None
             errread, errwrite = None, None
@@ -1033,7 +1226,8 @@ class Popen(object):
             if stdin is None:
                 pass
             elif stdin == PIPE:
-                p2cread, p2cwrite = os.pipe()
+                p2cread, p2cwrite = self.pipe_cloexec()
+                to_close.update((p2cread, p2cwrite))
             elif isinstance(stdin, int):
                 p2cread = stdin
             else:
@@ -1043,7 +1237,8 @@ class Popen(object):
             if stdout is None:
                 pass
             elif stdout == PIPE:
-                c2pread, c2pwrite = os.pipe()
+                c2pread, c2pwrite = self.pipe_cloexec()
+                to_close.update((c2pread, c2pwrite))
             elif isinstance(stdout, int):
                 c2pwrite = stdout
             else:
@@ -1053,9 +1248,13 @@ class Popen(object):
             if stderr is None:
                 pass
             elif stderr == PIPE:
-                errread, errwrite = os.pipe()
+                errread, errwrite = self.pipe_cloexec()
+                to_close.update((errread, errwrite))
             elif stderr == STDOUT:
-                errwrite = c2pwrite
+                if c2pwrite is not None:
+                    errwrite = c2pwrite
+                else: # child's stdout is not set, use parent's stdout
+                    errwrite = sys.__stdout__.fileno()
             elif isinstance(stderr, int):
                 errwrite = stderr
             else:
@@ -1064,7 +1263,7 @@ class Popen(object):
 
             return (p2cread, p2cwrite,
                     c2pread, c2pwrite,
-                    errread, errwrite)
+                    errread, errwrite), to_close
 
 
         def _set_cloexec_flag(self, fd, cloexec=True):
@@ -1078,6 +1277,18 @@ class Popen(object):
                 fcntl.fcntl(fd, fcntl.F_SETFD, old | cloexec_flag)
             else:
                 fcntl.fcntl(fd, fcntl.F_SETFD, old & ~cloexec_flag)
+
+
+        def pipe_cloexec(self):
+            """Create a pipe with FDs set CLOEXEC."""
+            # Pipes' FDs are set CLOEXEC by default because we don't want them
+            # to be inherited by other subprocesses: the CLOEXEC flag is removed
+            # from the child's FDs by _dup2(), between fork() and exec().
+            # This is not atomic: we would need the pipe2() syscall for that.
+            r, w = os.pipe()
+            self._set_cloexec_flag(r)
+            self._set_cloexec_flag(w)
+            return r, w
 
 
         def _close_fds(self, but):
@@ -1096,7 +1307,7 @@ class Popen(object):
 
         def _execute_child(self, args, executable, preexec_fn, close_fds,
                            cwd, env, universal_newlines,
-                           startupinfo, creationflags, shell,
+                           startupinfo, creationflags, shell, to_close,
                            p2cread, p2cwrite,
                            c2pread, c2pwrite,
                            errread, errwrite):
@@ -1115,14 +1326,16 @@ class Popen(object):
             if executable is None:
                 executable = args[0]
 
+            def _close_in_parent(fd):
+                os.close(fd)
+                to_close.remove(fd)
+
             # For transferring possible exec failure from child to parent
             # The first char specifies the exception type: 0 means
             # OSError, 1 means some other error.
-            errpipe_read, errpipe_write = os.pipe()
+            errpipe_read, errpipe_write = self.pipe_cloexec()
             try:
                 try:
-                    self._set_cloexec_flag(errpipe_write)
-
                     gc_was_enabled = gc.isenabled()
                     # Disable gc to avoid bug where gc -> file_dealloc ->
                     # write to stderr -> hang.  http://bugs.python.org/issue1336
@@ -1146,6 +1359,14 @@ class Popen(object):
                                 os.close(errread)
                             os.close(errpipe_read)
 
+                            # When duping fds, if there arises a situation
+                            # where one of the fds is either 0, 1 or 2, it
+                            # is possible that it is overwritten (#12607).
+                            if c2pwrite == 0:
+                                c2pwrite = os.dup(c2pwrite)
+                            if errwrite == 0 or errwrite == 1:
+                                errwrite = os.dup(errwrite)
+
                             # Dup fds for child
                             def _dup2(a, b):
                                 # dup2() removes the CLOEXEC flag but
@@ -1167,15 +1388,16 @@ class Popen(object):
                                     os.close(fd)
                                     closed.add(fd)
 
-                            # Close all other fds, if asked for
-                            if close_fds:
-                                self._close_fds(but=errpipe_write)
-
                             if cwd is not None:
                                 os.chdir(cwd)
 
                             if preexec_fn:
                                 preexec_fn()
+
+                            # Close all other fds, if asked for - after
+                            # preexec_fn(), which may open FDs.
+                            if close_fds:
+                                self._close_fds(but=errpipe_write)
 
                             if env is None:
                                 os.execvp(executable, args)
@@ -1202,17 +1424,21 @@ class Popen(object):
                     # be sure the FD is closed no matter what
                     os.close(errpipe_write)
 
-                if p2cread is not None and p2cwrite is not None:
-                    os.close(p2cread)
-                if c2pwrite is not None and c2pread is not None:
-                    os.close(c2pwrite)
-                if errwrite is not None and errread is not None:
-                    os.close(errwrite)
-
                 # Wait for exec to fail or succeed; possibly raising exception
-                # Exception limited to 1M
                 data = _eintr_retry_call(os.read, errpipe_read, 1048576)
+                pickle_bits = []
+                while data:
+                    pickle_bits.append(data)
+                    data = _eintr_retry_call(os.read, errpipe_read, 1048576)
+                data = "".join(pickle_bits)
             finally:
+                if p2cread is not None and p2cwrite is not None:
+                    _close_in_parent(p2cread)
+                if c2pwrite is not None and c2pread is not None:
+                    _close_in_parent(c2pwrite)
+                if errwrite is not None and errread is not None:
+                    _close_in_parent(errwrite)
+
                 # be sure the FD is closed no matter what
                 os.close(errpipe_read)
 
@@ -1223,9 +1449,6 @@ class Popen(object):
                     if e.errno != errno.ECHILD:
                         raise
                 child_exception = pickle.loads(data)
-                for fd in (p2cwrite, c2pread, errread):
-                    if fd is not None:
-                        os.close(fd)
                 raise child_exception
 
 
@@ -1233,7 +1456,7 @@ class Popen(object):
                 _WTERMSIG=os.WTERMSIG, _WIFEXITED=os.WIFEXITED,
                 _WEXITSTATUS=os.WEXITSTATUS):
             # This method is called (indirectly) by __del__, so it cannot
-            # refer to anything outside of its local scope."""
+            # refer to anything outside of its local scope.
             if _WIFSIGNALED(sts):
                 self.returncode = -_WTERMSIG(sts)
             elif _WIFEXITED(sts):
@@ -1244,7 +1467,7 @@ class Popen(object):
 
 
         def _internal_poll(self, _deadstate=None, _waitpid=os.waitpid,
-                _WNOHANG=os.WNOHANG, _os_error=os.error):
+                _WNOHANG=os.WNOHANG, _os_error=os.error, _ECHILD=errno.ECHILD):
             """Check if child process has terminated.  Returns returncode
             attribute.
 
@@ -1257,16 +1480,23 @@ class Popen(object):
                     pid, sts = _waitpid(self.pid, _WNOHANG)
                     if pid == self.pid:
                         self._handle_exitstatus(sts)
-                except _os_error:
+                except _os_error as e:
                     if _deadstate is not None:
                         self.returncode = _deadstate
+                    if e.errno == _ECHILD:
+                        # This happens if SIGCLD is set to be ignored or
+                        # waiting for child processes has otherwise been
+                        # disabled for our process.  This child is dead, we
+                        # can't get the status.
+                        # http://bugs.python.org/issue15756
+                        self.returncode = 0
             return self.returncode
 
 
         def wait(self):
             """Wait for child process to terminate.  Returns returncode
             attribute."""
-            if self.returncode is None:
+            while self.returncode is None:
                 try:
                     pid, sts = _eintr_retry_call(os.waitpid, self.pid, 0)
                 except OSError as e:
@@ -1275,8 +1505,12 @@ class Popen(object):
                     # This happens if SIGCLD is set to be ignored or waiting
                     # for child processes has otherwise been disabled for our
                     # process.  This child is dead, we can't get the status.
+                    pid = self.pid
                     sts = 0
-                self._handle_exitstatus(sts)
+                # Check the pid and loop as waitpid has been known to return
+                # 0 even without WNOHANG in odd situations.  issue14396.
+                if pid == self.pid:
+                    self._handle_exitstatus(sts)
             return self.returncode
 
 

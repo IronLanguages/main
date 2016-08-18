@@ -24,7 +24,7 @@ Misc variables:
 
 """
 
-__version__ = "$Revision$"       # Code version
+__version__ = "$Revision: 72223 $"       # Code version
 
 from types import *
 from copy_reg import dispatch_table
@@ -269,7 +269,7 @@ class Pickler:
     def save(self, obj):
         # Check for persistent id (defined by a subclass)
         pid = self.persistent_id(obj)
-        if pid:
+        if pid is not None:
             self.save_pers(pid)
             return
 
@@ -286,20 +286,20 @@ class Pickler:
             f(self, obj) # Call unbound method with explicit self
             return
 
-        # Check for a class with a custom metaclass; treat as regular class
-        try:
-            issc = issubclass(t, TypeType)
-        except TypeError: # t is not a class (old Boost; see SF #502085)
-            issc = 0
-        if issc:
-            self.save_global(obj)
-            return
-
         # Check copy_reg.dispatch_table
         reduce = dispatch_table.get(t)
         if reduce:
             rv = reduce(obj)
         else:
+            # Check for a class with a custom metaclass; treat as regular class
+            try:
+                issc = issubclass(t, TypeType)
+            except TypeError: # t is not a class (old Boost; see SF #502085)
+                issc = 0
+            if issc:
+                self.save_global(obj)
+                return
+
             # Check for a __reduce_ex__ method, fall back to __reduce__
             reduce = getattr(obj, "__reduce_ex__", None)
             if reduce:
@@ -402,7 +402,13 @@ class Pickler:
             write(REDUCE)
 
         if obj is not None:
-            self.memoize(obj)
+            # If the object is already in the memo, this means it is
+            # recursive. In this case, throw away everything we put on the
+            # stack, and fetch the object back from the memo.
+            if id(obj) in self.memo:
+                write(POP + self.get(self.memo[id(obj)][0]))
+            else:
+                self.memoize(obj)
 
         # More new special cases (that work with older protocols as
         # well): when __reduce__ returns a tuple with 4 or 5 items,
@@ -962,7 +968,7 @@ class Unpickler:
         rep = self.readline()[:-1]
         for q in "\"'": # double or single quote
             if rep.startswith(q):
-                if not rep.endswith(q):
+                if len(rep) < 2 or not rep.endswith(q):
                     raise ValueError, "insecure string pickle"
                 rep = rep[len(q):-len(q)]
                 break
@@ -1269,22 +1275,22 @@ def encode_long(x):
     r"""Encode a long to a two's complement little-endian binary string.
     Note that 0L is a special case, returning an empty string, to save a
     byte in the LONG1 pickling context.
-    # bug 24549
-    #>>> encode_long(0L)
-    #''
-    #>>> encode_long(255L)
-    #'\xff\x00'
-    #>>> encode_long(32767L)
-    #'\xff\x7f'
-    #>>> encode_long(-256L)
-    #'\x00\xff'
-    #>>> encode_long(-32768L)
-    #'\x00\x80'
-    #>>> encode_long(-128L)
-    #'\x80'
-    #>>> encode_long(127L)
-    #'\x7f'
-    #>>>
+
+    >>> encode_long(0L)
+    ''
+    >>> encode_long(255L)
+    '\xff\x00'
+    >>> encode_long(32767L)
+    '\xff\x7f'
+    >>> encode_long(-256L)
+    '\x00\xff'
+    >>> encode_long(-32768L)
+    '\x00\x80'
+    >>> encode_long(-128L)
+    '\x80'
+    >>> encode_long(127L)
+    '\x7f'
+    >>>
     """
 
     if x == 0:

@@ -16,7 +16,7 @@
 using System;
 using System.Collections.Generic;
 
-#if !CLR45
+#if !FEATURE_READONLY_DICTIONARY
 namespace Microsoft.Scripting.Utils {
 
     // Like ReadOnlyCollection<T>: wraps an IDictionary<TKey, TValue> in a read-only wrapper

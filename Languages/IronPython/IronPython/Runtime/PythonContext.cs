@@ -27,6 +27,7 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security;
@@ -1649,9 +1650,8 @@ namespace IronPython.Runtime
                 IList<System.Diagnostics.StackTrace> traces = ExceptionHelpers.GetExceptionStackTraces(e);
 
                 if (traces != null) {
-                    for (int i = 0; i < traces.Count; i++) {
-                        for (int j = 0; j < traces[i].FrameCount; j++) {
-                            StackFrame curFrame = traces[i].GetFrame(j);
+                    foreach (StackTrace trace in traces) {
+                        foreach (StackFrame curFrame in trace.GetFrames()) {
                             result += curFrame.ToString() + Environment.NewLine;
                         }
                     }
@@ -1878,8 +1878,12 @@ namespace IronPython.Runtime
         }
 
         internal void LoadBuiltins(Dictionary<string, Type> builtinTable, Assembly assem, bool updateSys) {
-            object[] attrs = assem.GetCustomAttributes(typeof(PythonModuleAttribute), false);
-            if (attrs.Length > 0) {
+#if NETSTANDARD
+            var attrs = assem.GetCustomAttributes(typeof(PythonModuleAttribute));
+#else
+            var attrs = assem.GetCustomAttributes(typeof(PythonModuleAttribute), false);
+#endif
+            if (attrs.Any()) {
                 foreach (PythonModuleAttribute pma in attrs) {
                     if (pma.InvalidPlatforms != null && Array.IndexOf(pma.InvalidPlatforms, Environment.OSVersion.Platform) < 0) {
                         builtinTable[pma.Name] = pma.Type;

@@ -75,6 +75,12 @@ class TokenTests(unittest.TestCase):
         x = .3e14
         x = 3.1e4
 
+    def test_float_exponent_tokenization(self):
+        # See issue 21642.
+        self.assertEqual(1 if 1else 0, 1)
+        self.assertEqual(1 if 0else 0, 0)
+        self.assertRaises(SyntaxError, eval, "0 if 1Else 0")
+
     def testStringLiterals(self):
         x = ''; y = ""; self.assertTrue(len(x) == 0 and x == y)
         x = '\''; y = "'"; self.assertTrue(len(x) == 1 and x == y and ord(x) == 39)
@@ -551,13 +557,35 @@ hello world
         assert 1, 1
         assert lambda x:x
         assert 1, lambda x:x+1
+
+        try:
+            assert True
+        except AssertionError as e:
+            self.fail("'assert True' should not have raised an AssertionError")
+
+        try:
+            assert True, 'this should always pass'
+        except AssertionError as e:
+            self.fail("'assert True, msg' should not have "
+                      "raised an AssertionError")
+
+    # these tests fail if python is run with -O, so check __debug__
+    @unittest.skipUnless(__debug__, "Won't work if __debug__ is False")
+    def testAssert2(self):
         try:
             assert 0, "msg"
         except AssertionError, e:
             self.assertEqual(e.args[0], "msg")
         else:
-            if __debug__:
-                self.fail("AssertionError not raised by assert 0")
+            self.fail("AssertionError not raised by assert 0")
+
+        try:
+            assert False
+        except AssertionError as e:
+            self.assertEqual(len(e.args), 0)
+        else:
+            self.fail("AssertionError not raised by 'assert False'")
+
 
     ### compound_stmt: if_stmt | while_stmt | for_stmt | try_stmt | funcdef | classdef
     # Tested below

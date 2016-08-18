@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Test script for the 'cmd' module
 Original by Michael Schneider
@@ -84,11 +83,11 @@ class samplecmdclass(cmd.Cmd):
     <BLANKLINE>
     Documented commands (type help <topic>):
     ========================================
-    add
+    add  help
     <BLANKLINE>
     Undocumented commands:
     ======================
-    exit  help  shell
+    exit  shell
     <BLANKLINE>
 
     Test for the function print_topics():
@@ -111,7 +110,7 @@ class samplecmdclass(cmd.Cmd):
     5  12  19
     6  13
 
-    This is a interactive test, put some commands in the cmdqueue attribute
+    This is an interactive test, put some commands in the cmdqueue attribute
     and let it execute
     This test includes the preloop(), postloop(), default(), emptyline(),
     parseline(), do_help() functions
@@ -125,11 +124,11 @@ class samplecmdclass(cmd.Cmd):
     <BLANKLINE>
     Documented commands (type help <topic>):
     ========================================
-    add
+    add  help
     <BLANKLINE>
     Undocumented commands:
     ======================
-    exit  help  shell
+    exit  shell
     <BLANKLINE>
     help text for add
     Hello from postloop
@@ -182,6 +181,14 @@ class TestAlternateInput(unittest.TestCase):
         def do_EOF(self, args):
             return True
 
+
+    class simplecmd2(simplecmd):
+
+        def do_EOF(self, args):
+            print >>self.stdout, '*** Unknown syntax: EOF'
+            return True
+
+
     def test_file_with_missing_final_nl(self):
         input = StringIO.StringIO("print test\nprint test2")
         output = StringIO.StringIO()
@@ -192,6 +199,27 @@ class TestAlternateInput(unittest.TestCase):
             ("(Cmd) test\n"
              "(Cmd) test2\n"
              "(Cmd) "))
+
+
+    def test_input_reset_at_EOF(self):
+        input = StringIO.StringIO("print test\nprint test2")
+        output = StringIO.StringIO()
+        cmd = self.simplecmd2(stdin=input, stdout=output)
+        cmd.use_rawinput = False
+        cmd.cmdloop()
+        self.assertMultiLineEqual(output.getvalue(),
+            ("(Cmd) test\n"
+             "(Cmd) test2\n"
+             "(Cmd) *** Unknown syntax: EOF\n"))
+        input = StringIO.StringIO("print \n\n")
+        output = StringIO.StringIO()
+        cmd.stdin = input
+        cmd.stdout = output
+        cmd.cmdloop()
+        self.assertMultiLineEqual(output.getvalue(),
+            ("(Cmd) \n"
+             "(Cmd) \n"
+             "(Cmd) *** Unknown syntax: EOF\n"))
 
 
 def test_main(verbose=None):

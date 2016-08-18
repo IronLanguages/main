@@ -13,7 +13,7 @@ parser.  It returns when there's nothing more it can do with the available
 data.  When you have no more data to push into the parser, call .close().
 This completes the parsing and returns the root message object.
 
-The other advantage of this parser is that it will never throw a parsing
+The other advantage of this parser is that it will never raise a parsing
 exception.  Instead, when it finds something unexpected, it adds a 'defect' to
 the current message.  Defects are just instances that live on the message
 object's .defects attribute.
@@ -49,8 +49,8 @@ class BufferedSubFile(object):
     simple abstraction -- it parses until EOF closes the current message.
     """
     def __init__(self):
-        # The last partial line pushed into this object.
-        self._partial = ''
+        # Chunks of the last partial line pushed into this object.
+        self._partial = []
         # The list of full, pushed lines, in reverse order
         self._lines = []
         # The stack of false-EOF checking predicates.
@@ -66,8 +66,8 @@ class BufferedSubFile(object):
 
     def close(self):
         # Don't forget any trailing partial line.
-        self._lines.append(self._partial)
-        self._partial = ''
+        self.pushlines(''.join(self._partial).splitlines(True))
+        self._partial = []
         self._closed = True
 
     def readline(self):
@@ -95,8 +95,29 @@ class BufferedSubFile(object):
 
     def push(self, data):
         """Push some new data into this object."""
-        # Handle any previous leftovers
-        data, self._partial = self._partial + data, ''
+        # Crack into lines, but preserve the linesep characters on the end of each
+        parts = data.splitlines(True)
+
+        if not parts or not parts[0].endswith(('\n', '\r')):
+            # No new complete lines, so just accumulate partials
+            self._partial += parts
+            return
+
+        if self._partial:
+            # If there are previous leftovers, complete them now
+            self._partial.append(parts[0])
+            parts[0:1] = ''.join(self._partial).splitlines(True)
+            del self._partial[:]
+
+        # If the last element of the list does not end in a newline, then treat
+        # it as a partial line.  We only check for '\n' here because a line
+        # ending with '\r' might be a line that was split in the middle of a
+        # '\r\n' sequence (see bugs 1555570 and 1721862).
+        if not parts[-1].endswith('\n'):
+            self._partial = [parts.pop()]
+        self.pushlines(parts)
+
+    def pushlines(self, lines):
         # Crack into lines, but preserve the newlines on the end of each
         parts = NLCRE_crack.split(data)
         # The *ahem* interesting behaviour of re.split when supplied grouping
@@ -214,7 +235,7 @@ class FeedParser:
         # supposed to see in the body of the message.
         self._parse_headers(headers)
         # Headers-only parsing is a backwards compatibility hack, which was
-        # necessary in the older parser, which could throw errors.  All
+        # necessary in the older parser, which could raise errors.  All
         # remaining lines in the input are thrown into the message body.
         if self._headersonly:
             lines = []

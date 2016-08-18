@@ -170,11 +170,12 @@ class RunModuleTest(unittest.TestCase):
             del d1 # Ensure __loader__ entry doesn't keep file open
             __import__(mod_name)
             os.remove(mod_fname)
-            if verbose: print "Running from compiled:", mod_name
-            d2 = run_module(mod_name) # Read from bytecode
-            self.assertIn("x", d2)
-            self.assertTrue(d2["x"] == 1)
-            del d2 # Ensure __loader__ entry doesn't keep file open
+            if not sys.dont_write_bytecode:
+                if verbose: print "Running from compiled:", mod_name
+                d2 = run_module(mod_name) # Read from bytecode
+                self.assertIn("x", d2)
+                self.assertTrue(d2["x"] == 1)
+                del d2 # Ensure __loader__ entry doesn't keep file open
         finally:
             self._del_pkg(pkg_dir, depth, mod_name)
         if verbose: print "Module executed successfully"
@@ -192,11 +193,12 @@ class RunModuleTest(unittest.TestCase):
             del d1 # Ensure __loader__ entry doesn't keep file open
             __import__(mod_name)
             os.remove(mod_fname)
-            if verbose: print "Running from compiled:", pkg_name
-            d2 = run_module(pkg_name) # Read from bytecode
-            self.assertIn("x", d2)
-            self.assertTrue(d2["x"] == 1)
-            del d2 # Ensure __loader__ entry doesn't keep file open
+            if not sys.dont_write_bytecode:
+                if verbose: print "Running from compiled:", pkg_name
+                d2 = run_module(pkg_name) # Read from bytecode
+                self.assertIn("x", d2)
+                self.assertTrue(d2["x"] == 1)
+                del d2 # Ensure __loader__ entry doesn't keep file open
         finally:
             self._del_pkg(pkg_dir, depth, pkg_name)
         if verbose: print "Package executed successfully"
@@ -246,13 +248,14 @@ from ..uncle.cousin import nephew
             del d1 # Ensure __loader__ entry doesn't keep file open
             __import__(mod_name)
             os.remove(mod_fname)
-            if verbose: print "Running from compiled:", mod_name
-            d2 = run_module(mod_name, run_name=run_name) # Read from bytecode
-            self.assertIn("__package__", d2)
-            self.assertTrue(d2["__package__"] == pkg_name)
-            self.assertIn("sibling", d2)
-            self.assertIn("nephew", d2)
-            del d2 # Ensure __loader__ entry doesn't keep file open
+            if not sys.dont_write_bytecode:
+                if verbose: print "Running from compiled:", mod_name
+                d2 = run_module(mod_name, run_name=run_name) # Read from bytecode
+                self.assertIn("__package__", d2)
+                self.assertTrue(d2["__package__"] == pkg_name)
+                self.assertIn("sibling", d2)
+                self.assertIn("nephew", d2)
+                del d2 # Ensure __loader__ entry doesn't keep file open
         finally:
             self._del_pkg(pkg_dir, depth, mod_name)
         if verbose: print "Module executed successfully"
@@ -266,6 +269,30 @@ from ..uncle.cousin import nephew
         for depth in range(1, 4):
             if verbose: print "Testing package depth:", depth
             self._check_package(depth)
+
+    def test_run_package_init_exceptions(self):
+        # These were previously wrapped in an ImportError; see Issue 14285
+        exceptions = (ImportError, AttributeError, TypeError, ValueError)
+        for exception in exceptions:
+            name = exception.__name__
+            source = "raise {0}('{0} in __init__.py.')".format(name)
+
+            result = self._make_pkg("", 1, "__main__")
+            pkg_dir, _, mod_name = result
+            mod_name = mod_name.replace(".__main__", "")
+            try:
+                init = os.path.join(pkg_dir, "__runpy_pkg__", "__init__.py")
+                with open(init, "wt") as mod_file:
+                    mod_file.write(source)
+                try:
+                    run_module(mod_name)
+                except exception as err:
+                    msg = "cannot be directly executed"
+                    self.assertNotIn(msg, format(err))
+                else:
+                    self.fail("Nothing raised; expected {}".format(name))
+            finally:
+                self._del_pkg(pkg_dir, 1, mod_name)
 
     def test_explicit_relative_import(self):
         for depth in range(2, 5):

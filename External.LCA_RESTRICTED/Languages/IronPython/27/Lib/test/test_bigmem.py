@@ -33,6 +33,11 @@ import sys
 #    memuse-per-size should remain sane (less than a few thousand); if your
 #    test uses more, adjust 'size' upward, instead.
 
+if test_support.have_unicode:
+    character_size = 4 if sys.maxunicode > 0xFFFF else 2
+else:
+    character_size = 1
+
 class StrTest(unittest.TestCase):
     @bigmemtest(minsize=_2G, memuse=2)
     def test_capitalize(self, size):
@@ -54,7 +59,8 @@ class StrTest(unittest.TestCase):
         self.assertEqual(s[lpadsize:-rpadsize], SUBSTR)
         self.assertEqual(s.strip(), SUBSTR.strip())
 
-    @precisionbigmemtest(size=_2G - 1, memuse=1)
+    @test_support.requires_unicode
+    @precisionbigmemtest(size=_2G - 1, memuse=character_size)
     def test_center_unicode(self, size):
         SUBSTR = u' abc def ghi'
         try:
@@ -81,7 +87,8 @@ class StrTest(unittest.TestCase):
         self.assertEqual(s.count('i'), 1)
         self.assertEqual(s.count('j'), 0)
 
-    @bigmemtest(minsize=_2G + 2, memuse=3)
+    @test_support.requires_unicode
+    @bigmemtest(minsize=_2G + 2, memuse=1 + character_size)
     def test_decode(self, size):
         s = '.' * size
         self.assertEqual(len(s.decode('utf-8')), size)
@@ -93,44 +100,31 @@ class StrTest(unittest.TestCase):
         s = c * size
         self.assertEqual(len(s.encode(enc)), expectedsize)
 
-    @bigmemtest(minsize=_2G + 2, memuse=3)
+    @test_support.requires_unicode
+    @bigmemtest(minsize=_2G + 2, memuse=character_size + 4)
     def test_encode(self, size):
-        return self.basic_encode_test(size, 'utf-8')
+        self.basic_encode_test(size, 'utf-8')
 
-    @precisionbigmemtest(size=_4G // 6 + 2, memuse=2)
+    @test_support.requires_unicode
+    @precisionbigmemtest(size=_4G // 6 + 2, memuse=character_size + 6)
     def test_encode_raw_unicode_escape(self, size):
-        try:
-            return self.basic_encode_test(size, 'raw_unicode_escape')
-        except MemoryError:
-            pass # acceptable on 32-bit
+        self.basic_encode_test(size, 'raw_unicode_escape')
 
-    @precisionbigmemtest(size=_4G // 5 + 70, memuse=3)
+    @test_support.requires_unicode
+    @precisionbigmemtest(size=_4G // 5 + 70, memuse=character_size + 8)
     def test_encode_utf7(self, size):
-        try:
-            return self.basic_encode_test(size, 'utf7')
-        except MemoryError:
-            pass # acceptable on 32-bit
+        self.basic_encode_test(size, 'utf7')
 
-    @precisionbigmemtest(size=_4G // 4 + 5, memuse=6)
+    @test_support.requires_unicode
+    @precisionbigmemtest(size=_4G // 4 + 5, memuse=character_size + 4)
     def test_encode_utf32(self, size):
-        try:
-            return self.basic_encode_test(size, 'utf32', expectedsize=4*size+4)
-        except MemoryError:
-            pass # acceptable on 32-bit
+        self.basic_encode_test(size, 'utf32', expectedsize=4*size+4)
 
-    @precisionbigmemtest(size=_2G-1, memuse=2)
+    @test_support.requires_unicode
+    @precisionbigmemtest(size=_2G-1, memuse=4)
     def test_decodeascii(self, size):
-        return self.basic_encode_test(size, 'ascii', c='A')
+        self.basic_encode_test(size, 'ascii', c='A')
 
-    @precisionbigmemtest(size=_4G // 5, memuse=6+2)
-    def test_unicode_repr_oflw(self, size):
-        try:
-            s = u"\uAAAA"*size
-            r = repr(s)
-        except MemoryError:
-            pass # acceptable on 32-bit
-        else:
-            self.assertTrue(s == eval(r))
 
     @bigmemtest(minsize=_2G, memuse=2)
     def test_endswith(self, size):
@@ -485,7 +479,7 @@ class StrTest(unittest.TestCase):
         self.assertEqual(s.count('.'), 3)
         self.assertEqual(s.count('-'), size * 2)
 
-    @bigmemtest(minsize=_2G + 10, memuse=2)
+    @bigmemtest(minsize=_2G + 10, memuse=5)
     def test_repr_small(self, size):
         s = '-' * size
         s = repr(s)
@@ -497,7 +491,6 @@ class StrTest(unittest.TestCase):
         # repr() will create a string four times as large as this 'binary
         # string', but we don't want to allocate much more than twice
         # size in total.  (We do extra testing in test_repr_large())
-        size = size // 5 * 2
         s = '\x00' * size
         s = repr(s)
         self.assertEqual(len(s), size * 4 + 2)
@@ -516,10 +509,27 @@ class StrTest(unittest.TestCase):
         self.assertEqual(s.count('\\'), size)
         self.assertEqual(s.count('0'), size * 2)
 
-    @bigmemtest(minsize=2**32 // 5, memuse=6+2)
+    @test_support.requires_unicode
+    @bigmemtest(minsize=2**32 // 6, memuse=character_size + 6)
     def test_unicode_repr(self, size):
-        s = u"\uAAAA" * size
-        self.assertTrue(len(repr(s)) > size)
+        s = unichr(0xABCD) * size
+        try:
+            r = repr(s)
+            self.assertEqual(len(r), 3 + 6 * size)
+            self.assertTrue(r.endswith(r"\uabcd'"), r[-10:])
+        finally:
+            s = r = None
+
+    @test_support.requires_unicode
+    @precisionbigmemtest(size=_4G // 6 + 1, memuse=character_size + 6)
+    def test_unicode_repr_oflw(self, size):
+        s = unichr(0xABCD) * size
+        try:
+            r = repr(s)
+            self.assertEqual(len(r), 3 + 6 * size)
+            self.assertTrue(r.endswith(r"\uabcd'"), r[-10:])
+        finally:
+            r = s = None
 
     # This test is meaningful even with size < 2G, as long as the
     # doubled string is > 2G (but it tests more if both are > 2G :)
@@ -541,7 +551,7 @@ class StrTest(unittest.TestCase):
         self.assertEqual(len(s), size * 2)
         self.assertEqual(s.count('.'), size * 2)
 
-    @bigmemtest(minsize=_2G + 20, memuse=1)
+    @bigmemtest(minsize=_2G + 20, memuse=2)
     def test_slice_and_getitem(self, size):
         SUBSTR = '0123456789'
         sublen = len(SUBSTR)

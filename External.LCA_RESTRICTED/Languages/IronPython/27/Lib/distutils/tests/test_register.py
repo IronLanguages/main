@@ -1,6 +1,5 @@
-"""Tests for distutils.command.register."""
 # -*- encoding: utf8 -*-
-import sys
+"""Tests for distutils.command.register."""
 import os
 import unittest
 import getpass
@@ -11,11 +10,14 @@ from test.test_support import check_warnings, run_unittest
 
 from distutils.command import register as register_module
 from distutils.command.register import register
-from distutils.core import Distribution
 from distutils.errors import DistutilsSetupError
 
-from distutils.tests import support
-from distutils.tests.test_config import PYPIRC, PyPIRCCommandTestCase
+from distutils.tests.test_config import PyPIRCCommandTestCase
+
+try:
+    import docutils
+except ImportError:
+    docutils = None
 
 PYPIRC_NOPASSWORD = """\
 [distutils]
@@ -97,7 +99,7 @@ class RegisterTestCase(PyPIRCCommandTestCase):
         cmd = self._get_cmd()
 
         # we shouldn't have a .pypirc file yet
-        self.assertTrue(not os.path.exists(self.rc))
+        self.assertFalse(os.path.exists(self.rc))
 
         # patching raw_input and getpass.getpass
         # so register gets happy
@@ -138,11 +140,11 @@ class RegisterTestCase(PyPIRCCommandTestCase):
 
         # let's see what the server received : we should
         # have 2 similar requests
-        self.assertTrue(self.conn.reqs, 2)
+        self.assertEqual(len(self.conn.reqs), 2)
         req1 = dict(self.conn.reqs[0].headers)
         req2 = dict(self.conn.reqs[1].headers)
         self.assertEqual(req2['Content-length'], req1['Content-length'])
-        self.assertTrue('xxx' in self.conn.reqs[1].data)
+        self.assertIn('xxx', self.conn.reqs[1].data)
 
     def test_password_not_in_file(self):
 
@@ -168,11 +170,11 @@ class RegisterTestCase(PyPIRCCommandTestCase):
             del register_module.raw_input
 
         # we should have send a request
-        self.assertTrue(self.conn.reqs, 1)
+        self.assertEqual(len(self.conn.reqs), 1)
         req = self.conn.reqs[0]
         headers = dict(req.headers)
         self.assertEqual(headers['Content-length'], '608')
-        self.assertTrue('tarek' in req.data)
+        self.assertIn('tarek', req.data)
 
     def test_password_reset(self):
         # this test runs choice 3
@@ -186,12 +188,13 @@ class RegisterTestCase(PyPIRCCommandTestCase):
             del register_module.raw_input
 
         # we should have send a request
-        self.assertTrue(self.conn.reqs, 1)
+        self.assertEqual(len(self.conn.reqs), 1)
         req = self.conn.reqs[0]
         headers = dict(req.headers)
         self.assertEqual(headers['Content-length'], '290')
-        self.assertTrue('tarek' in req.data)
+        self.assertIn('tarek', req.data)
 
+    @unittest.skipUnless(docutils is not None, 'needs docutils')
     def test_strict(self):
         # testing the script option
         # when on, the register command stops if
@@ -203,13 +206,6 @@ class RegisterTestCase(PyPIRCCommandTestCase):
         cmd.ensure_finalized()
         cmd.strict = 1
         self.assertRaises(DistutilsSetupError, cmd.run)
-
-        # we don't test the reSt feature if docutils
-        # is not installed
-        try:
-            import docutils
-        except ImportError:
-            return
 
         # metadata are OK but long_description is broken
         metadata = {'url': 'xxx', 'author': 'xxx',
@@ -245,6 +241,39 @@ class RegisterTestCase(PyPIRCCommandTestCase):
             cmd.run()
         finally:
             del register_module.raw_input
+
+        # and finally a Unicode test (bug #12114)
+        metadata = {'url': u'xxx', 'author': u'\u00c9ric',
+                    'author_email': u'xxx', u'name': 'xxx',
+                    'version': u'xxx',
+                    'description': u'Something about esszet \u00df',
+                    'long_description': u'More things about esszet \u00df'}
+
+        cmd = self._get_cmd(metadata)
+        cmd.ensure_finalized()
+        cmd.strict = 1
+        inputs = RawInputs('1', 'tarek', 'y')
+        register_module.raw_input = inputs.__call__
+        # let's run the command
+        try:
+            cmd.run()
+        finally:
+            del register_module.raw_input
+
+    @unittest.skipUnless(docutils is not None, 'needs docutils')
+    def test_register_invalid_long_description(self):
+        description = ':funkie:`str`'  # mimic Sphinx-specific markup
+        metadata = {'url': 'xxx', 'author': 'xxx',
+                    'author_email': 'xxx',
+                    'name': 'xxx', 'version': 'xxx',
+                    'long_description': description}
+        cmd = self._get_cmd(metadata)
+        cmd.ensure_finalized()
+        cmd.strict = True
+        inputs = RawInputs('2', 'tarek', 'tarek@ziade.org')
+        register_module.raw_input = inputs
+        self.addCleanup(delattr, register_module, 'raw_input')
+        self.assertRaises(DistutilsSetupError, cmd.run)
 
     def test_check_metadata_deprecated(self):
         # makes sure make_metadata is deprecated

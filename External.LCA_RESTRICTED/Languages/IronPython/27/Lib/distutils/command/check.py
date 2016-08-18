@@ -5,6 +5,7 @@ Implements the Distutils 'check' command.
 __revision__ = "$Id$"
 
 from distutils.core import Command
+from distutils.dist import PKG_INFO_ENCODING
 from distutils.errors import DistutilsSetupError
 
 try:
@@ -25,6 +26,9 @@ try:
 
         def system_message(self, level, message, *children, **kwargs):
             self.messages.append((level, message, children, kwargs))
+            return nodes.system_message(message, level=level,
+                                        type=self.levels[level],
+                                        *children, **kwargs)
 
     HAS_DOCUTILS = True
 except ImportError:
@@ -108,6 +112,8 @@ class check(Command):
     def check_restructuredtext(self):
         """Checks if the long string fields are reST-compliant."""
         data = self.distribution.get_long_description()
+        if not isinstance(data, unicode):
+            data = data.decode(PKG_INFO_ENCODING)
         for warning in self._check_rst_data(data):
             line = warning[-1].get('line')
             if line is None:
@@ -120,7 +126,7 @@ class check(Command):
         """Returns warnings when the provided data doesn't compile."""
         source_path = StringIO()
         parser = Parser()
-        settings = frontend.OptionParser().get_default_values()
+        settings = frontend.OptionParser(components=(Parser,)).get_default_values()
         settings.tab_width = 4
         settings.pep_references = None
         settings.rfc_references = None
@@ -136,8 +142,8 @@ class check(Command):
         document.note_source(source_path, -1)
         try:
             parser.parse(data, document)
-        except AttributeError:
-            reporter.messages.append((-1, 'Could not finish the parsing.',
-                                      '', {}))
+        except AttributeError as e:
+            reporter.messages.append(
+                (-1, 'Could not finish the parsing: %s.' % e, '', {}))
 
         return reporter.messages

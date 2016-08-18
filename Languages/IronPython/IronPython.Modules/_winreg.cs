@@ -494,7 +494,7 @@ namespace IronPython.Modules {
                 lock (this) {
                     if (key != null) {
                         HKeyHandleCache.cache.Remove(key.GetHashCode());
-                        key.Close();
+                        key.Dispose();
                         key = null;
                     }
                 }

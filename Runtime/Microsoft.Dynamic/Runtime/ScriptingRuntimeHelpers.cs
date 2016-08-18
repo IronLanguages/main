@@ -106,6 +106,9 @@ namespace Microsoft.Scripting.Runtime {
         }
 
         internal static object GetPrimitiveDefaultValue(Type type) {
+#if FEATURE_DBNULL
+            const TypeCode TypeCodeDbNull = (TypeCode)2; // TypeCode.DBNull
+#endif
             switch (type.GetTypeCode()) {
                 case TypeCode.Boolean: return ScriptingRuntimeHelpers.False;
                 case TypeCode.SByte: return default(SByte);
@@ -120,7 +123,7 @@ namespace Microsoft.Scripting.Runtime {
                 case TypeCode.Single: return default(Single);
                 case TypeCode.Double: return default(Double);
 #if FEATURE_DBNULL
-                case TypeCode.DBNull: return default(DBNull);
+                case TypeCodeDbNull: return default(DBNull);
 #endif
                 case TypeCode.DateTime: return default(DateTime);
                 case TypeCode.Decimal: return default(Decimal);

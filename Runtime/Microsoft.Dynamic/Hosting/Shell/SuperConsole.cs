@@ -493,6 +493,8 @@ namespace Microsoft.Scripting.Hosting.Shell {
             bool inputChanged = false;
             bool optionsObsolete = false;
 
+            const ConsoleKey ConsoleKeyLeftWindows = (ConsoleKey)0x5B; // ConsoleKey.LeftWindows
+            const ConsoleKey ConsoleKeyRightWindows = (ConsoleKey)0x5C; // ConsoleKey.RightWindows
             for (; ; ) {
                 ConsoleKeyInfo key = Console.ReadKey(true);
 
@@ -551,8 +553,8 @@ namespace Microsoft.Scripting.Hosting.Shell {
                         MoveEnd();
                         optionsObsolete = true;
                         break;
-                    case ConsoleKey.LeftWindows:
-                    case ConsoleKey.RightWindows:
+                    case ConsoleKeyLeftWindows:
+                    case ConsoleKeyRightWindows:
                         // ignore these
                         continue;
 

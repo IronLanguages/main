@@ -114,18 +114,6 @@ def removeduppaths():
     sys.path[:] = L
     return known_paths
 
-# XXX This should not be part of site.py, since it is needed even when
-# using the -S option for Python.  See http://www.python.org/sf/586680
-def addbuilddir():
-    """Append ./build/lib.<platform> in case we're running in the build dir
-    (especially for Guido :-)"""
-    from sysconfig import get_platform
-    s = "build/lib.%s-%.3s" % (get_platform(), sys.version)
-    if hasattr(sys, 'gettotalrefcount'):
-        s += '-pydebug'
-    s = os.path.join(os.path.dirname(sys.path.pop()), s)
-    sys.path.append(s)
-
 
 def _init_pathinfo():
     """Return a set containing all existing directory entries from sys.path"""
@@ -312,7 +300,7 @@ def getsitepackages():
             # locations.
             from sysconfig import get_config_var
             framework = get_config_var("PYTHONFRAMEWORK")
-            if framework and "/%s.framework/"%(framework,) in prefix:
+            if framework:
                 sitepackages.append(
                         os.path.join("/Library", framework,
                             sys.version[:3], "site-packages"))
@@ -452,7 +440,7 @@ def setcopyright():
     for supporting Python development.  See www.python.org for more information.""")
     here = os.path.dirname(os.__file__)
     __builtin__.license = _Printer(
-        "license", "See http://www.python.org/%.3s/license.html" % sys.version,
+        "license", "See https://www.python.org/psf/license/",
         ["LICENSE.txt", "LICENSE"],
         [os.path.join(here, os.pardir), here, os.curdir])
 
@@ -541,9 +529,6 @@ def main():
 
     abs__file__()
     known_paths = removeduppaths()
-    if (os.name == "posix" and sys.path and
-        os.path.basename(sys.path[-1]) == "Modules"):
-        addbuilddir()
     if ENABLE_USER_SITE is None:
         ENABLE_USER_SITE = check_enableusersite()
     known_paths = addusersitepackages(known_paths)

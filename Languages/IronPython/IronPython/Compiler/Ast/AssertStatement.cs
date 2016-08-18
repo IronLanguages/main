@@ -51,7 +51,7 @@ namespace IronPython.Compiler.Ast {
             // } else {
             //     RaiseAssertionError(_message);
             // }
-            return GlobalParent.AddDebugInfoAndVoid(
+            return AppendLine(GlobalParent.AddDebugInfoAndVoid(
                 AstUtils.Unless(                                 // if
                     TransformAndDynamicConvert(_test, typeof(bool)), // _test
                     Ast.Call(                                           // else branch
@@ -60,7 +60,7 @@ namespace IronPython.Compiler.Ast {
                     )
                 ),
                 Span
-            );
+            ));
         }
 
         public override void Walk(PythonWalker walker) {

@@ -10,9 +10,9 @@ cygwin in no-cygwin mode).
 #
 # * if you use a msvc compiled python version (1.5.2)
 #   1. you have to insert a __GNUC__ section in its config.h
-#   2. you have to generate a import library for its dll
+#   2. you have to generate an import library for its dll
 #      - create a def-file for python??.dll
-#      - create a import library using
+#      - create an import library using
 #             dlltool --dllname python15.dll --def python15.def \
 #                       --output-lib libpython15.a
 #
@@ -319,13 +319,18 @@ class Mingw32CCompiler (CygwinCCompiler):
         else:
             entry_point = ''
 
-        self.set_executables(compiler='gcc -mno-cygwin -O -Wall',
-                             compiler_so='gcc -mno-cygwin -mdll -O -Wall',
-                             compiler_cxx='g++ -mno-cygwin -O -Wall',
-                             linker_exe='gcc -mno-cygwin',
-                             linker_so='%s -mno-cygwin %s %s'
-                                        % (self.linker_dll, shared_option,
-                                           entry_point))
+        if self.gcc_version < '4' or is_cygwingcc():
+            no_cygwin = ' -mno-cygwin'
+        else:
+            no_cygwin = ''
+
+        self.set_executables(compiler='gcc%s -O -Wall' % no_cygwin,
+                             compiler_so='gcc%s -mdll -O -Wall' % no_cygwin,
+                             compiler_cxx='g++%s -O -Wall' % no_cygwin,
+                             linker_exe='gcc%s' % no_cygwin,
+                             linker_so='%s%s %s %s'
+                                    % (self.linker_dll, no_cygwin,
+                                       shared_option, entry_point))
         # Maybe we should also append -mthreads, but then the finished
         # dlls need another dll (mingwm10.dll see Mingw32 docs)
         # (-mthreads: Support thread-safe exception handling on `Mingw32')
@@ -447,3 +452,12 @@ def get_versions():
     else:
         dllwrap_version = None
     return (gcc_version, ld_version, dllwrap_version)
+
+def is_cygwingcc():
+    '''Try to determine if the gcc that would be used is from cygwin.'''
+    out = os.popen('gcc -dumpmachine', 'r')
+    out_string = out.read()
+    out.close()
+    # out_string is the target triplet cpu-vendor-os
+    # Cygwin's gcc sets the os to 'cygwin'
+    return out_string.strip().endswith('cygwin')

@@ -1,10 +1,10 @@
 """Temporary files.
 
 This module provides generic, low- and high-level interfaces for
-creating temporary files and directories.  The interfaces listed
-as "safe" just below can be used without fear of race conditions.
-Those listed as "unsafe" cannot, and are provided for backward
-compatibility only.
+creating temporary files and directories.  All of the interfaces
+provided by this module can be used without fear of race conditions
+except for 'mktemp'.  'mktemp' is subject to race conditions and
+should not be used; it is provided for backward compatibility only.
 
 This module also provides some data items to the user:
 
@@ -29,6 +29,7 @@ __all__ = [
 
 # Imports.
 
+import io as _io
 import os as _os
 import errno as _errno
 from random import Random as _Random
@@ -118,8 +119,15 @@ class _RandomNameSequence:
 
     def __init__(self):
         self.mutex = _allocate_lock()
-        self.rng = _Random()
         self.normcase = _os.path.normcase
+
+    @property
+    def rng(self):
+        cur_pid = _os.getpid()
+        if cur_pid != getattr(self, '_rng_pid', None):
+            self._rng = _Random()
+            self._rng_pid = cur_pid
+        return self._rng
 
     def __iter__(self):
         return self
@@ -231,6 +239,11 @@ def _mkstemp_inner(dir, pre, suf, flags):
         except OSError, e:
             if e.errno == _errno.EEXIST:
                 continue # try again
+            if (_os.name == 'nt' and e.errno == _errno.EACCES and
+                _os.path.isdir(dir) and _os.access(dir, _os.W_OK)):
+                # On windows, when a directory with the chosen name already
+                # exists, EACCES error code is returned instead of EEXIST.
+                continue
             raise
 
     raise IOError, (_errno.EEXIST, "No usable temporary file name found")
@@ -320,6 +333,11 @@ def mkdtemp(suffix="", prefix=template, dir=None):
         except OSError, e:
             if e.errno == _errno.EEXIST:
                 continue # try again
+            if (_os.name == 'nt' and e.errno == _errno.EACCES and
+                _os.path.isdir(dir) and _os.access(dir, _os.W_OK)):
+                # On windows, when a directory with the chosen name already
+                # exists, EACCES error code is returned instead of EEXIST.
+                continue
             raise
 
     raise IOError, (_errno.EEXIST, "No usable temporary directory name found")
@@ -398,9 +416,11 @@ class _TemporaryFileWrapper:
         def close(self):
             if not self.close_called:
                 self.close_called = True
-                self.file.close()
-                if self.delete:
-                    self.unlink(self.name)
+                try:
+                    self.file.close()
+                finally:
+                    if self.delete:
+                        self.unlink(self.name)
 
         def __del__(self):
             self.close()
@@ -427,8 +447,8 @@ def NamedTemporaryFile(mode='w+b', bufsize=-1, suffix="",
     The file is created as mkstemp() would do it.
 
     Returns an object with a file-like interface; the name of the file
-    is accessible as file.name.  The file will be automatically deleted
-    when it is closed unless the 'delete' argument is set to False.
+    is accessible as its 'name' attribute.  The file will be automatically
+    deleted when it is closed unless the 'delete' argument is set to False.
     """
 
     if dir is None:
@@ -445,8 +465,13 @@ def NamedTemporaryFile(mode='w+b', bufsize=-1, suffix="",
         flags |= _os.O_TEMPORARY
 
     (fd, name) = _mkstemp_inner(dir, prefix, suffix, flags)
-    file = _os.fdopen(fd, mode, bufsize)
-    return _TemporaryFileWrapper(file, name, delete)
+    try:
+        file = _os.fdopen(fd, mode, bufsize)
+        return _TemporaryFileWrapper(file, name, delete)
+    except BaseException:
+        _os.unlink(name)
+        _os.close(fd)
+        raise
 
 if _os.name != 'posix' or _os.sys.platform == 'cygwin':
     # On non-POSIX and Cygwin systems, assume that we cannot unlink a file
@@ -539,10 +564,6 @@ class SpooledTemporaryFile:
     def closed(self):
         return self._file.closed
 
-    @property
-    def encoding(self):
-        return self._file.encoding
-
     def fileno(self):
         self.rollover()
         return self._file.fileno()
@@ -555,15 +576,17 @@ class SpooledTemporaryFile:
 
     @property
     def mode(self):
-        return self._file.mode
+        try:
+            return self._file.mode
+        except AttributeError:
+            return self._TemporaryFileArgs[0]
 
     @property
     def name(self):
-        return self._file.name
-
-    @property
-    def newlines(self):
-        return self._file.newlines
+        try:
+            return self._file.name
+        except AttributeError:
+            return None
 
     def next(self):
         return self._file.next
@@ -603,4 +626,7 @@ class SpooledTemporaryFile:
         return rv
 
     def xreadlines(self, *args):
-        return self._file.xreadlines(*args)
+        if hasattr(self._file, 'xreadlines'):  # real file
+            return iter(self._file)
+        else:  # StringIO()
+            return iter(self._file.readlines(*args))

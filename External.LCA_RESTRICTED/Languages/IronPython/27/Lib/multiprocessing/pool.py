@@ -68,6 +68,23 @@ def mapstar(args):
 # Code run by worker processes
 #
 
+class MaybeEncodingError(Exception):
+    """Wraps possible unpickleable errors, so they can be
+    safely sent through the socket."""
+
+    def __init__(self, exc, value):
+        self.exc = repr(exc)
+        self.value = repr(value)
+        super(MaybeEncodingError, self).__init__(self.exc, self.value)
+
+    def __str__(self):
+        return "Error sending result: '%s'. Reason: '%s'" % (self.value,
+                                                             self.exc)
+
+    def __repr__(self):
+        return "<MaybeEncodingError: %s>" % str(self)
+
+
 def worker(inqueue, outqueue, initializer=None, initargs=(), maxtasks=None):
     assert maxtasks is None or (type(maxtasks) == int and maxtasks > 0)
     put = outqueue.put
@@ -96,7 +113,13 @@ def worker(inqueue, outqueue, initializer=None, initargs=(), maxtasks=None):
             result = (True, func(*args, **kwds))
         except Exception, e:
             result = (False, e)
-        put((job, i, result))
+        try:
+            put((job, i, result))
+        except Exception as e:
+            wrapped = MaybeEncodingError(e, result[1])
+            debug("Possible encoding error while sending result: %s" % (
+                wrapped))
+            put((job, i, (False, wrapped)))
         completed += 1
     debug('worker exiting after %d tasks' % completed)
 
@@ -125,6 +148,8 @@ class Pool(object):
                 processes = cpu_count()
             except NotImplementedError:
                 processes = 1
+        if processes < 1:
+            raise ValueError("Number of processes must be at least 1")
 
         if initializer is not None and not hasattr(initializer, '__call__'):
             raise TypeError('initializer must be a callable')
@@ -144,7 +169,8 @@ class Pool(object):
 
         self._task_handler = threading.Thread(
             target=Pool._handle_tasks,
-            args=(self._taskqueue, self._quick_put, self._outqueue, self._pool)
+            args=(self._taskqueue, self._quick_put, self._outqueue,
+                  self._pool, self._cache)
             )
         self._task_handler.daemon = True
         self._task_handler._state = RUN
@@ -292,7 +318,11 @@ class Pool(object):
 
     @staticmethod
     def _handle_workers(pool):
-        while pool._worker_handler._state == RUN and pool._state == RUN:
+        thread = threading.current_thread()
+
+        # Keep maintaining workers until the cache gets drained, unless the pool
+        # is terminated.
+        while thread._state == RUN or (pool._cache and thread._state != TERMINATE):
             pool._maintain_pool()
             time.sleep(0.1)
         # send sentinel to stop workers
@@ -300,26 +330,38 @@ class Pool(object):
         debug('worker handler exiting')
 
     @staticmethod
-    def _handle_tasks(taskqueue, put, outqueue, pool):
+    def _handle_tasks(taskqueue, put, outqueue, pool, cache):
         thread = threading.current_thread()
 
         for taskseq, set_length in iter(taskqueue.get, None):
+            task = None
             i = -1
-            for i, task in enumerate(taskseq):
-                if thread._state:
-                    debug('task handler found thread._state != RUN')
-                    break
-                try:
-                    put(task)
-                except IOError:
-                    debug('could not put task on queue')
-                    break
-            else:
+            try:
+                for i, task in enumerate(taskseq):
+                    if thread._state:
+                        debug('task handler found thread._state != RUN')
+                        break
+                    try:
+                        put(task)
+                    except Exception as e:
+                        job, ind = task[:2]
+                        try:
+                            cache[job]._set(ind, (False, e))
+                        except KeyError:
+                            pass
+                else:
+                    if set_length:
+                        debug('doing set_length()')
+                        set_length(i+1)
+                    continue
+                break
+            except Exception as ex:
+                job, ind = task[:2] if task else (0, 0)
+                if job in cache:
+                    cache[job]._set(ind + 1, (False, ex))
                 if set_length:
                     debug('doing set_length()')
                     set_length(i+1)
-                continue
-            break
         else:
             debug('task handler got sentinel')
 
@@ -460,7 +502,8 @@ class Pool(object):
         # We must wait for the worker handler to exit before terminating
         # workers because we don't want workers to be restarted behind our back.
         debug('joining worker handler')
-        worker_handler.join()
+        if threading.current_thread() is not worker_handler:
+            worker_handler.join(1e100)
 
         # Terminate workers which haven't already finished.
         if pool and hasattr(pool[0], 'terminate'):
@@ -470,10 +513,12 @@ class Pool(object):
                     p.terminate()
 
         debug('joining task handler')
-        task_handler.join(1e100)
+        if threading.current_thread() is not task_handler:
+            task_handler.join(1e100)
 
         debug('joining result handler')
-        result_handler.join(1e100)
+        if threading.current_thread() is not result_handler:
+            result_handler.join(1e100)
 
         if pool and hasattr(pool[0], 'terminate'):
             debug('joining pool workers')
@@ -533,6 +578,8 @@ class ApplyResult(object):
             self._cond.release()
         del self._cache[self._job]
 
+AsyncResult = ApplyResult       # create alias -- see #17805
+
 #
 # Class whose instances are returned by `Pool.map_async()`
 #
@@ -547,6 +594,7 @@ class MapResult(ApplyResult):
         if chunksize <= 0:
             self._number_left = 0
             self._ready = True
+            del cache[self._job]
         else:
             self._number_left = length//chunksize + bool(length % chunksize)
 

@@ -54,11 +54,11 @@ namespace IronPython.Compiler.Ast {
             MSAst.Expression ifTrue = AstUtils.Convert(_trueExpr, typeof(object));
             MSAst.Expression ifFalse = AstUtils.Convert(_falseExpr, typeof(object));
 
-            return Ast.Condition(
+            return AppendLine(Ast.Condition(
                 GlobalParent.Convert(typeof(bool), ConversionResultKind.ExplicitCast, _testExpr), 
                 ifTrue, 
                 ifFalse
-            );
+            ));
         }
 
         public override void Walk(PythonWalker walker) {

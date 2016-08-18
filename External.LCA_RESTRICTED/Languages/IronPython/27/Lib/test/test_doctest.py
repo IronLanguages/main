@@ -258,6 +258,21 @@ unless it's `None`:
     >>> e = doctest.Example('raise X()', '', exc_msg)
     >>> e.exc_msg
     '\n'
+
+Compare `Example`:
+    >>> example = doctest.Example('print 1', '1\n')
+    >>> same_example = doctest.Example('print 1', '1\n')
+    >>> other_example = doctest.Example('print 42', '42\n')
+    >>> example == same_example
+    True
+    >>> example != same_example
+    False
+    >>> hash(example) == hash(same_example)
+    True
+    >>> example == other_example
+    False
+    >>> example != other_example
+    True
 """
 
 def test_DocTest(): r"""
@@ -307,7 +322,7 @@ containing test:
     >>> test.lineno + e2.lineno
     26
 
-If the docstring contains inconsistant leading whitespace in the
+If the docstring contains inconsistent leading whitespace in the
 expected output of an example, then `DocTest` will raise a ValueError:
 
     >>> docstring = r'''
@@ -346,6 +361,50 @@ will raise a ValueError:
     >>> parser.get_doctest(docstring, globs, 'some_test', 'filename', 0)
     Traceback (most recent call last):
     ValueError: line 2 of the docstring for some_test lacks blank after ...: '...print 1'
+
+Compare `DocTest`:
+
+    >>> docstring = '''
+    ...     >>> print 12
+    ...     12
+    ... '''
+    >>> test = parser.get_doctest(docstring, globs, 'some_test',
+    ...                           'some_test', 20)
+    >>> same_test = parser.get_doctest(docstring, globs, 'some_test',
+    ...                                'some_test', 20)
+    >>> test == same_test
+    True
+    >>> test != same_test
+    False
+    >>> hash(test) == hash(same_test)
+    True
+    >>> docstring = '''
+    ...     >>> print 42
+    ...     42
+    ... '''
+    >>> other_test = parser.get_doctest(docstring, globs, 'other_test',
+    ...                                 'other_file', 10)
+    >>> test == other_test
+    False
+    >>> test != other_test
+    True
+
+Compare `DocTestCase`:
+
+    >>> DocTestCase = doctest.DocTestCase
+    >>> test_case = DocTestCase(test)
+    >>> same_test_case = DocTestCase(same_test)
+    >>> other_test_case = DocTestCase(other_test)
+    >>> test_case == same_test_case
+    True
+    >>> test_case != same_test_case
+    False
+    >>> hash(test_case) == hash(same_test_case)
+    True
+    >>> test == other_test_case
+    False
+    >>> test != other_test_case
+    True
 
 """
 
@@ -892,7 +951,7 @@ the exception is in the output, but this will fail under Python 2:
         HTTPException: message
     TestResults(failed=1, attempted=2)
 
-But in Python 2 the module path is not included, an therefore a test must look
+But in Python 2 the module path is not included, and therefore a test must look
 like the following test to succeed in Python 2. But that test will fail under
 Python 3.
 
@@ -959,6 +1018,33 @@ But IGNORE_EXCEPTION_DETAIL does not allow a mismatch in the exception type:
         ...
         ValueError: message
     TestResults(failed=1, attempted=1)
+
+If the exception does not have a message, you can still use
+IGNORE_EXCEPTION_DETAIL to normalize the modules between Python 2 and 3:
+
+    >>> def f(x):
+    ...     r'''
+    ...     >>> from Queue import Empty
+    ...     >>> raise Empty() #doctest: +IGNORE_EXCEPTION_DETAIL
+    ...     Traceback (most recent call last):
+    ...     foo.bar.Empty
+    ...     '''
+    >>> test = doctest.DocTestFinder().find(f)[0]
+    >>> doctest.DocTestRunner(verbose=False).run(test)
+    TestResults(failed=0, attempted=2)
+
+Note that a trailing colon doesn't matter either:
+
+    >>> def f(x):
+    ...     r'''
+    ...     >>> from Queue import Empty
+    ...     >>> raise Empty() #doctest: +IGNORE_EXCEPTION_DETAIL
+    ...     Traceback (most recent call last):
+    ...     foo.bar.Empty:
+    ...     '''
+    >>> test = doctest.DocTestFinder().find(f)[0]
+    >>> doctest.DocTestRunner(verbose=False).run(test)
+    TestResults(failed=0, attempted=2)
 
 If an exception is raised but not expected, then it is reported as an
 unexpected exception:
@@ -1947,6 +2033,31 @@ def test_DocTestSuite():
          >>> suite.run(unittest.TestResult())
          <unittest.result.TestResult run=9 errors=0 failures=4>
 
+       The module need not contain any doctest examples:
+
+         >>> suite = doctest.DocTestSuite('test.sample_doctest_no_doctests')
+         >>> suite.run(unittest.TestResult())
+         <unittest.result.TestResult run=0 errors=0 failures=0>
+
+       However, if DocTestSuite finds no docstrings, it raises an error:
+
+         >>> try:
+         ...     doctest.DocTestSuite('test.sample_doctest_no_docstrings')
+         ... except ValueError as e:
+         ...     error = e
+
+         >>> print(error.args[1])
+         has no docstrings
+
+       You can prevent this error by passing a DocTestFinder instance with
+       the `exclude_empty` keyword argument set to False:
+
+         >>> finder = doctest.DocTestFinder(exclude_empty=False)
+         >>> suite = doctest.DocTestSuite('test.sample_doctest_no_docstrings',
+         ...                              test_finder=finder)
+         >>> suite.run(unittest.TestResult())
+         <unittest.result.TestResult run=0 errors=0 failures=0>
+
        We can use the current module:
 
          >>> suite = test.sample_doctest.test_suite()
@@ -2458,6 +2569,34 @@ bothering with the current sys.stdout encoding.
     >>> sys.argv = save_argv
 """
 
+def test_lineendings(): r"""
+*nix systems use \n line endings, while Windows systems use \r\n.  Python
+handles this using universal newline mode for reading files.  Let's make
+sure doctest does so (issue 8473) by creating temporary test files using each
+of the two line disciplines.  One of the two will be the "wrong" one for the
+platform the test is run on.
+
+Windows line endings first:
+
+    >>> import tempfile, os
+    >>> fn = tempfile.mktemp()
+    >>> with open(fn, 'wb') as f:
+    ...     f.write('Test:\r\n\r\n  >>> x = 1 + 1\r\n\r\nDone.\r\n')
+    >>> doctest.testfile(fn, module_relative=False, verbose=False)
+    TestResults(failed=0, attempted=1)
+    >>> os.remove(fn)
+
+And now *nix line endings:
+
+    >>> fn = tempfile.mktemp()
+    >>> with open(fn, 'wb') as f:
+    ...     f.write('Test:\n\n  >>> x = 1 + 1\n\nDone.\n')
+    >>> doctest.testfile(fn, module_relative=False, verbose=False)
+    TestResults(failed=0, attempted=1)
+    >>> os.remove(fn)
+
+"""
+
 # old_test1, ... used to live in doctest.py, but cluttered it.  Note
 # that these use the deprecated doctest.Tester, so should go away (or
 # be rewritten) someday.
@@ -2589,7 +2728,9 @@ def test_main():
     from test import test_doctest
 
     # Ignore all warnings about the use of class Tester in this module.
-    deprecations = [("class Tester is deprecated", DeprecationWarning)]
+    deprecations = []
+    if __debug__:
+        deprecations.append(("class Tester is deprecated", DeprecationWarning))
     if sys.py3kwarning:
         deprecations += [("backquote not supported", SyntaxWarning),
                          ("execfile.. not supported", DeprecationWarning)]

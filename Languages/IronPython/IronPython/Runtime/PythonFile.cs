@@ -31,7 +31,7 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-#if FEATURE_PROCESS
+#if FEATURE_PIPES
 using System.IO.Pipes;
 #endif
 
@@ -985,7 +985,7 @@ namespace IronPython.Runtime {
         public void CloseIfLast(int fd, Stream stream) {
             objMapping.RemoveOnId(fd);
             if (-1 == objMapping.GetIdFromObject(stream)) {
-                stream.Close();
+                ((IDisposable)stream).Dispose();
             }
         }
 
@@ -1084,7 +1084,7 @@ namespace IronPython.Runtime {
             return res;
         }
 
-#if FEATURE_PROCESS
+#if FEATURE_PIPES
         internal static PythonFile[] CreatePipe(CodeContext/*!*/ context, SafePipeHandle hRead, SafePipeHandle hWrite) {
             var pythonContext = PythonContext.GetContext(context);
             var encoding = pythonContext.DefaultEncoding;
@@ -1516,7 +1516,7 @@ namespace IronPython.Runtime {
                 _isOpen = false;
 
                 if (!IsConsole) {
-                    _stream.Close();
+                    ((IDisposable)_stream).Dispose();
                 }
 
                 PythonFileManager myManager = _context.RawFileManager;
@@ -2040,7 +2040,7 @@ namespace IronPython.Runtime {
         #endregion
     }
 
-#if FEATURE_PROCESS
+#if FEATURE_PIPES
     internal class AnonymousPipeStream : PipeStream {
         public AnonymousPipeStream(PipeDirection direction, SafePipeHandle sph) : base(direction, 0) {
             InitializeHandle(sph, true, false);

@@ -27,6 +27,9 @@ import socket
 import os
 import time
 import sys
+import base64
+import re
+
 from urlparse import urljoin as basejoin
 
 __all__ = ["urlopen", "URLopener", "FancyURLopener", "urlretrieve",
@@ -66,15 +69,15 @@ else:
 
 # Shortcut for basic usage
 _urlopener = None
-def urlopen(url, data=None, proxies=None):
+def urlopen(url, data=None, proxies=None, context=None):
     """Create a file-like object for the specified URL to read from."""
     from warnings import warnpy3k
     warnpy3k("urllib.urlopen() has been removed in Python 3.0 in "
              "favor of urllib2.urlopen()", stacklevel=2)
 
     global _urlopener
-    if proxies is not None:
-        opener = FancyURLopener(proxies=proxies)
+    if proxies is not None or context is not None:
+        opener = FancyURLopener(proxies=proxies, context=context)
     elif not _urlopener:
         opener = FancyURLopener()
         _urlopener = opener
@@ -84,11 +87,15 @@ def urlopen(url, data=None, proxies=None):
         return opener.open(url)
     else:
         return opener.open(url, data)
-def urlretrieve(url, filename=None, reporthook=None, data=None):
+def urlretrieve(url, filename=None, reporthook=None, data=None, context=None):
     global _urlopener
-    if not _urlopener:
-        _urlopener = FancyURLopener()
-    return _urlopener.retrieve(url, filename, reporthook, data)
+    if context is not None:
+        opener = FancyURLopener(context=context)
+    elif not _urlopener:
+        _urlopener = opener = FancyURLopener()
+    else:
+        opener = _urlopener
+    return opener.retrieve(url, filename, reporthook, data)
 def urlcleanup():
     if _urlopener:
         _urlopener.cleanup()
@@ -123,13 +130,14 @@ class URLopener:
     version = "Python-urllib/%s" % __version__
 
     # Constructor
-    def __init__(self, proxies=None, **x509):
+    def __init__(self, proxies=None, context=None, **x509):
         if proxies is None:
             proxies = getproxies()
         assert hasattr(proxies, 'has_key'), "proxies must be a mapping"
         self.proxies = proxies
         self.key_file = x509.get('key_file')
         self.cert_file = x509.get('cert_file')
+        self.context = context
         self.addheaders = [('User-Agent', self.version)]
         self.__tempfiles = []
         self.__unlink = os.unlink # See cleanup()
@@ -257,9 +265,9 @@ class URLopener:
                 size = -1
                 read = 0
                 blocknum = 0
+                if "content-length" in headers:
+                    size = int(headers["Content-Length"])
                 if reporthook:
-                    if "content-length" in headers:
-                        size = int(headers["Content-Length"])
                     reporthook(blocknum, bs, size)
                 while 1:
                     block = fp.read(bs)
@@ -318,13 +326,13 @@ class URLopener:
         if not host: raise IOError, ('http error', 'no host given')
 
         if proxy_passwd:
-            import base64
+            proxy_passwd = unquote(proxy_passwd)
             proxy_auth = base64.b64encode(proxy_passwd).strip()
         else:
             proxy_auth = None
 
         if user_passwd:
-            import base64
+            user_passwd = unquote(user_passwd)
             auth = base64.b64encode(user_passwd).strip()
         else:
             auth = None
@@ -374,7 +382,6 @@ class URLopener:
 
     def http_error_default(self, url, fp, errcode, errmsg, headers):
         """Default error handler: close the connection and raise IOError."""
-        void = fp.read()
         fp.close()
         raise IOError, ('http error', errcode, errmsg, headers)
 
@@ -409,18 +416,19 @@ class URLopener:
                 #print "proxy via https:", host, selector
             if not host: raise IOError, ('https error', 'no host given')
             if proxy_passwd:
-                import base64
+                proxy_passwd = unquote(proxy_passwd)
                 proxy_auth = base64.b64encode(proxy_passwd).strip()
             else:
                 proxy_auth = None
             if user_passwd:
-                import base64
+                user_passwd = unquote(user_passwd)
                 auth = base64.b64encode(user_passwd).strip()
             else:
                 auth = None
             h = httplib.HTTPS(host, 0,
                               key_file=self.key_file,
-                              cert_file=self.cert_file)
+                              cert_file=self.cert_file,
+                              context=self.context)
             if data is not None:
                 h.putrequest('POST', selector)
                 h.putheader('Content-Type',
@@ -483,6 +491,8 @@ class URLopener:
             urlfile = file
             if file[:1] == '/':
                 urlfile = 'file://' + file
+            elif file[:2] == './':
+                raise ValueError("local file url may start with / or file:. Unknown url of type: %s" % url)
             return addinfourl(open(localname, 'rb'),
                               headers, urlfile)
         host, port = splitport(host)
@@ -590,7 +600,6 @@ class URLopener:
                                             time.gmtime(time.time())))
         msg.append('Content-type: %s' % type)
         if encoding == 'base64':
-            import base64
             data = base64.decodestring(data)
         else:
             data = unquote(data)
@@ -620,18 +629,20 @@ class FancyURLopener(URLopener):
     def http_error_302(self, url, fp, errcode, errmsg, headers, data=None):
         """Error 302 -- relocated (temporarily)."""
         self.tries += 1
-        if self.maxtries and self.tries >= self.maxtries:
-            if hasattr(self, "http_error_500"):
-                meth = self.http_error_500
-            else:
-                meth = self.http_error_default
+        try:
+            if self.maxtries and self.tries >= self.maxtries:
+                if hasattr(self, "http_error_500"):
+                    meth = self.http_error_500
+                else:
+                    meth = self.http_error_default
+                return meth(url, fp, 500,
+                            "Internal Server Error: Redirect Recursion",
+                            headers)
+            result = self.redirect_internal(url, fp, errcode, errmsg,
+                                            headers, data)
+            return result
+        finally:
             self.tries = 0
-            return meth(url, fp, 500,
-                        "Internal Server Error: Redirect Recursion", headers)
-        result = self.redirect_internal(url, fp, errcode, errmsg, headers,
-                                        data)
-        self.tries = 0
-        return result
 
     def redirect_internal(self, url, fp, errcode, errmsg, headers, data):
         if 'location' in headers:
@@ -640,7 +651,6 @@ class FancyURLopener(URLopener):
             newurl = headers['uri']
         else:
             return
-        void = fp.read()
         fp.close()
         # In case the server sent a relative URL, join with original:
         newurl = basejoin(self.type + ":" + url, newurl)
@@ -817,7 +827,10 @@ def thishost():
     """Return the IP address of the current host."""
     global _thishost
     if _thishost is None:
-        _thishost = socket.gethostbyname(socket.gethostname())
+        try:
+            _thishost = socket.gethostbyname(socket.gethostname())
+        except socket.gaierror:
+            _thishost = socket.gethostbyname('localhost')
     return _thishost
 
 _ftperrors = None
@@ -850,14 +863,21 @@ class ftpwrapper:
     """Class used by open_ftp() for cache of open FTP connections."""
 
     def __init__(self, user, passwd, host, port, dirs,
-                 timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
+                 timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
+                 persistent=True):
         self.user = user
         self.passwd = passwd
         self.host = host
         self.port = port
         self.dirs = dirs
         self.timeout = timeout
-        self.init()
+        self.refcount = 0
+        self.keepalive = persistent
+        try:
+            self.init()
+        except:
+            self.close()
+            raise
 
     def init(self):
         import ftplib
@@ -865,8 +885,8 @@ class ftpwrapper:
         self.ftp = ftplib.FTP()
         self.ftp.connect(self.host, self.port, self.timeout)
         self.ftp.login(self.user, self.passwd)
-        for dir in self.dirs:
-            self.ftp.cwd(dir)
+        _target = '/'.join(self.dirs)
+        self.ftp.cwd(_target)
 
     def retrfile(self, file, type):
         import ftplib
@@ -883,7 +903,7 @@ class ftpwrapper:
             # Try to retrieve as a file
             try:
                 cmd = 'RETR ' + file
-                conn = self.ftp.ntransfercmd(cmd)
+                conn, retrlen = self.ftp.ntransfercmd(cmd)
             except ftplib.error_perm, reason:
                 if str(reason)[:3] != '550':
                     raise IOError, ('ftp error', reason), sys.exc_info()[2]
@@ -903,21 +923,29 @@ class ftpwrapper:
                 cmd = 'LIST ' + file
             else:
                 cmd = 'LIST'
-            conn = self.ftp.ntransfercmd(cmd)
+            conn, retrlen = self.ftp.ntransfercmd(cmd)
         self.busy = 1
+        ftpobj = addclosehook(conn.makefile('rb'), self.file_close)
+        self.refcount += 1
+        conn.close()
         # Pass back both a suitably decorated object and a retrieval length
-        return (addclosehook(conn[0].makefile('rb'),
-                             self.endtransfer), conn[1])
+        return (ftpobj, retrlen)
+
     def endtransfer(self):
-        if not self.busy:
-            return
         self.busy = 0
-        try:
-            self.ftp.voidresp()
-        except ftperrors():
-            pass
 
     def close(self):
+        self.keepalive = False
+        if self.refcount <= 0:
+            self.real_close()
+
+    def file_close(self):
+        self.endtransfer()
+        self.refcount -= 1
+        if self.refcount <= 0 and not self.keepalive:
+            self.real_close()
+
+    def real_close(self):
         self.endtransfer()
         try:
             self.ftp.close()
@@ -962,11 +990,16 @@ class addclosehook(addbase):
         self.hookargs = hookargs
 
     def close(self):
-        addbase.close(self)
-        if self.closehook:
-            self.closehook(*self.hookargs)
-            self.closehook = None
-            self.hookargs = None
+        try:
+            closehook = self.closehook
+            hookargs = self.hookargs
+            if closehook:
+                self.closehook = None
+                self.hookargs = None
+                closehook(*hookargs)
+        finally:
+            addbase.close(self)
+
 
 class addinfo(addbase):
     """class to add an info() method to an open file."""
@@ -1103,10 +1136,13 @@ def splitport(host):
     global _portprog
     if _portprog is None:
         import re
-        _portprog = re.compile('^(.*):([0-9]+)$')
+        _portprog = re.compile('^(.*):([0-9]*)$')
 
     match = _portprog.match(host)
-    if match: return match.group(1, 2)
+    if match:
+        host, port = match.groups()
+        if port:
+            return host, port
     return host, None
 
 _nportprog = None
@@ -1123,12 +1159,12 @@ def splitnport(host, defport=-1):
     match = _nportprog.match(host)
     if match:
         host, port = match.group(1, 2)
-        try:
-            if not port: raise ValueError, "no digits"
-            nport = int(port)
-        except ValueError:
-            nport = None
-        return host, nport
+        if port:
+            try:
+                nport = int(port)
+            except ValueError:
+                nport = None
+            return host, nport
     return host, defport
 
 _queryprog = None
@@ -1180,22 +1216,35 @@ def splitvalue(attr):
 _hexdig = '0123456789ABCDEFabcdef'
 _hextochr = dict((a + b, chr(int(a + b, 16)))
                  for a in _hexdig for b in _hexdig)
+_asciire = re.compile('([\x00-\x7f]+)')
 
 def unquote(s):
     """unquote('abc%20def') -> 'abc def'."""
-    res = s.split('%')
+    if _is_unicode(s):
+        if '%' not in s:
+            return s
+        bits = _asciire.split(s)
+        res = [bits[0]]
+        append = res.append
+        for i in range(1, len(bits), 2):
+            append(unquote(str(bits[i])).decode('latin1'))
+            append(bits[i + 1])
+        return ''.join(res)
+
+    bits = s.split('%')
     # fastpath
-    if len(res) == 1:
+    if len(bits) == 1:
         return s
-    s = res[0]
-    for item in res[1:]:
+    res = [bits[0]]
+    append = res.append
+    for item in bits[1:]:
         try:
-            s += _hextochr[item[:2]] + item[2:]
+            append(_hextochr[item[:2]])
+            append(item[2:])
         except KeyError:
-            s += '%' + item
-        except UnicodeDecodeError:
-            s += unichr(int(item[:2], 16)) + item[2:]
-    return s
+            append('%')
+            append(item)
+    return ''.join(res)
 
 def unquote_plus(s):
     """unquote('%7e/abc+def') -> '~/abc def'"""
@@ -1324,34 +1373,56 @@ def getproxies_environment():
     """Return a dictionary of scheme -> proxy server URL mappings.
 
     Scan the environment for variables named <scheme>_proxy;
-    this seems to be the standard convention.  If you need a
-    different way, you can pass a proxies dictionary to the
-    [Fancy]URLopener constructor.
+    this seems to be the standard convention.  In order to prefer lowercase
+    variables, we process the environment in two passes, first matches any
+    and second matches only lower case proxies.
 
+    If you need a different way, you can pass a proxies dictionary to the
+    [Fancy]URLopener constructor.
     """
     proxies = {}
     for name, value in os.environ.items():
         name = name.lower()
         if value and name[-6:] == '_proxy':
             proxies[name[:-6]] = value
+
+    for name, value in os.environ.items():
+        if name[-6:] == '_proxy':
+            name = name.lower()
+            if value:
+                proxies[name[:-6]] = value
+            else:
+                proxies.pop(name[:-6], None)
+
     return proxies
 
-def proxy_bypass_environment(host):
+def proxy_bypass_environment(host, proxies=None):
     """Test if proxies should not be used for a particular host.
 
-    Checks the environment for a variable named no_proxy, which should
-    be a list of DNS suffixes separated by commas, or '*' for all hosts.
+    Checks the proxies dict for the value of no_proxy, which should be a
+    list of comma separated DNS suffixes, or '*' for all hosts.
     """
-    no_proxy = os.environ.get('no_proxy', '') or os.environ.get('NO_PROXY', '')
+    if proxies is None:
+        proxies = getproxies_environment()
+    # don't bypass, if no_proxy isn't specified
+    try:
+        no_proxy = proxies['no']
+    except KeyError:
+        return 0
     # '*' is special case for always bypass
     if no_proxy == '*':
         return 1
     # strip port off host
     hostonly, port = splitport(host)
     # check if the host ends with any of the DNS suffixes
-    for name in no_proxy.split(','):
-        if name and (hostonly.endswith(name) or host.endswith(name)):
-            return 1
+    no_proxy_list = [proxy.strip() for proxy in no_proxy.split(',')]
+    for name in no_proxy_list:
+        if name:
+            name = re.escape(name)
+            pattern = r'(.+\.)?%s$' % name
+            if (re.match(pattern, hostonly, re.I)
+                    or re.match(pattern, host, re.I)):
+                return 1
     # otherwise, don't bypass
     return 0
 
@@ -1427,8 +1498,14 @@ if sys.platform == 'darwin':
         return _get_proxies()
 
     def proxy_bypass(host):
-        if getproxies_environment():
-            return proxy_bypass_environment(host)
+        """Return True, if a host should be bypassed.
+
+        Checks proxy settings gathered from the environment, if specified, or
+        from the MacOSX framework SystemConfiguration.
+        """
+        proxies = getproxies_environment()
+        if proxies:
+            return proxy_bypass_environment(host, proxies)
         else:
             return proxy_bypass_macosx_sysconf(host)
 
@@ -1544,14 +1621,15 @@ elif os.name == 'nt':
         return 0
 
     def proxy_bypass(host):
-        """Return a dictionary of scheme -> proxy server URL mappings.
+        """Return True, if the host should be bypassed.
 
-        Returns settings gathered from the environment, if specified,
+        Checks proxy settings gathered from the environment, if specified,
         or the registry.
 
         """
-        if getproxies_environment():
-            return proxy_bypass_environment(host)
+        proxies = getproxies_environment()
+        if proxies:
+            return proxy_bypass_environment(host, proxies)
         else:
             return proxy_bypass_registry(host)
 
@@ -1581,66 +1659,3 @@ def reporthook(blocknum, blocksize, totalsize):
     # Report during remote transfers
     print "Block number: %d, Block size: %d, Total size: %d" % (
         blocknum, blocksize, totalsize)
-
-# Test program
-def test(args=[]):
-    if not args:
-        args = [
-            '/etc/passwd',
-            'file:/etc/passwd',
-            'file://localhost/etc/passwd',
-            'ftp://ftp.gnu.org/pub/README',
-            'http://www.python.org/index.html',
-            ]
-        if hasattr(URLopener, "open_https"):
-            args.append('https://synergy.as.cmu.edu/~geek/')
-    try:
-        for url in args:
-            print '-'*10, url, '-'*10
-            fn, h = urlretrieve(url, None, reporthook)
-            print fn
-            if h:
-                print '======'
-                for k in h.keys(): print k + ':', h[k]
-                print '======'
-            with open(fn, 'rb') as fp:
-                data = fp.read()
-            if '\r' in data:
-                table = string.maketrans("", "")
-                data = data.translate(table, "\r")
-            print data
-            fn, h = None, None
-        print '-'*40
-    finally:
-        urlcleanup()
-
-def main():
-    import getopt, sys
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], "th")
-    except getopt.error, msg:
-        print msg
-        print "Use -h for help"
-        return
-    t = 0
-    for o, a in opts:
-        if o == '-t':
-            t = t + 1
-        if o == '-h':
-            print "Usage: python urllib.py [-t] [url ...]"
-            print "-t runs self-test;",
-            print "otherwise, contents of urls are printed"
-            return
-    if t:
-        if t > 1:
-            test1()
-        test(args)
-    else:
-        if not args:
-            print "Use -h for help"
-        for url in args:
-            print urlopen(url).read(),
-
-# Run test program when run as a script
-if __name__ == '__main__':
-    main()

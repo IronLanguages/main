@@ -209,6 +209,8 @@ class Cmd:
         if cmd is None:
             return self.default(line)
         self.lastcmd = line
+        if line == 'EOF' :
+            self.lastcmd = ''
         if cmd == '':
             return self.default(line)
         else:
@@ -292,6 +294,7 @@ class Cmd:
         return list(commands | topics)
 
     def do_help(self, arg):
+        'List available commands with "help" or detailed help with "help cmd".'
         if arg:
             # XXX check arg syntax
             try:

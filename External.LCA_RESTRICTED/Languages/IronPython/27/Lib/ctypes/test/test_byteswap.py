@@ -1,4 +1,4 @@
-import sys, unittest, struct, math
+import sys, unittest, struct, math, ctypes
 from binascii import hexlify
 
 from ctypes import *
@@ -14,7 +14,8 @@ def bin(s):
 # For Structures and Unions, these types are created on demand.
 
 class Test(unittest.TestCase):
-    def X_test(self):
+    @unittest.skip('test disabled')
+    def test_X(self):
         print >> sys.stderr,  sys.byteorder
         for i in range(32):
             bits = BITS()
@@ -23,11 +24,11 @@ class Test(unittest.TestCase):
 
     def test_endian_short(self):
         if sys.byteorder == "little":
-            self.assertTrue(c_short.__ctype_le__ is c_short)
-            self.assertTrue(c_short.__ctype_be__.__ctype_le__ is c_short)
+            self.assertIs(c_short.__ctype_le__, c_short)
+            self.assertIs(c_short.__ctype_be__.__ctype_le__, c_short)
         else:
-            self.assertTrue(c_short.__ctype_be__ is c_short)
-            self.assertTrue(c_short.__ctype_le__.__ctype_be__ is c_short)
+            self.assertIs(c_short.__ctype_be__, c_short)
+            self.assertIs(c_short.__ctype_le__.__ctype_be__, c_short)
         s = c_short.__ctype_be__(0x1234)
         self.assertEqual(bin(struct.pack(">h", 0x1234)), "1234")
         self.assertEqual(bin(s), "1234")
@@ -50,11 +51,11 @@ class Test(unittest.TestCase):
 
     def test_endian_int(self):
         if sys.byteorder == "little":
-            self.assertTrue(c_int.__ctype_le__ is c_int)
-            self.assertTrue(c_int.__ctype_be__.__ctype_le__ is c_int)
+            self.assertIs(c_int.__ctype_le__, c_int)
+            self.assertIs(c_int.__ctype_be__.__ctype_le__, c_int)
         else:
-            self.assertTrue(c_int.__ctype_be__ is c_int)
-            self.assertTrue(c_int.__ctype_le__.__ctype_be__ is c_int)
+            self.assertIs(c_int.__ctype_be__, c_int)
+            self.assertIs(c_int.__ctype_le__.__ctype_be__, c_int)
 
         s = c_int.__ctype_be__(0x12345678)
         self.assertEqual(bin(struct.pack(">i", 0x12345678)), "12345678")
@@ -78,11 +79,11 @@ class Test(unittest.TestCase):
 
     def test_endian_longlong(self):
         if sys.byteorder == "little":
-            self.assertTrue(c_longlong.__ctype_le__ is c_longlong)
-            self.assertTrue(c_longlong.__ctype_be__.__ctype_le__ is c_longlong)
+            self.assertIs(c_longlong.__ctype_le__, c_longlong)
+            self.assertIs(c_longlong.__ctype_be__.__ctype_le__, c_longlong)
         else:
-            self.assertTrue(c_longlong.__ctype_be__ is c_longlong)
-            self.assertTrue(c_longlong.__ctype_le__.__ctype_be__ is c_longlong)
+            self.assertIs(c_longlong.__ctype_be__, c_longlong)
+            self.assertIs(c_longlong.__ctype_le__.__ctype_be__, c_longlong)
 
         s = c_longlong.__ctype_be__(0x1234567890ABCDEF)
         self.assertEqual(bin(struct.pack(">q", 0x1234567890ABCDEF)), "1234567890ABCDEF")
@@ -106,11 +107,11 @@ class Test(unittest.TestCase):
 
     def test_endian_float(self):
         if sys.byteorder == "little":
-            self.assertTrue(c_float.__ctype_le__ is c_float)
-            self.assertTrue(c_float.__ctype_be__.__ctype_le__ is c_float)
+            self.assertIs(c_float.__ctype_le__, c_float)
+            self.assertIs(c_float.__ctype_be__.__ctype_le__, c_float)
         else:
-            self.assertTrue(c_float.__ctype_be__ is c_float)
-            self.assertTrue(c_float.__ctype_le__.__ctype_be__ is c_float)
+            self.assertIs(c_float.__ctype_be__, c_float)
+            self.assertIs(c_float.__ctype_le__.__ctype_be__, c_float)
         s = c_float(math.pi)
         self.assertEqual(bin(struct.pack("f", math.pi)), bin(s))
         # Hm, what's the precision of a float compared to a double?
@@ -124,11 +125,11 @@ class Test(unittest.TestCase):
 
     def test_endian_double(self):
         if sys.byteorder == "little":
-            self.assertTrue(c_double.__ctype_le__ is c_double)
-            self.assertTrue(c_double.__ctype_be__.__ctype_le__ is c_double)
+            self.assertIs(c_double.__ctype_le__, c_double)
+            self.assertIs(c_double.__ctype_be__.__ctype_le__, c_double)
         else:
-            self.assertTrue(c_double.__ctype_be__ is c_double)
-            self.assertTrue(c_double.__ctype_le__.__ctype_be__ is c_double)
+            self.assertIs(c_double.__ctype_be__, c_double)
+            self.assertIs(c_double.__ctype_le__.__ctype_be__, c_double)
         s = c_double(math.pi)
         self.assertEqual(s.value, math.pi)
         self.assertEqual(bin(struct.pack("d", math.pi)), bin(s))
@@ -140,14 +141,14 @@ class Test(unittest.TestCase):
         self.assertEqual(bin(struct.pack(">d", math.pi)), bin(s))
 
     def test_endian_other(self):
-        self.assertTrue(c_byte.__ctype_le__ is c_byte)
-        self.assertTrue(c_byte.__ctype_be__ is c_byte)
+        self.assertIs(c_byte.__ctype_le__, c_byte)
+        self.assertIs(c_byte.__ctype_be__, c_byte)
 
-        self.assertTrue(c_ubyte.__ctype_le__ is c_ubyte)
-        self.assertTrue(c_ubyte.__ctype_be__ is c_ubyte)
+        self.assertIs(c_ubyte.__ctype_le__, c_ubyte)
+        self.assertIs(c_ubyte.__ctype_be__, c_ubyte)
 
-        self.assertTrue(c_char.__ctype_le__ is c_char)
-        self.assertTrue(c_char.__ctype_be__ is c_char)
+        self.assertIs(c_char.__ctype_le__, c_char)
+        self.assertIs(c_char.__ctype_be__, c_char)
 
     def test_struct_fields_1(self):
         if sys.byteorder == "little":
@@ -185,18 +186,32 @@ class Test(unittest.TestCase):
             self.assertRaises(TypeError, setattr, T, "_fields_", [("x", typ)])
 
     def test_struct_struct(self):
-        # Nested structures with different byte order not (yet) supported
-        if sys.byteorder == "little":
-            base = BigEndianStructure
-        else:
-            base = LittleEndianStructure
+        # nested structures with different byteorders
 
-        class T(Structure):
-            _fields_ = [("a", c_int),
-                        ("b", c_int)]
-        class S(base):
-            pass
-        self.assertRaises(TypeError, setattr, S, "_fields_", [("s", T)])
+        # create nested structures with given byteorders and set memory to data
+
+        for nested, data in (
+            (BigEndianStructure, b'\0\0\0\1\0\0\0\2'),
+            (LittleEndianStructure, b'\1\0\0\0\2\0\0\0'),
+        ):
+            for parent in (
+                BigEndianStructure,
+                LittleEndianStructure,
+                Structure,
+            ):
+                class NestedStructure(nested):
+                    _fields_ = [("x", c_uint32),
+                                ("y", c_uint32)]
+
+                class TestStructure(parent):
+                    _fields_ = [("point", NestedStructure)]
+
+                self.assertEqual(len(data), sizeof(TestStructure))
+                ptr = POINTER(TestStructure)
+                s = cast(data, ptr)[0]
+                del ctypes._pointer_type_cache[TestStructure]
+                self.assertEqual(s.point.x, 1)
+                self.assertEqual(s.point.y, 2)
 
     def test_struct_fields_2(self):
         # standard packing in struct uses no alignment.

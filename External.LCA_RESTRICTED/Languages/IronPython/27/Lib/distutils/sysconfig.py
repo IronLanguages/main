@@ -37,6 +37,11 @@ if os.name == "nt" and "\\pcbuild\\amd64" in project_base[-14:].lower():
     project_base = os.path.abspath(os.path.join(project_base, os.path.pardir,
                                                 os.path.pardir))
 
+# set for cross builds
+if "_PYTHON_PROJECT_BASE" in os.environ:
+    # this is the build directory, at least for posix
+    project_base = os.path.normpath(os.environ["_PYTHON_PROJECT_BASE"])
+
 # python_build: (Boolean) if true, we're either building Python or
 # building an extension with an un-installed Python, so we use
 # different (hard-wired) directories.
@@ -149,12 +154,36 @@ def customize_compiler(compiler):
     varies across Unices and is stored in Python's Makefile.
     """
     if compiler.compiler_type == "unix":
-        (cc, cxx, opt, cflags, ccshared, ldshared, so_ext) = \
+        if sys.platform == "darwin":
+            # Perform first-time customization of compiler-related
+            # config vars on OS X now that we know we need a compiler.
+            # This is primarily to support Pythons from binary
+            # installers.  The kind and paths to build tools on
+            # the user system may vary significantly from the system
+            # that Python itself was built on.  Also the user OS
+            # version and build tools may not support the same set
+            # of CPU architectures for universal builds.
+            global _config_vars
+            # Use get_config_var() to ensure _config_vars is initialized.
+            if not get_config_var('CUSTOMIZED_OSX_COMPILER'):
+                import _osx_support
+                _osx_support.customize_compiler(_config_vars)
+                _config_vars['CUSTOMIZED_OSX_COMPILER'] = 'True'
+
+        (cc, cxx, opt, cflags, ccshared, ldshared, so_ext, ar, ar_flags) = \
             get_config_vars('CC', 'CXX', 'OPT', 'CFLAGS',
-                            'CCSHARED', 'LDSHARED', 'SO')
+                            'CCSHARED', 'LDSHARED', 'SO', 'AR',
+                            'ARFLAGS')
 
         if 'CC' in os.environ:
-            cc = os.environ['CC']
+            newcc = os.environ['CC']
+            if (sys.platform == 'darwin'
+                    and 'LDSHARED' not in os.environ
+                    and ldshared.startswith(cc)):
+                # On OS X, if CC is overridden, use that as the default
+                #       command for LDSHARED as well
+                ldshared = newcc + ldshared[len(cc):]
+            cc = newcc
         if 'CXX' in os.environ:
             cxx = os.environ['CXX']
         if 'LDSHARED' in os.environ:
@@ -172,6 +201,12 @@ def customize_compiler(compiler):
             cpp = cpp + ' ' + os.environ['CPPFLAGS']
             cflags = cflags + ' ' + os.environ['CPPFLAGS']
             ldshared = ldshared + ' ' + os.environ['CPPFLAGS']
+        if 'AR' in os.environ:
+            ar = os.environ['AR']
+        if 'ARFLAGS' in os.environ:
+            archiver = ar + ' ' + os.environ['ARFLAGS']
+        else:
+            archiver = ar + ' ' + ar_flags
 
         cc_cmd = cc + ' ' + cflags
         compiler.set_executables(
@@ -180,7 +215,8 @@ def customize_compiler(compiler):
             compiler_so=cc_cmd + ' ' + ccshared,
             compiler_cxx=cxx,
             linker_so=ldshared,
-            linker_exe=cc)
+            linker_exe=cc,
+            archiver=archiver)
 
         compiler.shared_lib_extension = so_ext
 
@@ -205,7 +241,7 @@ def get_config_h_filename():
 def get_makefile_filename():
     """Return full pathname of installed Makefile from the Python build."""
     if python_build:
-        return os.path.join(os.path.dirname(sys.executable), "Makefile")
+        return os.path.join(project_base, "Makefile")
     lib_dir = get_python_lib(plat_specific=1, standard_lib=1)
     return os.path.join(lib_dir, "config", "Makefile")
 
@@ -357,81 +393,11 @@ _config_vars = None
 
 def _init_posix():
     """Initialize the module as appropriate for POSIX systems."""
-    g = {}
-    # load the installed Makefile:
-    try:
-        filename = get_makefile_filename()
-        parse_makefile(filename, g)
-    except IOError, msg:
-        my_msg = "invalid Python installation: unable to open %s" % filename
-        if hasattr(msg, "strerror"):
-            my_msg = my_msg + " (%s)" % msg.strerror
-
-        raise DistutilsPlatformError(my_msg)
-
-    # load the installed pyconfig.h:
-    try:
-        filename = get_config_h_filename()
-        parse_config_h(file(filename), g)
-    except IOError, msg:
-        my_msg = "invalid Python installation: unable to open %s" % filename
-        if hasattr(msg, "strerror"):
-            my_msg = my_msg + " (%s)" % msg.strerror
-
-        raise DistutilsPlatformError(my_msg)
-
-    # On MacOSX we need to check the setting of the environment variable
-    # MACOSX_DEPLOYMENT_TARGET: configure bases some choices on it so
-    # it needs to be compatible.
-    # If it isn't set we set it to the configure-time value
-    if sys.platform == 'darwin' and 'MACOSX_DEPLOYMENT_TARGET' in g:
-        cfg_target = g['MACOSX_DEPLOYMENT_TARGET']
-        cur_target = os.getenv('MACOSX_DEPLOYMENT_TARGET', '')
-        if cur_target == '':
-            cur_target = cfg_target
-            os.putenv('MACOSX_DEPLOYMENT_TARGET', cfg_target)
-        elif map(int, cfg_target.split('.')) > map(int, cur_target.split('.')):
-            my_msg = ('$MACOSX_DEPLOYMENT_TARGET mismatch: now "%s" but "%s" during configure'
-                % (cur_target, cfg_target))
-            raise DistutilsPlatformError(my_msg)
-
-    # On AIX, there are wrong paths to the linker scripts in the Makefile
-    # -- these paths are relative to the Python source, but when installed
-    # the scripts are in another directory.
-    if python_build:
-        g['LDSHARED'] = g['BLDSHARED']
-
-    elif get_python_version() < '2.1':
-        # The following two branches are for 1.5.2 compatibility.
-        if sys.platform == 'aix4':          # what about AIX 3.x ?
-            # Linker script is in the config directory, not in Modules as the
-            # Makefile says.
-            python_lib = get_python_lib(standard_lib=1)
-            ld_so_aix = os.path.join(python_lib, 'config', 'ld_so_aix')
-            python_exp = os.path.join(python_lib, 'config', 'python.exp')
-
-            g['LDSHARED'] = "%s %s -bI:%s" % (ld_so_aix, g['CC'], python_exp)
-
-        elif sys.platform == 'beos':
-            # Linker script is in the config directory.  In the Makefile it is
-            # relative to the srcdir, which after installation no longer makes
-            # sense.
-            python_lib = get_python_lib(standard_lib=1)
-            linkerscript_path = string.split(g['LDSHARED'])[0]
-            linkerscript_name = os.path.basename(linkerscript_path)
-            linkerscript = os.path.join(python_lib, 'config',
-                                        linkerscript_name)
-
-            # XXX this isn't the right place to do this: adding the Python
-            # library to the link, if needed, should be in the "build_ext"
-            # command.  (It's also needed for non-MS compilers on Windows, and
-            # it's taken care of for them by the 'build_ext.get_libraries()'
-            # method.)
-            g['LDSHARED'] = ("%s -L%s/lib -lpython%s" %
-                             (linkerscript, PREFIX, get_python_version()))
-
+    # _sysconfigdata is generated at build time, see the sysconfig module
+    from _sysconfigdata import build_time_vars
     global _config_vars
-    _config_vars = g
+    _config_vars = {}
+    _config_vars.update(build_time_vars)
 
 
 def _init_nt():
@@ -494,66 +460,11 @@ def get_config_vars(*args):
         _config_vars['prefix'] = PREFIX
         _config_vars['exec_prefix'] = EXEC_PREFIX
 
+        # OS X platforms require special customization to handle
+        # multi-architecture, multi-os-version installers
         if sys.platform == 'darwin':
-            kernel_version = os.uname()[2] # Kernel version (8.4.3)
-            major_version = int(kernel_version.split('.')[0])
-
-            if major_version < 8:
-                # On Mac OS X before 10.4, check if -arch and -isysroot
-                # are in CFLAGS or LDFLAGS and remove them if they are.
-                # This is needed when building extensions on a 10.3 system
-                # using a universal build of python.
-                for key in ('LDFLAGS', 'BASECFLAGS', 'LDSHARED',
-                        # a number of derived variables. These need to be
-                        # patched up as well.
-                        'CFLAGS', 'PY_CFLAGS', 'BLDSHARED'):
-                    flags = _config_vars[key]
-                    flags = re.sub('-arch\s+\w+\s', ' ', flags)
-                    flags = re.sub('-isysroot [^ \t]*', ' ', flags)
-                    _config_vars[key] = flags
-
-            else:
-
-                # Allow the user to override the architecture flags using
-                # an environment variable.
-                # NOTE: This name was introduced by Apple in OSX 10.5 and
-                # is used by several scripting languages distributed with
-                # that OS release.
-
-                if 'ARCHFLAGS' in os.environ:
-                    arch = os.environ['ARCHFLAGS']
-                    for key in ('LDFLAGS', 'BASECFLAGS', 'LDSHARED',
-                        # a number of derived variables. These need to be
-                        # patched up as well.
-                        'CFLAGS', 'PY_CFLAGS', 'BLDSHARED'):
-
-                        flags = _config_vars[key]
-                        flags = re.sub('-arch\s+\w+\s', ' ', flags)
-                        flags = flags + ' ' + arch
-                        _config_vars[key] = flags
-
-                # If we're on OSX 10.5 or later and the user tries to
-                # compiles an extension using an SDK that is not present
-                # on the current machine it is better to not use an SDK
-                # than to fail.
-                #
-                # The major usecase for this is users using a Python.org
-                # binary installer  on OSX 10.6: that installer uses
-                # the 10.4u SDK, but that SDK is not installed by default
-                # when you install Xcode.
-                #
-                m = re.search('-isysroot\s+(\S+)', _config_vars['CFLAGS'])
-                if m is not None:
-                    sdk = m.group(1)
-                    if not os.path.exists(sdk):
-                        for key in ('LDFLAGS', 'BASECFLAGS', 'LDSHARED',
-                             # a number of derived variables. These need to be
-                             # patched up as well.
-                            'CFLAGS', 'PY_CFLAGS', 'BLDSHARED'):
-
-                            flags = _config_vars[key]
-                            flags = re.sub('-isysroot\s+\S+(\s|$)', ' ', flags)
-                            _config_vars[key] = flags
+            import _osx_support
+            _osx_support.customize_config_vars(_config_vars)
 
     if args:
         vals = []

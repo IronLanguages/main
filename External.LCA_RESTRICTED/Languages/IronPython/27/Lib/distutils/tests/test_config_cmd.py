@@ -37,17 +37,16 @@ class ConfigTestCase(support.LoggingSilencer,
         dump_file(this_file, 'I am the header')
         self.assertEqual(len(self._logs), numlines+1)
 
+    @unittest.skipIf(sys.platform == 'win32', "can't test on Windows")
     def test_search_cpp(self):
-        if sys.platform == 'win32':
-            return
         pkg_dir, dist = self.create_dist()
         cmd = config(dist)
 
         # simple pattern searches
-        match = cmd.search_cpp(pattern='xxx', body='// xxx')
+        match = cmd.search_cpp(pattern='xxx', body='/* xxx */')
         self.assertEqual(match, 0)
 
-        match = cmd.search_cpp(pattern='_configtest', body='// xxx')
+        match = cmd.search_cpp(pattern='_configtest', body='/* xxx */')
         self.assertEqual(match, 1)
 
     def test_finalize_options(self):
@@ -81,7 +80,7 @@ class ConfigTestCase(support.LoggingSilencer,
         cmd._clean(f1, f2)
 
         for f in (f1, f2):
-            self.assertTrue(not os.path.exists(f))
+            self.assertFalse(os.path.exists(f))
 
 def test_suite():
     return unittest.makeSuite(ConfigTestCase)

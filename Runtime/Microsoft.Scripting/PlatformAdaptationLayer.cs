@@ -54,7 +54,7 @@ namespace Microsoft.Scripting {
         public static readonly PlatformAdaptationLayer Default = new PlatformAdaptationLayer();
 
         public static readonly bool IsCompactFramework =
-#if WIN8
+#if WIN8 || NETSTANDARD
             false;
 #else
             Environment.OSVersion.Platform == PlatformID.WinCE ||
@@ -138,7 +138,7 @@ namespace Microsoft.Scripting {
 #if WIN8
             throw new NotImplementedException();
 #elif !SILVERLIGHT
-            return Assembly.Load(name);
+            return Assembly.Load(new AssemblyName(name));
 #else
             return Assembly.Load(LookupFullName(name));
 #endif
