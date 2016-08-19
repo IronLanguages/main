@@ -986,10 +986,8 @@ def test_module_exceptions():
                     Assert(repr(val).startswith("<class "))
                     val.x = 2
                     AreEqual(val.x, 2)
-                elif is_cpython:
+                else:
                     Assert(repr(val).startswith("<type "))
-                else: #http://ironpython.codeplex.com/workitem/28383
-                    Assert(repr(val).startswith("<class "))
 
 def test_raise_inside_str():
     #raising an error inside the __str__ used to cause an unhandled exception.
