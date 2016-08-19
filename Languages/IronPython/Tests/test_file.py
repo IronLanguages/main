@@ -685,26 +685,10 @@ def test_modes():
         AssertErrorWithMessage(ValueError, "universal newline mode can only be used with modes starting with 'r'", file, 'abc', 'Uw+')
         AssertErrorWithMessage(ValueError, "universal newline mode can only be used with modes starting with 'r'", file, 'abc', 'Ua+')
     
-        if is_cli:
-            #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21910
-            x = file('test_file', 'pU')
-            AreEqual(x.mode, 'pU')
-            x.close()
-            
-            #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21910
-            x = file('test_file', 'pU+')
-            AreEqual(x.mode, 'pU+')
-            x.close()
-            
-            #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21911
-            # extra info can be passed and is retained
-            x = file('test_file', 'rFOOBAR')
-            AreEqual(x.mode, 'rFOOBAR')
-            x.close()
-        else:
-            AssertError(ValueError, file, 'test_file', 'pU')
-            AssertError(ValueError, file, 'test_file', 'pU+')
-            AssertError(ValueError, file, 'test_file', 'rFOOBAR')
+        # check invalid modes
+        AssertError(ValueError, file, 'test_file', 'pU')
+        AssertError(ValueError, file, 'test_file', 'pU+')
+        AssertError(ValueError, file, 'test_file', 'rFOOBAR')
     finally:
         nt.unlink('test_file')
 
