@@ -59,7 +59,7 @@ namespace IronPython.Runtime.Types {
                     MethodBase[] newTargets = FindMatchingTargets(sig, targets, true);
 
                     if (newTargets.Length == 0) {
-                        // If no overload was found, check also using CodeContext for backward compaitibility
+                        // If no overload was found, check also using CodeContext for backward compatibility
                         newTargets = FindMatchingTargets(sig, targets, false);
                     }
 
