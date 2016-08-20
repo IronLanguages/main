@@ -81,7 +81,7 @@ namespace IronPython.Runtime.Types {
         }
 
         /// <summary>
-        /// Find mathich overload targets
+        /// Find matching overloads by checking signature against available targets
         /// </summary>
         /// <param name="sig">Given signature</param>
         /// <param name="targets">List of possible targets</param>
