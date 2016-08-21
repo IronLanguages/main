@@ -56,7 +56,12 @@ namespace IronPython.Runtime.Types {
             BuiltinFunction.TypeList tl = new BuiltinFunction.TypeList(sig);
             lock (_function.OverloadDictionary) {
                 if (!_function.OverloadDictionary.TryGetValue(tl, out bf)) {
-                    MethodBase[] newTargets = FindMatchingTargets(sig, targets);
+                    MethodBase[] newTargets = FindMatchingTargets(sig, targets, true);
+
+                    if (newTargets.Length == 0) {
+                        // If no overload was found, check also using CodeContext for backward compatibility
+                        newTargets = FindMatchingTargets(sig, targets, false);
+                    }
 
                     if (newTargets.Length == 0) {
                         ThrowOverloadException(sig, targets);
@@ -75,12 +80,33 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        private static MethodBase[] FindMatchingTargets(Type[] sig, IList<MethodBase> targets) {
+        /// <summary>
+        /// Find matching overloads by checking signature against available targets
+        /// </summary>
+        /// <param name="sig">Given signature</param>
+        /// <param name="targets">List of possible targets</param>
+        /// <param name="removeCodeContext">If set to true, the method will check whether the first paramter of the
+        /// target is of the type CodeContext and removes it</param>
+        /// <returns>Possible overloads</returns>
+        private static MethodBase[] FindMatchingTargets(Type[] sig, IList<MethodBase> targets, bool removeCodeContext) {
             int args = sig.Length;
 
             List<MethodBase> res = new List<MethodBase>();
+
             foreach (MethodBase mb in targets) {
                 ParameterInfo[] pis = mb.GetParameters();
+
+                if (removeCodeContext) {
+                    if (pis.Length > 0 && pis[0].ParameterType == typeof(CodeContext)) {
+                        // Copy array and skip CodeContext
+                        var newPis = new ParameterInfo[pis.Length - 1];
+                        for (int i = 1; i < pis.Length; i++) {
+                            newPis[i - 1] = pis[i];
+                        }
+                        pis = newPis;
+                    }
+                }
+
                 if (pis.Length != args)
                     continue;
 
