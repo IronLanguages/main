@@ -227,7 +227,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         private static RubyRegex/*!*/ ConstructRubyRegexp(RubyConstructor/*!*/ ctor, Node/*!*/ node) {
             ScalarNode scalar = node as ScalarNode;
-            if (node == null) {
+            if (scalar == null) {
                 throw RubyExceptions.CreateTypeError("Can only create regex from scalar node");
             }                        
             Match match = _regexPattern.Match(scalar.Value);

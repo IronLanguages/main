@@ -1094,7 +1094,7 @@ namespace IronRuby.Builtins {
         public static MutableString ChompInPlace(MutableString/*!*/ self, [DefaultProtocol]MutableString separator) {
             MutableString result = InternalChomp(self, separator);
 
-            if (result.Equals(self) || result == null) {
+            if (result == null || result.Equals(self)) {
                 self.RequireNotFrozen();
                 return null;
             }

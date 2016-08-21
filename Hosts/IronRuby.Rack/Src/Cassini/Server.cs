@@ -31,7 +31,7 @@ namespace Cassini {
         string _physicalPath;
         bool _shutdownInProgress;
         Socket _socket;
-        Host _host;
+        volatile Host _host;
 
         public Server(int port, string virtualPath, string physicalPath) {
             _port = port;
