@@ -5,18 +5,18 @@
     <MinorVersion>7</MinorVersion>
     <MicroVersion>6</MicroVersion>
     <!-- Allowed: alpha,beta,candidate,final -->
-    <ReleaseLevel>candidate</ReleaseLevel>
-    <ReleaseSerial>2</ReleaseSerial>
+    <ReleaseLevel>final</ReleaseLevel>
+    <ReleaseSerial>3</ReleaseSerial>
 
-    <AssemblyRevision>0</AssemblyRevision>
+    <AssemblyRevision>3</AssemblyRevision>
   </PropertyGroup>
   <PropertyGroup>
     <DlrMajorVersion>1</DlrMajorVersion>
     <DlrMinorVersion>1</DlrMinorVersion>
-    <DlrMicroVersion>0</DlrMicroVersion>
+    <DlrMicroVersion>1</DlrMicroVersion>
     <!-- Allowed: alpha,beta,candidate,final -->
     <DlrReleaseLevel>final</DlrReleaseLevel>
-    <DlrReleaseSerial>0</DlrReleaseSerial>
+    <DlrReleaseSerial>1</DlrReleaseSerial>
 
     <DlrAssemblyRevision>21</DlrAssemblyRevision>
   </PropertyGroup>
