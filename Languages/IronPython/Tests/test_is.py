@@ -23,6 +23,8 @@ def test_object():
 
     AssertEqual(True, a is a)
     AssertEqual(False, a is b)
+    AssertEqual(False, a is not a)
+    AssertEqual(True, a is not b)
 
 def test_bool_nullablebool():
     tc = [
@@ -40,3 +42,5 @@ def test_bool_nullablebool():
     for a, b, result in tc:
         AssertEqual(result, a is b)
         AssertEqual(result, b is a)
+        AssertEqual(not result, a is not b)
+        AssertEqual(not result, b is not a)
