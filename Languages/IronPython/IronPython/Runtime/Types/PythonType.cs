@@ -2485,6 +2485,16 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             Dictionary<string, Type> methodMap = new Dictionary<string, Type>();
             bool hasExplicitIface = false;
             List<Type> nonCollidingInterfaces = new List<Type>(interfaces);
+
+            PythonType[] bases = new PythonType[_bases.Length + interfaces.Length];
+            Array.Copy(_bases, bases, _bases.Length);
+            for(int i = 0; i < interfaces.Length; i++) {
+                bases[i + _bases.Length] = PythonType.GetPythonType(interfaces[i]);
+            }
+
+            lock (_bases) {
+                _bases = bases;
+            }
             
             foreach (Type iface in interfaces) {
                 InterfaceMapping mapping = _underlyingSystemType.GetInterfaceMap(iface);
