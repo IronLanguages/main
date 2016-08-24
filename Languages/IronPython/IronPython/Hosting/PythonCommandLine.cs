@@ -395,7 +395,6 @@ namespace IronPython.Hosting {
             } catch (ThreadAbortException tae) {
                 KeyboardInterruptException pki = tae.ExceptionState as KeyboardInterruptException;
                 if (pki != null) {
-                    Console.WriteLine(Language.FormatException(tae), Style.Error);
                     Thread.ResetAbort();
                 }
 #endif
