@@ -1353,6 +1353,30 @@ def test_cp34932():
     AreEqual(get_global_variable_y(), 13)
     AreEqual(get_global_variable_y.__module__, '__main__')
 
+def test_issue1351():
+    class X(object):
+        def __init__(self, res):
+            self.called = []
+            self.res = res
+        def __eq__(self, other):
+            self.called.append('eq')
+            return self.res
+        def foo(self):
+            pass
+
+    a = X(True)
+    b = X(False)
+
+    AreEqual(a.foo, a.foo)
+    AssertDoesNotContain(a.called, 'eq')
+    AreEqual(a.foo, b.foo)
+    AssertContains(a.called, 'eq')
+
+    AreEqual(b.foo, b.foo)
+    AssertDoesNotContain(b.called, 'eq')
+    AreNotEqual(b.foo, a.foo)
+    AssertContains(b.called, 'eq')
+
 def create_fn_with_closure():
     x=13
     def f():
