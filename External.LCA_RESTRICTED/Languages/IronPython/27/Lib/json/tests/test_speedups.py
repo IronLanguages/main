@@ -1,5 +1,5 @@
 from json.tests import CTest
-
+import unittest, sys
 
 class TestSpeedups(CTest):
     def test_scanstring(self):
