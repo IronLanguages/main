@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from json.tests import PyTest, CTest
-
+import unittest, sys
 
 class TestUnicode(object):
     def test_encoding1(self):
@@ -38,13 +38,13 @@ class TestUnicode(object):
         j = self.dumps([u], ensure_ascii=False)
         self.assertEqual(j, u'["{0}"]'.format(u))
 
-	@unittest.skipIf(sys.platform == 'cli', 'https://github.com/IronLanguages/main/issues/1014')
+    @unittest.skipIf(sys.platform == 'cli', 'https://github.com/IronLanguages/main/issues/1014')
     def test_big_unicode_encode(self):
         u = u'\U0001d120'
         self.assertEqual(self.dumps(u), '"\\ud834\\udd20"')
         self.assertEqual(self.dumps(u, ensure_ascii=False), u'"\U0001d120"')
 
-	@unittest.skipIf(sys.platform == 'cli', 'https://github.com/IronLanguages/main/issues/1014')
+    @unittest.skipIf(sys.platform == 'cli', 'https://github.com/IronLanguages/main/issues/1014')
     def test_big_unicode_decode(self):
         u = u'z\U0001d120x'
         self.assertEqual(self.loads('"' + u + '"'), u)
@@ -71,7 +71,7 @@ class TestUnicode(object):
                                     object_hook = lambda x: None),
                          OrderedDict(p))
 
-	@unittest.skipIf(sys.platform == 'cli', 'https://github.com/IronLanguages/main/issues/1014')
+    @unittest.skipIf(sys.platform == 'cli', 'https://github.com/IronLanguages/main/issues/1014')
     def test_default_encoding(self):
         self.assertEqual(self.loads(u'{"a": "\xe9"}'.encode('utf-8')),
             {'a': u'\xe9'})

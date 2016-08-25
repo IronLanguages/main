@@ -52,13 +52,13 @@ class BZ2FileTest(BaseTest):
 
     def tearDown(self):
         if sys.platform == "cli":
-			import clr
-        	from System import GC
-        
-        	for i in range(3):
-            	GC.Collect()
-            	GC.WaitForPendingFinalizers()
-        
+            import clr
+            from System import GC
+
+            for i in range(3):
+                GC.Collect()
+                GC.WaitForPendingFinalizers()
+
         if os.path.isfile(self.filename):
             os.unlink(self.filename)
 

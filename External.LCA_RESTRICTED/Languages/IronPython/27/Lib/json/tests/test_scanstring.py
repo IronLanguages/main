@@ -1,6 +1,6 @@
 import sys
 from json.tests import PyTest, CTest
-
+import unittest, sys
 
 class TestScanstring(object):
     def test_scanstring(self):
@@ -142,7 +142,7 @@ class TestScanstring(object):
             with self.assertRaises(ValueError):
                 scanstring(s, 1, None, True)
 
-	@unittest.skipIf(sys.platform == 'cli', 'https://github.com/IronLanguages/main/issues/1014')
+    @unittest.skipIf(sys.platform == 'cli', 'https://github.com/IronLanguages/main/issues/1014')
     def test_issue3623(self):
         self.assertRaises(ValueError, self.json.decoder.scanstring, b"xxx", 1,
                           "xxx")
