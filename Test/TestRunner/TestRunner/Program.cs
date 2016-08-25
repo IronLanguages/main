@@ -1,15 +1,17 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.IO;
-using System.Xml.Serialization;
-using System.Diagnostics;
-using System.Threading;
-using System.Reflection;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Xml.Serialization;
 
-namespace TestRunner {
+namespace TestRunner
+{
     class Program {
         private bool _verbose, _runLongRunning, _admin, _quiet;
         private int _threadCount = 1;
@@ -25,10 +27,6 @@ namespace TestRunner {
                 return -1;
             }
 
-            List<string> inputFiles = new List<string>();
-            List<string> categories = new List<string>();
-            List<string> tests = new List<string>();
-
             // try and define DLR_ROOT if not already defined (makes it easier to debug TestRunner in an IDE)
             string dlrRoot = Environment.GetEnvironmentVariable("DLR_ROOT");
             if (dlrRoot == null) {
@@ -36,12 +34,14 @@ namespace TestRunner {
                 Environment.SetEnvironmentVariable("DLR_ROOT", dlrRoot);
             }
 
-            // Default to debug binaries
-            string binPath = Path.Combine(dlrRoot, "bin\\Debug");
+            // Parse the options
+            List<string> inputFiles = new List<string>();
+            List<string> categories = new List<string>();
+            List<string> tests = new List<string>();
             bool runAll = false;
+            string binPath = Path.Combine(dlrRoot, "bin\\Debug"); // Default to debug binaries
             string nunitOutputPath = null;
 
-            // parse the options
             for (int i = 0; i < args.Length; i++) {
                 if (args[i].StartsWith("/category:")) {
                     categories.Add(args[i].Substring("/category:".Length));
@@ -95,30 +95,28 @@ namespace TestRunner {
                         Console.WriteLine("    " + cat.Name);
                     }
 
-                    Console.WriteLine("Use /all to run all tests, /category:Catname to run a category, ");
-                    Console.WriteLine("or /test: to run an individual test.  Multiple category and options");
-                    Console.WriteLine("can be used.");
+                    Console.WriteLine("Use /all to run all tests, /category:pattern to run categories, /test:pattern");
+                    Console.WriteLine("to run individual tests. Multiple category and test options can be combined.");
                 }
                 return -1;
             }
 
-            // Set DLR_BIN, some tests expect this to be defined.
-            Environment.SetEnvironmentVariable("DLR_BIN", binPath);
-
-            DateTime start = DateTime.Now;
-            // Run the tests
+            // Filter the test list
             var originalColor = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Gray;
+
+            var testNamesRegex = CompileGlobPatternsToRegex(tests);
+            var categoryNamesRegex = CompileGlobPatternsToRegex(categories);
 
             List<Test> testList = new List<Test>();
             List<Test> notParallelSafe = new List<Test>();
             foreach (var list in testLists) {
                 foreach (var cat in list.Categories) {
-                    if (runAll || ShouldRunCategory(cat.Name, categories)) {
+                    if (runAll || categoryNamesRegex.IsMatch(cat.Name)) {
                         foreach (var test in cat.Tests) {
                             test.Category = cat;
 
-                            if (runAll || ShouldRunTest(test, tests)) {
+                            if (runAll || testNamesRegex.IsMatch(test.Name)) {
                                 if (test.NotParallelSafe) {
                                     notParallelSafe.Add(test);
                                 } else {
@@ -130,7 +128,12 @@ namespace TestRunner {
                 }
             }
 
+            // Set DLR_BIN, some tests expect this to be defined.
+            Environment.SetEnvironmentVariable("DLR_BIN", binPath);
+
             // start the test running threads
+            DateTime start = DateTime.Now;
+
             List<Thread> threads = new List<Thread>();
             for (int i = 0; i < _threadCount; i++) {
                 Thread t = new Thread(() => {
@@ -188,15 +191,14 @@ namespace TestRunner {
             }
 
             var elapsedTime = (DateTime.Now - start);
+
             if (!string.IsNullOrWhiteSpace(nunitOutputPath))
             {
                 var resultsWriter = new NUnitResultsWriter(_results, inputFiles.First(), elapsedTime);
                 resultsWriter.Save(nunitOutputPath);
             }
 
-
             Console.WriteLine("Total time: {0} seconds", elapsedTime.TotalSeconds);
-
             Console.ForegroundColor = originalColor;
 
             return failures.Count;
@@ -213,7 +215,7 @@ namespace TestRunner {
             try {
                 result = RunTest(test);
             } catch (Exception e) {
-                result = new TestResult(test, TestResultStatus.Failed, 0, new List<string> { e.Message });
+                result = new TestResult(test, TestResultStatus.Failed, 0, new List<string> { e.ToString() });
             }
 
             lock (this) {
@@ -365,36 +367,22 @@ namespace TestRunner {
             return psi;
         }
 
-        private static bool ShouldRunTest(Test test, List<string> tests) {
-            if (tests.Count == 0) {
-                return true;
+        private static Regex CompileGlobPatternsToRegex(IEnumerable<string> patterns) {
+            var sb = new StringBuilder();
+
+            foreach (var p in patterns) {
+                if (sb.Length > 0)
+                    sb.Append("|");
+
+                sb.AppendFormat("(\\A{0}\\Z)", Regex.Escape(p).Replace("\\*", ".*").Replace("\\?", "."));
             }
 
-            foreach (var testName in tests) {
-                if (test.Name == testName) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private static bool ShouldRunCategory(string catName, List<string> categories) {
-            if (categories.Count == 0) {
-                return true;
-            }
-
-            foreach (var catToRun in categories) {
-                if (catName.StartsWith(catToRun)) {
-                    return true;
-                }
-            }
-
-            return false;
+            return new Regex(sb.ToString(), RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
         }
 
         private static void Help() {
             Console.WriteLine("Usage: ");
-            Console.WriteLine("TestRunner.exe (inputFile ...) [/threads:6] [/quiet] [/admin] [/binpath:dir] [/runlong] [/verbose] [/nunitoutput:file] (/all | ([/category:CatName] | [/test:testName])+)");
+            Console.WriteLine("TestRunner.exe (inputFile ...) [/threads:6] [/quiet] [/admin] [/binpath:dir] [/runlong] [/verbose] [/nunitoutput:file] (/all | ([/category:pattern] | [/test:pattern])+)");
         }
     }
 }
