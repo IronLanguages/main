@@ -626,6 +626,9 @@ namespace IronPython.Runtime {
             ret = ImportReflected(context, name);
             if (ret != null) return ret;
 
+            ret = ImportFrozen (context, name);
+            if (ret != null) return ret;
+
             return null;
         }
 
@@ -693,6 +696,40 @@ namespace IronPython.Runtime {
 
             return pc.GetBuiltinModule(name);
         }
+
+        internal static object ImportFrozen(CodeContext/*!*/ context, string/*!*/ name) {
+            Assert.NotNull(context, name);
+
+            PythonModule res = null;
+            PythonFrozen frozen = PythonFrozen.FindFrozen(name);
+
+            if (frozen != null) {
+                if (frozen.Code == null) {
+                    throw PythonOps.ImportError("Excluded frozen object named {0}", name);
+                }
+
+                int size = frozen.Size;
+                bool ispackage = (size < 0);
+                if (ispackage) {
+                    size = -size;
+                }
+
+                PythonByteCode code = MarshalOps.GetObject(BytesEnumerator(frozen.Code)) as PythonByteCode;
+                if (code != null) {
+                    ModuleContext modCtx = new ModuleContext(new PythonDictionary(), PythonContext.GetContext(context));
+                    code.Interpret(modCtx);
+                    res = modCtx.Module;
+                }
+            }
+            return res;
+        }
+
+        private static IEnumerator<byte> BytesEnumerator (byte[] data) {
+            for (int i = 0; i < data.Length; i++) {
+                yield return data[i];
+            }
+        }
+
 
         private static object ImportReflected(CodeContext/*!*/ context, string/*!*/ name) {
             object ret;

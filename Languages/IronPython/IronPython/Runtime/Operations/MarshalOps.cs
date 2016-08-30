@@ -97,10 +97,15 @@ namespace IronPython.Runtime.Operations {
                     else if (o is Complex) WriteComplex ((Complex)o);
                     else if (o is PythonBuffer) WriteBuffer ((PythonBuffer)o);
                     else if (o == PythonExceptions.StopIteration) WriteStopIteration ();
+                    else if (o is FunctionCode) WriteCode((FunctionCode)o);
                     else throw PythonOps.ValueError ("unmarshallable object");
                 } finally {
                     infinite.RemoveAt (index);
                 }
+            }
+
+            private void WriteCode(FunctionCode code) {
+                _bytes.Add((byte)'c');
             }
 
             private void WriteFloat (float f) {
@@ -320,7 +325,9 @@ namespace IronPython.Runtime.Operations {
                             }
                             _stack.Peek ().StackCount = 0;
                             break;
-                        // case 'c': break;
+                        case 'c': 
+                            // This is a code object
+                            return YieldCode (); 
                         default:
                             res = YieldSimple ();
                             if (_stack == null) {
@@ -332,6 +339,7 @@ namespace IronPython.Runtime.Operations {
                             } while (res != null && _stack.Count > 0);
 
                             if (_stack.Count == 0) {
+                                _stack = null;
                                 return _result;
                             }
 
@@ -357,6 +365,7 @@ namespace IronPython.Runtime.Operations {
                             if (_stack.Count == 0) break;
                         } else {
                             _result = res;
+                            _stack = null;
                             break;
                         }
                     }
@@ -478,6 +487,28 @@ namespace IronPython.Runtime.Operations {
                 public int StackCount;
                 public bool HaveKey;
                 public object Key;
+            }
+
+            private object YieldCode() {
+                int argcount = ReadInt32();
+                int nlocals = ReadInt32();
+                int stacksize = ReadInt32();
+                int flags = ReadInt32();
+                string code = ReadObject().ToString();
+                PythonTuple consts = ReadObject() as PythonTuple;
+                PythonTuple names = ReadObject() as PythonTuple;
+                PythonTuple varnames = ReadObject() as PythonTuple;
+                PythonTuple freevars = ReadObject() as PythonTuple;
+                PythonTuple cellvars = ReadObject() as PythonTuple;
+                string filename = ReadObject().ToString();
+                string name = ReadObject().ToString();
+                int firstlineno = ReadInt32();
+                string lnotab = ReadObject().ToString();
+
+                PythonByteCode bc = new PythonByteCode(argcount, nlocals, stacksize, flags,
+                    code, consts, names, varnames, filename, name, firstlineno, lnotab,
+                    cellvars, freevars);
+                return bc;
             }
 
             private object YieldSimple () {

@@ -108,7 +108,9 @@
     <Compile Include="Runtime\MemoryView.cs" />
     <Compile Include="Runtime\Method.Generated.cs" />
     <Compile Include="Runtime\Operations\MarshalOps.cs" />
+    <Compile Include="Runtime\PythonByteCode.cs" />
     <Compile Include="Runtime\PythonDocumentationProvider.cs" />
+    <Compile Include="Runtime\PythonFrozen.cs" />
     <Compile Include="Runtime\PythonHiddenBaseClassAttribute.cs" />
     <Compile Include="Runtime\SequenceTypeInfoAttribute.cs" />
     <Compile Include="Runtime\ModuleContext.cs" />
