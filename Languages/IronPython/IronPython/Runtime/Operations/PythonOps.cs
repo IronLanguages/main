@@ -506,20 +506,28 @@ namespace IronPython.Runtime.Operations {
             return !IsTrue(o);
         }
 
-        public static object Is(object x, object y) {
-            return x == y ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+        public static bool IsRetBool(object x, object y) {
+            if (x == y)
+                return true;
+
+            // Special case "is True"/"is False" checks. They are somewhat common in 
+            // Python (particularly in tests), but non-Python code may not stick to the
+            // convention of only using the two singleton instances at ScriptingRuntimeHelpers.
+            // (https://github.com/IronLanguages/main/issues/1299)
+            var xb = x as bool?;
+            if (xb.HasValue)
+                return xb == (y as bool?);
+
+            // else
+            return false;
         }
 
-        public static bool IsRetBool(object x, object y) {
-            return x == y;
+        public static object Is(object x, object y) {
+            return IsRetBool(x, y) ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
         }
 
         public static object IsNot(object x, object y) {
-            return x != y ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
-        }
-
-        public static bool IsNotRetBool(object x, object y) {
-            return x != y;
+            return IsRetBool(x, y) ? ScriptingRuntimeHelpers.False : ScriptingRuntimeHelpers.True;
         }
 
         internal delegate T MultiplySequenceWorker<T>(T self, int count);
