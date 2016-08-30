@@ -106,7 +106,7 @@ namespace TestRunner
             Console.ForegroundColor = ConsoleColor.Gray;
 
             var testNamesRegex = CompileGlobPatternsToRegex(tests);
-            var categoryNamesRegex = CompileGlobPatternsToRegex(categories);
+            var categoryNamesRegex = CompileGlobPatternsToRegex(categories, startsWith: true);
 
             List<Test> testList = new List<Test>();
             List<Test> notParallelSafe = new List<Test>();
@@ -367,14 +367,17 @@ namespace TestRunner
             return psi;
         }
 
-        private static Regex CompileGlobPatternsToRegex(IEnumerable<string> patterns) {
+        private static Regex CompileGlobPatternsToRegex(IEnumerable<string> patterns, bool startsWith = false) {
             var sb = new StringBuilder();
 
             foreach (var p in patterns) {
                 if (sb.Length > 0)
                     sb.Append("|");
 
-                sb.AppendFormat("(\\A{0}\\Z)", Regex.Escape(p).Replace("\\*", ".*").Replace("\\?", "."));
+                sb.AppendFormat(
+                    "(\\A{0}{1})",
+                    Regex.Escape(p).Replace("\\*", ".*").Replace("\\?", "."),
+                    startsWith ? "" : "\\Z");
             }
 
             return new Regex(sb.ToString(), RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
