@@ -22,9 +22,9 @@ using System;
 using System.Text;
 using System.Collections.Generic;
 using Microsoft.Scripting.Math;
-using Microsoft.Scripting.Runtime;
 
-namespace Microsoft.Scripting.Utils {
+namespace Microsoft.Scripting.Utils
+{
     using Math = System.Math;
 
     public static class MathUtils {
@@ -1029,22 +1029,23 @@ namespace Microsoft.Scripting.Utils {
             return BigInt.Pow(self, exp);
         }
 
-        private static readonly BigInt intMaxValueAsBigInteger = new BigInt(int.MaxValue);
         public static BigInt Power(this BigInt self, long exp) {
-            BigInt expAsBigInt = new BigInt(exp);
-
-            if (self.IsZero) {
-                return BigInt.Zero;
-            } else if (expAsBigInt.IsZero || self.IsOne) {
-                return BigInt.One;
-            } else if (expAsBigInt.IsOne) {
-                return self;
-            } else if (exp < 0) {
+            if (exp < 0) {
                 throw new ArgumentOutOfRangeException("exponent", exp, "Must be at least 0");
-            } else if (expAsBigInt <= intMaxValueAsBigInteger) {
+            }
+
+            // redirection possible?
+            if (exp <= int.MaxValue) {
                 return BigInt.Pow(self, (int)exp);
+            }
+
+            // manual implementation
+            if (self.IsOne) {
+                return BigInt.One;
+            } else if (self.IsZero) {
+                return BigInt.Zero;
             } else if (self == BigInt.MinusOne) {
-                if (expAsBigInt.IsEven) {
+                if (exp % 2 == 0) {
                     return BigInt.One;
                 } else {
                     return BigInt.MinusOne;
@@ -1052,11 +1053,11 @@ namespace Microsoft.Scripting.Utils {
             }
 
             BigInt result = BigInt.One;
-            while (!expAsBigInt.IsZero) {
-                if (!expAsBigInt.IsEven) {
+            while (exp != 0) {
+                if (exp % 2 != 0) {
                     result *= self;
                 }
-                expAsBigInt >>= 1;
+                exp >>= 1;
                 self *= self;
             }
 
