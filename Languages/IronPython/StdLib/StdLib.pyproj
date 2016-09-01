@@ -377,6 +377,7 @@
     <Content Include="$(StdLibPath)\encodings\utf_16_be.py" />
     <Content Include="$(StdLibPath)\encodings\utf_16_le.py" />
     <Content Include="$(StdLibPath)\encodings\utf_32.py" />
+    <Content Include="$(StdLibPath)\encodings\utf_32_be.py" />
     <Content Include="$(StdLibPath)\encodings\utf_32_le.py" />
     <Content Include="$(StdLibPath)\encodings\utf_7.py" />
     <Content Include="$(StdLibPath)\encodings\utf_8.py" />
