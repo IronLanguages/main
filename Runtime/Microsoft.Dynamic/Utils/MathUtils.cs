@@ -23,8 +23,7 @@ using System.Text;
 using System.Collections.Generic;
 using Microsoft.Scripting.Math;
 
-namespace Microsoft.Scripting.Utils
-{
+namespace Microsoft.Scripting.Utils {
     using Math = System.Math;
 
     public static class MathUtils {
