@@ -2594,6 +2594,7 @@ if id(a) == id(b):
                 Thread thread = new Thread(new ParameterizedThreadStart((x) => {
                     var state = (DictThreadTestState)x;
 
+#pragma warning disable 0420 // "a reference to a volatile field will not be treated as volatile"
                     for (; ; ) {
                         Interlocked.Increment(ref state.GlobalState.DoneCount);
                         state.GlobalState.Event.WaitOne();
@@ -2607,6 +2608,7 @@ if id(a) == id(b):
 
                         state.GlobalState.DoneEvent.WaitOne();
                     }
+#pragma warning restore 0420
                 }));
 
                 thread.IsBackground = true;
