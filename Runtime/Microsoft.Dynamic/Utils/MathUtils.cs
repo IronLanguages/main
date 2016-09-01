@@ -1040,7 +1040,11 @@ namespace Microsoft.Scripting.Utils {
             } else if (expAsBigInt.IsOne) {
                 return self;
             } else if (exp < 0) {
+#if !SILVERLIGHT
                 throw new ArgumentOutOfRangeException("exponent", exp, "Must be at least 0");
+#else
+                throw new ArgumentOutOfRangeException(nameof(exp), "Must be at least 0");
+#endif
             } else if (expAsBigInt <= intMaxValueAsBigInteger) {
                 return BigInt.Pow(self, (int)exp);
             } else if (self == BigInt.MinusOne) {
