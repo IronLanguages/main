@@ -22,7 +22,6 @@ using System;
 using System.Text;
 using System.Collections.Generic;
 using Microsoft.Scripting.Math;
-using Microsoft.Scripting.Runtime;
 
 namespace Microsoft.Scripting.Utils {
     using Math = System.Math;
@@ -589,11 +588,8 @@ namespace Microsoft.Scripting.Utils {
         private static readonly uint[] groupRadixValues = { 0, 0, 2147483648, 3486784401, 1073741824, 1220703125, 2176782336, 1977326743, 1073741824, 3486784401, 1000000000, 2357947691, 429981696, 815730721, 1475789056, 2562890625, 268435456, 410338673, 612220032, 893871739, 1280000000, 1801088541, 2494357888, 3404825447, 191102976, 244140625, 308915776, 387420489, 481890304, 594823321, 729000000, 887503681, 1073741824, 1291467969, 1544804416, 1838265625, 2176782336 };
 
         internal static string BigIntegerToString(uint[] d, int sign, int radix, bool lowerCase) {
-            if (radix < 2) {
-                throw ExceptionUtils.MakeArgumentOutOfRangeException("radix", radix, "radix must be >= 2");
-            }
-            if (radix > 36) {
-                throw ExceptionUtils.MakeArgumentOutOfRangeException("radix", radix, "radix must be <= 36");
+            if (radix < 2 || radix > 36) {
+                throw ExceptionUtils.MakeArgumentOutOfRangeException(nameof(radix), radix, "radix must be between 2 and 36");
             }
 
             int dl = d.Length;
@@ -1029,26 +1025,23 @@ namespace Microsoft.Scripting.Utils {
             return BigInt.Pow(self, exp);
         }
 
-        private static readonly BigInt intMaxValueAsBigInteger = new BigInt(int.MaxValue);
         public static BigInt Power(this BigInt self, long exp) {
-            BigInt expAsBigInt = new BigInt(exp);
+            if (exp < 0) {
+                throw ExceptionUtils.MakeArgumentOutOfRangeException(nameof(exp), exp, "Must be at least 0");
+            }
 
-            if (self.IsZero) {
-                return BigInt.Zero;
-            } else if (expAsBigInt.IsZero || self.IsOne) {
-                return BigInt.One;
-            } else if (expAsBigInt.IsOne) {
-                return self;
-            } else if (exp < 0) {
-#if !SILVERLIGHT
-                throw new ArgumentOutOfRangeException("exponent", exp, "Must be at least 0");
-#else
-                throw new ArgumentOutOfRangeException(nameof(exp), "Must be at least 0");
-#endif
-            } else if (expAsBigInt <= intMaxValueAsBigInteger) {
+            // redirection possible?
+            if (exp <= int.MaxValue) {
                 return BigInt.Pow(self, (int)exp);
+            }
+
+            // manual implementation
+            if (self.IsOne) {
+                return BigInt.One;
+            } else if (self.IsZero) {
+                return BigInt.Zero;
             } else if (self == BigInt.MinusOne) {
-                if (expAsBigInt.IsEven) {
+                if (exp % 2 == 0) {
                     return BigInt.One;
                 } else {
                     return BigInt.MinusOne;
@@ -1056,11 +1049,11 @@ namespace Microsoft.Scripting.Utils {
             }
 
             BigInt result = BigInt.One;
-            while (!expAsBigInt.IsZero) {
-                if (!expAsBigInt.IsEven) {
+            while (exp != 0) {
+                if (exp % 2 != 0) {
                     result *= self;
                 }
-                expAsBigInt >>= 1;
+                exp >>= 1;
                 self *= self;
             }
 
@@ -1078,11 +1071,8 @@ namespace Microsoft.Scripting.Utils {
         public static string ToString(this BigInt self, int radix) {
             const string symbols = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-            if (radix < 2) {
-                throw ExceptionUtils.MakeArgumentOutOfRangeException("radix", radix, "radix must be >= 2");
-            }
-            if (radix > 36) {
-                throw ExceptionUtils.MakeArgumentOutOfRangeException("radix", radix, "radix must be <= 36");
+            if (radix < 2 || radix > 36) {
+                throw ExceptionUtils.MakeArgumentOutOfRangeException(nameof(radix), radix, "radix must be between 2 and 36");
             }
 
             bool isNegative = false;
