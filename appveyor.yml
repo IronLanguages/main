@@ -49,8 +49,12 @@ nuget:
 #       build configuration       #
 #---------------------------------#
 
+# build Configuration, i.e. Debug, Release, etc.
+configuration: Release
+
 # scripts to run before build
 before_build:
+  - set DLR_ROOT=%APPVEYOR_BUILD_FOLDER%
 
 # scripts to run *after* solution is built and *before* automatic packaging occurs (web apps, NuGet packages, Azure Cloud Services)
 before_package:
@@ -60,15 +64,21 @@ after_build:
 
 # to run your custom scripts instead of automatic MSBuild
 build_script:
-  - msbuild /t:Build /p:BaseConfiguration=Release /verbosity:minimal /nologo
+  - msbuild /t:Build /p:BaseConfiguration=%CONFIGURATION% /verbosity:minimal /nologo
 
 # to disable automatic builds
 #build: off
 
 # to run your custom scripts instead of automatic tests
 test_script:
+  - set DLR_BIN=%APPVEYOR_BUILD_FOLDER%\bin\%CONFIGURATION%
   - Test\test-ipy-tc.cmd /category:Languages\IronPython\IronPython\2.X
 
+# to run custom scripts after tests
+after_test:
+  # upload results to AppVeyor
+  # FIXME: does not happen when test script above aborts.
+  - ps: $wc = New-Object 'System.Net.WebClient'; $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\Test\TestResult.xml))
 
 #---------------------------------#
 #      artifacts configuration    #
@@ -124,8 +134,9 @@ test_script:
 #  - do something
 
 # after build failure or success
-#on_finish:
-#  - do something
+on_finish:
+  # upload test results to AppVeyor
+  - ps: $wc = New-Object 'System.Net.WebClient'; $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\Test\TestResult.xml))
 
   
 #---------------------------------#
@@ -138,6 +149,8 @@ notifications:
   - provider: Email
     to:
       - slide.o.mix@gmail.com
-    subject: 'Build {{status}}'                  # optional
-    message: "{{message}}, {{commitId}}, ..."    # optional
+      - ticotimo@gmail.com
+    # use defaults for now
+    #subject: 'Build {{status}}'                  # optional
+    #message: "{{message}}, {{commitId}}, ..."    # optional
     on_build_status_changed: true

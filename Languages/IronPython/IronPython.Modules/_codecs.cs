@@ -610,6 +610,34 @@ namespace IronPython.Modules {
         }
 
         #endregion
+
+        #region Utf-32 Be Functions
+
+        private static Encoding utf32BeEncoding = null;
+        private static Encoding UTF32BE {
+            get {
+                if (utf32BeEncoding == null) utf32BeEncoding = new UTF32Encoding(true, true);
+                return utf32BeEncoding;
+            }
+        }
+
+        public static PythonTuple utf_32_be_decode(object input) {
+            return utf_32_be_decode(input, "strict", false);
+        }
+
+        public static PythonTuple utf_32_be_decode(object input, string errors, [Optional]bool ignored) {
+            return DoDecode(UTF32BE, input, errors);
+        }
+
+        public static PythonTuple utf_32_be_encode(object input) {
+            return utf_32_be_encode(input, "strict");
+        }
+
+        public static PythonTuple utf_32_be_encode(object input, string errors) {
+            return DoEncode(UTF32BE, input, errors);
+        }
+
+        #endregion
 #endif
 
 

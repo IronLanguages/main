@@ -247,6 +247,7 @@ namespace IronPython.Runtime.Operations {
             return x.Power(y);
         }
 
+#if !CLR2
         [SpecialName]
         public static object Power([NotNull]BigInteger x, long y) {
             if(y < 0) {
@@ -254,6 +255,7 @@ namespace IronPython.Runtime.Operations {
             }
             return x.Power(y);
         }
+#endif
 
         [SpecialName]
         public static object Power([NotNull]BigInteger x, [NotNull]BigInteger y) {
