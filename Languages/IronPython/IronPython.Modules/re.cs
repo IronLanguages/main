@@ -324,16 +324,16 @@ namespace IronPython.Modules {
 
             public RE_Match search(object text, int pos) {
                 string input = ValidateString(text, "text");
-                Match m = _re.Match(input);
-                while(m.Success && m.Index < pos) {
-                    m = m.NextMatch();
-                }
-                return RE_Match.make(m, this, input);
+                if (pos < 0) pos = 0;
+                return RE_Match.make(_re.Match(input, pos), this, input);
             }
 
             public RE_Match search(object text, int pos, int endpos) {
                 string input = ValidateString(text, "text");
-                return RE_Match.make(_re.Match(input, pos, Math.Min(Math.Max(endpos - pos, 0), input.Length - pos)), this, input);
+                if (pos < 0) pos = 0;
+                if (endpos < pos) return null;
+                if (endpos < input.Length) input = input.Substring(0, endpos);
+                return RE_Match.make(_re.Match(input, pos), this, input);
             }
 
             public object findall(CodeContext/*!*/ context, string @string) {

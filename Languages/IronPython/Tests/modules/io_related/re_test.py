@@ -813,6 +813,9 @@ def test_cp35135():
     AreEqual(re.match(r"(?iu)Aa", "aa").string, "aa")
     AreEqual(re.match(r"(?iLmsux)Aa", "aa").string, "aa")
 
+def test_issue506():
+    AreEqual(re.compile("^a", re.M).search("ba", 1), None)
+
 def test_issue1370():
     AreEqual(re.compile("\Z").match("\n"), None)
     AreEqual(re.compile("\Z").match("").group(0), "")
