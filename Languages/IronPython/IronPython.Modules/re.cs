@@ -1129,9 +1129,12 @@ namespace IronPython.Modules {
                     case 'D':
                     case 'A':
                     case 'B':
-                    case 'Z':
                     case '\\':
                         // known escape sequences, leave escaped.
+                        break;
+                    case 'Z':
+                        // /Z matches "end of string" in Python, replace with /z which is the .NET equivalent
+                        pattern = pattern.Remove(cur, 1).Insert(cur, "z");
                         break;
                     default:
                         System.Globalization.UnicodeCategory charClass = CharUnicodeInfo.GetUnicodeCategory(curChar);
