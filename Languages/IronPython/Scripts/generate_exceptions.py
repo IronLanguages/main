@@ -369,7 +369,9 @@ def gen_one_new_exception(cw, exception, parent):
         cw.enter_block('get')
         cw.enter_block('if (%sStorage == null)' % (exception.name, ))
         cw.enter_block('lock (_pythonExceptionsLock)')
-        cw.writeline('%sStorage = CreateSubType(%s, typeof(_%s), msg => new %s(msg));' % (exception.name, exception.parent.PythonType, exception.name, exception.DotNetExceptionName))
+        cw.enter_block('if (%sStorage == null)' % (exception.name, ))
+        cw.writeline('VolatileUtils.Write(ref %sStorage, CreateSubType(%s, typeof(_%s), msg => new %s(msg)));' % (exception.name, exception.parent.PythonType, exception.name, exception.DotNetExceptionName))
+        cw.exit_block() # if
         cw.exit_block() # lock
         cw.exit_block() # if
         cw.writeline('return %sStorage;' % (exception.name, ))
@@ -433,9 +435,11 @@ def gen_one_new_exception(cw, exception, parent):
         cw.enter_block('get')
         cw.enter_block('if (%sStorage == null)' % (exception.name, ))
         cw.enter_block('lock (_pythonExceptionsLock)')
-        cw.writeline('%sStorage = CreateSubType(%s, "%s", msg => new %s(msg));' % (exception.name, exception.parent.PythonType, exception.name, exception.DotNetExceptionName))
-        cw.exit_block() # lock
+        cw.enter_block('if (%sStorage == null)' % (exception.name, ))
+        cw.writeline('VolatileUtils.Write(ref %sStorage, CreateSubType(%s, "%s", msg => new %s(msg)));' % (exception.name, exception.parent.PythonType, exception.name, exception.DotNetExceptionName))
         cw.exit_block() # if
+        cw.exit_block() # if
+        cw.exit_block() # lock
         cw.writeline('return %sStorage;' % (exception.name, ))
         cw.exit_block()
         cw.exit_block()

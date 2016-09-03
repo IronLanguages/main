@@ -139,6 +139,7 @@
     <Compile Include="Utils\ReflectionUtils.cs" />
     <Compile Include="Utils\StringUtils.cs" />
     <Compile Include="Utils\TextStream.cs" />
+    <Compile Include="Utils\VolatileUtils.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Microsoft.Scripting.ruleset" />
