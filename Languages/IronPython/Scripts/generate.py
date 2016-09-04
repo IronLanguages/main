@@ -292,6 +292,20 @@ def save_file(name, text):
     f.write(text)
     f.close()
 
+def texts_are_equivalent(texta, textb):
+    """Compares two program texts by removing all identation and 
+    blank lines first."""
+    
+    def normalized_lines(text):
+        for l in text.splitlines():
+            l = l.strip()
+            if l:
+                yield l
+                
+    texta = "\n".join(normalized_lines(texta))
+    textb = "\n".join(normalized_lines(textb))
+    return texta == textb
+    
 class FileGenerator:
     def __init__(self, filename, generator, replacer):
         self.filename = filename
@@ -306,7 +320,7 @@ class FileGenerator:
 
     def collect_info(self):
         pass
-
+       
     def generate(self):
         print "generate",
         if sys.argv.count('checkonly') > 0:
@@ -319,7 +333,7 @@ class FileGenerator:
         self.generator(cw)
         cw.end_generated()
         new_text = self.replacer.replace(cw, self.text, self.indent)
-        if self.text != new_text:
+        if not texts_are_equivalent(self.text, new_text):
             if sys.argv.count('checkonly') > 0:
                 print "different!"
                 name = self.filename + ".diff"
