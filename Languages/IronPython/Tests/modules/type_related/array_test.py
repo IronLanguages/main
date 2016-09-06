@@ -57,11 +57,7 @@ def test_array___copy__():
     y = x.__copy__()
     Assert(id(x) != id(y), "copy should copy")
     
-    if is_cli or is_silverlight:
-        #CodePlex 19200
-        y = x.__deepcopy__()
-    else:
-        y = x.__deepcopy__(x)
+    y = x.__deepcopy__(x)
     Assert(id(x) != id(y), "copy should copy")
 
 def test_array___deepcopy__():
