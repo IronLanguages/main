@@ -50,10 +50,7 @@ def test_mkdir_negative():
 
 def test_listdir():
     AssertError(TypeError, nt.listdir, None)
-    if is_cpython: #http://ironpython.codeplex.com/workitem/28207
-        AreEqual(nt.listdir(nt.getcwd()), nt.listdir('.'))
-    else:
-        AreEqual(nt.listdir(''), nt.listdir('.'))
+    AreEqual(nt.listdir(nt.getcwd()), nt.listdir('.'))
 
 # stat,lstat
 def test_stat():

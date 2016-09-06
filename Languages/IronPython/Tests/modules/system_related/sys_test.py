@@ -192,8 +192,9 @@ def test_getframe():
     # verify thread safety of sys.settrace
     import thread
     import time
-    global done
+    global done, failed
     done = 0
+    failed = False
     lock = thread.allocate_lock()
     def starter(events):
         def tracer(*args):
@@ -204,13 +205,16 @@ def test_getframe():
         def f3(): time.sleep(.5)
         
         def test_thread():
-            global done
-            sys.settrace(tracer)
-            f1()
-            sys.settrace(None)
-            f2()
-            sys.settrace(tracer)
-            f3()
+            global done, failed
+            try:
+                sys.settrace(tracer)
+                f1()
+                sys.settrace(None)
+                f2()
+                sys.settrace(tracer)
+                f3()
+            except:
+                failed = True
             with lock: done += 1
             
         thread.start_new_thread(test_thread, ())
@@ -225,6 +229,8 @@ def test_getframe():
        pass    
     for i in xrange(1, 10):
         AreEqual(lists[i-1], lists[i])
+
+    Assert(not failed)
 
     # verify we report <module> for top-level code
     frame = sys._getframe()
@@ -328,7 +334,8 @@ def test_version():
     import re
     # 2.7.5 (IronPython 2.7.5 (2.7.5.0) on .NET 4.0.30319.18444 (32-bit))
     # 2.7.6a0 (IronPython 2.7.6a0 DEBUG (2.7.6.0) on .NET 4.0.30319.18444 (32-bit))
-    regex = "^\d\.\d\.\d((RC\d+ )|(a\d+ )|(b\d+ )|( ))\(IronPython \d\.\d(\.\d)?((RC\d+ )|(a\d+ )|(b\d+ )|( ))?((DEBUG )|()|(\d?))\(\d\.\d\.\d{1,8}\.\d{1,8}\) on \.NET \d(\.\d{1,5}){3} \(32-bit\)\)$"
+    # 2.7.6 (IronPython 2.7.6.3 (2.7.6.3) on .NET 4.0.30319.42000 (32-bit))
+    regex = "^\d\.\d\.\d((RC\d+ )|(a\d+ )|(b\d+ )|( ))\(IronPython \d\.\d(\.\d)?(\.\d)?((RC\d+ )|(a\d+ )|(b\d+ )|( ))?((DEBUG )|()|(\d?))\(\d\.\d\.\d{1,8}\.\d{1,8}\) on \.NET \d(\.\d{1,5}){3} \(32-bit\)\)$"
     Assert(re.match(regex, sys.version, re.IGNORECASE) != None)
 
 def test_winver():
@@ -433,7 +440,7 @@ def test_cp30129():
             frames.append(args[0])
             if len(frames) == 3:
                 res.append('setting' + str(frames[1].f_lineno))
-                frames[1].f_lineno = 450
+                frames[1].f_lineno = 457
         return f
     
     
@@ -461,7 +468,7 @@ def test_cp30129():
     
     c()
     
-    AreEqual(res, ['setting450', 'foo', 'bar', 'baz', 'x', 'y', 'z', 'hello', 'goodbye', 'see ya'])
+    AreEqual(res, ['setting457', 'foo', 'bar', 'baz', 'x', 'y', 'z', 'hello', 'goodbye', 'see ya'])
     
     sys.settrace(None)
     

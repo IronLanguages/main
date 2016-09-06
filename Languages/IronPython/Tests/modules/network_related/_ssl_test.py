@@ -27,7 +27,7 @@ import socket
 
 #--GLOBALS---------------------------------------------------------------------
 SSL_URL      = "www.microsoft.com"
-SSL_ISSUER   = "CN=Symantec Class 3 EV SSL CA - G3, OU=Symantec Trust Network, O=Symantec Corporation, C=US"
+SSL_ISSUER   = "CN=Symantec Class 3 Secure Server CA - G4, OU=Symantec Trust Network, O=Symantec Corporation, C=US"
 SSL_SERVER   = "www.microsoft.com"
 SSL_PORT     = 443
 SSL_REQUEST  = "GET / HTTP/1.0\r\nHost: www.microsoft.com\r\n\r\n"
