@@ -460,8 +460,11 @@ def test_paramrefs():
     # by paramnames.
     import System
     x = run_help(System.DateTime.Parse)
+
+    # help output is dependant on the console width so get rid of formatting
+    x = " ".join(y.strip() for y in x.splitlines())
     
-    Assert(x.find("An object that is equivalent to the date and time contained in s") != -1)
+    Assert(x.find("equivalent to the date and time contained in s") != -1)
 
 @skip("silverlight") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=20236#
 def test_type():        
