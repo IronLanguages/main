@@ -389,6 +389,7 @@ namespace Microsoft.Scripting {
 #endif
         }
 
+#if !NETSTANDARD
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         public virtual void SetEnvironmentVariable(string key, string value) {
 #if FEATURE_PROCESS
@@ -416,6 +417,7 @@ namespace Microsoft.Scripting {
                 throw new ExternalException("SetEnvironmentVariable failed", Marshal.GetLastWin32Error());
             }
         }
+#endif
 #endif
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]

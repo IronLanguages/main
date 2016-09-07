@@ -232,7 +232,7 @@ namespace IronPythonTest {
             return null;
         }
 
-#if !SILVERLIGHT && !NETSTANDARD
+#if FEATURE_REMOTING
         public void ScenarioHostingHelpers() {
             AppDomain remote = AppDomain.CreateDomain("foo");
             Dictionary<string, object> options = new Dictionary<string,object>();
@@ -2289,7 +2289,7 @@ instOC = TestOC()
         // Options.DebugMode
 #endif
 
-#if !SILVERLIGHT && !NETSTANDARD
+#if FEATURE_REMOTING
         public void ScenarioPartialTrust() {
             // basic check of running a host in partial trust
             
