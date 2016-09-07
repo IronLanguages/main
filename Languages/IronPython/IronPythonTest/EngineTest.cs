@@ -72,7 +72,7 @@ namespace IronPythonTest {
             if (RootDirectory != null) {
                 ScriptTestDirectory = Path.Combine(RootDirectory, "Languages\\IronPython\\Tests");
             } else {
-                RootDirectory = new System.IO.FileInfo(System.Reflection.Assembly.GetEntryAssembly().GetFiles()[0].Name).Directory.FullName;
+                RootDirectory = new System.IO.FileInfo(System.Reflection.Assembly.GetEntryAssembly().Location).Directory.FullName;
                 ScriptTestDirectory = Path.Combine(RootDirectory, "Src\\Tests");
             }
             InputTestDirectory = Path.Combine(ScriptTestDirectory, "Inputs");

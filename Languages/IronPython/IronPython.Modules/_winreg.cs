@@ -441,10 +441,24 @@ namespace IronPython.Modules {
             if (string.IsNullOrEmpty(computerName))
                 computerName = string.Empty;
 
-            RegistryKey newKey;
+#if NETSTANDARD
+            if (computerName != string.Empty) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError);
+            }
+#endif
+
+            RegistryKey newKey = null;
             try {
-                newKey = RegistryKey.OpenRemoteBaseKey(MapSystemKey(key), computerName);
-            }catch(IOException ioe) {
+                if (computerName == string.Empty) {
+                    newKey = RegistryKey.OpenBaseKey(MapSystemKey(key), RegistryView.Default);
+                }
+#if !NETSTANDARD
+                else {
+                    newKey = RegistryKey.OpenRemoteBaseKey(MapSystemKey(key), computerName);
+                }
+#endif
+            }
+            catch (IOException ioe) {
                 throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, PythonExceptions._WindowsError.ERROR_BAD_NETPATH, ioe.Message);
             } catch (Exception e) {
                 throw new ExternalException(e.Message);

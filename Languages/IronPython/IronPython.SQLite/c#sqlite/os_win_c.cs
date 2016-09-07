@@ -443,7 +443,7 @@ static int getLastErrorMsg(int nBuf, ref string zBuf){
 //#define winLogError(a,b,c)     winLogErrorAtLine(a,b,c,__LINE__)
 static int winLogError( int a, string b, string c )
 {
-#if !SQLITE_WINRT && !SILVERLIGHT
+#if !SQLITE_WINRT && !SILVERLIGHT && !NETSTANDARD
   StackTrace st = new StackTrace( new StackFrame( true ) );
   StackFrame sf = st.GetFrame( 0 );
   
@@ -895,7 +895,7 @@ return FALSE;
 #endif
       do
       {
-#if SQLITE_WINRT
+#if SQLITE_WINRT || NETSTANDARD
         pFile.fs.Dispose();
 #else
         pFile.fs.Close();
@@ -3115,8 +3115,7 @@ pFile.zDeleteOnClose = zConverted;
             stream.Close();
             IsolatedStorageFile.GetUserStoreForApplication().DeleteFile(name);
 #else
-            FileStream fs = File.Create( name );
-            fs.Close();
+            using (FileStream fs = File.Create(name)) { }
             File.Delete( name );
 #endif
             attr = FileAttributes.Normal;
@@ -3736,14 +3735,14 @@ Debug.Assert(winSysInfo.dwAllocationGranularity > 0);
 #endif
         public virtual void LockFile( sqlite3_file pFile, long offset, long length )
         {
-#if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE || SQLITE_WINRT)
+#if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE || SQLITE_WINRT || NETSTANDARD)
         pFile.fs.Lock( offset, length );
 #endif
         }
 
       public virtual int SharedLockFile( sqlite3_file pFile, long offset, long length )
         {
-#if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE || SQLITE_WINRT)
+#if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE || SQLITE_WINRT || NETSTANDARD)
         Debug.Assert( length == SHARED_SIZE );
         Debug.Assert( offset == SHARED_FIRST );
         NativeOverlapped ovlp = new NativeOverlapped();
@@ -3759,7 +3758,7 @@ Debug.Assert(winSysInfo.dwAllocationGranularity > 0);
 
       public virtual void UnlockFile( sqlite3_file pFile, long offset, long length )
       {
-#if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE || SQLITE_WINRT)
+#if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE || SQLITE_WINRT || NETSTANDARD)
         pFile.fs.Unlock( offset, length );
 #endif
       }
@@ -3773,7 +3772,7 @@ Debug.Assert(winSysInfo.dwAllocationGranularity > 0);
     {
       public override int SharedLockFile( sqlite3_file pFile, long offset, long length )
         {
-#if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE || SQLITE_WINRT)
+#if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE || SQLITE_WINRT || NETSTANDARD)
         Debug.Assert( length == SHARED_SIZE );
         Debug.Assert( offset == SHARED_FIRST );
         try
