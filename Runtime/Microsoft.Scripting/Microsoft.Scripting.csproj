@@ -48,6 +48,9 @@
     </Compile>
     <Compile Include="ArgumentTypeException.cs" />
     <Compile Include="AssemblyLoadedEventArgs.cs" />
+    <Compile Include="Environment\FakeEnvironment.cs" />
+    <Compile Include="Environment\PlatformID.cs" />
+    <Compile Include="Environment\OperatingSystem.cs" />
     <Compile Include="Hosting\DocumentationOperations.cs" />
     <Compile Include="Hosting\MemberDoc.cs" />
     <Compile Include="Hosting\MemberKind.cs" />

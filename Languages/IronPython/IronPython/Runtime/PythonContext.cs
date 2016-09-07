@@ -51,6 +51,10 @@ using IronPython.Runtime.Types;
 using Debugging = Microsoft.Scripting.Debugging;
 using PyAst = IronPython.Compiler.Ast;
 
+#if NETSTANDARD1_6
+using Environment = System.FakeEnvironment;
+#endif
+
 namespace IronPython.Runtime
 {
     public delegate int HashDelegate(object o, ref HashDelegate dlg);

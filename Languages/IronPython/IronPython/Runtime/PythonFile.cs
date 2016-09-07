@@ -37,9 +37,12 @@ using System.IO.Pipes;
 
 #if FEATURE_NUMERICS
 using System.Numerics;
-
 #else
 using Microsoft.Scripting.Math;
+#endif
+
+#if NETSTANDARD1_6
+using Environment = System.FakeEnvironment;
 #endif
 
 namespace IronPython.Runtime {

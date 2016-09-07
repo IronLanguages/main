@@ -21,6 +21,10 @@ using System.Diagnostics;
 using Microsoft.Scripting.Utils;
 using System.Text;
 
+#if NETSTANDARD1_6
+using Environment = System.FakeEnvironment;
+#endif
+
 namespace Microsoft.Scripting.Hosting.Shell {
     public sealed class SuperConsole : BasicConsole {
 
