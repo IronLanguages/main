@@ -120,6 +120,9 @@ namespace IronPython.Modules {
             return subKey;
         }
 
+        private static string FormatError(int errorCode) {
+            return new Win32Exception(errorCode).Message;
+        }
 
         public static HKEYType CreateKeyEx(object key, string subKeyName, int res, int sam) {
             HKEYType rootKey = GetRootKey(key);
@@ -143,7 +146,7 @@ namespace IronPython.Modules {
                 out disposition
             );
             if (result != ERROR_SUCCESS) {
-                throw PythonExceptions.CreateThrowable(error, result, CTypes.FormatError(result));
+                throw PythonExceptions.CreateThrowable(error, result, FormatError(result));
             }
 
             return new HKEYType(RegistryKey.FromHandle(handle));
@@ -161,7 +164,7 @@ namespace IronPython.Modules {
                     out SafeRegistryHandle phkResult,
                     out int lpdwDisposition);
 
-        [DllImport("advapi32.dll", SetLastError = true, CharSet=CharSet.Auto)]
+        [DllImport("advapi32.dll", SetLastError = true)]
         static extern int RegQueryValueEx(
               SafeRegistryHandle hKey,
               string lpValueName,
@@ -327,7 +330,11 @@ namespace IronPython.Modules {
                 if ((sam & KEY_SET_VALUE) == KEY_SET_VALUE ||
                     (sam & KEY_CREATE_SUB_KEY) == KEY_CREATE_SUB_KEY) {
                         if (res != 0) {
+#if NETSTANDARD
+                            newKey = nativeRootKey.OpenSubKey(subKeyName, (RegistryRights)res);
+#else
                             newKey = nativeRootKey.OpenSubKey(subKeyName, RegistryKeyPermissionCheck.Default, (RegistryRights)res);
+#endif
                         } else {
                             newKey = nativeRootKey.OpenSubKey(subKeyName, true);
                         }
@@ -335,7 +342,11 @@ namespace IronPython.Modules {
                            (sam & KEY_ENUMERATE_SUB_KEYS) == KEY_ENUMERATE_SUB_KEYS ||
                            (sam & KEY_NOTIFY) == KEY_NOTIFY) {
                                if (res != 0) {
+#if NETSTANDARD
+                                   newKey = nativeRootKey.OpenSubKey(subKeyName, (RegistryRights)res);
+#else
                                    newKey = nativeRootKey.OpenSubKey(subKeyName, RegistryKeyPermissionCheck.ReadSubTree, (RegistryRights)res);
+#endif
                                } else {
                                    newKey = nativeRootKey.OpenSubKey(subKeyName, false);
                                }
@@ -448,7 +459,7 @@ namespace IronPython.Modules {
             rootKey = key as HKEYType;
             if (rootKey == null) {
                 if (key is BigInteger) {
-                    rootKey = new HKEYType(RegistryKey.OpenRemoteBaseKey(MapSystemKey((BigInteger)key), string.Empty));
+                    rootKey = new HKEYType(RegistryKey.OpenBaseKey(MapSystemKey((BigInteger)key), RegistryView.Default));
                 } else {
                     throw new InvalidCastException("The object is not a PyHKEY object");
                 }
@@ -457,6 +468,7 @@ namespace IronPython.Modules {
         }
 
         private static RegistryHive MapSystemKey(BigInteger hKey) {
+            const RegistryHive RegistryHiveDynData = (RegistryHive)unchecked((int)0x80000006);
             if (hKey == HKEY_CLASSES_ROOT)
                 return RegistryHive.ClassesRoot;
             else if (hKey == HKEY_CURRENT_CONFIG)
@@ -464,7 +476,7 @@ namespace IronPython.Modules {
             else if (hKey == HKEY_CURRENT_USER)
                 return RegistryHive.CurrentUser;
             else if (hKey == HKEY_DYN_DATA)
-                return RegistryHive.DynData;
+                return RegistryHiveDynData;
             else if (hKey == HKEY_LOCAL_MACHINE)
                 return RegistryHive.LocalMachine;
             else if (hKey == HKEY_PERFORMANCE_DATA)

@@ -102,6 +102,12 @@ namespace System.Reflection {
             return d.Method;
         }
 #endif
+
+#if !FEATURE_TYPE_INFO
+        public static InterfaceMapping GetRuntimeInterfaceMap(this Type typeInfo, Type interfaceType) {
+            return typeInfo.GetInterfaceMap(interfaceType);
+        }
+#endif
     }
 }
 #endif

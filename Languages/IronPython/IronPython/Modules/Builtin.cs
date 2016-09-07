@@ -964,6 +964,7 @@ namespace IronPython.Modules {
             }
         }
 
+#if !NETSTANDARD
         public static string intern(object o) {
             string s = o as string;
             if (s == null) {
@@ -971,6 +972,7 @@ namespace IronPython.Modules {
             }
             return string.Intern(s);
         }
+#endif
 
         public static bool isinstance(object o, [NotNull]PythonType typeinfo) {
             return PythonOps.IsInstance(o, typeinfo);

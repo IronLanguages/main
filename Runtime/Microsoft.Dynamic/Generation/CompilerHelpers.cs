@@ -220,7 +220,7 @@ namespace Microsoft.Scripting.Generation {
             // maybe we can get it from an interface on the type this
             // method came from...
             foreach (Type iface in targetType.GetImplementedInterfaces()) {
-                InterfaceMapping mapping = targetType.GetInterfaceMap(iface);
+                InterfaceMapping mapping = targetType.GetTypeInfo().GetRuntimeInterfaceMap(iface);
                 for (int i = 0; i < mapping.TargetMethods.Length; i++) {
                     MethodInfo targetMethod = mapping.TargetMethods[i];
                     if (targetMethod != null && targetMethod.MethodHandle == method.MethodHandle) {

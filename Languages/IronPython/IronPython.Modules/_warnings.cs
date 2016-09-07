@@ -219,11 +219,13 @@ namespace IronPython.Modules {
             StringBuilder sb = new StringBuilder();
             sb.AppendFormat("{0}:{1}: {2}: {3}\n", filename, lineno, category.Name, message);
             if (line == null && lineno > 0 && File.Exists(filename)) {
-                StreamReader reader = new StreamReader(filename);
-                for (int i = 0; i < lineno - 1; i++) {
-                    reader.ReadLine();
+                using (FileStream stream = File.OpenRead(filename))
+                using (StreamReader reader = new StreamReader(stream)) {
+                    for (int i = 0; i < lineno - 1; i++) {
+                        reader.ReadLine();
+                    }
+                    line = reader.ReadLine();
                 }
-                line = reader.ReadLine();
             }
             if (line != null) {
                 sb.AppendFormat("  {0}\n", line.strip());

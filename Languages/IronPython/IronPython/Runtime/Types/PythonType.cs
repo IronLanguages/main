@@ -2497,7 +2497,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
             
             foreach (Type iface in interfaces) {
-                InterfaceMapping mapping = _underlyingSystemType.GetInterfaceMap(iface);
+                InterfaceMapping mapping = _underlyingSystemType.GetTypeInfo().GetRuntimeInterfaceMap(iface);
                 
                 // grab all the interface methods which would hide other members
                 for (int i = 0; i < mapping.TargetMethods.Length; i++) {

@@ -1536,7 +1536,7 @@ namespace IronPython.Runtime.Types {
                 List<Type> res = new List<Type>();
                 foreach (Type intf in allInterfaces) {
                     try {
-                        InterfaceMapping imap = t.GetInterfaceMap(intf);
+                        InterfaceMapping imap = t.GetTypeInfo().GetRuntimeInterfaceMap(intf);
                         foreach (MethodInfo mi in imap.TargetMethods) {
                             if (mi != null && mi.DeclaringType == t) {
                                 res.Add(intf);
