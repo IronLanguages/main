@@ -358,4 +358,18 @@ def test_arguments():
     a = A('hello', *x, **y)
     AreEqual(a.val, 'hellob12boom')
     
+def test_getattr_optimized():
+    class Meta(type):
+        def __getattr__(self, attr):
+            if attr == 'b':
+                return 'b'
+            raise AttributeError(attr)
+
+    class A():
+        __metaclass__ = Meta
+
+    for i in range(110):
+        AreEqual('A', A.__name__) # after 100 iterations: see https://github.com/IronLanguages/main/issues/1269
+        AreEqual('b', A.b)
+    
 run_test(__name__)
