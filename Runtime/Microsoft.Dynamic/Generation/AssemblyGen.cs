@@ -92,7 +92,11 @@ namespace Microsoft.Scripting.Generation {
 #endif
                 _myModule = _myAssembly.DefineDynamicModule(name.Name, _outFileName, isDebuggable);
             } else {
+#if FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY
+                _myAssembly = AssemblyBuilder.DefineDynamicAssembly(name, AssemblyBuilderAccess.Run, attributes);
+#else
                 _myAssembly = AppDomain.CurrentDomain.DefineDynamicAssembly(name, AssemblyBuilderAccess.Run, attributes);
+#endif
                 _myModule = _myAssembly.DefineDynamicModule(name.Name, isDebuggable);
             }
 
@@ -305,7 +309,7 @@ namespace Microsoft.Scripting.Generation {
             return _myModule.DefineType(name, attr, parent);
         }
 
-#if FEATURE_FILESYSTEM
+#if FEATURE_FILESYSTEM && !NETSTANDARD
         internal void SetEntryPoint(MethodInfo mi, PEFileKinds kind) {
             _myAssembly.SetEntryPoint(mi, kind);
         }

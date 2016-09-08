@@ -284,7 +284,7 @@ namespace Microsoft.Scripting.Generation {
             return visible;
         }
 
-#if !WIN8 && !NETSTANDARD
+#if !WIN8
         /// <summary>
         /// Sees if two MemberInfos point to the same underlying construct in IL.  This
         /// ignores the ReflectedType property which exists on MemberInfos which
@@ -304,6 +304,7 @@ namespace Microsoft.Scripting.Generation {
             }
 
             switch (self.MemberType) {
+#if !NETSTANDARD
                 case MemberTypes.Field:
                     return ((FieldInfo)self).FieldHandle.Equals(((FieldInfo)other).FieldHandle);
                 case MemberTypes.Method:
@@ -315,6 +316,7 @@ namespace Microsoft.Scripting.Generation {
                     return ((Type)self).TypeHandle.Equals(((Type)other).TypeHandle);
                 case MemberTypes.Event:
                 case MemberTypes.Property:
+#endif
                 default:
                     return
                         ((MemberInfo)self).Module == ((MemberInfo)other).Module &&
@@ -641,7 +643,7 @@ namespace Microsoft.Scripting.Generation {
             return (T)(object)LightCompile((LambdaExpression)lambda, compilationThreshold);
         }
 
-#if FEATURE_REFEMIT
+#if FEATURE_REFEMIT && !NETSTANDARD
         /// <summary>
         /// Compiles the lambda into a method definition.
         /// </summary>
@@ -688,7 +690,7 @@ namespace Microsoft.Scripting.Generation {
             return lambda.Compile();
         }
 
-#if FEATURE_REFEMIT
+#if FEATURE_PDBEMIT && FEATURE_REFEMIT
         /// <summary>
         /// Compiles the LambdaExpression, emitting it into a new type, and
         /// optionally making it debuggable.
@@ -701,6 +703,7 @@ namespace Microsoft.Scripting.Generation {
         /// <param name="emitDebugSymbols">True if debug symbols (PDBs) are emitted by the <paramref name="debugInfoGenerator"/>.</param>
         /// <returns>the compiled delegate</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
+
         public static T CompileToMethod<T>(Expression<T> lambda, DebugInfoGenerator debugInfoGenerator, bool emitDebugSymbols) {
             return (T)(object)CompileToMethod((LambdaExpression)lambda, debugInfoGenerator, emitDebugSymbols);
         }
