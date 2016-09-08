@@ -103,7 +103,7 @@ def test_negative_simply_derive():
     def f(): 
         class C(object, b): pass
     AssertErrorWithPartialMessage(TypeError, 
-        "metaclass conflict instance and type",
+        "metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases",
         f)
     
     def f():

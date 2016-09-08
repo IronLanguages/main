@@ -60,6 +60,10 @@ goto :exit
 Test\test-ipy-tc.cmd /category:Languages\IronPython\IronPython\2.X
 goto :exit
 
+:testall
+Test\test-ipy-tc.cmd /all /runlong
+goto :exit
+
 :distclean
 msbuild /t:DistClean /p:BaseConfiguration=Release /verbosity:minimal /nologo
 msbuild /t:DistClean /p:BaseConfiguration=Debug /verbosity:minimal /nologo
