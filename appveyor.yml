@@ -9,16 +9,17 @@
 #---------------------------------#
 
 # version format
-version: 2.7.6.{build}
+version: 2.7.6-{build}
 
 # you can use {branch} name in version format too
 # version: 1.0.{build}-{branch}
 
 # branches to build
-branches:
+#branches:
   # whitelist
-  only:
-    - ipy-maint-2.7
+  # Setting this prevents PRs from being auto-built
+  # only:
+  #  - ipy-maint-2.7
 
 # Do not build on tags (GitHub and BitBucket)
 skip_tags: true
@@ -77,7 +78,8 @@ test_script:
 # to run custom scripts after tests
 after_test:
   # upload results to AppVeyor
-  # FIXME: does not happen when test script above aborts.
+  # NOTE: does not happen when test_script above aborts.
+  # Workaround in that case is to add to "on_finish:" to force an upload
   - ps: $wc = New-Object 'System.Net.WebClient'; $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\Test\TestResult.xml))
 
 #---------------------------------#
@@ -134,10 +136,8 @@ after_test:
 #  - do something
 
 # after build failure or success
-on_finish:
-  # upload test results to AppVeyor
-  - ps: $wc = New-Object 'System.Net.WebClient'; $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\Test\TestResult.xml))
-
+#on_finish:
+#  - do something
   
 #---------------------------------#
 #         notifications           #
