@@ -159,7 +159,16 @@ def test_subclassing():
         __slots__ = ['a']    
     
     class D1(C1, C2): pass
-
+    
+    # https://github.com/IronLanguages/main/issues/1374 (C was marked as not having a dictionary)
+    class A(object):
+        def __init__(self):
+            self.a = 1
+    class B(A):
+        pass
+    class C(B):
+        __slots__ = ('c', )
+    c = C()
     
 def test_subclass_with_interesting_slots():
     class C1(object):
