@@ -73,7 +73,8 @@ build_script:
 # to run your custom scripts instead of automatic tests
 test_script:
   - set DLR_BIN=%APPVEYOR_BUILD_FOLDER%\bin\%CONFIGURATION%
-  - Test\test-ipy-tc.cmd /category:Languages\IronPython\IronPython\2.X
+  - make testall
+  #- Test\test-ipy-tc.cmd /category:Languages\IronPython\IronPython\2.X
 
 # to run custom scripts after tests
 after_test:
