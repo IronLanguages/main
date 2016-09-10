@@ -1540,7 +1540,7 @@ namespace IronPython.Compiler {
             // and we have the magic ending as well...
             if (StringOps.TryGetEncoding(encName, out enc)) {
 #if FEATURE_ENCODING
-                enc.DecoderFallback = new NonStrictDecoderFallback();
+                StringOps.SetDecoderFallback(enc, new NonStrictDecoderFallback());
 #endif
                 return true;
             }

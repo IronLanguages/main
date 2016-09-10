@@ -24,7 +24,7 @@ namespace Microsoft.Scripting.Utils {
         public static Encoding DefaultEncoding {
             get {
 #if FEATURE_ENCODING
-                return Encoding.Default;
+                return Encoding.GetEncoding(0);
 #else
                 return Encoding.UTF8;
 #endif
