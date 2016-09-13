@@ -30,6 +30,8 @@ namespace System
         public static void SetEnvironmentVariable(string variable, string value) => Environment.SetEnvironmentVariable(variable, value);
 
         public static IDictionary GetEnvironmentVariables() => Environment.GetEnvironmentVariables();
+
+        public static bool Is64BitProcess => RuntimeInformation.OSArchitecture == Architecture.X64;
     }
 }
 
