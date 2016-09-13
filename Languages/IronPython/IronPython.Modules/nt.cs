@@ -476,7 +476,9 @@ namespace IronPython.Modules {
         public static PythonTuple pipe(CodeContext context) {
             return PythonFile.CreatePipeAsFd(context);
         }
+#endif
 
+#if FEATURE_PROCESS
         public static PythonFile popen(CodeContext/*!*/ context, string command) {
             return popen(context, command, "r");
         }
