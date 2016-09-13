@@ -5218,7 +5218,7 @@
           <Arguments>-X:ExceptionDetail harness.py modules.misc</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>true</Disabled> <!-- TIMEOUT -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\languages\ironpython\tests</WorkingDirectory>
