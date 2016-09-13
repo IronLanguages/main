@@ -1323,6 +1323,36 @@ namespace IronPython.Modules {
             return (PythonType)PythonContext.GetContext(context).GetModuleState("socketgaierror");
         }
 
+        private static IPHostEntry GetHostEntry(string host) {
+#if NETSTANDARD
+            try {
+                return Dns.GetHostEntryAsync(host).Result;
+            }
+            catch (AggregateException ae) {
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ae.InnerException).Throw();
+                throw;
+            }
+#else
+            return Dns.GetHostEntry(host);
+#endif
+        }
+
+        private static IPAddress[] GetHostAddresses(string host)
+        {
+#if NETSTANDARD
+            try {
+                return Dns.GetHostAddressesAsync(host).Result;
+            }
+            catch (AggregateException ae)
+            {
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ae.InnerException).Throw();
+                throw;
+            }
+#else
+            return Dns.GetHostAddresses(host);
+#endif
+        }
+
         [Documentation("getfqdn([hostname_or_ip]) -> hostname\n\n"
             + "Return the fully-qualified domain name for the specified hostname or IP\n"
             + "address. An unspecified or empty name is interpreted as the local host. If the\n"
@@ -1341,11 +1371,7 @@ namespace IronPython.Modules {
                 return host;
             }
             try {
-#if NETSTANDARD
-                IPHostEntry hostEntry = Dns.GetHostEntryAsync(host).Result;
-#else
-                IPHostEntry hostEntry = Dns.GetHostEntry(host);
-#endif
+                IPHostEntry hostEntry = GetHostEntry(host);
                 if (hostEntry.HostName.Contains(".")) {
                     return hostEntry.HostName;
                 } else {
@@ -1403,11 +1429,7 @@ namespace IronPython.Modules {
             } else {
                 IPHostEntry hostEntry;
                 try {
-#if NETSTANDARD
-                    hostEntry = Dns.GetHostEntryAsync(host).Result;
-#else
-                    hostEntry = Dns.GetHostEntry(host);
-#endif
+                    hostEntry = GetHostEntry(host);
                 } catch (SocketException e) {
                     throw PythonExceptions.CreateThrowable(gaierror(context), (int)e.SocketErrorCode, "no IPv4 addresses associated with host");
                 }
@@ -1442,14 +1464,10 @@ namespace IronPython.Modules {
             IPAddress[] ips = null;
             IPHostEntry hostEntry = null;
             try {
-#if NETSTANDARD
-                ips = Dns.GetHostAddressesAsync(host).Result;
-                hostEntry = Dns.GetHostEntryAsync(host).Result;
-#else
-                ips = Dns.GetHostAddresses(host);
-                hostEntry = Dns.GetHostEntry(host);
-#endif
-            } catch (Exception e) {
+                ips = GetHostAddresses(host);
+                hostEntry = GetHostEntry(host);
+            }
+            catch (Exception e) {
                 throw MakeException(context, e);
             }
 
@@ -2155,11 +2173,7 @@ namespace IronPython.Modules {
                     }
                     // Incorrect family will raise exception below
                 } else {
-#if NETSTANDARD
-                    IPHostEntry hostEntry = Dns.GetHostEntryAsync(host).Result;
-#else
-                    IPHostEntry hostEntry = Dns.GetHostEntry(host);
-#endif
+                    IPHostEntry hostEntry = GetHostEntry(host);
                     List<IPAddress> addrs = new List<IPAddress>();
                     foreach (IPAddress ip in hostEntry.AddressList) {
                         if (family == AddressFamily.Unspecified || family == ip.AddressFamily) {
@@ -2896,12 +2910,21 @@ namespace IronPython.Modules {
     // for the Linux Mono version and http://www.pinvoke.net/ for dllimports for winsock libraries
     internal static class SocketUtil {
 
-        [StructLayoutAttribute(LayoutKind.Sequential)]
+        [StructLayoutAttribute(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
         public struct servent {
             public string s_name;
             public IntPtr s_aliases;
             public ushort s_port;
             public string s_proto;
+        }
+
+        [StructLayoutAttribute(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        public struct servent64
+        {
+            public string s_name;
+            public IntPtr s_aliases;
+            public string s_proto;
+            public ushort s_port;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -2952,8 +2975,12 @@ namespace IronPython.Modules {
             if (IntPtr.Zero == result)
                 throw new SocketUtilException(string.Format("Could not resolve service for port {0}", port));
 
-            var srvent = PtrToStructure<servent>(result);
-            return srvent.s_name;
+#if CLR4
+            if (Environment.Is64BitProcess)
+                return PtrToStructure<servent64>(result).s_name;
+            else
+#endif
+                return PtrToStructure<servent>(result).s_name;
         }
 
         public static string GetServiceByPortNonWindows(ushort port, string protocol) {
@@ -2963,8 +2990,13 @@ namespace IronPython.Modules {
                 throw new SocketUtilException(
                     string.Format("Could not resolve service for port {0}", port));
             }
-            var srvent = PtrToStructure<servent>(result);
-            return srvent.s_name;
+
+#if CLR4
+            if (Environment.Is64BitProcess)
+                return PtrToStructure<servent64>(result).s_name;
+            else
+#endif
+                return PtrToStructure<servent>(result).s_name;
         }
 
         public static string GetServiceByPort(ushort port, string protocol) {
@@ -2983,8 +3015,15 @@ namespace IronPython.Modules {
             if (IntPtr.Zero == result)
                 throw new SocketUtilException(string.Format("Could not resolve port for service {0}", service));
 
-            var srvent = PtrToStructure<servent>(result);
-            var hostport = IPAddress.NetworkToHostOrder(unchecked((short)srvent.s_port));
+            ushort port;
+#if CLR4
+            if (Environment.Is64BitProcess)
+                port = PtrToStructure<servent64>(result).s_port;
+            else
+#endif
+                port = PtrToStructure<servent>(result).s_port;
+
+            var hostport = IPAddress.NetworkToHostOrder(unchecked((short)port));
             return unchecked((ushort)hostport);
 
         }
@@ -2997,8 +3036,15 @@ namespace IronPython.Modules {
                     string.Format("Could not resolve port for service {0}", service));
             }
 
-            var srvent = PtrToStructure<servent>(result);
-            var hostport = IPAddress.NetworkToHostOrder(unchecked((short)srvent.s_port));
+            ushort port;
+#if CLR4
+            if (Environment.Is64BitProcess)
+                port = PtrToStructure<servent64>(result).s_port;
+            else
+#endif
+                port = PtrToStructure<servent>(result).s_port;
+
+            var hostport = IPAddress.NetworkToHostOrder(unchecked((short)port));
             return unchecked((ushort)hostport);
 
         }
