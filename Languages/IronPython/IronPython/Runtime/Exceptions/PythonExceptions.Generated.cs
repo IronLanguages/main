@@ -991,6 +991,7 @@ namespace IronPython.Runtime.Exceptions {
             if (clrException is SystemException) return new PythonExceptions.BaseException(PythonExceptions.SystemError);
             if (clrException is SystemExitException) return new PythonExceptions._SystemExit();
             if (clrException is UnboundNameException) return new PythonExceptions.BaseException(PythonExceptions.NameError);
+            if (clrException is UnicodeException) return new PythonExceptions.BaseException(PythonExceptions.UnicodeError);
             return new BaseException(Exception);
         }
 
