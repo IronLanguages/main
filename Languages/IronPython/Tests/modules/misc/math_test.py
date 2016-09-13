@@ -447,7 +447,7 @@ def test_other():
     Assert(0 ** 735293857239475 == 0)
     
     # cpython tries to compute this, takes a long time to finish
-    if is_cli or is_silverlight:
+    if is_silverlight:
         y = 735293857239475
         AssertError(ValueError, (lambda: 10 ** y))
 
