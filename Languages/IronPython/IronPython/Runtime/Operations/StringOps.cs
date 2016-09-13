@@ -1669,6 +1669,7 @@ namespace IronPython.Runtime.Operations {
             // if we have a valid code page try and get a reasonable name.  The
             // web names / mail displays match tend to CPython's terse names
             if (encoding.CodePage != 0) {
+#if !NETSTANDARD
                 if (encoding.IsBrowserDisplay) {
                     name = encoding.WebName;
                 }
@@ -1676,6 +1677,7 @@ namespace IronPython.Runtime.Operations {
                 if (name == null && encoding.IsMailNewsDisplay) {
                     name = encoding.HeaderName;
                 }
+#endif
 
                 // otherwise use a code page number which also matches CPython               
                 if (name == null) {
@@ -1742,6 +1744,26 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.LookupError("unknown encoding: {0}", encoding);
         }
 
+#if FEATURE_ENCODING
+        internal static void SetDecoderFallback(Encoding e, DecoderFallback decoderFallback) {
+#if NETSTANDARD
+            typeof(Encoding).GetField("decoderFallback", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(e, decoderFallback);
+            Debug.Assert(e.DecoderFallback == decoderFallback);
+#else
+            e.DecoderFallback = decoderFallback;
+#endif
+        }
+
+        internal static void SetEncoderFallback(Encoding e, EncoderFallback encoderFallback) {
+#if NETSTANDARD
+            typeof(Encoding).GetField("encoderFallback", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(e, encoderFallback);
+            Debug.Assert(e.EncoderFallback == encoderFallback);
+#else
+            e.EncoderFallback = encoderFallback;
+#endif
+        }
+#endif
+
         internal static string DoDecode(CodeContext context, string s, string errors, string encoding, Encoding e) {
 #if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
@@ -1751,17 +1773,11 @@ namespace IronPython.Runtime.Operations {
             switch (errors) {
                 case "backslashreplace":
                 case "xmlcharrefreplace":
-                case "strict": e.DecoderFallback = DecoderFallback.ExceptionFallback; break;
-                case "replace": e.DecoderFallback = DecoderFallback.ReplacementFallback; break;
-                case "ignore":
-                    e.DecoderFallback = new PythonDecoderFallback(encoding,
-                        s,
-                        null);
-                    break;
+                case "strict": SetDecoderFallback(e, DecoderFallback.ExceptionFallback); break;
+                case "replace": SetDecoderFallback(e, DecoderFallback.ReplacementFallback); break;
+                case "ignore":  SetDecoderFallback(e, new PythonDecoderFallback(encoding, s, null)); break;
                 default:
-                    e.DecoderFallback = new PythonDecoderFallback(encoding,
-                        s,
-                        LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors)));
+                    SetDecoderFallback(e, new PythonDecoderFallback(encoding, s, LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors))));
                     break;
             }
 #endif
@@ -1838,22 +1854,15 @@ namespace IronPython.Runtime.Operations {
             e = (Encoding)e.Clone();
 
             switch (errors) {
-                case "strict": e.EncoderFallback = EncoderFallback.ExceptionFallback; break;
-                case "replace": e.EncoderFallback = EncoderFallback.ReplacementFallback; break;
-                case "backslashreplace": e.EncoderFallback = new BackslashEncoderReplaceFallback(); break;
-                case "xmlcharrefreplace": e.EncoderFallback = new XmlCharRefEncoderReplaceFallback(); break;
-                case "ignore":
-                    e.EncoderFallback = new PythonEncoderFallback(encoding,
-                        s,
-                        null);
-                    break;
+                case "strict": SetEncoderFallback(e, EncoderFallback.ExceptionFallback); break;
+                case "replace": SetEncoderFallback(e, EncoderFallback.ReplacementFallback); break;
+                case "backslashreplace": SetEncoderFallback(e, new BackslashEncoderReplaceFallback()); break;
+                case "xmlcharrefreplace": SetEncoderFallback(e, new XmlCharRefEncoderReplaceFallback()); break;
+                case "ignore": SetEncoderFallback(e, new PythonEncoderFallback(encoding, s, null)); break;
                 default:
-                    e.EncoderFallback = new PythonEncoderFallback(encoding,
-                        s,
-                        LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors)));
+                    SetEncoderFallback(e, new PythonEncoderFallback(encoding, s, LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors))));
                     break;
             }
-
 #endif
             return PythonOps.MakeString(e.GetPreamble(), e.GetBytes(s));
         }
@@ -1876,44 +1885,64 @@ namespace IronPython.Runtime.Operations {
         static class CodecsInfo {
             public static readonly Dictionary<string, EncodingInfoWrapper> Codecs = MakeCodecsDict();
 
+#if NETSTANDARD
+            private static IEnumerable<EncodingInfo> GetEncodings() {
+                yield return new EncodingInfo(1200, "utf-16", "Unicode");
+                yield return new EncodingInfo(1201, "unicodeFFFE", "Unicode (Big endian)");
+                yield return new EncodingInfo(1252, "windows-1252", "Western European (Windows)");
+                yield return new EncodingInfo(20127, "us-ascii", "US-ASCII");
+                yield return new EncodingInfo(28591, "iso-8859-1", "Western European (ISO)");
+                yield return new EncodingInfo(28605, "iso-8859-15", "Latin 9 (ISO)");
+                yield return new EncodingInfo(65000, "utf-7", "Unicode (UTF-7)");
+                yield return new EncodingInfo(65001, "utf-8", "Unicode (UTF-8)");
+            }
+#endif
+
             private static Dictionary<string, EncodingInfoWrapper> MakeCodecsDict() {
                 Dictionary<string, EncodingInfoWrapper> d = new Dictionary<string, EncodingInfoWrapper>();
+#if NETSTANDARD
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                IEnumerable<EncodingInfo> encs = GetEncodings();
+#else
                 EncodingInfo[] encs = Encoding.GetEncodings();
-                for (int i = 0; i < encs.Length; i++) {
-                    string normalizedName = NormalizeEncodingName(encs[i].Name);
+#endif
+                foreach (EncodingInfo enc in encs) {
+                    string normalizedName = NormalizeEncodingName(enc.Name);
 
                     // setup well-known mappings, for everything
                     // else we'll store as lower case w/ _                
                     switch (normalizedName) {
                         case "us_ascii":
-                            d["cp" + encs[i].CodePage.ToString()] = d[normalizedName] = d["us"] = d["ascii"] = d["646"] = d["us_ascii"] = new AsciiEncodingInfoWrapper();
+                            d["cp" + enc.CodePage.ToString()] = d[normalizedName] = d["us"] = d["ascii"] = d["646"] = d["us_ascii"] = new AsciiEncodingInfoWrapper();
                             continue;
                         case "iso_8859_1":
-                            d["8859"] = d["latin_1"] = d["latin1"] = d["iso 8859_1"] = d["iso8859_1"] = d["cp819"] = d["819"] = d["latin"] = d["l1"] = encs[i];
+                            d["8859"] = d["latin_1"] = d["latin1"] = d["iso 8859_1"] = d["iso8859_1"] = d["cp819"] = d["819"] = d["latin"] = d["l1"] = enc;
                             break;
                         case "utf_7":
-                            d["u7"] = d["unicode-1-1-utf-7"] = encs[i];
+                            d["u7"] = d["unicode-1-1-utf-7"] = enc;
                             break;
                         case "utf_8":
-                            d["utf_8_sig"] = encs[i];
-                            d["utf_8"] = d["utf8"] = d["u8"] = new EncodingInfoWrapper(encs[i], new byte[0]);
+                            d["utf_8_sig"] = enc;
+                            d["cp" + enc.CodePage.ToString()] = d["utf_8"] = d["utf8"] = d["u8"] = new EncodingInfoWrapper(enc, new byte[0]);
                             continue;
                         case "utf_16":
-                            d["utf_16_le"] = d["utf_16le"] = new EncodingInfoWrapper(encs[i], new byte[0]);
-                            d["utf16"] = new EncodingInfoWrapper(encs[i], encs[i].GetEncoding().GetPreamble());
+                            d["utf_16_le"] = d["utf_16le"] = new EncodingInfoWrapper(enc, new byte[0]);
+                            d["utf16"] = new EncodingInfoWrapper(enc, enc.GetEncoding().GetPreamble());
                             break;
                         case "unicodefffe": // big endian unicode                    
                             // strip off the pre-amble, CPython doesn't include it.
-                            d["utf_16_be"] = d["utf_16be"] = new EncodingInfoWrapper(encs[i], new byte[0]);
+                            d["utf_16_be"] = d["utf_16be"] = new EncodingInfoWrapper(enc, new byte[0]);
                             break;
                     }
 
                     // publish under normalized name (all lower cases, -s replaced with _s)
-                    d[normalizedName] = encs[i];
-                    // publish under Windows code page as well...                
-                    d["windows-" + encs[i].GetEncoding().WindowsCodePage.ToString()] = encs[i];
+                    d[normalizedName] = enc;
+                    // publish under Windows code page as well...
+#if !NETSTANDARD
+                    d["windows-" + enc.GetEncoding().WindowsCodePage.ToString()] = enc;
+#endif
                     // publish under code page number as well...
-                    d["cp" + encs[i].CodePage.ToString()] = d[encs[i].CodePage.ToString()] = encs[i];
+                    d["cp" + enc.CodePage.ToString()] = d[enc.CodePage.ToString()] = enc;
                 }
 
                 d["raw_unicode_escape"] = new EncodingInfoWrapper(new UnicodeEscapeEncoding(true));
@@ -1985,13 +2014,13 @@ namespace IronPython.Runtime.Operations {
 
             private void SetEncoderFallback() {
 #if FEATURE_ENCODING
-                _encoding.EncoderFallback = EncoderFallback;
+                StringOps.SetEncoderFallback(_encoding, EncoderFallback);
 #endif
             }
 
             private void SetDecoderFallback() {
 #if FEATURE_ENCODING
-                _encoding.DecoderFallback = DecoderFallback;
+                StringOps.SetDecoderFallback(_encoding, DecoderFallback);
 #endif
             }
 

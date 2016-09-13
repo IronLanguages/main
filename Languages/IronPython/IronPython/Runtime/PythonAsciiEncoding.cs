@@ -40,8 +40,8 @@ namespace IronPython.Runtime {
 #if FEATURE_ENCODING
             // we need to Clone the new instance here so that the base class marks us as non-readonly
             enc = (Encoding)enc.Clone();
-            enc.DecoderFallback = new NonStrictDecoderFallback();
-            enc.EncoderFallback = new NonStrictEncoderFallback();
+            StringOps.SetDecoderFallback(enc, new NonStrictDecoderFallback());
+            StringOps.SetEncoderFallback(enc, new NonStrictEncoderFallback());
 #endif
             return enc;
         }
@@ -51,7 +51,7 @@ namespace IronPython.Runtime {
 #if FEATURE_ENCODING
             // we need to Clone the new instance here so that the base class marks us as non-readonly
             enc = (Encoding)enc.Clone();
-            enc.DecoderFallback = new SourceNonStrictDecoderFallback();
+            StringOps.SetDecoderFallback(enc, new SourceNonStrictDecoderFallback());
 #endif
             return enc;
         }
