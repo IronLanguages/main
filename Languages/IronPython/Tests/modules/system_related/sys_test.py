@@ -500,6 +500,14 @@ def test_cp30130():
     
     sys.settrace(None)
 
+def test_getrefcount():
+    with warnings.catch_warnings(record = True) as w:
+        count = sys.getrefcount(None)
+        
+    AreNotEqual(0, count)
+    Assert(w)
+    Assert('runtime' in w[0])
+    
 #--MAIN------------------------------------------------------------------------    
 
 testDelGetFrame = "Test_GetFrame" in sys.argv
