@@ -457,7 +457,8 @@ x = 42", scope);
         }
 #endif
 
-        public void ScenarioInterpterNestedVariables() {
+        public void ScenarioInterpreterNestedVariables() {
+#if !NETSTANDARD
             ParameterExpression arg = Expression.Parameter(typeof(object), "tmp");
             var argBody = Expression.Lambda<Func<object, IRuntimeVariables>>(
                 Expression.RuntimeVariables(
@@ -468,6 +469,7 @@ x = 42", scope);
 
             var vars = CompilerHelpers.LightCompile(argBody)(42);
             AreEqual(vars[0], 42);
+#endif
 
             ParameterExpression tmp = Expression.Parameter(typeof(object), "tmp");
             var body = Expression.Lambda<Func<object>>(
@@ -1021,7 +1023,7 @@ i = int
         public void ScenarioDlrInterop() {
             string actionOfT = typeof(Action<>).FullName.Split('`')[0];
 
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !NETSTANDARD
             ScriptScope scope = _env.CreateScope();
             ScriptSource src = _pe.CreateScriptSourceFromString(@"
 from System.Collections import ArrayList

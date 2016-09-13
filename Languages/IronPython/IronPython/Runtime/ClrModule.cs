@@ -52,6 +52,12 @@ namespace IronPython.Runtime {
     /// .NET/CLS interop with Python.  
     /// </summary>
     public static class ClrModule {
+#if NETSTANDARD
+        public static readonly bool IsNetStandard = true;
+#else
+        public static readonly bool IsNetStandard = false;
+#endif
+
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             if (!dict.ContainsKey("References")) {
@@ -113,7 +119,7 @@ import Namespace.")]
             }
         }
 
-#if !SILVERLIGHT
+#if FEATURE_LOADWITHPARTIALNAME
         [Documentation(@"Adds a reference to a .NET assembly.  Parameters are a partial assembly name. 
 After the load the assemblies namespaces and top-level types will be available via 
 import Namespace.")]
@@ -128,7 +134,7 @@ import Namespace.")]
         }
 #endif
 
-#if FEATURE_ASSEMBLY_RESOLVE && FEATURE_FILESYSTEM
+#if FEATURE_FILESYSTEM
         [Documentation(@"Adds a reference to a .NET assembly.  Parameters are a full path to an. 
 assembly on disk. After the load the assemblies namespaces and top-level types 
 will be available via import Namespace.")]
@@ -398,7 +404,7 @@ the assembly object.")]
         private static void AddReferenceToFile(CodeContext/*!*/ context, string file) {
             if (file == null) throw new TypeErrorException("Expected string, got NoneType");
 
-#if FEATURE_ASSEMBLY_RESOLVE && FEATURE_FILESYSTEM
+#if FEATURE_FILESYSTEM
             Assembly asm = LoadAssemblyFromFile(context, file);
 #else
             Assembly asm = context.LanguageContext.DomainManager.Platform.LoadAssemblyFromPath(file);
@@ -476,7 +482,7 @@ the assembly object.")]
 
         #region Runtime Type Checking support
 
-#if FEATURE_ASSEMBLY_RESOLVE && FEATURE_FILESYSTEM
+#if FEATURE_FILESYSTEM
         [Documentation(@"Adds a reference to a .NET assembly.  One or more assembly names can
 be provided which are fully qualified names to the file on disk.  The 
 directory is added to sys.path and AddReferenceToFile is then called. After the 

@@ -213,25 +213,31 @@ namespace IronPython.Runtime.Types {
                     retType.Append(GetPythonTypeName(mi.ReturnType));
                     returnCount++;
 
-                    var typeAttrs = mi.ReturnParameter.GetCustomAttributes(typeof(SequenceTypeInfoAttribute), true);
-                    if (typeAttrs.Any()) {
-                        retType.Append(" (of ");
-                        SequenceTypeInfoAttribute typeAttr = (SequenceTypeInfoAttribute)typeAttrs.First();
-                        for (int curTypeAttr = 0; curTypeAttr < typeAttr.Types.Count; curTypeAttr++) {
-                            if (curTypeAttr != 0) {
-                                retType.Append(", ");
+                    try {
+                        var typeAttrs = mi.ReturnParameter.GetCustomAttributes(typeof(SequenceTypeInfoAttribute), true);
+                        if (typeAttrs.Any()) {
+                            retType.Append(" (of ");
+                            SequenceTypeInfoAttribute typeAttr = (SequenceTypeInfoAttribute)typeAttrs.First();
+                            for (int curTypeAttr = 0; curTypeAttr < typeAttr.Types.Count; curTypeAttr++) {
+                                if (curTypeAttr != 0) {
+                                    retType.Append(", ");
+                                }
+
+                                retType.Append(GetPythonTypeName(typeAttr.Types[curTypeAttr]));
                             }
-
-                            retType.Append(GetPythonTypeName(typeAttr.Types[curTypeAttr]));
+                            retType.Append(")");
                         }
-                        retType.Append(")");
                     }
+                    catch (IndexOutOfRangeException) { } // swallow bug in .NET Core
 
-                    var dictTypeAttrs = mi.ReturnParameter.GetCustomAttributes(typeof(DictionaryTypeInfoAttribute), true);
-                    if (dictTypeAttrs.Any()) {
-                        var dictTypeAttr = (DictionaryTypeInfoAttribute)dictTypeAttrs.First();
-                        retType.Append(String.Format(" (of {0} to {1})", GetPythonTypeName(dictTypeAttr.KeyType), GetPythonTypeName(dictTypeAttr.ValueType)));
+                    try {
+                        var dictTypeAttrs = mi.ReturnParameter.GetCustomAttributes(typeof(DictionaryTypeInfoAttribute), true);
+                        if (dictTypeAttrs.Any()) {
+                            var dictTypeAttr = (DictionaryTypeInfoAttribute)dictTypeAttrs.First();
+                            retType.Append(String.Format(" (of {0} to {1})", GetPythonTypeName(dictTypeAttr.KeyType), GetPythonTypeName(dictTypeAttr.ValueType)));
+                        }
                     }
+                    catch (IndexOutOfRangeException) { } // swallow bug in .NET Core
                 }
 
                 if (name == null) {
