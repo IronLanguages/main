@@ -5031,22 +5031,6 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\CTypes</Name>
-      <Tests>
-        <Test>
-          <Name>test_ctypes_ipy</Name>
-          <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Tests\modules\misc\ctypes_test.py</Arguments>
-          <MaxDuration>600000</MaxDuration>
-          <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
-          <RequiresAdmin>false</RequiresAdmin>
-          <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
-        </Test>
-      </Tests>
-    </TestCategory>
-    <TestCategory>
       <Name>Languages\IronPython\IronPython\interop\dynamic</Name>
       <Tests>
         <Test>
