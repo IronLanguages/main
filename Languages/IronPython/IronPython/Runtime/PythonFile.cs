@@ -1092,11 +1092,11 @@ namespace IronPython.Runtime {
             var pythonContext = PythonContext.GetContext(context);
             var encoding = pythonContext.DefaultEncoding;
 
-            var inPipe = new AnonymousPipeStream(PipeDirection.In, hRead);
+            var inPipe = new AnonymousPipeClientStream(PipeDirection.In, hRead);
             var inPipeFile = new PythonFile(context);
             inPipeFile.InitializePipe(inPipe, "r", encoding);
 
-            var outPipe = new AnonymousPipeStream(PipeDirection.Out, hWrite);
+            var outPipe = new AnonymousPipeClientStream(PipeDirection.Out, hWrite);
             var outPipeFile = new PythonFile(context);
             outPipeFile.InitializePipe(outPipe, "w", encoding);
             return new [] {inPipeFile, outPipeFile};
@@ -2042,16 +2042,6 @@ namespace IronPython.Runtime {
 
         #endregion
     }
-
-#if FEATURE_PIPES
-    internal class AnonymousPipeStream : PipeStream {
-        public AnonymousPipeStream(PipeDirection direction, SafePipeHandle sph) : base(direction, 0) {
-            InitializeHandle(sph, true, false);
-            IsConnected = true;
-        }
-    }
-#endif
-
 
 #if FEATURE_NATIVE
     // dotnet45 backport
