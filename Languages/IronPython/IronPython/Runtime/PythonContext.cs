@@ -77,8 +77,10 @@ namespace IronPython.Runtime
         private readonly PythonOverloadResolverFactory _sharedOverloadResolverFactory;
         private readonly PythonBinder _binder;
         private readonly SysModuleDictionaryStorage _sysDict = new SysModuleDictionaryStorage();
-#if FEATURE_ASSEMBLY_RESOLVE && FEATURE_FILESYSTEM
+#if FEATURE_FILESYSTEM
+#if FEATURE_ASSEMBLY_RESOLVE
         private readonly AssemblyResolveHolder _resolveHolder;
+#endif
 #if !CLR2
         private readonly HashSet<Assembly> _loadedAssemblies = new HashSet<Assembly>();
 #endif
@@ -1328,7 +1330,7 @@ namespace IronPython.Runtime
         }
 
 #region Assembly Loading
-#if FEATURE_ASSEMBLY_RESOLVE && FEATURE_FILESYSTEM
+#if FEATURE_FILESYSTEM
 
         internal Assembly LoadAssemblyFromFile(string file) {
             // check all files in the path...
@@ -1353,7 +1355,11 @@ namespace IronPython.Runtime
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadFile")]
         internal bool TryLoadAssemblyFromFileWithPath(string path, out Assembly res) {
             if (File.Exists(path) && Path.IsPathRooted(path)) {
+#if NETSTANDARD
+                res = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyPath(path);
+#else
                 res = Assembly.LoadFile(path);
+#endif
                 if (res != null) {
 #if !CLR2
                     _loadedAssemblies.Add(res);
@@ -1366,6 +1372,7 @@ namespace IronPython.Runtime
             return false;
         }
 
+#if FEATURE_ASSEMBLY_RESOLVE
         internal Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args) {
 #if !CLR2 && !ANDROID
             if (args.RequestingAssembly != null && !_loadedAssemblies.Contains(args.RequestingAssembly)) {
@@ -1416,6 +1423,7 @@ namespace IronPython.Runtime
                 // If so, we will not look up sys.path for module loads
             }
         }
+#endif
 #endif
 #endregion
 

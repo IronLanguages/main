@@ -131,15 +131,21 @@ namespace Microsoft.Scripting.Runtime {
                 }
 
                 for (int i = 0; i < _members.Length; i++) {
-                    if (_members[i].DeclaringType != other._members[i].DeclaringType ||
-                        _members[i].GetMetadataToken() != other._members[i].GetMetadataToken() ||
-                        _members[i].IsGenericMethod != other._members[i].IsGenericMethod) {
+                    MethodBase member = _members[i];
+                    MethodBase otherMember = other._members[i];
+
+                    if (member.DeclaringType != otherMember.DeclaringType ||
+                        member.IsGenericMethod != otherMember.IsGenericMethod ||
+#if NETSTANDARD
+                        member.HasMetadataToken() && otherMember.HasMetadataToken() &&
+#endif
+                        member.GetMetadataToken() != otherMember.GetMetadataToken()) {
                         return false;
                     }
 
-                    if (_members[i].IsGenericMethod) {
-                        Type[] args = _members[i].GetGenericArguments();
-                        Type[] otherArgs = other._members[i].GetGenericArguments();
+                    if (member.IsGenericMethod) {
+                        Type[] args = member.GetGenericArguments();
+                        Type[] otherArgs = otherMember.GetGenericArguments();
 
                         if (args.Length != otherArgs.Length) {
                             return false;
