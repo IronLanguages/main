@@ -1,5 +1,0 @@
-fails:File::Stat#ftype returns a String 
-fails:File::Stat#ftype returns 'file' when the file is a file
-fails:File::Stat#ftype returns a String 
-fails:File::Stat#ftype returns a String 
-fails:File::Stat#ftype returns a String 

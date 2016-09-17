@@ -1,4 +1,0 @@
-fails:Prime.int_from_prime_division returns the product of the given factorization
-fails:Prime.int_from_prime_division returns 1 for an empty factorization
-fails:"Prime.int_from_prime_division returns the product of the given factorization"
-fails:"Prime.int_from_prime_division returns 1 for an empty factorization"

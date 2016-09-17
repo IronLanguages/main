@@ -1,2 +1,0 @@
-fails:Matrix#compare_by_row_vectors returns true if the two matrices contain equal elements
-fails:Matrix#compare_by_row_vectors returns false if the two matrices don't contain equal elements

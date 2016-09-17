@@ -1,2 +1,0 @@
-fails:Matrix#minor with start_row, nrows, start_col, ncols returns an empty Matrix unless nrows and ncols are greater than 0
-fails:Matrix#minor with start_row, nrows, start_col, ncols returns empty matrices for extreme start_row/col

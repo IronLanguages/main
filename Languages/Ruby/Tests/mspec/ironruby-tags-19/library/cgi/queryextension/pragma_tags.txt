@@ -1,2 +1,0 @@
-fails:CGI::QueryExtension#pragma returns ENV['HTTP_PRAGMA']
-fails:"CGI::QueryExtension#pragma returns ENV['HTTP_PRAGMA']"

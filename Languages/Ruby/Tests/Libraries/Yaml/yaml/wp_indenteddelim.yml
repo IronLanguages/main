@@ -1,8 +1,0 @@
----
-example: HTML goes into YAML without modification
-message: !xml |
-        <font name='times' size=10>
-         <p><i>"Three is always greater than
-                two, even for large values of two"</i>
-          </p><p>    --Author Unknown    </p></font>
-date: 2007-06-01

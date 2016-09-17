@@ -1,1 +1,0 @@
-fails:StringIO#getc returns the 8-bit byte at the current position

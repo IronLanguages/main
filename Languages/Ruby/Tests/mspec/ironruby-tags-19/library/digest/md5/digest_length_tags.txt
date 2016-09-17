@@ -1,2 +1,0 @@
-fails:Digest::MD5#digest_length returns the length of computed digests
-fails:"Digest::MD5#digest_length returns the length of computed digests"

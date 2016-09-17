@@ -1,1 +1,0 @@
-fails:File::Stat#gid should be able to determine the group owner through a File::Stat object

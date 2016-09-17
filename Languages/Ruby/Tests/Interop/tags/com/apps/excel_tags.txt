@@ -1,5 +1,0 @@
-fails:Excel COM event handling fires for single event
-fails:Excel COM event handling fires for multiple events
-fails:Excel COM event handling fires after removing an event
-fails:Excel COM event handling fires after removing all events
-fails:Excel COM event handling fires after removing all events, then adding one back

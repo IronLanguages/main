@@ -1,1 +1,0 @@
-fails:Thread#wakeup raises a ThreadError when trying to wake up a dead thread

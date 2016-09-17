@@ -1,3 +1,0 @@
-fails:Removing methods from a Class is allowed via module/class_eval
-fails:Removing methods from a Class is allowed via class_eval on the metaclass
-fails:Removing methods from a Class is allowed on metaclass

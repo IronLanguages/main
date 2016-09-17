@@ -1,4 +1,0 @@
-fails:Integer.from_prime_division returns the product of the given factorization
-fails:Integer.from_prime_division returns 1 for an empty factorization
-fails:"Integer.from_prime_division returns the product of the given factorization"
-fails:"Integer.from_prime_division returns 1 for an empty factorization"

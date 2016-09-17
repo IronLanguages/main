@@ -1,1 +1,0 @@
-fails:.NET Array's can be used as parameters to Kernel#send

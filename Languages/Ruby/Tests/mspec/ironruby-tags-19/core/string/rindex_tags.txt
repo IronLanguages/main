@@ -1,8 +1,0 @@
-fails:String#rindex with String behaves the same as String#rindex(?char) for one-character strings
-fails:String#rindex with Regexp supports \G which matches at the given start offset
-fails:String#rindex with String behaves the same as String#rindex(?char) for one-character strings
-fails:String#rindex with Regexp supports \G which matches at the given start offset
-fails:String#rindex with String behaves the same as String#rindex(?char) for one-character strings
-fails:String#rindex with Regexp supports \G which matches at the given start offset
-fails:String#rindex with Regexp supports \\G which matches at the given start offset
-fails:String#rindex with object raises a TypeError if obj isn't a String, Fixnum or Regexp

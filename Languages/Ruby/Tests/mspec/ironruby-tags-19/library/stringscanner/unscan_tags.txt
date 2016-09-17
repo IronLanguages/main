@@ -1,1 +1,0 @@
-fails:StringScanner#unscan raises a ScanError when the previous match had failed

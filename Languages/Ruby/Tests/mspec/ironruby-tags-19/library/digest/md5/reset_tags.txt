@@ -1,2 +1,0 @@
-fails:Digest::MD5#reset can returns digest state to initial conditions
-fails:"Digest::MD5#reset can returns digest state to initial conditions"
