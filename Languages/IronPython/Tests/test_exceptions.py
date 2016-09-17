@@ -1057,5 +1057,13 @@ def test_cp35300():
     # generated implementation do not restrict parameters of __init__
     AreNotEqual(None, CP35300_Derived("a", x="b"))
 
+def test_issue1164():
+    class error(Exception):
+        pass
+
+    def f():
+	    raise (error,), 0
+
+    AssertError(error, f)
 
 run_test(__name__)

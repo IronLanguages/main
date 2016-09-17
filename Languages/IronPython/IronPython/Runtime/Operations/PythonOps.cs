@@ -2393,6 +2393,11 @@ namespace IronPython.Runtime.Operations {
             Exception throwable;
             PythonType pt;
 
+            // unwrap tuples
+            while (type is PythonTuple && ((PythonTuple)type).Any()) {
+                type = ((PythonTuple)type).First();
+            }
+
             if (type is PythonExceptions.BaseException) {
                 throwable = PythonExceptions.ToClr(type);
             } else if (type is Exception) {
