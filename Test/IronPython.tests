@@ -1504,6 +1504,50 @@
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
+        <Test>
+          <Name>test_ast_20</Name>
+          <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
+          <Arguments>-X:Frames test_ast.py</Arguments>
+          <MaxDuration>600000</MaxDuration>
+          <LongRunning>false</LongRunning>
+          <Disabled>false</Disabled>
+          <RequiresAdmin>false</RequiresAdmin>
+          <NotParallelSafe>false</NotParallelSafe>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
+        </Test>
+        <Test>
+          <Name>test_fuzz_parser_20</Name>
+          <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
+          <Arguments>test_fuzz_parser.py</Arguments>
+          <MaxDuration>600000</MaxDuration>
+          <LongRunning>false</LongRunning>
+          <Disabled>true</Disabled><!-- TIMEOUT -->
+          <RequiresAdmin>false</RequiresAdmin>
+          <NotParallelSafe>false</NotParallelSafe>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
+        </Test>
+        <Test>
+          <Name>test_struct_20</Name>
+          <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
+          <Arguments>test_struct.py</Arguments>
+          <MaxDuration>600000</MaxDuration>
+          <LongRunning>false</LongRunning>
+          <Disabled>false</Disabled>
+          <RequiresAdmin>false</RequiresAdmin>
+          <NotParallelSafe>false</NotParallelSafe>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
+        </Test>
+        <Test>
+          <Name>test_strformat_20</Name>
+          <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
+          <Arguments>test_strformat.py</Arguments>
+          <MaxDuration>600000</MaxDuration>
+          <LongRunning>false</LongRunning>
+          <Disabled>false</Disabled>
+          <RequiresAdmin>false</RequiresAdmin>
+          <NotParallelSafe>false</NotParallelSafe>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
+        </Test>
       </Tests>
     </TestCategory>
     <TestCategory>
@@ -5255,17 +5299,6 @@
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\languages\ironpython\tests</WorkingDirectory>
-        </Test>
-        <Test>
-          <Name>test_imp_ipy</Name>
-          <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>test_imp.py</Arguments>
-          <MaxDuration>600000</MaxDuration>
-          <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
-          <RequiresAdmin>false</RequiresAdmin>
-          <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>test_stdmodules_ipy</Name>
