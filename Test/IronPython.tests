@@ -367,10 +367,10 @@
         <Test>
           <Name>sbs_builtin_20</Name>
           <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
-          <Arguments>%DLR_BIN%\ipy.exe sbs_builtin.py</Arguments>
+          <Arguments>sbs_builtin.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED in Release -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests\compat</WorkingDirectory>
@@ -378,10 +378,10 @@
         <Test>
           <Name>sbs_parse_string_20</Name>
           <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
-          <Arguments>%DLR_BIN%\ipy.exe sbs_parse_string.py</Arguments>
+          <Arguments>sbs_parse_string.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED in Release -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests\compat</WorkingDirectory>
@@ -394,10 +394,10 @@
         <Test>
           <Name>sbs_class_compare_20</Name>
           <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
-          <Arguments>%DLR_BIN%\ipy.exe sbs_class_compare.py</Arguments>
+          <Arguments>sbs_class_compare.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED in Release -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests\compat</WorkingDirectory>
@@ -416,10 +416,10 @@
         <Test>
           <Name>sbs_simple_compare_20</Name>
           <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
-          <Arguments>%DLR_BIN%\ipy.exe sbs_simple_compare.py</Arguments>
+          <Arguments>sbs_simple_compare.py</Arguments>
           <MaxDuration>1800000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED in Release -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests\compat</WorkingDirectory>
@@ -432,10 +432,10 @@
         <Test>
           <Name>sbs_exceptions_define_20</Name>
           <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
-          <Arguments>%DLR_BIN%\ipy.exe sbs_exceptions\define.py</Arguments>
+          <Arguments>sbs_exceptions\define.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED in Release -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests\compat</WorkingDirectory>
@@ -443,10 +443,10 @@
         <Test>
           <Name>sbs_exceptions_for_loop_20</Name>
           <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
-          <Arguments>%DLR_BIN%\ipy.exe sbs_exceptions\for_loop.py</Arguments>
+          <Arguments>sbs_exceptions\for_loop.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED in Release -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests\compat</WorkingDirectory>
@@ -454,10 +454,10 @@
         <Test>
           <Name>sbs_exceptions_if_false_20</Name>
           <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
-          <Arguments>%DLR_BIN%\ipy.exe sbs_exceptions\if_false.py</Arguments>
+          <Arguments>sbs_exceptions\if_false.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED in Release -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests\compat</WorkingDirectory>
@@ -465,10 +465,10 @@
         <Test>
           <Name>sbs_exceptions_if_true_20</Name>
           <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
-          <Arguments>%DLR_BIN%\ipy.exe sbs_exceptions\if_true.py</Arguments>
+          <Arguments>sbs_exceptions\if_true.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED in Release -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests\compat</WorkingDirectory>
@@ -476,10 +476,10 @@
         <Test>
           <Name>sbs_exceptions_try_else_20</Name>
           <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
-          <Arguments>%DLR_BIN%\ipy.exe sbs_exceptions\try_else.py</Arguments>
+          <Arguments>sbs_exceptions\try_else.py</Arguments>
           <MaxDuration>900000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED in Release -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests\compat</WorkingDirectory>
@@ -487,10 +487,10 @@
         <Test>
           <Name>sbs_exceptions_try_except1_20</Name>
           <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
-          <Arguments>%DLR_BIN%\ipy.exe sbs_exceptions\try_except1.py</Arguments>
+          <Arguments>sbs_exceptions\try_except1.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED in Release -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests\compat</WorkingDirectory>
@@ -498,10 +498,10 @@
         <Test>
           <Name>sbs_exceptions_try_except2_20</Name>
           <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
-          <Arguments>%DLR_BIN%\ipy.exe sbs_exceptions\try_except2.py</Arguments>
+          <Arguments>sbs_exceptions\try_except2.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED in Release -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests\compat</WorkingDirectory>
@@ -509,10 +509,10 @@
         <Test>
           <Name>sbs_exceptions_try_except3_20</Name>
           <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
-          <Arguments>%DLR_BIN%\ipy.exe sbs_exceptions\try_except3.py</Arguments>
+          <Arguments>sbs_exceptions\try_except3.py</Arguments>
           <MaxDuration>900000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED in Release -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests\compat</WorkingDirectory>
@@ -520,10 +520,10 @@
         <Test>
           <Name>sbs_exceptions_try_finally1_20</Name>
           <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
-          <Arguments>%DLR_BIN%\ipy.exe sbs_exceptions\try_finally1.py</Arguments>
+          <Arguments>sbs_exceptions\try_finally1.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED in Release -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests\compat</WorkingDirectory>
@@ -531,10 +531,10 @@
         <Test>
           <Name>sbs_exceptions_try_finally2_20</Name>
           <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
-          <Arguments>%DLR_BIN%\ipy.exe sbs_exceptions\try_finally2.py</Arguments>
+          <Arguments>sbs_exceptions\try_finally2.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED in Release -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests\compat</WorkingDirectory>
@@ -542,10 +542,10 @@
         <Test>
           <Name>sbs_exceptions_try_finally3_20</Name>
           <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
-          <Arguments>%DLR_BIN%\ipy.exe sbs_exceptions\try_finally3.py</Arguments>
+          <Arguments>sbs_exceptions\try_finally3.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED in Release -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests\compat</WorkingDirectory>
@@ -553,10 +553,10 @@
         <Test>
           <Name>sbs_exceptions_while_loop_20</Name>
           <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
-          <Arguments>%DLR_BIN%\ipy.exe sbs_exceptions\while_loop.py</Arguments>
+          <Arguments>sbs_exceptions\while_loop.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED in Release -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests\compat</WorkingDirectory>
@@ -569,10 +569,10 @@
         <Test>
           <Name>sbs_func_args_20</Name>
           <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
-          <Arguments>%DLR_BIN%\ipy.exe sbs_func_args.py</Arguments>
+          <Arguments>sbs_func_args.py</Arguments>
           <MaxDuration>1500000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED in Release -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests\compat</WorkingDirectory>
@@ -580,10 +580,10 @@
         <Test>
           <Name>sbs_simple_ops_20</Name>
           <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
-          <Arguments>%DLR_BIN%\ipy.exe sbs_simple_ops.py</Arguments>
+          <Arguments>sbs_simple_ops.py</Arguments>
           <MaxDuration>1500000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED in Release -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests\compat</WorkingDirectory>
@@ -591,10 +591,10 @@
         <Test>
           <Name>sbs_true_division_20</Name>
           <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
-          <Arguments>%DLR_BIN%\ipy.exe sbs_true_division.py</Arguments>
+          <Arguments>sbs_true_division.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED in Release -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests\compat</WorkingDirectory>
@@ -1497,6 +1497,50 @@
           <Name>test_with_20</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
           <Arguments>test_with.py</Arguments>
+          <MaxDuration>600000</MaxDuration>
+          <LongRunning>false</LongRunning>
+          <Disabled>false</Disabled>
+          <RequiresAdmin>false</RequiresAdmin>
+          <NotParallelSafe>false</NotParallelSafe>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
+        </Test>
+        <Test>
+          <Name>test_ast_20</Name>
+          <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
+          <Arguments>-X:Frames test_ast.py</Arguments>
+          <MaxDuration>600000</MaxDuration>
+          <LongRunning>false</LongRunning>
+          <Disabled>false</Disabled>
+          <RequiresAdmin>false</RequiresAdmin>
+          <NotParallelSafe>false</NotParallelSafe>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
+        </Test>
+        <Test>
+          <Name>test_fuzz_parser_20</Name>
+          <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
+          <Arguments>test_fuzz_parser.py</Arguments>
+          <MaxDuration>600000</MaxDuration>
+          <LongRunning>false</LongRunning>
+          <Disabled>true</Disabled><!-- TIMEOUT -->
+          <RequiresAdmin>false</RequiresAdmin>
+          <NotParallelSafe>false</NotParallelSafe>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
+        </Test>
+        <Test>
+          <Name>test_struct_20</Name>
+          <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
+          <Arguments>test_struct.py</Arguments>
+          <MaxDuration>600000</MaxDuration>
+          <LongRunning>false</LongRunning>
+          <Disabled>false</Disabled>
+          <RequiresAdmin>false</RequiresAdmin>
+          <NotParallelSafe>false</NotParallelSafe>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
+        </Test>
+        <Test>
+          <Name>test_strformat_20</Name>
+          <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
+          <Arguments>test_strformat.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -5255,17 +5299,6 @@
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\languages\ironpython\tests</WorkingDirectory>
-        </Test>
-        <Test>
-          <Name>test_imp_ipy</Name>
-          <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>test_imp.py</Arguments>
-          <MaxDuration>600000</MaxDuration>
-          <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
-          <RequiresAdmin>false</RequiresAdmin>
-          <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>test_stdmodules_ipy</Name>
