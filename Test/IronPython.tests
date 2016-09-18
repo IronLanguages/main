@@ -2152,17 +2152,6 @@
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
         </Test>
         <Test>
-          <Name>test_coding_cpy</Name>
-          <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>test\test_coding.py</Arguments>
-          <MaxDuration>600000</MaxDuration>
-          <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED -->
-          <RequiresAdmin>false</RequiresAdmin>
-          <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
-        </Test>
-        <Test>
           <Name>test_coercion_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
           <Arguments>-X:Frames test\test_coercion.py</Arguments>

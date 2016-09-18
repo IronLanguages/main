@@ -100,7 +100,7 @@ class Win32MimeTypesTestCase(unittest.TestCase):
                 elif name == 'OpenKey':
                     return lambda key, name: _winreg.OpenKey(key, name.rstrip("\xa3"))
                 elif name == 'QueryValueEx':
-                    return lambda subkey, label: (u'?????/???????' , _winreg.REG_SZ)
+                    return lambda subkey, label: (u'текст/простой' , _winreg.REG_SZ)
                 return getattr(_winreg, name)
 
         mimetypes._winreg = MockWinreg()
@@ -117,7 +117,7 @@ class Win32MimeTypesTestCase(unittest.TestCase):
         class MockWinreg(object):
             def __getattr__(self, name):
                 if name == 'QueryValueEx':
-                    return lambda subkey, label: (u'?????/???????', _winreg.REG_SZ)
+                    return lambda subkey, label: (u'текст/простой', _winreg.REG_SZ)
                 return getattr(_winreg, name)
 
         mimetypes._winreg = MockWinreg()

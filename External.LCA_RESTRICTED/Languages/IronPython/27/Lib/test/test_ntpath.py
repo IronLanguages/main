@@ -48,8 +48,8 @@ class TestNtpath(unittest.TestCase):
         tester('ntpath.splitdrive("//conky//mountpoint/foo/bar")',
                ('', '//conky//mountpoint/foo/bar'))
         # Issue #19911: UNC part containing U+0130
-        self.assertEqual(ntpath.splitdrive(u'//conky/MOUNTPOINT/foo/bar'),
-                         (u'//conky/MOUNTPOINT', '/foo/bar'))
+        self.assertEqual(ntpath.splitdrive(u'//conky/MOUNTPOİNT/foo/bar'),
+                         (u'//conky/MOUNTPOİNT', '/foo/bar'))
         self.assertEqual(ntpath.splitdrive("//"), ("", "//"))
 
     def test_splitunc(self):
