@@ -1849,7 +1849,7 @@
           <Arguments>-X:FullFrames Test\test_bisect.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled> <!-- TIMEOUT -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -2509,7 +2509,7 @@
           <Arguments>Test\test_dumbdbm.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -2575,7 +2575,7 @@
           <Arguments>Test\test_enumerate.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
