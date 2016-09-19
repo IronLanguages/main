@@ -207,8 +207,10 @@ def test_pytypes():
     pass
     
 def test_clrtypes():
-    #subclasses...
-    pass
+    # Test whether the correct overload of bytes constructor is used
+    class subclass_overload_test(bytes):
+        pass
+    inst = subclass_overload_test('a')
     
 def test_pyinstances():
     pass
