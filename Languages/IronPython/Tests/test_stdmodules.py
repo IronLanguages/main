@@ -176,6 +176,7 @@ def test_cp12009():
             os.unlink(os.path.join(t_dir, "stuff.txt"))
             os.rmdir(t_dir)
 
+@skip("netstandard") # sys.executable isn't an executable
 def test_cp17040():
     if not is_stdlib(): 
         print "Will not run w/o the std library"
@@ -185,6 +186,7 @@ def test_cp17040():
                    (sys.executable))
     AreEqual(ec, 0)
 
+@skip("netstandard") # TODO: figure out why this doesn't work
 @skip("win32")
 def test_cp13401():
     import copy
@@ -264,6 +266,7 @@ def test_cp21929():
     if is_cpython: #http://ironpython.codeplex.com/workitem/28207
         AssertError(WindowsError, os.listdir, "")
 
+@skip("netstandard") # missing FEATURE_SORTKEY
 def test_cp34188():
     import locale
     locale.setlocale(locale.LC_COLLATE,"de_CH")

@@ -758,6 +758,9 @@ def test_subclass_dict_override__init__():
 
 #####################################################################
 
+if is_netstandard: # System.InvalidOperationException is not a System.SystemException in netstandard
+    SystemError = System.InvalidOperationException
+
 def test_DictionaryUnionEnumerator():
     if is_cli == False:
         return

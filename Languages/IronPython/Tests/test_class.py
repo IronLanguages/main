@@ -2261,7 +2261,7 @@ def test_type_type_is_type():
         
     false_values = [OS]
     if is_cli:
-        false_values += [ System.Boolean(1), System.Int32(3), System.Version(), System.Exception() ]
+        false_values += [ System.Boolean(1), System.Int32(3), System.Version(0, 0), System.Exception() ]
         
     for x in false_values:
         Assert(type(x) is not type)

@@ -24,6 +24,8 @@ from Merlin.Testing import *
 from Merlin.Testing.Property import *  #Merlin 315120 - please do not remove/modify this line
 from Merlin.Testing.TypeSample import *
 
+if is_netstandard: SystemError = Exception # no System.SystemException in netstandard
+
 def test_explicitly_implemented_property():
     for t in [
                 ClassExplicitlyImplement, 

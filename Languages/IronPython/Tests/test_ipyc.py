@@ -390,6 +390,7 @@ def test_ip_hosting_resource_file():
 
 
 @skip("multiple_execute")
+@skip("netstandard") # no clr.CompileModules in netstandard
 def test_compiled_code():
     if System.Environment.GetEnvironmentVariable('DLR_SaveAssemblies'):
         # The SaveAssemblies option is not compatible with saving code to disk
@@ -416,6 +417,7 @@ def test_compiled_code():
         System.IO.File.Move('old_test_class.py', testpath.public_testdir + '\\test_class.py')
         
 @skip("multiple_execute")
+@skip("netstandard") # no System.ICloneable in netstandard
 def test_cached_types():
     import clr
     from System import IComparable, IFormattable, ICloneable

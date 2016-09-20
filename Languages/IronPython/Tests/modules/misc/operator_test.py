@@ -21,9 +21,11 @@ if sys.platform!="win32":
     
     import clr
     if not is_silverlight:
-        clr.AddReferenceByPartialName("System.Drawing")
+        if is_netstandard:
+            clr.AddReference("System.Drawing.Primitives")
+        else:
+            clr.AddReference("System.Drawing")
     
-
 @skip("win32 silverlight")
 def test_sys_drawing():
     from System.Drawing import Point, Size, PointF, SizeF, Rectangle, RectangleF
@@ -129,6 +131,7 @@ def test_sys_drawing():
     Assert(not DaysInt.Mon == None)
     Assert(DaysInt.Mon != None)
 
+@skip("netstandard") # no System.Drawing.Color in netstandard
 @skip("win32 silverlight")
 def test_cp3982():
     from System.Drawing import Color

@@ -18,6 +18,7 @@
 from iptest.assert_util import *
 from iptest.process_util import *
 
+skiptest("netstandard") # no assembly saving in netstandard
 skiptest("silverlight")
 skiptest("win32")
 

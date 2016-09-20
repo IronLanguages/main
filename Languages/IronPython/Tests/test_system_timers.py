@@ -16,6 +16,7 @@
 from iptest.assert_util import *
 skiptest("win32")
 skiptest("silverlight")
+skiptest("netstandard") # no System.Timers in netstandard
 
 from time   import sleep
 from thread import start_new_thread
