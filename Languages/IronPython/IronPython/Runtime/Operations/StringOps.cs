@@ -1785,6 +1785,18 @@ namespace IronPython.Runtime.Operations {
             byte[] bytes = s.MakeByteArray();
             int start = GetStartingOffset(e, bytes);
 
+#if FEATURE_ENCODING && NETSTANDARD
+            try
+            {
+                return e.GetString(bytes, start, bytes.Length - start);
+            }
+            catch (NullReferenceException)
+            {
+                // bug in netstandard1.6, instead of failing try with a DecoderReplacementFallback
+                SetDecoderFallback(e, DecoderFallback.ReplacementFallback);
+            }
+#endif
+
             return e.GetString(bytes, start, bytes.Length - start);
         }
 
