@@ -353,10 +353,10 @@ def test_addreference_sanity():
     # add reference directly to assembly
     clr.AddReference(''.GetType().Assembly)
     # add reference via partial name
-    try:
-        clr.AddReference('System.Xml')
-    except:
+    if is_netstandard:
         clr.AddReference('System.Xml.XmlDocument')
+    else:
+        clr.AddReference('System.Xml')
 
     # add a reference via a fully qualified name
     clr.AddReference(''.GetType().Assembly.FullName)
