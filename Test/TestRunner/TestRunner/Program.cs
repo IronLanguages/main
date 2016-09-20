@@ -13,7 +13,7 @@ using System.Xml.Serialization;
 namespace TestRunner
 {
     class Program {
-        private bool _verbose, _runLongRunning, _admin, _quiet;
+        private bool _verbose, _runLongRunning, _admin, _quiet, _isUnix = false;
         private int _threadCount = 1;
         private List<TestResult> _results = new List<TestResult>();
 
@@ -27,10 +27,13 @@ namespace TestRunner
                 return -1;
             }
 
+            _isUnix = Environment.OSVersion.Platform == PlatformID.Unix;
+
             // try and define DLR_ROOT if not already defined (makes it easier to debug TestRunner in an IDE)
             string dlrRoot = Environment.GetEnvironmentVariable("DLR_ROOT");
+
             if (dlrRoot == null) {
-                dlrRoot = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "..\\..\\..\\..\\..");
+                dlrRoot = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "../../../../..");
                 Environment.SetEnvironmentVariable("DLR_ROOT", dlrRoot);
             }
 
@@ -39,7 +42,7 @@ namespace TestRunner
             List<string> categories = new List<string>();
             List<string> tests = new List<string>();
             bool runAll = false;
-            string binPath = Path.Combine(dlrRoot, "bin\\Debug"); // Default to debug binaries
+            string binPath = Path.Combine(dlrRoot, "bin", "Debug"); // Default to debug binaries
             string nunitOutputPath = null;
 
             for (int i = 0; i < args.Length; i++) {
@@ -269,11 +272,16 @@ namespace TestRunner
                 Console.WriteLine("Repro:");
                 if (test.EnvironmentVariables != null) {
                     foreach (var envVar in test.EnvironmentVariables) {
-                        Console.WriteLine("SET {0}={1}", envVar.Name, envVar.Value);
+                        Console.WriteLine("{0} {1}={2}", _isUnix ? "export" : "SET", envVar.Name, envVar.Value);
                     }
                 }
-                Console.WriteLine("CD /D {0}", test.WorkingDirectory);
-                Console.WriteLine("{0} {1}", test.Filename, test.Arguments);
+                if(_isUnix) {
+                    Console.WriteLine("cd {0}", test.WorkingDirectory.Replace("\\", "/"));
+                    Console.WriteLine("{0} {1}", test.Filename.Replace(".bat", ".sh"), test.Arguments.Replace("\\", "/"));
+                } else {
+                    Console.WriteLine("CD /D {0}", test.WorkingDirectory);
+                    Console.WriteLine("{0} {1}", test.Filename, test.Arguments);
+                }
 
                 Console.WriteLine();
                 Console.WriteLine("Result: ");
@@ -297,7 +305,7 @@ namespace TestRunner
             DateTime startTime = DateTime.Now;
             Process process = null;
             try {
-                process = Process.Start(CreateProcessInfoFromTest(test));
+                process = Process.Start(CreateProcessInfoFromTest(test, _isUnix));
             } catch (Win32Exception e) {
                 return new TestResult(test, TestResultStatus.Failed, 0, new List<string> { e.Message });
             }
@@ -349,12 +357,19 @@ namespace TestRunner
             return new TestResult(test, status, (DateTime.Now - startTime).TotalSeconds, output);
         }
 
-        private static ProcessStartInfo CreateProcessInfoFromTest(Test test) {
+        private static ProcessStartInfo CreateProcessInfoFromTest(Test test, bool isUnix) {
             ProcessStartInfo psi = new ProcessStartInfo();
             var args = test.Arguments.Contains("-X:Debug") ? test.Arguments : "-X:Debug " + test.Arguments;
             psi.Arguments = Environment.ExpandEnvironmentVariables(test.Arguments);
             psi.WorkingDirectory = Environment.ExpandEnvironmentVariables(test.WorkingDirectory);
             psi.FileName = Environment.ExpandEnvironmentVariables(test.Filename);
+            if(isUnix) {
+                if(string.Compare(Path.GetExtension(psi.FileName), ".bat", true) == 0) {
+                    psi.FileName = Path.ChangeExtension(psi.FileName, ".sh").Replace("\\", "/");
+                }
+                psi.WorkingDirectory = psi.WorkingDirectory.Replace("\\", "/");
+				psi.Arguments = psi.Arguments.Replace("\\", "/");
+            }
             psi.RedirectStandardError = true;
             psi.RedirectStandardOutput = true;
             psi.UseShellExecute = false;

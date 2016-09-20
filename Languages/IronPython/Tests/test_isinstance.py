@@ -339,8 +339,8 @@ def test_subclassing_builtins():
     f = MyFile('temporary.deleteme','w')
     AreEqual(f.myfield, 0)
     f.close()
-    import nt
-    nt.unlink('temporary.deleteme')
+    import os
+    os.unlink('temporary.deleteme')
     
     
     class C(list):
@@ -372,7 +372,7 @@ def test_extensible_types_hashing():
 def test_kwargs_file():
     f = file(name='temporary.deleteme', mode='w')
     f.close()
-    nt.unlink('temporary.deleteme')
+    os.unlink('temporary.deleteme')
 
 
 

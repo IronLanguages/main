@@ -100,7 +100,7 @@ def test_cp13618():
 
 def test_cp12907():
     #from codeop import compile_command, PyCF_DONT_IMPLY_DEDENT
-    from nt import unlink
+    from os import unlink
     
     f_name = "fake_stdout.txt"
     test_list = [
@@ -141,7 +141,7 @@ def test_cp12907():
             
         finally:
             sys.stdout = orig_stdout
-    nt.unlink(f_name)
+    os.unlink(f_name)
 
     #negative cases
     bad_test_list = [
@@ -158,30 +158,30 @@ def test_cp12907():
         AssertError(SyntaxError, compile, test_case, "", kind, 0x200, 1)
 
 def test_cp12009():
-    import nt
+    import os
     import shutil
     
     dir1 = "temp_test_stdmodules_dir"
     dir2 = dir1 + "2"
     
-    nt.mkdir(dir1)
-    f = open(dir1 + r"\stuff.txt", "w")
+    os.mkdir(dir1)
+    f = open(os.path.join(dir1, "stuff.txt"), "w")
     f.close()
     
     try:
         shutil.copytree(dir1, dir2)
-        Assert("stuff.txt" in nt.listdir(dir2))
+        Assert("stuff.txt" in os.listdir(dir2))
     finally:
         for t_dir in [dir1, dir2]:
-            nt.unlink(t_dir + r"\stuff.txt")
-            nt.rmdir(t_dir)
+            os.unlink(os.path.join(t_dir, "stuff.txt"))
+            os.rmdir(t_dir)
 
 def test_cp17040():
     if not is_stdlib(): 
         print "Will not run w/o the std library"
         return
         
-    ec = nt.system("%s -tt -c \"import os\"" %
+    ec = os.system("%s -tt -c \"import os\"" %
                    (sys.executable))
     AreEqual(ec, 0)
 

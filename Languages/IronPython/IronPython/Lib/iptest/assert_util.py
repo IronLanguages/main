@@ -23,7 +23,7 @@ from iptest.test_env import *
 from iptest import options, l
 
 if not is_silverlight:
-    import nt
+    import os
     from file_util import *
  
 from type_util import types
@@ -36,15 +36,18 @@ def usage(code, msg=''):
 
 if not is_silverlight:
     def get_environ_variable(key):
-        l = [nt.environ[x] for x in nt.environ.keys() if x.lower() == key.lower()]
+        l = [os.environ[x] for x in os.environ.keys() if x.lower() == key.lower()]
         if l: return l[0]
         else: return None
 
     def get_temp_dir():
         temp = get_environ_variable("TMP")
         if temp == None: temp = get_environ_variable("TEMP")
-        if (temp == None) or (' ' in temp) : 
+        if ((temp == None) or (' ' in temp)) and os.name == 'nt': 
             temp = r"C:\temp"
+        if ((temp == None) or (' ' in temp)) and os.name == 'posix': 
+            temp = "/tmp"
+
         return temp
     
     ironpython_dlls = [
@@ -88,26 +91,26 @@ else:
         # find the ironpython root directory
         rowan_root          = get_environ_variable("dlr_root")
 
-        basePyDir = 'Languages\\IronPython'
+        basePyDir = path_combine('Languages', 'IronPython')
         if not rowan_root:
             rowan_root = sys.prefix
             if is_cli:
-                if System.IO.Directory.Exists(path_combine(rowan_root, r'..\..\Src')):
-                    basePyDir = r'..\..\Src'
+                if System.IO.Directory.Exists(path_combine(rowan_root, '../../Src')):
+                    basePyDir = '../../Src'
 
         # get some directories and files
         ip_root             = path_combine(rowan_root, basePyDir)
-        external_dir        = path_combine(rowan_root, r'External.LCA_RESTRICTED\Languages\IronPython')
-        clean_external_dir  = path_combine(rowan_root, r'External.LCA_RESTRICTED\Languages\CPython\27')
-        public_testdir      = path_combine(ip_root, r'Tests')
-        compat_testdir      = path_combine(ip_root, r'Tests\compat')
-        test_inputs_dir     = path_combine(ip_root, r'Tests\Inputs')
-        script_testdir      = path_combine(ip_root, r'Scripts')
+        external_dir        = path_combine(rowan_root, 'External.LCA_RESTRICTED/Languages/IronPython')
+        clean_external_dir  = path_combine(rowan_root, 'External.LCA_RESTRICTED/Languages/CPython/27')
+        public_testdir      = path_combine(ip_root, 'Tests')
+        compat_testdir      = path_combine(ip_root, 'Tests/compat')
+        test_inputs_dir     = path_combine(ip_root, 'Tests/Inputs')
+        script_testdir      = path_combine(ip_root, 'Scripts')
 
-        math_testdir        = path_combine(external_dir, r'Math')
-        parrot_testdir      = path_combine(external_dir, r'parrotbench')
-        lib_testdir         = path_combine(external_dir, r'27\Lib')
-        private_testdir     = path_combine(external_dir, r'27\Lib\test')
+        math_testdir        = path_combine(external_dir, 'Math')
+        parrot_testdir      = path_combine(external_dir, 'parrotbench')
+        lib_testdir         = path_combine(external_dir, '27/Lib')
+        private_testdir     = path_combine(external_dir, '27/Lib/test')
 
         temporary_dir   = path_combine(get_temp_dir(), "IronPython")
         ensure_directory_present(temporary_dir)
@@ -116,15 +119,15 @@ else:
 
         if is_cli: 
             ipython_executable  = sys.executable
-            cpython_executable  = path_combine(external_dir, r'27\python.exe')
+            cpython_executable  = path_combine(external_dir, '27/python.exe')
         else: 
-            ipython_executable  = path_combine(sys.prefix, r'ipy.exe')
+            ipython_executable  = path_combine(sys.prefix, 'ipy.exe')
             cpython_executable  = sys.executable
         
         #team_dir            = path_combine(ip_root, r'Team')
         #team_profile        = path_combine(team_dir, r'settings.py')
         #
-        #my_name             = nt.environ.get(r'USERNAME', None)
+        #my_name             = os.environ.get(r'USERNAME', None)
         #my_dir              = my_name and path_combine(team_dir, my_name) or None
         #my_profile          = my_dir and path_combine(my_dir, r'settings.py') or None
     
@@ -162,7 +165,7 @@ def is_interactive():
 
 def is_stdlib():
     if is_cli:
-        clean_lib = System.IO.Path.GetFullPath(testpath.clean_external_dir + r"\lib").lower()
+        clean_lib = System.IO.Path.GetFullPath(System.IO.Path.Combine(testpath.clean_external_dir, "Lib")).lower()
         for x in sys.path:
             if clean_lib==System.IO.Path.GetFullPath(x).lower():
                 return True
@@ -377,11 +380,13 @@ class skip:
     def orcas_test(self):
         return is_orcas
     def interactive_test(self):
-	    return is_interactive()
+        return is_interactive()
     def multiple_execute_test(self):
-		return get_num_iterations() > 1
+        return get_num_iterations() > 1
     def stdlib_test(self):
         return is_stdlib()
+    def posix_test(self):
+        return is_posix
     
     def __call__(self, f):
         #skip questionable tests
@@ -394,7 +399,7 @@ class skip:
             return _do_nothing(msg)
 		
         
-        platforms = 'silverlight', 'cli64', 'orcas', 'interactive', 'multiple_execute', 'stdlib'
+        platforms = 'silverlight', 'cli64', 'orcas', 'interactive', 'multiple_execute', 'stdlib', 'posix'
         for to_skip in platforms:
             platform_test = getattr(self, to_skip + '_test')
             if to_skip in self.platforms and platform_test():
@@ -443,6 +448,10 @@ def skiptest(*args):
     elif is_cli64 and 'cli64' in args:
         print '... %s, skipping whole test module on 64-bit CLI...' % sys.platform
         exit_module()
+        
+    elif is_posix and 'posix' in args:
+		print '... %s, skipping whole test module on Posix...' % sys.platform
+		exit_module()
     
     elif get_num_iterations() > 1 and 'multiple_execute' in args:
         print '... %d invocations, skipping whole test module under "multiple_execute" mode...' % get_num_iterations()

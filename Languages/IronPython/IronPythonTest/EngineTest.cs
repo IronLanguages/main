@@ -70,10 +70,10 @@ namespace IronPythonTest {
             RuntimeDirectory = Path.GetDirectoryName(typeof(PythonContext).GetTypeInfo().Assembly.Location);
             RootDirectory = Environment.GetEnvironmentVariable("DLR_ROOT");
             if (RootDirectory != null) {
-                ScriptTestDirectory = Path.Combine(RootDirectory, "Languages\\IronPython\\Tests");
+                ScriptTestDirectory = Path.Combine(Path.Combine(Path.Combine(RootDirectory, "Languages"), "IronPython"), "Tests");
             } else {
                 RootDirectory = new System.IO.FileInfo(System.Reflection.Assembly.GetEntryAssembly().Location).Directory.FullName;
-                ScriptTestDirectory = Path.Combine(RootDirectory, "Src\\Tests");
+                ScriptTestDirectory = Path.Combine(Path.Combine(RootDirectory, "Src"), "Tests");
             }
             InputTestDirectory = Path.Combine(ScriptTestDirectory, "Inputs");
         }
@@ -309,10 +309,14 @@ namespace IronPythonTest {
                 AreEqual(po.IndentationInconsistencySeverity, Severity.Warning);
                 AreEqual(po.WarningFilters[0], "warnonme");
             }
-
+            
             AreEqual(Python.GetSysModule(scriptEngine).GetVariable<string>("platform"), "cli");
             AreEqual(Python.GetBuiltinModule(scriptEngine).GetVariable<bool>("True"), true);
-            AreEqual(Python.ImportModule(scriptEngine, "nt").GetVariable<int>("F_OK"), 0);
+            if(System.Environment.OSVersion.Platform == System.PlatformID.Unix) {
+                AreEqual(Python.ImportModule(scriptEngine, "posix").GetVariable<int>("F_OK"), 0);
+            } else {
+                AreEqual(Python.ImportModule(scriptEngine, "nt").GetVariable<int>("F_OK"), 0);
+            }
             try {
                 Python.ImportModule(scriptEngine, "non_existant_module");
                 Assert(false);
@@ -332,7 +336,11 @@ namespace IronPythonTest {
 
             AreEqual(Python.GetSysModule(runtime).GetVariable<string>("platform"), "cli");
             AreEqual(Python.GetBuiltinModule(runtime).GetVariable<bool>("True"), true);
-            AreEqual(Python.ImportModule(runtime, "nt").GetVariable<int>("F_OK"), 0);
+            if(System.Environment.OSVersion.Platform == System.PlatformID.Unix) {
+                AreEqual(Python.ImportModule(runtime, "posix").GetVariable<int>("F_OK"), 0);
+            } else {
+                AreEqual(Python.ImportModule(runtime, "nt").GetVariable<int>("F_OK"), 0);
+            }
             try {
                 Python.ImportModule(runtime, "non_existant_module");
                 Assert(false);
@@ -445,7 +453,7 @@ x = 42", scope);
 #if !SILVERLIGHT        
         public void ScenarioCodePlex20472() {
             try {
-                string fileName = System.IO.Directory.GetCurrentDirectory() + "\\encoded_files\\cp20472.py";
+                string fileName = Path.Combine(Path.Combine(System.IO.Directory.GetCurrentDirectory(), "encoded_files"), "cp20472.py");
                 _pe.CreateScriptSourceFromFile(fileName, System.Text.Encoding.GetEncoding(1251));
 
                 //Disabled. The line above should have thrown a syntax exception or an import error,
@@ -2293,6 +2301,10 @@ instOC = TestOC()
 
 #if FEATURE_REMOTING
         public void ScenarioPartialTrust() {
+            // Mono doesn't implement partial trust
+            if(System.Environment.OSVersion.Platform == System.PlatformID.Unix)
+                return;
+                
             // basic check of running a host in partial trust
             
             AppDomainSetup info = new AppDomainSetup();
@@ -2401,7 +2413,7 @@ if id(a) == id(b):
 
         private void TestLineInfo(ScriptScope/*!*/ scope, string lineNumber) {
             try {
-                scope.Engine.ExecuteFile(Common.InputTestDirectory + "\\raise.py", scope);
+                scope.Engine.ExecuteFile(Path.Combine(Common.InputTestDirectory, "raise.py"), scope);
                 throw new Exception("We should not get here");
             } catch (StopIterationException e2) {
                 if (scope.Engine.Runtime.Setup.DebugMode != e2.StackTrace.Contains(lineNumber))

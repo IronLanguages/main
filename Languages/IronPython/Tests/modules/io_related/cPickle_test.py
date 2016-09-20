@@ -792,7 +792,7 @@ def test_loads_negative():
     
 def test_load_negative():
     if cPickle.__name__ == "cPickle":   # pickle vs. cPickle report different exceptions, even on Cpy
-        filename = nt.tempnam()
+        filename = os.tempnam()
         for temp in ['\x02', "No"]:
             write_to_file(filename, content=temp)
             f = open(filename)
@@ -861,19 +861,19 @@ FROM_MOD_IN_SUBMOD = mod.KMod()
                 AreEqual(x.member, x_unpickled.member)
                 
     finally:
-        import nt
+        import os
         try:
-            nt.unlink(pickle_file)
+            os.unlink(pickle_file)
             for f_name in [ _testdir_init, _testdir_mod,
                             _testdir_sub_init, _testdir_sub_submod,
                             ]:
-                nt.unlink(f_name)
+                os.unlink(f_name)
                 if sys.platform=="win32":
-                    nt.unlink(f_name + "c")
+                    os.unlink(f_name + "c")
             
             
             for dir_name in [ _testdir_sub, _testdir]:
-                nt.rmdir(dir_name)
+                os.rmdir(dir_name)
         except:
             pass
         

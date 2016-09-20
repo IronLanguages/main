@@ -1965,7 +1965,10 @@ namespace IronPython.Modules {
         public const int IPV6_MULTICAST_LOOP = (int)SocketOptionName.MulticastLoopback;
         public const int IPV6_PKTINFO = (int)SocketOptionName.PacketInformation;
         public const int IPV6_UNICAST_HOPS = (int)SocketOptionName.IpTimeToLive;
-#if FEATURE_IPV6
+#if FEATURE_IPV6 && __MonoCS__
+        //TODO: Is this filed in a Mono bug report?
+        public const int IPV6_V6ONLY = 27;
+#elif FEATURE_IPV6
         public const int IPV6_V6ONLY = (int) SocketOptionName.IPv6Only;
 #endif
         public const int IP_ADD_MEMBERSHIP = (int)SocketOptionName.AddMembership;

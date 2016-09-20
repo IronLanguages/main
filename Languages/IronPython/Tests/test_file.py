@@ -16,7 +16,7 @@
 from iptest.assert_util import *
 skiptest("silverlight")
 import sys
-import nt
+import os
 
 # This module tests operations on the builtin file object. It is not yet complete, the tests cover read(),
 # read(size), readline() and write() for binary, text and universal newline modes.
@@ -457,22 +457,22 @@ def test_coverage():
     AreEqual(f.read(-1), '')
     f.close()
 
-    ## file op in nt    
-    nt.unlink(temp_file)
+    ## file op in os
+    os.unlink(temp_file)
 
-    fd = nt.open(temp_file, nt.O_CREAT | nt.O_WRONLY)
-    nt.write(fd, "hello ")
-    nt.close(fd)
+    fd = os.open(temp_file, os.O_CREAT | os.O_WRONLY)
+    os.write(fd, "hello ")
+    os.close(fd)
 
-    fd = nt.open(temp_file, nt.O_APPEND | nt.O_WRONLY)
-    nt.write(fd, "world")
-    nt.close(fd)
+    fd = os.open(temp_file, os.O_APPEND | os.O_WRONLY)
+    os.write(fd, "world")
+    os.close(fd)
 
-    fd = nt.open(temp_file, 0)
-    AreEqual(nt.read(fd, 1024), "hello world")
-    nt.close(fd)
+    fd = os.open(temp_file, 0)
+    AreEqual(os.read(fd, 1024), "hello world")
+    os.close(fd)
 
-    nt.unlink(temp_file)
+    os.unlink(temp_file)
 
 def test_encoding():
     #verify we start w/ ASCII
@@ -526,21 +526,21 @@ if is_cli:
             return f.fileno()
             
         def return_fd2():
-            return nt.open(temp_file, 0)
+            return os.open(temp_file, 0)
         
         import System
 
         fd = return_fd1()
         System.GC.Collect()
         System.GC.WaitForPendingFinalizers()
-        AssertError(OSError, nt.fdopen, fd)
+        AssertError(OSError, os.fdopen, fd)
 
         fd = return_fd2()
         System.GC.Collect()
         System.GC.WaitForPendingFinalizers()
-        f = nt.fdopen(fd)
+        f = os.fdopen(fd)
         f.close()
-        AssertError(OSError, nt.fdopen, fd)
+        AssertError(OSError, os.fdopen, fd)
 
 def test_sharing():
     modes = ['w', 'w+', 'a+', 'r', 'w']
@@ -552,20 +552,20 @@ def test_sharing():
             x.close()
             y.close()
             
-    nt.unlink('tempfile.txt')
+    os.unlink('tempfile.txt')
 
 def test_overwrite_readonly():
     filename = "tmp.txt"
     f = file(filename, "w+")
     f.write("I am read-only")
     f.close()
-    nt.chmod(filename, 256)
+    os.chmod(filename, 256)
     try:
         try:
             f = file(filename, "w+") # FAIL
         finally:
-            nt.chmod(filename, 128)
-            nt.unlink(filename)
+            os.chmod(filename, 128)
+            os.unlink(filename)
     except IOError, e:
         pass
     else:
@@ -581,7 +581,7 @@ def test_inheritance_kwarg_override():
     f=TEST(r'sometext.txt',VERBOSITY=1)
     AreEqual(f.VERBOSITY, 1)
     f.close()
-    nt.unlink('sometext.txt')
+    os.unlink('sometext.txt')
 
 # file newline handling test
 def test_newline():
@@ -623,7 +623,7 @@ def test_repr():
     f = x('repr_does_not_exist', 'w')
     AreEqual(repr(f), 'abc')
     f.close()
-    nt.unlink('repr_does_not_exist')
+    os.unlink('repr_does_not_exist')
 
 def test_truncate():
     
@@ -636,7 +636,7 @@ def test_truncate():
     a = file('abc.txt', 'r')
     AreEqual(a.readlines(), ['hello world\n'])
     a.close()
-    nt.unlink('abc.txt')
+    os.unlink('abc.txt')
 
     # truncate(#)
     a = file('abc.txt', 'w')
@@ -645,10 +645,13 @@ def test_truncate():
     a.close()
     
     a = file('abc.txt', 'r')
-    AreEqual(a.readlines(), ['hello\r'])
+    if is_posix:
+        AreEqual(a.readlines(), ['hello\n'])
+    else:
+        AreEqual(a.readlines(), ['hello\r'])
     a.close()
 
-    nt.unlink('abc.txt')
+    os.unlink('abc.txt')
     
     # truncate(#) invalid args
     a = file('abc.txt', 'w')
@@ -662,7 +665,7 @@ def test_truncate():
     AssertError(IOError, a.truncate, 0)
     a.close()
     
-    nt.unlink('abc.txt')
+    os.unlink('abc.txt')
     
     # std-out
     AssertError(IOError, sys.stdout.truncate)
@@ -690,7 +693,7 @@ def test_modes():
         AssertError(ValueError, file, 'test_file', 'pU+')
         AssertError(ValueError, file, 'test_file', 'rFOOBAR')
     finally:
-        nt.unlink('test_file')
+        os.unlink('test_file')
 
 import thread
 CP16623_LOCK = thread.allocate_lock()
@@ -807,18 +810,18 @@ def test_write_bytes():
         AreEqual(f.readlines(), ['Hello\n'])
         f.close()
     finally:
-        nt.unlink('temp_ip')
+        os.unlink('temp_ip')
 
 def test_kw_args():
     file(name = 'some_test_file.txt', mode = 'w').close()
-    nt.unlink('some_test_file.txt')
+    os.unlink('some_test_file.txt')
 
 def test_buffering_kwparam():
     #--Positive
     for x in [-2147483648, -1, 0, 1, 2, 1024, 2147483646, 2147483647]:
         f = file(name = 'some_test_file.txt', mode = 'w', buffering=x)
         f.close()
-        nt.unlink('some_test_file.txt')
+        os.unlink('some_test_file.txt')
     
     if is_cpython: #http://ironpython.codeplex.com/workitem/28214
         AssertErrorWithMessage(TypeError, "integer argument expected, got float",
@@ -826,7 +829,7 @@ def test_buffering_kwparam():
     else:
         f = file(name = 'some_test_file.txt', mode = 'w', buffering=3.14)
         f.close()
-        nt.unlink('some_test_file.txt') 
+        os.unlink('some_test_file.txt') 
 
     #--Negative
     for x in [None, "abc", u"", [], tuple()]:

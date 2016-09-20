@@ -650,7 +650,7 @@ def test_nondefault_indexers():
     from iptest.process_util import *
 
     if not has_vbc(): return
-    import nt
+    import os
     import _random
     
     r = _random.Random()
@@ -715,14 +715,14 @@ End Class
     finally:
         if not f.closed: f.close()
               
-        nt.unlink('vbproptest1.vb')
+        os.unlink('vbproptest1.vb')
 
 @skip("silverlight")
 def test_nondefault_indexers_overloaded():
     from iptest.process_util import *
 
     if not has_vbc(): return
-    import nt
+    import os
     import _random
     
     r = _random.Random()
@@ -805,7 +805,7 @@ End Class
     finally:
         if not f.closed: f.close()
               
-        nt.unlink('vbproptest1.vb')
+        os.unlink('vbproptest1.vb')
         
 def test_interface_abstract_events():
     # inherit from an interface or abstract event, and define the event
@@ -1593,8 +1593,8 @@ def test_abstract_class_no_interface_impl():
         a = x()
         AreEqual(AbstractILTest.Helper(a), "42")
     finally:
-        import nt
-        nt.unlink('testilcode.il')
+        import os
+        os.unlink('testilcode.il')
 
 def test_field_assign():
     """assign to an instance field through the type"""
@@ -1742,7 +1742,7 @@ def test_silverlight_access_isolated_storage():
         pass
     
 
-@skip("silverlight")
+@skip("silverlight", "posix")
 def test_xaml_support():
     text = """<custom:XamlTestObject 
    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -1756,6 +1756,7 @@ def test_xaml_support():
         </custom:InnerXamlTextObject>
     </custom:InnerXamlTextObject>
 </custom:XamlTestObject>"""
+
     import wpf
     import clr
     clr.AddReference('System.Xml')
@@ -1817,7 +1818,7 @@ def test_xaml_support():
                 inp.Dispose()
 
     finally:
-        #nt.unlink('test.xaml')
+        #os.unlink('test.xaml')
         pass
 
 
@@ -1974,7 +1975,7 @@ AreEqual(''.join(prod for prod in pd), 'Cat: Flange, ID: F423, Qty: 12')
             import temp_module
             del sys.modules['temp_module']
         finally:
-            nt.unlink('temp_module.py')
+            os.unlink('temp_module.py')
     
     
 #--MAIN------------------------------------------------------------------------

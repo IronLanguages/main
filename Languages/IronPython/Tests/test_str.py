@@ -69,8 +69,8 @@ def test_add_mul():
     
     if is_cli:
         from System.IO import Path
-        AreEqual("foo\\", "foo" + Path.DirectorySeparatorChar)
-        AreEqual("\\\\", Path.DirectorySeparatorChar + '\\')
+        AreEqual("foo" + os.sep, "foo" + Path.DirectorySeparatorChar)
+        AreEqual(os.sep + os.sep, Path.DirectorySeparatorChar + os.sep)
 
     # multiply
     AreEqual("aaaa", "a" * 4L)

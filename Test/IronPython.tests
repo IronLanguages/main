@@ -1692,7 +1692,7 @@
         <Test>
           <Name>test_abc_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_abc.py</Arguments>
+          <Arguments>-X:Frames test\test_abc.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -1703,7 +1703,7 @@
         <Test>
           <Name>test_abstract_numbers_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_abstract_numbers.py</Arguments>
+          <Arguments>test\test_abstract_numbers.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -1714,7 +1714,7 @@
         <Test>
           <Name>test_anydbm_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_anydbm.py</Arguments>
+          <Arguments>test\test_anydbm.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -1725,7 +1725,7 @@
         <Test>
           <Name>test_array_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Debug -X:Frames Test\test_array.py</Arguments>
+          <Arguments>-X:Debug -X:Frames test\test_array.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -1736,7 +1736,7 @@
         <Test>
           <Name>test_ast_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Debug -X:Frames Test\test_ast.py</Arguments>
+          <Arguments>-X:Debug -X:Frames test\test_ast.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -1747,7 +1747,7 @@
         <Test>
           <Name>test_asynchat_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_asynchat.py</Arguments>
+          <Arguments>test\test_asynchat.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -1758,7 +1758,7 @@
         <Test>
           <Name>test_asyncore_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_asyncore.py</Arguments>
+          <Arguments>test\test_asyncore.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -1769,7 +1769,7 @@
         <Test>
           <Name>test_atexit_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_atexit.py</Arguments>
+          <Arguments>test\test_atexit.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -1780,7 +1780,7 @@
         <Test>
           <Name>test_augassign_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_augassign.py</Arguments>
+          <Arguments>-X:Frames test\test_augassign.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -1791,7 +1791,7 @@
         <Test>
           <Name>test_base64_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_base64.py</Arguments>
+          <Arguments>test\test_base64.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -1802,7 +1802,7 @@
         <Test>
           <Name>test_bigaddrspace_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_bigaddrspace.py</Arguments>
+          <Arguments>test\test_bigaddrspace.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -1813,7 +1813,7 @@
         <Test>
           <Name>test_binascii_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_binascii.py</Arguments>
+          <Arguments>test\test_binascii.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -1824,7 +1824,7 @@
         <Test>
           <Name>test_binhex_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_binhex.py</Arguments>
+          <Arguments>test\test_binhex.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -1835,7 +1835,7 @@
         <Test>
           <Name>test_binop_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_binop.py</Arguments>
+          <Arguments>test\test_binop.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -1846,7 +1846,7 @@
         <Test>
           <Name>test_bisect_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:FullFrames Test\test_bisect.py</Arguments>
+          <Arguments>-X:FullFrames test\test_bisect.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -1857,7 +1857,7 @@
         <Test>
           <Name>test_bool_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_bool.py</Arguments>
+          <Arguments>-X:Frames test\test_bool.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -1868,7 +1868,7 @@
         <Test>
           <Name>test_bsddb3_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_bsddb3.py</Arguments>
+          <Arguments>test\test_bsddb3.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- No module named _bsddb -->
@@ -1879,7 +1879,7 @@
         <Test>
           <Name>test_bsddb_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_bsddb.py</Arguments>
+          <Arguments>test\test_bsddb.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- No module named _bsddb -->
@@ -1890,7 +1890,7 @@
         <Test>
           <Name>test_buffer_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_buffer.py</Arguments>
+          <Arguments>-X:Frames test\test_buffer.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -1901,7 +1901,7 @@
         <Test>
           <Name>test_bufio_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_bufio.py</Arguments>
+          <Arguments>test\test_bufio.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -1912,7 +1912,7 @@
         <Test>
           <Name>test_builtin_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_builtin.py</Arguments>
+          <Arguments>-X:Frames test\test_builtin.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -1923,7 +1923,7 @@
         <Test>
           <Name>test_bytes_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_bytes.py</Arguments>
+          <Arguments>-X:Frames test\test_bytes.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -1934,7 +1934,7 @@
         <Test>
           <Name>test_bz2_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_bz2.py</Arguments>
+          <Arguments>test\test_bz2.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -1945,7 +1945,7 @@
         <Test>
           <Name>test_calendar_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_calendar.py</Arguments>
+          <Arguments>test\test_calendar.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
           <Disabled>true</Disabled> <!-- PASSED but very slow -->
@@ -1956,7 +1956,7 @@
         <Test>
           <Name>test_call_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_call.py</Arguments>
+          <Arguments>-X:Frames test\test_call.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -1967,7 +1967,7 @@
         <Test>
           <Name>test_cfgparser_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_cfgparser.py</Arguments>
+          <Arguments>-X:Frames test\test_cfgparser.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -1978,7 +1978,7 @@
         <Test>
           <Name>test_cgi_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_cgi.py</Arguments>
+          <Arguments>-X:Frames test\test_cgi.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- StackOverflowException -->
@@ -1989,7 +1989,7 @@
         <Test>
           <Name>test_charmapcodec_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_charmapcodec.py</Arguments>
+          <Arguments>test\test_charmapcodec.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2000,7 +2000,7 @@
         <Test>
           <Name>test_class_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_class.py</Arguments>
+          <Arguments>-X:Frames test\test_class.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- TIMEOUT -->
@@ -2011,7 +2011,7 @@
         <Test>
           <Name>test_cmath_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_cmath.py</Arguments>
+          <Arguments>test\test_cmath.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2022,7 +2022,7 @@
         <Test>
           <Name>test_cmd_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:FullFrames Test\test_cmd.py</Arguments>
+          <Arguments>-X:FullFrames test\test_cmd.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2033,7 +2033,7 @@
         <Test>
           <Name>test_cmd_line_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_cmd_line.py</Arguments>
+          <Arguments>test\test_cmd_line.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- TIMEOUT -->
@@ -2044,7 +2044,7 @@
         <Test>
           <Name>test_cmd_line_script_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_cmd_line_script.py</Arguments>
+          <Arguments>test\test_cmd_line_script.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2055,7 +2055,7 @@
         <Test>
           <Name>test_codeccallbacks_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_codeccallbacks.py</Arguments>
+          <Arguments>test\test_codeccallbacks.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2066,7 +2066,7 @@
         <Test>
           <Name>test_codecencodings_cn_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_codecencodings_cn.py</Arguments>
+          <Arguments>test\test_codecencodings_cn.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- unknown encodings -->
@@ -2077,7 +2077,7 @@
         <Test>
           <Name>test_codecencodings_hk_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_codecencodings_hk.py</Arguments>
+          <Arguments>test\test_codecencodings_hk.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- unknown encodings -->
@@ -2088,7 +2088,7 @@
         <Test>
           <Name>test_codecencodings_jp_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_codecencodings_jp.py</Arguments>
+          <Arguments>test\test_codecencodings_jp.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- unknown encodings -->
@@ -2099,7 +2099,7 @@
         <Test>
           <Name>test_codecencodings_kr_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_codecencodings_kr.py</Arguments>
+          <Arguments>test\test_codecencodings_kr.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- unknown encodings -->
@@ -2110,7 +2110,7 @@
         <Test>
           <Name>test_codecencodings_tw_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_codecencodings_tw.py</Arguments>
+          <Arguments>test\test_codecencodings_tw.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- unknown encodings -->
@@ -2121,7 +2121,7 @@
         <Test>
           <Name>test_codecs_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_codecs.py</Arguments>
+          <Arguments>test\test_codecs.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2132,7 +2132,7 @@
         <Test>
           <Name>test_codeop_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_codeop.py</Arguments>
+          <Arguments>test\test_codeop.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2143,7 +2143,7 @@
         <Test>
           <Name>test_coding_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_coding.py</Arguments>
+          <Arguments>test\test_coding.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2154,7 +2154,7 @@
         <Test>
           <Name>test_coercion_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_coercion.py</Arguments>
+          <Arguments>-X:Frames test\test_coercion.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2165,7 +2165,7 @@
         <Test>
           <Name>test_collections_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_collections.py</Arguments>
+          <Arguments>-X:Frames test\test_collections.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2176,7 +2176,7 @@
         <Test>
           <Name>test_colorsys_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_colorsys.py</Arguments>
+          <Arguments>test\test_colorsys.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2187,7 +2187,7 @@
         <Test>
           <Name>test_compare_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_compare.py</Arguments>
+          <Arguments>test\test_compare.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2198,7 +2198,7 @@
         <Test>
           <Name>test_compiler_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_compiler.py</Arguments>
+          <Arguments>test\test_compiler.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled>
@@ -2209,7 +2209,7 @@
         <Test>
           <Name>test_compile_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Debug -X:Frames Test\test_compile.py</Arguments>
+          <Arguments>-X:Debug -X:Frames test\test_compile.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled>
@@ -2220,7 +2220,7 @@
         <Test>
           <Name>test_complex_args_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_complex_args.py</Arguments>
+          <Arguments>-X:Frames test\test_complex_args.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2231,7 +2231,7 @@
         <Test>
           <Name>test_complex_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_complex.py</Arguments>
+          <Arguments>-X:Frames test\test_complex.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2242,7 +2242,7 @@
         <Test>
           <Name>test_contains_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_contains.py</Arguments>
+          <Arguments>test\test_contains.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2253,7 +2253,7 @@
         <Test>
           <Name>test_contextlib_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_contextlib.py</Arguments>
+          <Arguments>-X:Frames test\test_contextlib.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2275,7 +2275,7 @@
         <Test>
           <Name>test_cookie_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:FullFrames Test\test_cookie.py</Arguments>
+          <Arguments>-X:FullFrames test\test_cookie.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2286,7 +2286,7 @@
         <Test>
           <Name>test_copy_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_copy.py</Arguments>
+          <Arguments>test\test_copy.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2297,7 +2297,7 @@
         <Test>
           <Name>test_copy_reg_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_copy_reg.py</Arguments>
+          <Arguments>test\test_copy_reg.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2308,7 +2308,7 @@
         <Test>
           <Name>test_cPickle_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_cPickle.py</Arguments>
+          <Arguments>test\test_cPickle.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- StackOverflowException -->
@@ -2319,7 +2319,7 @@
         <Test>
           <Name>test_csv_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_csv.py</Arguments>
+          <Arguments>test\test_csv.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2330,7 +2330,7 @@
         <Test>
           <Name>test_ctypes_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_ctypes.py</Arguments>
+          <Arguments>-X:Frames test\test_ctypes.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled>
@@ -2341,7 +2341,7 @@
         <Test>
           <Name>test_datetime_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_datetime.py</Arguments>
+          <Arguments>test\test_datetime.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2352,7 +2352,7 @@
         <Test>
           <Name>test_decimal_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:FullFrames Test\test_decimal.py</Arguments>
+          <Arguments>-X:FullFrames test\test_decimal.py</Arguments>
           <MaxDuration>6000000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2363,7 +2363,7 @@
         <Test>
           <Name>test_decorators_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_decorators.py</Arguments>
+          <Arguments>test\test_decorators.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2374,7 +2374,7 @@
         <Test>
           <Name>test_defaultdict_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Debug Test\test_defaultdict.py</Arguments>
+          <Arguments>-X:Debug test\test_defaultdict.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- StackOverflowException -->
@@ -2385,7 +2385,7 @@
         <Test>
           <Name>test_deque_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:FullFrames -X:MaxRecursion 1001 Test\test_deque.py</Arguments>
+          <Arguments>-X:FullFrames -X:MaxRecursion 1001 test\test_deque.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2396,7 +2396,7 @@
         <Test>
           <Name>test_descrtut_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:FullFrames Test\test_descrtut.py</Arguments>
+          <Arguments>-X:FullFrames test\test_descrtut.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2407,7 +2407,7 @@
         <Test>
           <Name>test_descr_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_descr.py</Arguments>
+          <Arguments>-X:Frames test\test_descr.py</Arguments>
           <MaxDuration>1500000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled>
@@ -2418,7 +2418,7 @@
         <Test>
           <Name>test_dictviews_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_dictviews.py</Arguments>
+          <Arguments>test\test_dictviews.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- StackOverflowException -->
@@ -2429,7 +2429,7 @@
         <Test>
           <Name>test_dict_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_dict.py</Arguments>
+          <Arguments>-X:Frames test\test_dict.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2440,7 +2440,7 @@
         <Test>
           <Name>test_difflib_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_difflib.py</Arguments>
+          <Arguments>-X:Frames test\test_difflib.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2451,7 +2451,7 @@
         <Test>
           <Name>test_dircache_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_dircache.py</Arguments>
+          <Arguments>test\test_dircache.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2462,7 +2462,7 @@
         <Test>
           <Name>test_dis_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_dis.py</Arguments>
+          <Arguments>test\test_dis.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2473,7 +2473,7 @@
         <Test>
           <Name>test_doctest2_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:FullFrames Test\test_doctest2.py</Arguments>
+          <Arguments>-X:FullFrames test\test_doctest2.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2484,7 +2484,7 @@
         <Test>
           <Name>test_doctest_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:FullFrames Test\test_doctest.py</Arguments>
+          <Arguments>-X:FullFrames test\test_doctest.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2495,7 +2495,7 @@
         <Test>
           <Name>test_docxmlrpc_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_docxmlrpc.py</Arguments>
+          <Arguments>test\test_docxmlrpc.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled>
@@ -2506,7 +2506,7 @@
         <Test>
           <Name>test_dumbdbm_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_dumbdbm.py</Arguments>
+          <Arguments>test\test_dumbdbm.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2517,7 +2517,7 @@
         <Test>
           <Name>test_dummy_threading_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_dummy_threading.py</Arguments>
+          <Arguments>test\test_dummy_threading.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2528,7 +2528,7 @@
         <Test>
           <Name>test_dummy_thread_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_dummy_thread.py</Arguments>
+          <Arguments>test\test_dummy_thread.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2539,7 +2539,7 @@
         <Test>
           <Name>test_email_codecs_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_email_codecs.py</Arguments>
+          <Arguments>test\test_email_codecs.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2550,7 +2550,7 @@
         <Test>
           <Name>test_email_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_email.py</Arguments>
+          <Arguments>test\test_email.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- too slow -->
@@ -2561,7 +2561,7 @@
         <Test>
           <Name>test_email_renamed_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_email_renamed.py</Arguments>
+          <Arguments>test\test_email_renamed.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- too slow -->
@@ -2572,7 +2572,7 @@
         <Test>
           <Name>test_enumerate_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_enumerate.py</Arguments>
+          <Arguments>test\test_enumerate.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2583,7 +2583,7 @@
         <Test>
           <Name>test_eof_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_eof.py</Arguments>
+          <Arguments>test\test_eof.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2594,7 +2594,7 @@
         <Test>
           <Name>test_errno_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_errno.py</Arguments>
+          <Arguments>test\test_errno.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2605,7 +2605,7 @@
         <Test>
           <Name>test_exceptions_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_exceptions.py</Arguments>
+          <Arguments>-X:Frames test\test_exceptions.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled>
@@ -2616,7 +2616,7 @@
         <Test>
           <Name>test_exception_variations_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_exception_variations.py</Arguments>
+          <Arguments>test\test_exception_variations.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2627,7 +2627,7 @@
         <Test>
           <Name>test_extcall_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:FullFrames Test\test_extcall.py</Arguments>
+          <Arguments>-X:FullFrames test\test_extcall.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2638,7 +2638,7 @@
         <Test>
           <Name>test_filecmp_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_filecmp.py</Arguments>
+          <Arguments>test\test_filecmp.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2649,7 +2649,7 @@
         <Test>
           <Name>test_fileinput_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_fileinput.py</Arguments>
+          <Arguments>test\test_fileinput.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2660,7 +2660,7 @@
         <Test>
           <Name>test_fileio_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_fileio.py</Arguments>
+          <Arguments>-X:Frames test\test_fileio.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2671,7 +2671,7 @@
         <Test>
           <Name>test_file_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_file.py</Arguments>
+          <Arguments>test\test_file.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2682,7 +2682,7 @@
         <Test>
           <Name>test_float_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_float.py</Arguments>
+          <Arguments>-X:Frames test\test_float.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2693,7 +2693,7 @@
         <Test>
           <Name>test_fnmatch_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_fnmatch.py</Arguments>
+          <Arguments>test\test_fnmatch.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2704,7 +2704,7 @@
         <Test>
           <Name>test_format_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_format.py</Arguments>
+          <Arguments>test\test_format.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2715,7 +2715,7 @@
         <Test>
           <Name>test_fpformat_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_fpformat.py</Arguments>
+          <Arguments>test\test_fpformat.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2726,7 +2726,7 @@
         <Test>
           <Name>test_fractions_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_fractions.py</Arguments>
+          <Arguments>test\test_fractions.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2737,7 +2737,7 @@
         <Test>
           <Name>test_frozen_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_frozen.py</Arguments>
+          <Arguments>test\test_frozen.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2748,7 +2748,7 @@
         <Test>
           <Name>test_ftplib_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_ftplib.py</Arguments>
+          <Arguments>test\test_ftplib.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled>
@@ -2759,7 +2759,7 @@
         <Test>
           <Name>test_funcattrs_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_funcattrs.py</Arguments>
+          <Arguments>test\test_funcattrs.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2770,7 +2770,7 @@
         <Test>
           <Name>test_functools_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Debug Test\test_functools.py</Arguments>
+          <Arguments>-X:Debug test\test_functools.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- StackOverflowException -->
@@ -2781,7 +2781,7 @@
         <Test>
           <Name>test_future4_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_future4.py</Arguments>
+          <Arguments>test\test_future4.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2792,7 +2792,7 @@
         <Test>
           <Name>test_future_builtins_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_future_builtins.py</Arguments>
+          <Arguments>test\test_future_builtins.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2803,7 +2803,7 @@
         <Test>
           <Name>test_future_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_future.py</Arguments>
+          <Arguments>test\test_future.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2814,7 +2814,7 @@
         <Test>
           <Name>test_gc_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_gc.py</Arguments>
+          <Arguments>test\test_gc.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled>
@@ -2825,7 +2825,7 @@
         <Test>
           <Name>test_generators_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_generators.py</Arguments>
+          <Arguments>test\test_generators.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2836,7 +2836,7 @@
         <Test>
           <Name>test_genericpath_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_genericpath.py</Arguments>
+          <Arguments>test\test_genericpath.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2847,7 +2847,7 @@
         <Test>
           <Name>test_genexps_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_genexps.py</Arguments>
+          <Arguments>test\test_genexps.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2858,7 +2858,7 @@
         <Test>
           <Name>test_getargs_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_getargs.py</Arguments>
+          <Arguments>test\test_getargs.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2869,7 +2869,7 @@
         <Test>
           <Name>test_getopt_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:FullFrames Test\test_getopt.py</Arguments>
+          <Arguments>-X:FullFrames test\test_getopt.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2880,7 +2880,7 @@
         <Test>
           <Name>test_gettext_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_gettext.py</Arguments>
+          <Arguments>test\test_gettext.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2891,7 +2891,7 @@
         <Test>
           <Name>test_global_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_global.py</Arguments>
+          <Arguments>test\test_global.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2902,7 +2902,7 @@
         <Test>
           <Name>test_glob_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_glob.py</Arguments>
+          <Arguments>test\test_glob.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2913,7 +2913,7 @@
         <Test>
           <Name>test_grammar_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_grammar.py</Arguments>
+          <Arguments>-X:Frames test\test_grammar.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2924,7 +2924,7 @@
         <Test>
           <Name>test_gzip_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_gzip.py</Arguments>
+          <Arguments>test\test_gzip.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2935,7 +2935,7 @@
         <Test>
           <Name>test_hashlib_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Debug Test\test_hashlib.py</Arguments>
+          <Arguments>-X:Debug test\test_hashlib.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- TIMEOUT -->
@@ -2946,7 +2946,7 @@
         <Test>
           <Name>test_hash_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_hash.py</Arguments>
+          <Arguments>-X:Frames test\test_hash.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2957,7 +2957,7 @@
         <Test>
           <Name>test_heapq_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_heapq.py</Arguments>
+          <Arguments>-X:Frames test\test_heapq.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -2968,7 +2968,7 @@
         <Test>
           <Name>test_hmac_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_hmac.py</Arguments>
+          <Arguments>test\test_hmac.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -2979,7 +2979,7 @@
         <Test>
           <Name>test_hotshot_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_hotshot.py</Arguments>
+          <Arguments>test\test_hotshot.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- No module named _hotshot -->
@@ -2990,7 +2990,7 @@
         <Test>
           <Name>test_htmllib_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_htmllib.py</Arguments>
+          <Arguments>test\test_htmllib.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3001,7 +3001,7 @@
         <Test>
           <Name>test_htmlparser_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_htmlparser.py</Arguments>
+          <Arguments>test\test_htmlparser.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3012,7 +3012,7 @@
         <Test>
           <Name>test_httplib_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_httplib.py</Arguments>
+          <Arguments>test\test_httplib.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3023,7 +3023,7 @@
         <Test>
           <Name>test_httpservers_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_httpservers.py</Arguments>
+          <Arguments>test\test_httpservers.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- Causes the tests to hang -->
@@ -3034,7 +3034,7 @@
         <Test>
           <Name>test_imaplib_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\regrtest.py -u network Test\test_imaplib.py</Arguments>
+          <Arguments>Test\regrtest.py -u network test\test_imaplib.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- Causes the tests to hang -->
@@ -3045,7 +3045,7 @@
         <Test>
           <Name>test_importhooks_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_importhooks.py</Arguments>
+          <Arguments>-X:Frames test\test_importhooks.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3056,7 +3056,7 @@
         <Test>
           <Name>test_importlib_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_importlib.py</Arguments>
+          <Arguments>test\test_importlib.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3067,7 +3067,7 @@
         <Test>
           <Name>test_import_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_import.py</Arguments>
+          <Arguments>-X:Frames test\test_import.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3078,7 +3078,7 @@
         <Test>
           <Name>test_imp_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_imp.py</Arguments>
+          <Arguments>test\test_imp.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3089,7 +3089,7 @@
         <Test>
           <Name>test_index_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_index.py</Arguments>
+          <Arguments>-X:Frames test\test_index.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3100,7 +3100,7 @@
         <Test>
           <Name>test_inspect_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_inspect.py</Arguments>
+          <Arguments>-X:Frames test\test_inspect.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3111,7 +3111,7 @@
         <Test>
           <Name>test_int_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_int.py</Arguments>
+          <Arguments>-X:Frames test\test_int.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3122,7 +3122,7 @@
         <Test>
           <Name>test_int_literal_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_int_literal.py</Arguments>
+          <Arguments>test\test_int_literal.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3133,7 +3133,7 @@
         <Test>
           <Name>test_io_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Debug -X:Frames Test\test_io.py</Arguments>
+          <Arguments>-X:Debug -X:Frames test\test_io.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3144,7 +3144,7 @@
         <Test>
           <Name>test_isinstance_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_isinstance.py</Arguments>
+          <Arguments>test\test_isinstance.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3155,7 +3155,7 @@
         <Test>
           <Name>test_itertools_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_itertools.py</Arguments>
+          <Arguments>test\test_itertools.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3166,7 +3166,7 @@
         <Test>
           <Name>test_iter_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_iter.py</Arguments>
+          <Arguments>-X:Frames test\test_iter.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3177,7 +3177,7 @@
         <Test>
           <Name>test_json_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_json.py</Arguments>
+          <Arguments>test\test_json.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3188,7 +3188,7 @@
         <Test>
           <Name>test_lib2to3_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_lib2to3.py</Arguments>
+          <Arguments>test\test_lib2to3.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3199,7 +3199,7 @@
         <Test>
           <Name>test_linecache_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_linecache.py</Arguments>
+          <Arguments>test\test_linecache.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3210,7 +3210,7 @@
         <Test>
           <Name>test_list_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_list.py</Arguments>
+          <Arguments>-X:Frames test\test_list.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3221,7 +3221,7 @@
         <Test>
           <Name>test_locale_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_locale.py</Arguments>
+          <Arguments>test\test_locale.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3232,7 +3232,7 @@
         <Test>
           <Name>test_logging_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_logging.py</Arguments>
+          <Arguments>test\test_logging.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3243,7 +3243,7 @@
         <Test>
           <Name>test_long_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_long.py</Arguments>
+          <Arguments>-X:Frames test\test_long.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3254,7 +3254,7 @@
         <Test>
           <Name>test_long_future_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_long_future.py</Arguments>
+          <Arguments>test\test_long_future.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3265,7 +3265,7 @@
         <Test>
           <Name>test_macpath_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_macpath.py</Arguments>
+          <Arguments>test\test_macpath.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3276,7 +3276,7 @@
         <Test>
           <Name>test_mailbox_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_mailbox.py</Arguments>
+          <Arguments>test\test_mailbox.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3287,7 +3287,7 @@
         <Test>
           <Name>test_marshal_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_marshal.py</Arguments>
+          <Arguments>-X:Frames test\test_marshal.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3298,7 +3298,7 @@
         <Test>
           <Name>test_math_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_math.py</Arguments>
+          <Arguments>-X:Frames test\test_math.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3309,7 +3309,7 @@
         <Test>
           <Name>test_md5_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_md5.py</Arguments>
+          <Arguments>test\test_md5.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3320,7 +3320,7 @@
         <Test>
           <Name>test_memoryio_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_memoryio.py</Arguments>
+          <Arguments>test\test_memoryio.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3331,7 +3331,7 @@
         <Test>
           <Name>test_memoryview_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_memoryview.py</Arguments>
+          <Arguments>test\test_memoryview.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3342,7 +3342,7 @@
         <Test>
           <Name>test_mimetools_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_mimetools.py</Arguments>
+          <Arguments>test\test_mimetools.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3353,7 +3353,7 @@
         <Test>
           <Name>test_mimetypes_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_mimetypes.py</Arguments>
+          <Arguments>test\test_mimetypes.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
           <Disabled>true</Disabled> <!-- PASSED but very slow -->
@@ -3364,7 +3364,7 @@
         <Test>
           <Name>test_mimewriter_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_MimeWriter.py</Arguments>
+          <Arguments>test\test_MimeWriter.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3375,7 +3375,7 @@
         <Test>
           <Name>test_minidom_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_minidom.py</Arguments>
+          <Arguments>test\test_minidom.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- No module named pyexapt. -->
@@ -3386,7 +3386,7 @@
         <Test>
           <Name>test_mmap_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_mmap.py</Arguments>
+          <Arguments>test\test_mmap.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3397,7 +3397,7 @@
         <Test>
           <Name>test_modulefinder_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_modulefinder.py</Arguments>
+          <Arguments>test\test_modulefinder.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled>
@@ -3408,7 +3408,7 @@
         <Test>
           <Name>test_module_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_module.py</Arguments>
+          <Arguments>test\test_module.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3419,7 +3419,7 @@
         <Test>
           <Name>test_multibytecodec_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_multibytecodec.py</Arguments>
+          <Arguments>test\test_multibytecodec.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- No module named _multibytecodec -->
@@ -3430,7 +3430,7 @@
         <Test>
           <Name>test_multifile_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_multifile.py</Arguments>
+          <Arguments>test\test_multifile.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3441,7 +3441,7 @@
         <Test>
           <Name>test_multiprocessing_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_multiprocessing.py</Arguments>
+          <Arguments>test\test_multiprocessing.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled>
@@ -3452,7 +3452,7 @@
         <Test>
           <Name>test_mutants_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_mutants.py</Arguments>
+          <Arguments>test\test_mutants.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3463,7 +3463,7 @@
         <Test>
           <Name>test_mutex_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_mutex.py</Arguments>
+          <Arguments>test\test_mutex.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3474,7 +3474,7 @@
         <Test>
           <Name>test_netrc_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_netrc.py</Arguments>
+          <Arguments>test\test_netrc.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3485,7 +3485,7 @@
         <Test>
           <Name>test_new_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_new.py</Arguments>
+          <Arguments>test\test_new.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3496,7 +3496,7 @@
         <Test>
           <Name>test_normalization_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_normalization.py</Arguments>
+          <Arguments>test\test_normalization.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3507,7 +3507,7 @@
         <Test>
           <Name>test_ntpath_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_ntpath.py</Arguments>
+          <Arguments>test\test_ntpath.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3518,7 +3518,7 @@
         <Test>
           <Name>test_old_mailbox_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_old_mailbox.py</Arguments>
+          <Arguments>test\test_old_mailbox.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3529,7 +3529,7 @@
         <Test>
           <Name>test_opcodes_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_opcodes.py</Arguments>
+          <Arguments>-X:Frames test\test_opcodes.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3540,7 +3540,7 @@
         <Test>
           <Name>test_operator_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_operator.py</Arguments>
+          <Arguments>-X:Frames test\test_operator.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3551,7 +3551,7 @@
         <Test>
           <Name>test_os_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_os.py</Arguments>
+          <Arguments>-X:Frames test\test_os.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3562,7 +3562,7 @@
         <Test>
           <Name>test_parser_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_parser.py</Arguments>
+          <Arguments>test\test_parser.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled>
@@ -3573,7 +3573,7 @@
         <Test>
           <Name>test_peepholer_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_peepholer.py</Arguments>
+          <Arguments>-X:Frames test\test_peepholer.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3584,7 +3584,7 @@
         <Test>
           <Name>test_pep247_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_pep247.py</Arguments>
+          <Arguments>test\test_pep247.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3595,7 +3595,7 @@
         <Test>
           <Name>test_pep263_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_pep263.py</Arguments>
+          <Arguments>test\test_pep263.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3606,7 +3606,7 @@
         <Test>
           <Name>test_pep292_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_pep292.py</Arguments>
+          <Arguments>test\test_pep292.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3617,7 +3617,7 @@
         <Test>
           <Name>test_pep352_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_pep352.py</Arguments>
+          <Arguments>-X:Frames test\test_pep352.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3628,7 +3628,7 @@
         <Test>
           <Name>test_pickletools_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:FullFrames Test\test_pickletools.py</Arguments>
+          <Arguments>-X:FullFrames test\test_pickletools.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- StackOverflowException -->
@@ -3639,7 +3639,7 @@
         <Test>
           <Name>test_pickle_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:FullFrames Test\test_pickle.py</Arguments>
+          <Arguments>-X:FullFrames test\test_pickle.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- timeout -->
@@ -3650,7 +3650,7 @@
         <Test>
           <Name>test_pkgimport_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_pkgimport.py</Arguments>
+          <Arguments>test\test_pkgimport.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3661,7 +3661,7 @@
         <Test>
           <Name>test_pkgutil_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_pkgutil.py</Arguments>
+          <Arguments>test\test_pkgutil.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3672,7 +3672,7 @@
         <Test>
           <Name>test_pkg_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_pkg.py</Arguments>
+          <Arguments>test\test_pkg.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3683,7 +3683,7 @@
         <Test>
           <Name>test_platform_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_platform.py</Arguments>
+          <Arguments>test\test_platform.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3694,7 +3694,7 @@
         <Test>
           <Name>test_popen2_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_popen2.py</Arguments>
+          <Arguments>test\test_popen2.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3705,7 +3705,7 @@
         <Test>
           <Name>test_popen_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_popen.py</Arguments>
+          <Arguments>test\test_popen.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3716,7 +3716,7 @@
         <Test>
           <Name>test_poplib_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_poplib.py</Arguments>
+          <Arguments>test\test_poplib.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- StackOverflowException -->
@@ -3727,7 +3727,7 @@
         <Test>
           <Name>test_posixpath_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_posixpath.py</Arguments>
+          <Arguments>test\test_posixpath.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3738,7 +3738,7 @@
         <Test>
           <Name>test_pow_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_pow.py</Arguments>
+          <Arguments>test\test_pow.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3749,7 +3749,7 @@
         <Test>
           <Name>test_print_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_print.py</Arguments>
+          <Arguments>test\test_print.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3760,7 +3760,7 @@
         <Test>
           <Name>test_profilehooks_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_profilehooks.py</Arguments>
+          <Arguments>test\test_profilehooks.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled>
@@ -3771,7 +3771,7 @@
         <Test>
           <Name>test_profile_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_profile.py</Arguments>
+          <Arguments>test\test_profile.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- No sys.setprofile -->
@@ -3782,7 +3782,7 @@
         <Test>
           <Name>test_property_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_property.py</Arguments>
+          <Arguments>test\test_property.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3793,7 +3793,7 @@
         <Test>
           <Name>test_pstats_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_pstats.py</Arguments>
+          <Arguments>test\test_pstats.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3804,7 +3804,7 @@
         <Test>
           <Name>test_py3kwarn_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-3 -X:Frames Test\test_py3kwarn.py</Arguments>
+          <Arguments>-3 -X:Frames test\test_py3kwarn.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled>
@@ -3815,7 +3815,7 @@
         <Test>
           <Name>test_pyclbr_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_pyclbr.py</Arguments>
+          <Arguments>-X:Frames test\test_pyclbr.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3826,7 +3826,7 @@
         <Test>
           <Name>test_pydoc_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_pydoc.py</Arguments>
+          <Arguments>test\test_pydoc.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled>
@@ -3837,7 +3837,7 @@
         <Test>
           <Name>test_pyexpat_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_pyexpat.py</Arguments>
+          <Arguments>test\test_pyexpat.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled>
@@ -3848,7 +3848,7 @@
         <Test>
           <Name>test_queue_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_queue.py</Arguments>
+          <Arguments>test\test_queue.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3859,7 +3859,7 @@
         <Test>
           <Name>test_quopri_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_quopri.py</Arguments>
+          <Arguments>test\test_quopri.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3870,7 +3870,7 @@
         <Test>
           <Name>test_random_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_random.py</Arguments>
+          <Arguments>-X:Frames test\test_random.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3881,7 +3881,7 @@
         <Test>
           <Name>test_repr_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_repr.py</Arguments>
+          <Arguments>-X:Frames test\test_repr.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3892,7 +3892,7 @@
         <Test>
           <Name>test_re_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_re.py</Arguments>
+          <Arguments>test\test_re.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3903,7 +3903,7 @@
         <Test>
           <Name>test_rfc822_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_rfc822.py</Arguments>
+          <Arguments>test\test_rfc822.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3914,7 +3914,7 @@
         <Test>
           <Name>test_richcmp_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_richcmp.py</Arguments>
+          <Arguments>-X:Frames test\test_richcmp.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3925,7 +3925,7 @@
         <Test>
           <Name>test_robotparser_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_robotparser.py</Arguments>
+          <Arguments>-X:Frames test\test_robotparser.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- StackOverflowException -->
@@ -3936,7 +3936,7 @@
         <Test>
           <Name>test_runpy_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_runpy.py</Arguments>
+          <Arguments>test\test_runpy.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3947,7 +3947,7 @@
         <Test>
           <Name>test_scope_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames -X:Tracing Test\test_scope.py</Arguments>
+          <Arguments>-X:Frames -X:Tracing test\test_scope.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -3958,7 +3958,7 @@
         <Test>
           <Name>test_sets_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:FullFrames Test\test_sets.py</Arguments>
+          <Arguments>-X:FullFrames test\test_sets.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3969,7 +3969,7 @@
         <Test>
           <Name>test_set_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_set.py</Arguments>
+          <Arguments>-X:Frames test\test_set.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- StackOverflowException -->
@@ -3980,7 +3980,7 @@
         <Test>
           <Name>test_sgmllib_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_sgmllib.py</Arguments>
+          <Arguments>test\test_sgmllib.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -3991,7 +3991,7 @@
         <Test>
           <Name>test_sha_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_sha.py</Arguments>
+          <Arguments>test\test_sha.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -4002,7 +4002,7 @@
         <Test>
           <Name>test_shelve_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_shelve.py</Arguments>
+          <Arguments>-X:Frames test\test_shelve.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -4013,7 +4013,7 @@
         <Test>
           <Name>test_shlex_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_shlex.py</Arguments>
+          <Arguments>test\test_shlex.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -4024,7 +4024,7 @@
         <Test>
           <Name>test_signal_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_signal.py</Arguments>
+          <Arguments>test\test_signal.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4035,7 +4035,7 @@
         <Test>
           <Name>test_SimpleHTTPServer_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_SimpleHTTPServer.py</Arguments>
+          <Arguments>test\test_SimpleHTTPServer.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
           <Disabled>true</Disabled> <!-- PASSED but very slow -->
@@ -4046,7 +4046,7 @@
         <Test>
           <Name>test_site_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_site.py</Arguments>
+          <Arguments>test\test_site.py</Arguments>
           <MaxDuration>1500000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4057,7 +4057,7 @@
         <Test>
           <Name>test_slice_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_slice.py</Arguments>
+          <Arguments>-X:Frames test\test_slice.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4068,7 +4068,7 @@
         <Test>
           <Name>test_smtplib_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_smtplib.py</Arguments>
+          <Arguments>test\test_smtplib.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4079,7 +4079,7 @@
         <Test>
           <Name>test_socket_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_socket.py</Arguments>
+          <Arguments>-X:Frames test\test_socket.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
           <Disabled>true</Disabled> <!-- timeout -->
@@ -4090,7 +4090,7 @@
         <Test>
           <Name>test_softspace_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_softspace.py</Arguments>
+          <Arguments>test\test_softspace.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4101,7 +4101,7 @@
         <Test>
           <Name>test_sort_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_sort.py</Arguments>
+          <Arguments>-X:Frames test\test_sort.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -4112,7 +4112,7 @@
         <Test>
           <Name>test_ssl_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_ssl.py</Arguments>
+          <Arguments>test\test_ssl.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4123,7 +4123,7 @@
         <Test>
           <Name>test_startfile_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_startfile.py</Arguments>
+          <Arguments>test\test_startfile.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -4134,7 +4134,7 @@
         <Test>
           <Name>test_strftime_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_strftime.py</Arguments>
+          <Arguments>test\test_strftime.py</Arguments>
           <MaxDuration>-1</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4145,7 +4145,7 @@
         <Test>
           <Name>test_stringio_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_stringio.py</Arguments>
+          <Arguments>-X:Frames test\test_stringio.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4156,7 +4156,7 @@
         <Test>
           <Name>test_stringprep_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_stringprep.py</Arguments>
+          <Arguments>test\test_stringprep.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4167,7 +4167,7 @@
         <Test>
           <Name>test_string_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_string.py</Arguments>
+          <Arguments>-X:Frames test\test_string.py</Arguments>
           <MaxDuration>1800000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4178,7 +4178,7 @@
         <Test>
           <Name>test_strop_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_strop.py</Arguments>
+          <Arguments>test\test_strop.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- No module named strop -->
@@ -4189,7 +4189,7 @@
         <Test>
           <Name>test_strptime_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_strptime.py</Arguments>
+          <Arguments>test\test_strptime.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4200,7 +4200,7 @@
         <Test>
           <Name>test_structmembers_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_structmembers.py</Arguments>
+          <Arguments>test\test_structmembers.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- No module named _testcapi -->
@@ -4211,7 +4211,7 @@
         <Test>
           <Name>test_structseq_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_structseq.py</Arguments>
+          <Arguments>test\test_structseq.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -4222,7 +4222,7 @@
         <Test>
           <Name>test_struct_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_struct.py</Arguments>
+          <Arguments>-X:Frames test\test_struct.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4233,7 +4233,7 @@
         <Test>
           <Name>test_str_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_str.py</Arguments>
+          <Arguments>-X:Frames test\test_str.py</Arguments>
           <MaxDuration>1800000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4244,7 +4244,7 @@
         <Test>
           <Name>test_subprocess_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_subprocess.py</Arguments>
+          <Arguments>test\test_subprocess.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- TIMEOUT -->
@@ -4255,7 +4255,7 @@
         <Test>
           <Name>test_sundry_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_sundry.py</Arguments>
+          <Arguments>-X:Frames test\test_sundry.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
           <Disabled>true</Disabled> <!-- PASSED but very slow -->
@@ -4266,7 +4266,7 @@
         <Test>
           <Name>test_symtable_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_symtable.py</Arguments>
+          <Arguments>test\test_symtable.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- No module named _symtable -->
@@ -4277,7 +4277,7 @@
         <Test>
           <Name>test_syntax_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:FullFrames Test\test_syntax.py</Arguments>
+          <Arguments>-X:FullFrames test\test_syntax.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4288,7 +4288,7 @@
         <Test>
           <Name>test_sys_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_sys.py</Arguments>
+          <Arguments>-X:Frames test\test_sys.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4299,7 +4299,7 @@
         <Test>
           <Name>test_tarfile_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_tarfile.py</Arguments>
+          <Arguments>-X:Frames test\test_tarfile.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- The tests do not properly clean up temp files inall cases, which causes them to fail. -->
@@ -4310,7 +4310,7 @@
         <Test>
           <Name>test_tcl_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_tcl.py</Arguments>
+          <Arguments>test\test_tcl.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- No tcl module. -->
@@ -4321,7 +4321,7 @@
         <Test>
           <Name>test_telnetlib_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_telnetlib.py</Arguments>
+          <Arguments>test\test_telnetlib.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- timeout -->
@@ -4332,7 +4332,7 @@
         <Test>
           <Name>test_tempfile_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_tempfile.py</Arguments>
+          <Arguments>test\test_tempfile.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4343,7 +4343,7 @@
         <Test>
           <Name>test_textwrap_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_textwrap.py</Arguments>
+          <Arguments>test\test_textwrap.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -4354,7 +4354,7 @@
         <Test>
           <Name>test_threadedtempfile_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_threadedtempfile.py</Arguments>
+          <Arguments>test\test_threadedtempfile.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -4365,7 +4365,7 @@
         <Test>
           <Name>test_threaded_import_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_threaded_import.py</Arguments>
+          <Arguments>test\test_threaded_import.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- Just plain broken. -->
@@ -4376,7 +4376,7 @@
         <Test>
           <Name>test_threading_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_threading.py</Arguments>
+          <Arguments>test\test_threading.py</Arguments>
           <MaxDuration>900000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4387,7 +4387,7 @@
         <Test>
           <Name>test_thread_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_thread.py</Arguments>
+          <Arguments>test\test_thread.py</Arguments>
           <MaxDuration>60000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- TIMEOUT -->
@@ -4398,7 +4398,7 @@
         <Test>
           <Name>test_time_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_time.py</Arguments>
+          <Arguments>test\test_time.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4409,7 +4409,7 @@
         <Test>
           <Name>test_tokenize_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:FullFrames Test\test_tokenize.py</Arguments>
+          <Arguments>-X:FullFrames test\test_tokenize.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -4420,7 +4420,7 @@
         <Test>
           <Name>test_traceback_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_traceback.py</Arguments>
+          <Arguments>test\test_traceback.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4431,7 +4431,7 @@
         <Test>
           <Name>test_trace_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames -X:Tracing -X:MaxRecursion 1001 Test\test_trace.py</Arguments>
+          <Arguments>-X:Frames -X:Tracing -X:MaxRecursion 1001 test\test_trace.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4442,7 +4442,7 @@
         <Test>
           <Name>test_transformer_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_transformer.py</Arguments>
+          <Arguments>test\test_transformer.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- No parser module -->
@@ -4453,7 +4453,7 @@
         <Test>
           <Name>test_tuple_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_tuple.py</Arguments>
+          <Arguments>test\test_tuple.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4464,7 +4464,7 @@
         <Test>
           <Name>test_typechecks_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_typechecks.py</Arguments>
+          <Arguments>test\test_typechecks.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -4475,7 +4475,7 @@
         <Test>
           <Name>test_types_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_types.py</Arguments>
+          <Arguments>-X:Frames test\test_types.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4486,7 +4486,7 @@
         <Test>
           <Name>test_ucn_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_ucn.py</Arguments>
+          <Arguments>test\test_ucn.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4497,7 +4497,7 @@
         <Test>
           <Name>test_unary_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_unary.py</Arguments>
+          <Arguments>test\test_unary.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -4508,7 +4508,7 @@
         <Test>
           <Name>test_undocumented_details_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_undocumented_details.py</Arguments>
+          <Arguments>-X:Frames test\test_undocumented_details.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4519,7 +4519,7 @@
         <Test>
           <Name>test_unicodedata_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Debug Test\test_unicodedata.py</Arguments>
+          <Arguments>-X:Debug test\test_unicodedata.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4530,7 +4530,7 @@
         <Test>
           <Name>test_unicode_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_unicode.py</Arguments>
+          <Arguments>-X:Frames test\test_unicode.py</Arguments>
           <MaxDuration>1500000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4541,7 +4541,7 @@
         <Test>
           <Name>test_unicode_file_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_unicode_file.py</Arguments>
+          <Arguments>test\test_unicode_file.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4552,7 +4552,7 @@
         <Test>
           <Name>test_unittest_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_unittest.py</Arguments>
+          <Arguments>-X:Frames test\test_unittest.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4563,7 +4563,7 @@
         <Test>
           <Name>test_univnewlines_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_univnewlines.py</Arguments>
+          <Arguments>test\test_univnewlines.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4574,7 +4574,7 @@
         <Test>
           <Name>test_unpack_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:FullFrames Test\test_unpack.py</Arguments>
+          <Arguments>-X:FullFrames test\test_unpack.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -4585,7 +4585,7 @@
         <Test>
           <Name>test_urllib2net_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:FullFrames Test\test_urllib2net.py</Arguments>
+          <Arguments>-X:FullFrames test\test_urllib2net.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
           <Disabled>true</Disabled> <!-- StackOverflowException -->
@@ -4596,7 +4596,7 @@
         <Test>
           <Name>test_urllib2_localnet_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_urllib2_localnet.py</Arguments>
+          <Arguments>test\test_urllib2_localnet.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4607,7 +4607,7 @@
         <Test>
           <Name>test_urllibnet_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_urllibnet.py</Arguments>
+          <Arguments>-X:Frames test\test_urllibnet.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4618,7 +4618,7 @@
         <Test>
           <Name>test_urllib_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_urllib.py</Arguments>
+          <Arguments>test\test_urllib.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- StackOverflowException -->
@@ -4629,7 +4629,7 @@
         <Test>
           <Name>test_urlparse_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_urlparse.py</Arguments>
+          <Arguments>test\test_urlparse.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -4640,7 +4640,7 @@
         <Test>
           <Name>test_userdict_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_userdict.py</Arguments>
+          <Arguments>-X:Frames test\test_userdict.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4651,7 +4651,7 @@
         <Test>
           <Name>test_userlist_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_userlist.py</Arguments>
+          <Arguments>-X:Frames test\test_userlist.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4662,7 +4662,7 @@
         <Test>
           <Name>test_userstring_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_userstring.py</Arguments>
+          <Arguments>-X:Frames test\test_userstring.py</Arguments>
           <MaxDuration>2000000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4673,7 +4673,7 @@
         <Test>
           <Name>test_uuid_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_uuid.py</Arguments>
+          <Arguments>test\test_uuid.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -4684,7 +4684,7 @@
         <Test>
           <Name>test_uu_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_uu.py</Arguments>
+          <Arguments>test\test_uu.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4695,7 +4695,7 @@
         <Test>
           <Name>test_warnings_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_warnings.py</Arguments>
+          <Arguments>-X:Frames test\test_warnings.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4706,7 +4706,7 @@
         <Test>
           <Name>test_wave_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_wave.py</Arguments>
+          <Arguments>test\test_wave.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4717,7 +4717,7 @@
         <Test>
           <Name>test_weakref_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_weakref.py</Arguments>
+          <Arguments>-X:Frames test\test_weakref.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4728,7 +4728,7 @@
         <Test>
           <Name>test_whichdb_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_whichdb.py</Arguments>
+          <Arguments>test\test_whichdb.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -4739,7 +4739,7 @@
         <Test>
           <Name>test_winreg_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_winreg.py</Arguments>
+          <Arguments>test\test_winreg.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4750,7 +4750,7 @@
         <Test>
           <Name>test_winsound_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_winsound.py</Arguments>
+          <Arguments>test\test_winsound.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -4761,7 +4761,7 @@
         <Test>
           <Name>test_wsgiref_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_wsgiref.py</Arguments>
+          <Arguments>test\test_wsgiref.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4772,7 +4772,7 @@
         <Test>
           <Name>test_xdrlib_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_xdrlib.py</Arguments>
+          <Arguments>test\test_xdrlib.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4783,7 +4783,7 @@
         <Test>
           <Name>test_xmllib_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_xmllib.py</Arguments>
+          <Arguments>test\test_xmllib.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
@@ -4794,7 +4794,7 @@
         <Test>
           <Name>test_xml_etree_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames Test\test_xml_etree.py</Arguments>
+          <Arguments>-X:Frames test\test_xml_etree.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- Disabled until there's an expat implemntation or some other parser -->
@@ -4805,7 +4805,7 @@
         <Test>
           <Name>test_xpickle_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_xpickle.py</Arguments>
+          <Arguments>test\test_xpickle.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- StackOverflowException -->
@@ -4816,7 +4816,7 @@
         <Test>
           <Name>test_xrange_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_xrange.py</Arguments>
+          <Arguments>test\test_xrange.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
@@ -4827,7 +4827,7 @@
         <Test>
           <Name>test_zipfile_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_zipfile.py</Arguments>
+          <Arguments>test\test_zipfile.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- The tests do not properly clean up temp files inall cases, which causes them to fail. -->
@@ -4838,7 +4838,7 @@
         <Test>
           <Name>test_zipfile64_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_zipfile64.py</Arguments>
+          <Arguments>test\test_zipfile64.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled>
@@ -4849,7 +4849,7 @@
         <Test>
           <Name>test_zipimport_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_zipimport.py</Arguments>
+          <Arguments>test\test_zipimport.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled>
@@ -4860,7 +4860,7 @@
         <Test>
           <Name>test_zlib_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>Test\test_zlib.py</Arguments>
+          <Arguments>test\test_zlib.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->

@@ -20,7 +20,7 @@ from iptest.assert_util import *
 if not is_silverlight:
     from iptest.file_util import *
     from iptest.process_util import *
-    import nt
+    import os
 
 
 try:
@@ -37,7 +37,7 @@ def test_cp7766():
         AreEqual(type(__builtins__), dict)
         
     try:
-        _t_test = testpath.public_testdir + "\\cp7766.py"
+        _t_test = path_combine(testpath.public_testdir, "cp7766.py")
         write_to_file(_t_test, "temp = __builtins__")
     
         import cp7766
@@ -45,8 +45,8 @@ def test_cp7766():
         Assert(cp7766.temp != __builtins__)
         
     finally:
-        import nt
-        nt.unlink(_t_test)
+        import os
+        os.unlink(_t_test)
 
 # generate test files on the fly
 if not is_silverlight:
@@ -219,8 +219,9 @@ if not is_silverlight:
 #########################################################################################
 
 def get_local_filename(base):
-    if __file__.count('\\'):
-        return __file__.rsplit("\\", 1)[0] + '\\'+ base
+    import os
+    if __file__.count(os.sep):
+        return path_combine(__file__.rsplit(os.sep, 1)[0], base)
     else:
         return base
 
@@ -228,7 +229,7 @@ def compileAndRef(name, filename, *args):
     if is_cli:
         import clr
         sys.path.append(sys.exec_prefix)
-        AreEqual(run_csc("/nologo /t:library " + ' '.join(args) + " /out:\"" + sys.exec_prefix + "\"\\" + name +".dll \"" + filename + "\""), 0)
+        AreEqual(run_csc("/nologo /t:library " + ' '.join(args) + " /out:\"" + path_combine(sys.exec_prefix, name +".dll") + "\" \"" + filename + "\""), 0)
         clr.AddReference(name)
 
 
@@ -689,10 +690,10 @@ def test___import___and_packages():
         
     finally:
         sys.modules = mod_backup
-        nt.unlink(_f_module)
-        nt.unlink(_f_init)
-        nt.unlink(_f_pkg_y)
-        nt.unlink(_f_y)
+        os.unlink(_f_module)
+        os.unlink(_f_init)
+        os.unlink(_f_pkg_y)
+        os.unlink(_f_y)
 
 @skip("silverlight", "multiple_execute")
 def test_relative_imports():
@@ -768,10 +769,10 @@ from ..temp import foo1
         AreEqual(RelTest.foo1().bar(), 'foobar')
     finally:
         sys.modules = mod_backup
-        nt.unlink(_f_init)
-        nt.unlink(_f_pkg_y)
-        nt.unlink(_f_subinit)
-        nt.unlink(_f_subpkg_y)
+        os.unlink(_f_init)
+        os.unlink(_f_pkg_y)
+        os.unlink(_f_subinit)
+        os.unlink(_f_subpkg_y)
 
 @skip("silverlight")
 def test_import_globals():
@@ -812,12 +813,12 @@ sys.test4 = __import__("y", {}, {'__name__' : 'the_dir2.x.y'}).a
         AreEqual(sys.test2, 1)
     finally:
         sys.modules = backup
-        import nt
-        nt.unlink(_f_init)
-        nt.unlink(_f_dir_init)
-        nt.unlink(_f_x_y)
-        nt.unlink(_f_y)
-        nt.unlink(_f_test)
+        import os
+        os.unlink(_f_init)
+        os.unlink(_f_dir_init)
+        os.unlink(_f_x_y)
+        os.unlink(_f_y)
+        os.unlink(_f_test)
 
 @skip("silverlight", "multiple_execute")
 def test_package_back_patching():
@@ -848,9 +849,9 @@ def test_package_back_patching():
         del sys.foo
     finally:
         sys.modules = mod_backup
-        nt.unlink(_f_init)
-        nt.unlink(_f_pkg_abc)
-        nt.unlink(_f_pkg_xyz)
+        os.unlink(_f_init)
+        os.unlink(_f_pkg_abc)
+        os.unlink(_f_pkg_xyz)
         
     
 #This cannot be placed in a test_* function as it uses 'from mod import *'
@@ -871,8 +872,8 @@ if not is_silverlight: #cp3194
         
     finally:
         sys.modules = mod_backup
-        import nt
-        nt.unlink(_f_module)
+        import os
+        os.unlink(_f_module)
         
         
 @skip("silverlight", "multiple_execute")
@@ -898,9 +899,9 @@ def test_pack_module_relative_collision():
         AreEqual(test_dir.bar, 'BAR')
     finally:
         sys.modules = mod_backup
-        nt.unlink(_f_foo_py)
-        nt.unlink(_f_foo_init)
-        nt.unlink(_f_init)
+        os.unlink(_f_foo_py)
+        os.unlink(_f_foo_init)
+        os.unlink(_f_init)
 
 @skip("silverlight", "multiple_execute")
 def test_from_import_publishes_in_package():
@@ -920,8 +921,8 @@ def test_from_import_publishes_in_package():
         AreEqual(type(test_dir2.foo), type(sys))
     finally:
         sys.modules = mod_backup
-        nt.unlink(_f_foo_py)
-        nt.unlink(_f_init)
+        os.unlink(_f_foo_py)
+        os.unlink(_f_init)
 
 @skip("silverlight", "multiple_execute")
 def test_from_import_publishes_in_package_relative():
@@ -945,8 +946,8 @@ def test_from_import_publishes_in_package_relative():
         AreEqual(type(test_dir3.foof), type(sys))
     finally:
         sys.modules = mod_backup
-        nt.unlink(_f_foo_py)
-        nt.unlink(_f_init)
+        os.unlink(_f_foo_py)
+        os.unlink(_f_init)
 
 @skip("silverlight", "multiple_execute")
 def test_from_import_publishes_in_package_relative():
@@ -969,8 +970,8 @@ def test_from_import_publishes_in_package_relative():
         AreEqual(type(test_dir3.foof), type(sys))
     finally:
         sys.modules = mod_backup
-        nt.unlink(_f_foo_py)
-        nt.unlink(_f_init)
+        os.unlink(_f_foo_py)
+        os.unlink(_f_init)
 
 @skip("silverlight", "multiple_execute")
 def test_from_import_publishes_in_package_relative_self():
@@ -993,8 +994,8 @@ def test_from_import_publishes_in_package_relative_self():
         AreEqual(type(test_dir4.foof), type(sys))
     finally:
         sys.modules = mod_backup
-        nt.unlink(_f_foo_py)
-        nt.unlink(_f_init)
+        os.unlink(_f_foo_py)
+        os.unlink(_f_init)
 
 @skip("silverlight")
 def test_multiple_relative_imports_and_package():
@@ -1018,9 +1019,9 @@ def test_multiple_relative_imports_and_package():
         AreEqual(test_dir5.y, 42)
     finally:
         sys.modules = mod_backup
-        nt.unlink(_f_foo_py)
-        nt.unlink(_f_bar_py)
-        nt.unlink(_f_init)
+        os.unlink(_f_foo_py)
+        os.unlink(_f_bar_py)
+        os.unlink(_f_init)
 
 @skip("silverlight")
 def test_cp34551():
@@ -1053,9 +1054,9 @@ def bar():
 
     finally:
         sys.modules = mod_backup
-        nt.unlink(_f_foo_py)
-        nt.unlink(_f_subinit)
-        nt.unlink(_f_init)
+        os.unlink(_f_foo_py)
+        os.unlink(_f_subinit)
+        os.unlink(_f_init)
 
 def test_cp35116():
     try:
@@ -1102,11 +1103,11 @@ def test_cp35116():
 
     finally:
         sys.modules = mod_backup
-        nt.unlink(_f_m2)
-        nt.unlink(_f_m1)
-        nt.unlink(_f_pkg2init)
-        nt.unlink(_f_pkg1init)
-        nt.unlink(_f_init)
+        os.unlink(_f_m2)
+        os.unlink(_f_m1)
+        os.unlink(_f_pkg2init)
+        os.unlink(_f_pkg1init)
+        os.unlink(_f_init)
 
 
 

@@ -974,7 +974,7 @@ def test_module_exceptions():
     """verify exceptions in modules are like user defined exception objects, not built-in types."""
     
     # these modules have normal types...
-    normal_types = ['sys', 'clr', 'exceptions', '__builtin__', '_winreg', 'mmap', 'nt']       
+    normal_types = ['sys', 'clr', 'exceptions', '__builtin__', '_winreg', 'mmap', 'nt', 'posix']       
     builtins = [x for x in sys.builtin_module_names if x not in normal_types ]
     for module in builtins:
         mod = __import__(module)

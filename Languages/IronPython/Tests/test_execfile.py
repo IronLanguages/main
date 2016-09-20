@@ -14,16 +14,19 @@
 #####################################################################################
 
 from iptest.assert_util import *
+from iptest.file_util import path_combine
 skiptest("silverlight")
+
+import os
 
 
 @skip("win32")
 def test_sanity():
     root = testpath.public_testdir
-    execfile(root + "/Inc/toexec.py")
-    execfile(root + "/Inc/toexec.py")
+    execfile(path_combine(root, "Inc", "toexec.py"))
+    execfile(path_combine(root, "Inc", "toexec.py"))
     #execfile(root + "/doc.py")
-    execfile(root + "/Inc/toexec.py")
+    execfile(path_combine(root, "Inc", "toexec.py"))
 
 def test_negative():
     AssertError(TypeError, execfile, None) # arg must be string
@@ -34,7 +37,7 @@ def test_negative():
 def test_scope():
     root = testpath.public_testdir
     z = 10
-    execfile(root + "/Inc/execfile_scope.py")
+    execfile(path_combine(root, "Inc", "execfile_scope.py"))
     
 
 run_test(__name__)

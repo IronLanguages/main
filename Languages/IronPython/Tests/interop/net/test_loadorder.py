@@ -95,10 +95,10 @@ from iptest.process_util import *
 skiptest("silverlight")
 
 def test_all():
-    directory = testpath.public_testdir + r"\interop\net\loadorder"
+    directory = path_combine(testpath.public_testdir, "interop", "net", "loadorder")
 
     count = 0
-    for x in nt.listdir(directory):
+    for x in os.listdir(directory):
         if not x.startswith("t") or not x.endswith(".py"):
             continue
     
@@ -108,7 +108,7 @@ def test_all():
         
         # running ipy with parent's switches
         if is_cli:
-            result = launch_ironpython_changing_extensions(directory + "\\" + x)
+            result = launch_ironpython_changing_extensions(path_combine(directory, x))
         
             if result == 0: 
                 print "%s: pass" % x

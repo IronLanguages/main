@@ -56,7 +56,7 @@ def test_cp17420():
     test_file_name = path_combine(testpath.temporary_dir, "cp17420.py")
     test_log_name  = path_combine(testpath.temporary_dir, "cp17420.log")
     try:
-        nt.remove(test_log_name)
+        os.remove(test_log_name)
     except:
         pass
     
@@ -453,9 +453,9 @@ def test_module_alias_cp19656():
         from check import check
         AreEqual(check(stuff), 3)
     finally:
-        import nt
-        nt.unlink(stuff_mod)
-        nt.unlink(check_mod)
+        import os
+        os.unlink(stuff_mod)
+        os.unlink(check_mod)
 
 def test_cp24691():
     import os
@@ -469,19 +469,19 @@ def test_cp24690():
              "ENOENT")
 
 def test_cp24692():
-    import errno, nt, stat
+    import errno, os, stat
     dir_name = "cp24692_testdir"
     try:
-        nt.mkdir(dir_name)
-        nt.chmod(dir_name, stat.S_IREAD)
+        os.mkdir(dir_name)
+        os.chmod(dir_name, stat.S_IREAD)
         try:
-            nt.rmdir(dir_name)
+            os.rmdir(dir_name)
         except WindowsError, e:
             pass
         AreEqual(e.errno, errno.EACCES)
     finally:
-        nt.chmod(dir_name, stat.S_IWRITE)
-        nt.rmdir(dir_name)
+        os.chmod(dir_name, stat.S_IWRITE)
+        os.rmdir(dir_name)
 
 # TODO: this test needs to run against Dev10 builds as well
 @skip("win32")
@@ -664,12 +664,12 @@ def test_cp20174():
     cp20174_path = testpath.public_testdir + r"\cp20174"
     
     try:
-        nt.mkdir(cp20174_path)
+        os.mkdir(cp20174_path)
         
-        cp20174_init = cp20174_path + r"\__init__.py"
+        cp20174_init = path_combine(cp20174_path, "__init__.py")
         write_to_file(cp20174_init, "import a")
         
-        cp20174_a = cp20174_path + r"\a.py"
+        cp20174_a = path_combine(cp20174_path,  "a.py")
         write_to_file(cp20174_a, """
 from property import x
 class C:
@@ -677,16 +677,16 @@ class C:
     x = property(_get_x)
 """)
         
-        cp20174_property = cp20174_path + r"\property.py"
+        cp20174_property = path_combine(cp20174_path, "property.py")
         write_to_file(cp20174_property, "x=1")
         
         import cp20174
         AreEqual(cp20174.property.x, 1)
         
     finally:
-        for x in nt.listdir(cp20174_path):
-            nt.unlink(cp20174_path + "\\" + x)
-        nt.rmdir(cp20174_path)
+        for x in os.listdir(cp20174_path):
+            os.unlink(path_combine(cp20174_path, x))
+        os.rmdir(cp20174_path)
 
 @skip("win32")
 def test_cp20370():

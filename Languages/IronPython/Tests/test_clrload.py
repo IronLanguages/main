@@ -85,7 +85,10 @@ def test_gac():
     import System
     def get_gac():
             process = System.Diagnostics.Process()
-            process.StartInfo.FileName = System.IO.Path.Combine(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(), "gacutil.exe")
+            if is_posix:
+				process.StartInfo.FileName = "/usr/bin/gacutil"
+            else:
+                process.StartInfo.FileName = System.IO.Path.Combine(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(), "gacutil.exe")
             process.StartInfo.Arguments = "/nologo /l"
             process.StartInfo.CreateNoWindow = True
             process.StartInfo.UseShellExecute = False
@@ -237,9 +240,9 @@ def test_assembly_resolve_isolation():
     tmp2 = path_combine(tmp, 'resolve2')
 
     if not os.path.exists(tmp1):
-        nt.mkdir(tmp1)
+        os.mkdir(tmp1)
     if not os.path.exists(tmp2):
-        nt.mkdir(tmp2)
+        os.mkdir(tmp2)
     
     code1a = """
 using System;
@@ -340,21 +343,21 @@ def test_addreference_sanity():
     clr.AddReference(''.GetType().Assembly.FullName)
 
 def get_local_filename(base):
-    if __file__.count('\\'):
-        return __file__.rsplit("\\", 1)[0] + '\\'+ base
+    if __file__.count(os.sep):
+        return path_combine(__file__.rsplit(os.sep, 1)[0], base)
     else:
         return base
 
 def compileAndLoad(name, filename, *args):
     import clr
     sys.path.append(sys.exec_prefix)
-    AreEqual(run_csc("/nologo /t:library " + ' '.join(args) + " /out:\"" + sys.exec_prefix + "\"\\" + name +".dll \"" + filename + "\""), 0)
+    AreEqual(run_csc("/nologo /t:library " + ' '.join(args) + " /out:\"" + path_combine(sys.exec_prefix, name +".dll") + "\" \"" + filename + "\""), 0)
     return clr.LoadAssemblyFromFile(name)
 
 @skip("multiple_execute")
 def test_classname_same_as_ns():
     sys.path.append(sys.exec_prefix)
-    AreEqual(run_csc("/nologo /t:library /out:\"" + sys.exec_prefix + "\"\\c4.dll \"" + get_local_filename('c4.cs') + "\""), 0)
+    AreEqual(run_csc("/nologo /t:library /out:\"" + path_combine(sys.exec_prefix, "c4.dll") + "\" \"" + get_local_filename('c4.cs') + "\""), 0)
     clr.AddReference("c4")
     import c4
     Assert(not c4 is c4.c4)
@@ -392,7 +395,7 @@ def test_namespaceimport():
     tmp = testpath.temporary_dir
     if tmp not in sys.path:
         sys.path.append(tmp)
-
+        
     code1 = "namespace TestNamespace { public class Test1 {} }"
     code2 = "namespace TestNamespace { public class Test2 {} }"
 

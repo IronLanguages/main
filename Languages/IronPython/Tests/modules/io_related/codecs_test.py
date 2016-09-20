@@ -479,9 +479,9 @@ def test_file_encodings():
     names.
     '''
     
-    sys.path.append(nt.getcwd() + "\\tmp_encodings")
+    sys.path.append(path_combine(os.getcwd(), "tmp_encodings"))
     try:
-        nt.mkdir(nt.getcwd() + "\\tmp_encodings")
+        os.mkdir(path_combine(os.getcwd(), "tmp_encodings"))
     except:
         pass
     
@@ -492,23 +492,23 @@ def test_file_encodings():
                 print "http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24082"
                 continue
             temp_mod_name = "test_encoding_" + coding.replace("-", "_").replace(" ", "_")
-            f = open(nt.getcwd() + "\\tmp_encodings\\" + temp_mod_name + ".py",
+            f = open(path_combine(os.getcwd(), "tmp_encodings", temp_mod_name + ".py"),
                     "w")
             f.write("# coding: %s" % (coding))
             f.close()
             if temp_mod_name not in ["test_encoding_uTf!!!8"]: #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=20302
                 __import__(temp_mod_name)
-            nt.remove(nt.getcwd() + "\\tmp_encodings\\" + temp_mod_name + ".py")
+            os.remove(path_combine(os.getcwd(), "tmp_encodings", temp_mod_name + ".py"))
             
     finally:
         #cleanup
-        sys.path.remove(nt.getcwd() + "\\tmp_encodings")
+        sys.path.remove(path_combine(os.getcwd(), "tmp_encodings"))
 
 @skip("silverlight")
 def test_cp11334():
     
     #--Test that not using "# coding ..." results in a warning
-    t_in, t_out, t_err = nt.popen3(sys.executable + " " + nt.getcwd() + r"\encoded_files\cp11334_warn.py")
+    t_in, t_out, t_err = os.popen3(sys.executable + " " + path_combine(os.getcwd(), "encoded_files", "cp11334_warn.py"))
     t_err_lines = t_err.readlines()
     t_out_lines = t_out.readlines()
     t_err.close()
@@ -520,7 +520,7 @@ def test_cp11334():
     Assert(t_err_lines[1].startswith("SyntaxError: Non-ASCII character '\\xb5' in file"))
     
     #--Test that using "# coding ..." is OK
-    t_in, t_out, t_err = nt.popen3(sys.executable + " " + nt.getcwd() + r"\encoded_files\cp11334_ok.py")
+    t_in, t_out, t_err = os.popen3(sys.executable + " " + path_combine(os.getcwd(), "encoded_files", "cp11334_ok.py"))
     t_err_lines = t_err.readlines()
     t_out_lines = t_out.readlines()
     t_err.close()
@@ -545,22 +545,22 @@ def test_file_encodings_negative():
     - need variations on the encoding names
     '''
     import sys
-    import nt
-    sys.path.append(nt.getcwd() + "\\tmp_encodings")
+    import os
+    sys.path.append(path_combine(os.getcwd(), "tmp_encodings"))
     try:
-        nt.mkdir(nt.getcwd() + "\\tmp_encodings")
+        os.mkdir(path_combine(os.getcwd(), "tmp_encodings"))
     except:
         pass
              
     try:
         #negative case
-        f = open(nt.getcwd() + "\\tmp_encodings\\" + "bad_encoding.py", "w")
+        f = open(path_combine(os.getcwd(), "tmp_encodings", "bad_encoding.py"), "w")
         f.write("# coding: bad")
         f.close()
         AssertError(SyntaxError, __import__, "bad_encoding")
     finally:
         #cleanup
-        sys.path.remove(nt.getcwd() + "\\tmp_encodings")
+        sys.path.remove(path_combine(os.getcwd(), "tmp_encodings"))
 
 @disabled
 def test_cp1214():
@@ -605,7 +605,7 @@ def test_lookup_encodings():
 @skip("silverlight cli") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=1019
 def test_cp1019():
     #--Test that bogus encodings fail properly
-    t_in, t_out, t_err = nt.popen3(sys.executable + " " + nt.getcwd() + r"\encoded_files\cp1019.py")
+    t_in, t_out, t_err = os.popen3(sys.executable + " " + path_combine(os.getcwd(), "encoded_files", "cp1019.py"))
     t_err_lines = t_err.readlines()
     t_out_lines = t_out.readlines()
     t_err.close()
