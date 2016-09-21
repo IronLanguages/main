@@ -1198,10 +1198,7 @@ def test_bytearray():
     AssertError(MemoryError, f)
     
     def f(): x[0:1] = sys.maxint+1
-    if is_cpython: #http://ironpython.codeplex.com/workitem/28210
-        AssertError(OverflowError, f)   
-    else:
-        AssertError(TypeError, f)    
+    AssertError(TypeError, f)
         
     for setval in [b'bar', bytearray(b'bar'), [b'b', b'a', b'r'], (b'b', b'a', b'r'), (98, b'a', b'r'), (Indexable(98), b'a', b'r'), (IndexableOC(98), b'a', b'r')]:
         x = bytearray(b'abc')
