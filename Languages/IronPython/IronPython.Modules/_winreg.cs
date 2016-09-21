@@ -174,6 +174,16 @@ namespace IronPython.Modules {
               ref uint lpcbData
             );
 
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        static extern int RegEnumKeyEx(
+            SafeRegistryHandle hKey,
+            int dwIndex,
+            StringBuilder lpName,
+            ref int lpcbName,
+            IntPtr lpReserved,
+            IntPtr lpClass,
+            IntPtr lpcbClass,
+            IntPtr lpftLastWriteTime);
 
         public static void DeleteKey(object key, string subKeyName) {
             HKEYType rootKey = GetRootKey(key);
@@ -193,14 +203,21 @@ namespace IronPython.Modules {
             rootKey.GetKey().DeleteValue(value, true);
         }
 
-        public static string EnumKey(object key, int index) {
+        public static string EnumKey(object key, int index)
+        {
             HKEYType rootKey = GetRootKey(key);
-            if (index >= rootKey.GetKey().SubKeyCount) {
+
+            int len = 256; // maximum key name length is 255
+            StringBuilder name = new StringBuilder(len);
+            int ret = RegEnumKeyEx(rootKey.GetKey().Handle, index, name, ref len, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+            if (ret != ERROR_SUCCESS) {
+                Debug.Assert(ret == ERROR_NO_MORE_ITEMS);
                 throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, PythonExceptions._WindowsError.ERROR_BAD_COMMAND, "No more data is available");
             }
-            return rootKey.GetKey().GetSubKeyNames()[index];
+            return name.ToString();
         }
 
+        const int ERROR_NO_MORE_ITEMS = 259;
         const int ERROR_MORE_DATA = 234;
         const int ERROR_SUCCESS = 0;
 
