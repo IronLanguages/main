@@ -27,7 +27,7 @@ bultin_types = ['complex', 'StandardError']
 bultin_constants = ['None', 'False']
 modules = ['__builtin__', 'datetime', '_collections', 'site']
 
-if is_netstandard: SystemError = Exception # no System.SystemException in netstandard
+if is_netstandard: SystemError = Exception # TODO: revert this once System.SystemException is added to netstandard (https://github.com/IronLanguages/main/issues/1399)
 
 def test_interesting_names_as_namespace():
     # import

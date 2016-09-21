@@ -77,7 +77,7 @@ def test_readonly_interface():
     x = C()
     p = IProperty11.StrProperty
     p.__set__(x, 'abc')     # no-op equivalent?
-    if is_netstandard: # no System.SystemException in netstandard1.6
+    if is_netstandard: # TODO: revert this once System.SystemException is added to netstandard (https://github.com/IronLanguages/main/issues/1399)
         AssertError(Exception, lambda: p.SetValue(x, 'def'))  # ?
     else:
         AssertError(SystemError, lambda: p.SetValue(x, 'def'))  # ?
