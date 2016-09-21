@@ -1,5 +1,0 @@
-fails:Enumerator#each_cons walks Enumerable elements strictly in forward direction, in parallel with iteration
-fails:Enumerator#each_cons allows Enumerable to change during the iteration
-fails:"Enumerator#each_cons walks Enumerable elements strictly in forward direction, in parallel with iteration"
-fails:"Enumerator#each_cons allows Enumerable to change during the iteration"
-fails:Enumerator#each_cons raises LocalJumpError if no block is given

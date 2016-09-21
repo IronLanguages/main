@@ -1,2 +1,0 @@
-fails:Comparable maps to IComparable acts as an IComparable
-fails:Comparable mapping to IComparable for metaclasses acts as an IComparable

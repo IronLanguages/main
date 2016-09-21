@@ -1,4 +1,0 @@
-fails:Prime#each enumerates the elements
-fails:Prime#each don't rewind the generator, each loop start at the current value
-fails:"Prime#each enumerates the elements"
-fails:"Prime#each don't rewind the generator, each loop start at the current value"

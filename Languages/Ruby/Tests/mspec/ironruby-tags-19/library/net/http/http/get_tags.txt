@@ -1,4 +1,0 @@
-fails:Net::HTTP.get when passed URI when passed URI returns the body of the specified uri
-fails:Net::HTTP.get when passed URI when passed host, path, port returns the body of the specified host-path-combination
-fails:Net::HTTP.get when passed URI when passed path in version 1.1 mode returns the response and the body for the passed path
-fails:Net::HTTP.get when passed URI when passed path in version 1.1 mode yields each read part of the body to the passed block when passed a block

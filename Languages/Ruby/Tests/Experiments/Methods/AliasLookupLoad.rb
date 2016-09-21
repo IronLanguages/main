@@ -1,1 +1,0 @@
-load 'AliasLookup.rb', true

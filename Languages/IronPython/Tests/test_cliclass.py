@@ -1674,12 +1674,6 @@ def test_weird_compare():
     a, b = WithCompare(), WithCompare()
     AreEqual(cmp(a, b), cmp(id(a), id(b)))
     Assert('__cmp__' not in WithCompare.__dict__)
-
-@disabled("No guarantee IronRuby is available.")
-def test_load_ruby():
-    sys.path.append(path_combine(testpath.public_testdir, r'XLang'))
-    rubyfile = clr.Use('some_ruby_file')
-    AreEqual(rubyfile.f(), 42)
     
 def test_convert_int64_to_float():
     AreEqual(float(System.Int64(42)), 42.0)

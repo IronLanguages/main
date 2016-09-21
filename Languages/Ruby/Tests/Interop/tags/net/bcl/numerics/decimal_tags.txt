@@ -1,1 +1,0 @@
-fails:System::Decimal can be induced from a Float

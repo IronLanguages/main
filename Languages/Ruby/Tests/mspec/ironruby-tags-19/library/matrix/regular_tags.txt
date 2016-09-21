@@ -1,1 +1,0 @@
-fails:Matrix#regular? returns false if the Matrix is ragged

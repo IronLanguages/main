@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?> 
-<Include Id="VersionNumberInclude"> 
-  <?define ProductShortName = "IronRuby" ?>
-  <?define ProductVersion = "1.1.3.0" ?>
-  <?define ProductVersionText = "1.1" ?>
-  <?define Manufacturer = "Microsoft Corporation" ?>
-  <?define EnvVariableName = "IRONRUBY_11" ?>
-  <?define RegKey = "SOFTWARE\Microsoft\$(var.ProductShortName)\$(var.ProductVersionText)"?>
-</Include> 

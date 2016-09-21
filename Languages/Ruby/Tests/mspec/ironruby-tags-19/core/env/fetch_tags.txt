@@ -1,5 +1,0 @@
-fails:ENV.fetch raises IndexError for an invalid key
-fails:ENV.fetch provides the given default parameter
-fails:ENV.fetch provides a default value from a block
-fails:ENV.fetch warns on block and default parameter given
-fails:ENV.fetch uses the locale encoding

@@ -1,3 +1,0 @@
-describe "thread" do
-
-end

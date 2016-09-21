@@ -1,2 +1,0 @@
-fails:Net::HTTP#ssl_timeout= raises ArgumentError when set while use_ssl is false
-fails:"Net::HTTP#ssl_timeout= raises ArgumentError when set while use_ssl is false"

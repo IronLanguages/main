@@ -1,2 +1,0 @@
-fails:Resolv#getnames resolves 127.0.0.1
-fails:"Resolv#getnames resolves 127.0.0.1"

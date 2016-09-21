@@ -1,6 +1,0 @@
-fails:Prime.new returns a object with obsolete featrues
-fails:Prime.new complains that the method is obsolete
-fails:"Prime.new returns a object with obsolete featrues"
-fails:"Prime.new complains that the method is obsolete"
-fails:Prime.new raises a ArgumentError when is called with some arguments
-fails:Prime.new raises a TypeError when is called with some arguments

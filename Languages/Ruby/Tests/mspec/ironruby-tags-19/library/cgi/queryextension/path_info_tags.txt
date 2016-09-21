@@ -1,2 +1,0 @@
-fails:CGI::QueryExtension#path_info returns ENV['PATH_INFO']
-fails:"CGI::QueryExtension#path_info returns ENV['PATH_INFO']"

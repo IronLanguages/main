@@ -1,3 +1,0 @@
-fails:IO.new raises EINVAL if mode is not compatible with the descriptor's current mode
-fails:IO.new emits a warning if given a block
-fails:IO.new cannot open an IO with incompatible flags

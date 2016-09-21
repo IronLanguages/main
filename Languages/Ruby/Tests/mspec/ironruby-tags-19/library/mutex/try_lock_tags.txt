@@ -1,6 +1,0 @@
-fails:Mutex#try_lock returns true if lock can be aquired immediately
-fails:Mutex#try_lock actually locks
-fails:Mutex#try_lock returns false if lock can not be aquired immediately
-fails:"Mutex#try_lock returns true if lock can be aquired immediately"
-fails:"Mutex#try_lock actually locks"
-fails:"Mutex#try_lock returns false if lock can not be aquired immediately"

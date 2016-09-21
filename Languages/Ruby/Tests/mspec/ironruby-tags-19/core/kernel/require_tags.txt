@@ -1,2 +1,0 @@
-fails:Kernel#require does not resolve completely unqualified filenames against the current working directory unless it appears in $LOAD_PATH
-fails:Kernel#require produces __FILE__ as the given filename and __LINE__ as the source line number

@@ -1,2 +1,0 @@
-fails:CGI::QueryExtension#accept_encoding returns ENV['HTTP_ACCEPT_ENCODING']
-fails:"CGI::QueryExtension#accept_encoding returns ENV['HTTP_ACCEPT_ENCODING']"

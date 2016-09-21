@@ -1,4 +1,0 @@
-fails:Date#valid_civil? should be able to determine if a date is valid
-fails:Date#valid_civil? should be able to handle negative months and days
-fails:"Date#valid_civil? should be able to determine if a date is valid"
-fails:"Date#valid_civil? should be able to handle negative months and days"

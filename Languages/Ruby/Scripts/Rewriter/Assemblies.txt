@@ -1,7 +1,0 @@
-ir.exe
-#IronRuby.dll
-#IronRuby.Libraries.dll
-#IronRuby.Libraries.Yaml.dll
-Microsoft.Dynamic.dll
-#Microsoft.Scripting.dll
-#Microsoft.Scripting.Core.dll

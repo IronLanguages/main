@@ -1,8 +1,0 @@
-fails:Math#cos returns the cosine of the argument expressed in radians
-fails:Math#cos returns the cosine for Complex numbers
-fails:Math.cos returns the cosine of the argument expressed in radians
-fails:Math.cos returns the cosine for Complex numbers
-fails:"Math#cos returns the cosine of the argument expressed in radians"
-fails:"Math#cos returns the cosine for Complex numbers"
-fails:"Math.cos returns the cosine of the argument expressed in radians"
-fails:"Math.cos returns the cosine for Complex numbers"
