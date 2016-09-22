@@ -1,1 +1,0 @@
-fails:Generic methods on generic classes with 2 parameters can use Ruby types for constrained generics

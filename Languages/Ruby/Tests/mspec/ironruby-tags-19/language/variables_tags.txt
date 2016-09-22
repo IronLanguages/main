@@ -1,4 +1,0 @@
-fails:Basic assignment allows the assignment of the rhs to the lhs using the lhs splat operator
-fails:Assigning multiple values bundles remaining values to an array when using the splat operator
-fails:Assigning multiple values calls #to_ary on RHS arg if the corresponding LHS var is a splat
-fails:Assigning multiple values allows complex parallel assignment

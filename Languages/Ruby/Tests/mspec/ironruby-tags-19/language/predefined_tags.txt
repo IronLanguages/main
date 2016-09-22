@@ -1,6 +1,0 @@
-fails:Execution variable $: does not include the current directory
-fails:Execution variable $: does not include '.' when the taint check level > 1
-fails:Execution variable $KCODE defaults to NONE
-fails:SCRIPT_LINES__ does not record reloads
-fails:SCRIPT_LINES__ does not record the module load if the module load fails
-fails:SCRIPT_LINES__ cannot be set to a Hash subclass

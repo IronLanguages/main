@@ -1,2 +1,0 @@
-fails:Dir.pwd can return short and long file names, with mixed case
-fails:Dir.pwd correctly displays dirs with unicode characters in them

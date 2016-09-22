@@ -1,4 +1,0 @@
-fails:Socket#bind on SOCK_DGRAM socket raises Errno::EINVAL when binding to an already bound port
-fails:Socket#bind on SOCK_DGRAM socket raises Errno::ENETDOWN when the specified sockaddr is not available from the local machine
-fails:Socket#bind on SOCK_STREAM socket raises Errno::EINVAL when binding to an already bound port
-fails:Socket#bind on SOCK_STREAM socket raises Errno::ENETDOWN when the specified sockaddr is not available from the local machine

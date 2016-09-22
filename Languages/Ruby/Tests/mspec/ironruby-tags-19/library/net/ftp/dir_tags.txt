@@ -1,8 +1,0 @@
-fails:Net::FTP#dir when switching type fails raises a Net::FTPPermError when the response code is 500
-fails:Net::FTP#dir when switching type fails raises a Net::FTPPermError when the response code is 501
-fails:Net::FTP#dir when switching type fails raises a Net::FTPPermError when the response code is 504
-fails:Net::FTP#dir when switching type fails raises a Net::FTPPermError when the response code is 530
-fails:"Net::FTP#dir when switching type fails raises a Net::FTPPermError when the response code is 500"
-fails:"Net::FTP#dir when switching type fails raises a Net::FTPPermError when the response code is 501"
-fails:"Net::FTP#dir when switching type fails raises a Net::FTPPermError when the response code is 504"
-fails:"Net::FTP#dir when switching type fails raises a Net::FTPPermError when the response code is 530"

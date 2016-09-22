@@ -1,1 +1,0 @@
-Test cases that are relevant to 1.9.2 should be integrated to mspec.

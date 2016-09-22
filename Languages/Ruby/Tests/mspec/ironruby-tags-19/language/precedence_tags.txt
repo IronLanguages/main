@@ -1,3 +1,0 @@
-fails:Operators <=> == === != =~ !~ are non-associative
-fails:Operators .. ... are non-associative
-fails:Operators = %= /= -= += |= &= >>= <<= *= &&= ||= **= have higher precedence than defined? operator

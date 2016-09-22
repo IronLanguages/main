@@ -1,2 +1,0 @@
-fails:Digest::SHA256#update can update
-fails:"Digest::SHA256#update can update"

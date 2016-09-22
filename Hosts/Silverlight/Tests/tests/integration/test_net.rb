@@ -1,3 +1,0 @@
-describe "net" do
-
-end

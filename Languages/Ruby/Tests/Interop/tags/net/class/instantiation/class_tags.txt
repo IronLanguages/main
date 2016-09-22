@@ -1,1 +1,0 @@
-fails:Ruby classes derived from .NET classes with overloaded constructors properly selects overloaded constructors for super

@@ -1,2 +1,0 @@
-fails:CGI::QueryExtension#host returns ENV['HTTP_HOST']
-fails:"CGI::QueryExtension#host returns ENV['HTTP_HOST']"

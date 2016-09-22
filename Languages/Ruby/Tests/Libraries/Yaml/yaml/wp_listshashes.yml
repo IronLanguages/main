@@ -1,9 +1,0 @@
----
-- {name: John Smith, age: 33}
-- name: Mary Smith
-  age: 27
----
-men: [John Smith, Bill Jones]
-women:
-  - Mary Smith
-  - Susan Williams

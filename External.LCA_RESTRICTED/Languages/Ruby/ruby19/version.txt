@@ -1,2 +1,0 @@
-Ruby 1.9.1-p378 RubyInstaller
-md5: e686ae092d05c534cbc06490a56fb357

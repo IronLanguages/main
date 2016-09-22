@@ -1,2 +1,0 @@
-fails:Digest::SHA384#reset can returns digest state to initial conditions
-fails:"Digest::SHA384#reset can returns digest state to initial conditions"

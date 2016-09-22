@@ -1,5 +1,0 @@
-fails:File.stat returns a File::Stat object if the given file exists
-fails:File.stat should be able to use the instance methods
-fails:File.stat accepts an object that has a #to_path method
-fails:File.stat raises an Errno::ENOENT if the file does not exist
-fails:File.stat returns information for a file that has been deleted but is still open

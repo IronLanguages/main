@@ -1,2 +1,0 @@
-fails:CGI::QueryExtension#remote_user returns ENV['REMOTE_USER']
-fails:"CGI::QueryExtension#remote_user returns ENV['REMOTE_USER']"

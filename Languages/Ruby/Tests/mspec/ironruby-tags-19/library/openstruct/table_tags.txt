@@ -1,2 +1,0 @@
-fails:OpenStruct#table is protected
-fails:"OpenStruct#table is protected"

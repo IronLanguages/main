@@ -1,1 +1,0 @@
-fails:Matrix.row_vector returns a single-element Matrix when called with a Fixnum

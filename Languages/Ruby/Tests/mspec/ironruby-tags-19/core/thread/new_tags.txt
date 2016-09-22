@@ -1,1 +1,0 @@
-fails:Thread.new creates a thread that will not block the process from exiting

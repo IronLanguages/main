@@ -1,4 +1,0 @@
-fails:Integer#prime? returns a true value for prime numbers
-fails:Integer#prime? returns a false value for composite numbers
-fails:"Integer#prime? returns a true value for prime numbers"
-fails:"Integer#prime? returns a false value for composite numbers"

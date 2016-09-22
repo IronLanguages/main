@@ -1,2 +1,0 @@
-fails:IO#readline returns the next line on the stream
-fails:IO#readline assigns the returned line to $_

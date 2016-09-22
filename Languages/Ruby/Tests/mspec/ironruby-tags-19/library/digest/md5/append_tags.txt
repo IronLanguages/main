@@ -1,2 +1,0 @@
-fails:Digest::MD5#<< can update
-fails:"Digest::MD5#<< can update"

@@ -1,2 +1,0 @@
-fails:Digest::SHA512#hexdigest returns a hexdigest
-fails:"Digest::SHA512#hexdigest returns a hexdigest"

@@ -6,4 +6,11 @@
             assemblies="IronPython.dll;IronPython.Modules.dll"
             external="IronPython.slvx"
   />
+  <Language
+            names="IronRuby,Ruby,rb"
+            languageContext="IronRuby.Runtime.RubyContext"
+            extensions=".rb"
+            assemblies="IronRuby.dll;IronRuby.Libraries.dll"
+            external="IronRuby.slvx"
+  />
 </Languages>

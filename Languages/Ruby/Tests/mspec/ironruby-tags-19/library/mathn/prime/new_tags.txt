@@ -1,1 +1,0 @@
-fails:Prime.new raises a TypeError when is called with some arguments

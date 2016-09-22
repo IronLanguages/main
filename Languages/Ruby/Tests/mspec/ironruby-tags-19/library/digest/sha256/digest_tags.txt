@@ -1,2 +1,0 @@
-fails:Digest::SHA256#digest returns a digest
-fails:"Digest::SHA256#digest returns a digest"

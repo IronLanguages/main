@@ -1,7 +1,0 @@
-fails:Word COM interop support fires for single event
-fails:Word COM interop support fires for multiple events
-fails:Word COM interop support fires after removing an event
-fails:Word COM interop support fires after removing all events
-fails:Word COM interop support fires after removing all events, then adding one back
-fails:Word COM interop support spellchecker returns suggestions
-fails:Word COM interop support spellchecker contains suggestions

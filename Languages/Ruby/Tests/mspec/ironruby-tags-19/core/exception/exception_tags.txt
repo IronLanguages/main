@@ -1,2 +1,0 @@
-fails:Exception#exception creates new object ands sets #message to argument
-fails:Exception#exception returns self when passed self as an argument

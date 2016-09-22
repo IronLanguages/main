@@ -1,8 +1,0 @@
-fails:Math#sinh returns the hyperbolic sin of the argument
-fails:Math#sinh returns the hyperbolic sin for Complex numbers
-fails:Math.sinh returns the hyperbolic sin of the argument
-fails:Math.sinh returns the hyperbolic sin for Complex numbers
-fails:"Math#sinh returns the hyperbolic sin of the argument"
-fails:"Math#sinh returns the hyperbolic sin for Complex numbers"
-fails:"Math.sinh returns the hyperbolic sin of the argument"
-fails:"Math.sinh returns the hyperbolic sin for Complex numbers"

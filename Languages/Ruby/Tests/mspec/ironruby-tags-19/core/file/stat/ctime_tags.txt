@@ -1,1 +1,0 @@
-fails:File::Stat#ctime should be able to determine the ctime on a File::Stat object

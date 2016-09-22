@@ -1,8 +1,0 @@
-fails:Integer#prime_division returns an array of a prime factor and a corresponding exponent
-fails:Integer#prime_division returns an empty array for 1
-fails:Integer#prime_division returns an empty array for -1
-fails:Integer#prime_division raises ZeroDivisionError for 0
-fails:"Integer#prime_division returns an array of a prime factor and a corresponding exponent"
-fails:"Integer#prime_division returns an empty array for 1"
-fails:"Integer#prime_division returns an empty array for -1"
-fails:"Integer#prime_division raises ZeroDivisionError for 0"

@@ -1,1 +1,0 @@
-fails:Regexps with anchors does not match ^ after trailing \\n

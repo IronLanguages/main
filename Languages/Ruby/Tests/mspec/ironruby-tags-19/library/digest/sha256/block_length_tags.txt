@@ -1,2 +1,0 @@
-fails:Digest::SHA256#block_length returns the length of digest block
-fails:"Digest::SHA256#block_length returns the length of digest block"

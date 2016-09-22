@@ -36,9 +36,7 @@
   <ItemGroup>
     <EmbeddedResource Include="agdlr.css" />
     <EmbeddedResource Include="agdlr.js" />
-    <EmbeddedResource Include="init.rb" />
     <EmbeddedResource Include="repl_formatter.py" />
-    <EmbeddedResource Include="repl_formatter.rb" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Windows, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">

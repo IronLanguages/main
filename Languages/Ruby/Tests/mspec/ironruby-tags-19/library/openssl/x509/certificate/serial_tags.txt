@@ -1,6 +1,0 @@
-fails:OpenSSL::X509::Certificate#serial= returns the argument
-fails:OpenSSL::X509::Certificate#serial= raises TypeError if argument is nil
-fails:OpenSSL::X509::Certificate#serial= raises TypeError if argument is not a OpenSSL::BN
-fails:"OpenSSL::X509::Certificate#serial= returns the argument"
-fails:"OpenSSL::X509::Certificate#serial= raises TypeError if argument is nil"
-fails:"OpenSSL::X509::Certificate#serial= raises TypeError if argument is not a OpenSSL::BN"

@@ -1,2 +1,0 @@
-fails:Float#** returns a complex number when negative and raised to a fractional power
-fails:"Float#** returns a complex number when negative and raised to a fractional power"

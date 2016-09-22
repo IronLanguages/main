@@ -1,8 +1,0 @@
-fails:Math#exp returns the base-e exponential of the passed argument
-fails:Math#exp returns the base-e exponential for Complex numbers
-fails:Math.exp returns the base-e exponential of the passed argument
-fails:Math.exp returns the base-e exponential for Complex numbers
-fails:"Math#exp returns the base-e exponential of the passed argument"
-fails:"Math#exp returns the base-e exponential for Complex numbers"
-fails:"Math.exp returns the base-e exponential of the passed argument"
-fails:"Math.exp returns the base-e exponential for Complex numbers"

@@ -1,6 +1,0 @@
-fails:GetoptLong#terminate terminates option proccessing
-fails:GetoptLong#terminate returns self when option processsing is terminated
-fails:GetoptLong#terminate returns nil when option processing was already terminated
-fails:"GetoptLong#terminate terminates option proccessing"
-fails:"GetoptLong#terminate returns self when option processsing is terminated"
-fails:"GetoptLong#terminate returns nil when option processing was already terminated"

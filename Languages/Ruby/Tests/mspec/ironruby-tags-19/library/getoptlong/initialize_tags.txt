@@ -1,2 +1,0 @@
-fails:GetoptLong#initialize sets ordering to REQUIRE_ORDER if ENV['POSIXLY_CORRECT'] is set
-fails:"GetoptLong#initialize sets ordering to REQUIRE_ORDER if ENV['POSIXLY_CORRECT'] is set"

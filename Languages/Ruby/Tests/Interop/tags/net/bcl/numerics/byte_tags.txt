@@ -1,2 +1,0 @@
-fails:System::Byte returns a Fixnum from the to_i method
-fails:System::Byte returns a Fixnum from the to_int method

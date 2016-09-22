@@ -1,1 +1,0 @@
-exit((STDIN.tty? ? 1 : 0) | (STDOUT.tty? ? 2 : 0) | (STDERR.tty? ? 4 : 0))

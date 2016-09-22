@@ -1,8 +1,0 @@
-fails:OpenSSL::X509::Certificate#issuer is a OpenSSL::X509::Name
-fails:OpenSSL::X509::Certificate#issuer= returns the argument
-fails:OpenSSL::X509::Certificate#issuer= raises TypeError if argument is nil
-fails:OpenSSL::X509::Certificate#issuer= raises TypeError if argument is not a OpenSSL::X509::Name
-fails:"OpenSSL::X509::Certificate#issuer is a OpenSSL::X509::Name"
-fails:"OpenSSL::X509::Certificate#issuer= returns the argument"
-fails:"OpenSSL::X509::Certificate#issuer= raises TypeError if argument is nil"
-fails:"OpenSSL::X509::Certificate#issuer= raises TypeError if argument is not a OpenSSL::X509::Name"

@@ -1,4 +1,0 @@
-fails:Prime.instance returns a object representing the set of prime numbers
-fails:Prime.instance returns a object with no obsolete features
-fails:"Prime.instance returns a object representing the set of prime numbers"
-fails:"Prime.instance returns a object with no obsolete features"

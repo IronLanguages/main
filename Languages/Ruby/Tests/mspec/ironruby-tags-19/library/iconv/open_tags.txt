@@ -1,2 +1,0 @@
-fails:Iconv.open when called from a subclass of Iconv instantiates an object of that class
-fails:"Iconv.open when called from a subclass of Iconv instantiates an object of that class"

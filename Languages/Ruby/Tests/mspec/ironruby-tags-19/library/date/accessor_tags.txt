@@ -1,2 +1,0 @@
-fails:Date#ajd should be able to determine the Astronomical Julian day for a date
-fails:Date#amjd should be able to determine the Astronomical Modified Julian day for a date

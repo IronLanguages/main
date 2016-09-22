@@ -1,6 +1,0 @@
---- # Block
-name: John Smith
-age: 33
-name: John Doe
---- # Inline
-{name: John Smith, age: 33, age: 34}

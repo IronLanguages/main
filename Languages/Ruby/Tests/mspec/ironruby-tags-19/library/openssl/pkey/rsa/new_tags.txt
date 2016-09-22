@@ -1,6 +1,0 @@
-fails:OpenSSL::PKey::RSA.new new without params
-fails:OpenSSL::PKey::RSA.new new with key size
-fails:OpenSSL::PKey::RSA.new new with data
-fails:"OpenSSL::PKey::RSA.new new without params"
-fails:"OpenSSL::PKey::RSA.new new with key size"
-fails:"OpenSSL::PKey::RSA.new new with data"

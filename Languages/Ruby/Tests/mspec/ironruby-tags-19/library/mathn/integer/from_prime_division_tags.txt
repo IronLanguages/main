@@ -1,2 +1,0 @@
-fails:Integer::from_prime_division Reverse a prime factorization of an integer
-fails:"Integer::from_prime_division Reverse a prime factorization of an integer"

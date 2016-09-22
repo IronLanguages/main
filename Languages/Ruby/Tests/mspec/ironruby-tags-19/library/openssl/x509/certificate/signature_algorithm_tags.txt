@@ -1,4 +1,0 @@
-fails:OpenSSL::X509::Certificate#signature_algorithm is string "NULL" by default
-fails:OpenSSL::X509::Certificate#signature_algorithm returns the not before datetime
-fails:"OpenSSL::X509::Certificate#signature_algorithm is string "NULL" by default"
-fails:"OpenSSL::X509::Certificate#signature_algorithm returns the not before datetime"

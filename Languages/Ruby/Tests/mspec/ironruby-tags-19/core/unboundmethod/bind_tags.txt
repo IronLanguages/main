@@ -1,1 +1,0 @@
-fails:UnboundMethod#bind will raise when binding a an object singleton's method to another object

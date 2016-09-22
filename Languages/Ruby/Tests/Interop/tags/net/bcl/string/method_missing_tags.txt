@@ -1,1 +1,0 @@
-fails:System::String#method_missing throws NoMethodError for methods that don't exist that look like mutating methods

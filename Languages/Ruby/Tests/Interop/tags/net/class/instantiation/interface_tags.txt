@@ -1,2 +1,0 @@
-fails:Classes with .NET parents or includes System::Type superclass
-fails:Classes with .NET parents or includes including System::IComparable

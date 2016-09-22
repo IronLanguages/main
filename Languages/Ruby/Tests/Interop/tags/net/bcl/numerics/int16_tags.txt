@@ -1,2 +1,0 @@
-fails:System::Int16 returns a Fixnum from the to_i method
-fails:System::Int16 returns a Fixnum from the to_int method

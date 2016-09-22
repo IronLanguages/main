@@ -1,2 +1,0 @@
-fails:ENV.[] sets HOME to %HOMEPATH% if %HOME% is not set
-fails:ENV.[] uses the locale encoding

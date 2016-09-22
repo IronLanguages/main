@@ -1,1 +1,0 @@
-fails:Assignment via next assigns objects to a splatted reference

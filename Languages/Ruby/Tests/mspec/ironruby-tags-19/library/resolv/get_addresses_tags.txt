@@ -1,2 +1,0 @@
-fails:Resolv#getaddresses resolves localhost
-fails:"Resolv#getaddresses resolves localhost"

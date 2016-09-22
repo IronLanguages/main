@@ -1,2 +1,0 @@
-fails:Dir.mkdir creates the named directory with the given permissions
-fails:Dir.mkdir raises a SystemCallError when lacking adequate permissions in the parent dir

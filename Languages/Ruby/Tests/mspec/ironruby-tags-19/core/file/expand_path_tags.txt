@@ -1,2 +1,0 @@
-fails:File.expand_path returns file system case only for the last component of input(s)
-fails:File.expand_path(file_name, dir_string) produces a String in the default external encoding

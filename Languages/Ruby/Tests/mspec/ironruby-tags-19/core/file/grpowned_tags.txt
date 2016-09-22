@@ -1,1 +1,0 @@
-fails:File.grpowned? returns false if file the does not exist

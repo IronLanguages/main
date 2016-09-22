@@ -1,2 +1,0 @@
-fails:SimpleDelegator.new forwards private method calls made via send or __send__
-fails:"SimpleDelegator.new forwards private method calls made via send or __send__"

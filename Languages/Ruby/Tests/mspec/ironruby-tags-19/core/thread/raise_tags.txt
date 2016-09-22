@@ -1,1 +1,0 @@
-critical:raise the given argument even when there is an active exception

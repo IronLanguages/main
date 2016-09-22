@@ -1,6 +1,0 @@
-fails:OpenSSL::X509::Certificate#not_before is nil by default
-fails:OpenSSL::X509::Certificate#not_before returns the not before datetime
-fails:OpenSSL::X509::Certificate#not_before= returns the argument
-fails:"OpenSSL::X509::Certificate#not_before is nil by default"
-fails:"OpenSSL::X509::Certificate#not_before returns the not before datetime"
-fails:"OpenSSL::X509::Certificate#not_before= returns the argument"

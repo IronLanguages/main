@@ -1,2 +1,0 @@
-critical:IO#scanf with block passes each match to the block as an array
-fails:IO#scanf with block keeps scanning the input and cycling back to the beginning of the input string

@@ -1,1 +1,0 @@
-fails:YAML.load trims whitespace if not followed by a non-whitespace

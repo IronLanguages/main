@@ -1,1 +1,0 @@
-fails:ComTest interop allows assignment and reading with name mangling

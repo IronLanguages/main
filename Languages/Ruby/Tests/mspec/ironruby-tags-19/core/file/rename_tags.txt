@@ -1,7 +1,0 @@
-fails:File.rename uses Dir.pwd for relative paths
-fails:File.rename raises an Errno::EACCES if source is a file and if destination is an existing folder
-fails:File.rename raises an Errno::EACCES if source is a folder and destination is an existing folder
-fails:File.rename does rename with a source path
-fails:File.rename does rename with a destination path
-fails:File.rename renames a folder
-fails:File.rename allows rename to the same name

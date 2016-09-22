@@ -1,2 +1,0 @@
-fails:Kernel#eval doesn't accept a Proc object as a binding
-fails:Kernel#eval includes file and line information in syntax error

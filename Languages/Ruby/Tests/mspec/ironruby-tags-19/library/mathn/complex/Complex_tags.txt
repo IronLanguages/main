@@ -1,2 +1,0 @@
-fails:Kernel#Complex returns an Integer if imaginary part is 0
-fails:"Kernel#Complex returns an Integer if imaginary part is 0"

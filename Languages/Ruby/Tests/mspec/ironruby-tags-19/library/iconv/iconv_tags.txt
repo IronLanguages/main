@@ -1,6 +1,0 @@
-fails:Iconv#iconv raises Iconv::IllegalSequence when faced with an invalid byte for the source encoding
-fails:Iconv#iconv raises Iconv::IllegalSequence when a character cannot be represented on the target encoding
-fails:Iconv#iconv raises Iconv::InvalidCharacter when an incomplete character or shift sequence happens at the end of the input buffer
-fails:"Iconv#iconv raises Iconv::IllegalSequence when faced with an invalid byte for the source encoding"
-fails:"Iconv#iconv raises Iconv::IllegalSequence when a character cannot be represented on the target encoding"
-fails:"Iconv#iconv raises Iconv::InvalidCharacter when an incomplete character or shift sequence happens at the end of the input buffer"
