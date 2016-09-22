@@ -1,3 +1,0 @@
-describe "name" do
-
-end
