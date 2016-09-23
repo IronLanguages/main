@@ -129,6 +129,6 @@ else:
 
 run_test(__name__, noOutputPlease=True)
 
-if not privateBinding and not is_silverlight:
+if not privateBinding and not is_silverlight and not is_netstandard: # sys.executable isn't an executable
     from iptest.process_util import launch_ironpython_changing_extensions
     AreEqual(launch_ironpython_changing_extensions(__file__, add=["-X:PrivateBinding"]), 0)

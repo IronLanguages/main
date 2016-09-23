@@ -20,10 +20,14 @@ import System
 sys.path.append(sys.exec_prefix)
 clr.AddReference("Microsoft.Scripting")
 clr.AddReference("Microsoft.Dynamic")
-if System.Environment.Version.Major >=4:
-    clr.AddReference("System.Core")
+if clr.IsNetStandard:
+    clr.AddReference("System.IO.FileSystem")
+    clr.AddReference("System.Runtime.Extensions")
 else:
-    clr.AddReference("Microsoft.Scripting.Core")
+    if System.Environment.Version.Major >=4:
+        clr.AddReference("System.Core")
+    else:
+        clr.AddReference("Microsoft.Scripting.Core")
 clr.AddReference("IronPython")
 clr.AddReference("IronPython.Modules")
 

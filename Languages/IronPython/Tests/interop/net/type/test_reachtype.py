@@ -27,6 +27,8 @@ bultin_types = ['complex', 'StandardError']
 bultin_constants = ['None', 'False']
 modules = ['__builtin__', 'datetime', '_collections', 'site']
 
+if is_netstandard: SystemError = Exception # TODO: revert this once System.SystemException is added to netstandard (https://github.com/IronLanguages/main/issues/1399)
+
 def test_interesting_names_as_namespace():
     # import
     for x in keywords + ['None']: 
@@ -165,12 +167,17 @@ if '-X:SaveAssemblies' not in System.Environment.GetCommandLineArgs():
     # snippets.dll (if saved) has the reference to temp.dll, which is not saved.
     @runonly("orcas")
     def test_type_from_reflection_emit():
+        if is_netstandard:
+            clr.AddReference("System.Reflection.Emit")
         
         sr = System.Reflection
         sre = System.Reflection.Emit
         array = System.Array
         cab = array[sre.CustomAttributeBuilder]([sre.CustomAttributeBuilder(clr.GetClrType(System.Security.SecurityTransparentAttribute).GetConstructor(System.Type.EmptyTypes), array[object]([]))])
-        ab = System.AppDomain.CurrentDomain.DefineDynamicAssembly(sr.AssemblyName("temp"), sre.AssemblyBuilderAccess.RunAndSave, "temp", None, None, None, None, True, cab)  # tracking: 291888
+        if is_netstandard: # no System.AppDomain in netstandard
+            ab = sre.AssemblyBuilder.DefineDynamicAssembly(sr.AssemblyName("temp"), sre.AssemblyBuilderAccess.Run, cab)  # tracking: 291888
+        else:
+            ab = System.AppDomain.CurrentDomain.DefineDynamicAssembly(sr.AssemblyName("temp"), sre.AssemblyBuilderAccess.RunAndSave, "temp", None, None, None, None, True, cab)  # tracking: 291888
 
         mb = ab.DefineDynamicModule("temp", "temp.dll")
         tb = mb.DefineType("EmittedNS.EmittedType", sr.TypeAttributes.Public)

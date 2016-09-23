@@ -283,7 +283,7 @@ def test_cp11923_first():
 ###############################################################################
 ##TESTS BEYOND THIS POINT SHOULD NOT DEPEND ON LINE NUMBERS IN THIS FILE#######
 ###############################################################################
-@skip("silverlight")
+@skip("silverlight", "netstandard") # sys.executable isn't an executable
 def test_cp11923_second():
     import os
     import sys

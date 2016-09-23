@@ -192,6 +192,7 @@ def test_override_hierarchy():
         
     AreEqual(D11().VirtualMethod(1), 10)
 
+@skip("netstandard") # no System.MarshalByRefObject in netstandard
 @skip("win32", "silverlight") # remoting not supported in Silverlight
 def test_mbr_inheritance():
     class InheritFromMarshalByRefObject(System.MarshalByRefObject):

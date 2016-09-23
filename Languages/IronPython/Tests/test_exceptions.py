@@ -293,13 +293,14 @@ if is_cli or is_silverlight:
         except MyClass, mc:
             Assert(mc.__class__ == MyClass)
         
-        # BUG 430 intern(None) should throw TypeError
-        try:
-            intern(None)
-            Assert(False)
-        except TypeError:
-            pass
-        # /BUG
+        if not is_netstandard: # intern doesn't work in netstandard
+            # BUG 430 intern(None) should throw TypeError
+            try:
+                intern(None)
+                Assert(False)
+            except TypeError:
+                pass
+            # /BUG
         
         
         # BUG 393 exceptions throw when bad value passed to except
@@ -744,6 +745,7 @@ def test_break_and_continue():
     AreEqual(test_outer_for_with_finally(state, True), 42)
     AreEqual(state.finallyCalled, True)
 
+@skip("netstandard") # no System.AppDomain in netstandard
 def test_serializable_clionly():
     import clr
     import System

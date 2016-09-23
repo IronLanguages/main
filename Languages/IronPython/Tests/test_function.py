@@ -261,6 +261,9 @@ if is_cli or is_silverlight:
     # (Hashtable is not available)
     htlist = [System.Collections.Generic.Dictionary[System.Object, System.Object]()]
     if not is_silverlight:
+        if is_netstandard:
+            import clr
+            clr.AddReference("System.Collections.NonGeneric")
         htlist += [System.Collections.Hashtable()]
 
     for ht in htlist:
@@ -549,7 +552,7 @@ AreEqual(foo('', 'index'), True)
 
 # dispatch to a ReflectOptimized method
 
-if is_cli and not is_silverlight:
+if is_cli and not is_silverlight and not is_netstandard: # sys.executable isn't an executable
     from iptest.console_util import IronPythonInstance
     from System import Environment
     from sys import executable
@@ -733,7 +736,7 @@ for case in cases:
 
 # verify we can call the base init directly
 
-if is_cli and not is_silverlight:
+if is_cli and not is_silverlight and not is_netstandard: # no System.Windows.Forms in netstandard
     import clr
     clr.AddReferenceByPartialName('System.Windows.Forms')
     from System.Windows.Forms import *
@@ -785,12 +788,12 @@ def test_func_flags():
     
 def test_big_calls():
     # check various function call sizes and boundaries
-    for size in [3,4,5, 7,8,9, 15,16,17, 23, 24, 25, 31,32,33, 47,48,49, 63,64,65, 127, 128, 129, 254, 255, 256, 257, 258, 511,512,513, 1023,1024,1025, 2047, 2048, 2049]:
+    for size in [3, 4, 5, 7, 8, 9, 13, 15, 16, 17, 23, 24, 25, 31, 32, 33, 47, 48, 49, 63, 64, 65, 127, 128, 129, 254, 255, 256, 257, 258, 511, 512, 513, 1023, 1024, 1025, 2047, 2048, 2049]:
         # w/o defaults
         exec 'def f(' + ','.join(['a' + str(i) for i in range(size)]) + '): return ' + ','.join(['a' + str(i) for i in range(size)])
         # w/ defaults
         exec 'def g(' + ','.join(['a' + str(i) + '=' + str(i) for i in range(size)]) + '): return ' + ','.join(['a' + str(i) for i in range(size)])
-        if size <= 255 or is_cli:
+        if (size <= 255 or is_cli) and not is_netstandard or size <= 13: # PlatformNotSupportedException when > 13
             # CPython allows function definitions > 255, but not calls w/ > 255 params.
             exec 'a = f(' + ', '.join([str(x) for x in xrange(size)]) + ')'
             AreEqual(a, tuple(xrange(size)))

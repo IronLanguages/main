@@ -13,11 +13,13 @@
 #
 #####################################################################################
 
-import clr
-clr.AddReference('System.Windows.Forms')
-from System.Windows.Forms import Form, Control
-
 from iptest.assert_util import *
+
+if not is_netstandard: # no System.Windows.Forms in netstandard
+    import clr
+    clr.AddReference('System.Windows.Forms')
+    from System.Windows.Forms import Form, Control
+
 load_iron_python_test()
 
 

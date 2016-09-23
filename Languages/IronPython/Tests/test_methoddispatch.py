@@ -142,7 +142,10 @@ def test_sanity():
 
 @skip("silverlight")
 def test_system_drawing():
-    clr.AddReferenceByPartialName("System.Drawing")
+    if is_netstandard:
+        clr.AddReference("System.Drawing.Primitives")
+    else:
+        clr.AddReference("System.Drawing")
     from System.Drawing import Rectangle
     r = Rectangle(0, 0, 3, 7)
     s = Rectangle(3, 0, 8, 14)
@@ -1392,10 +1395,15 @@ def test_explicit():
 
 @skip("silverlight")
 def test_security_crypto():
-    AreEqual(type(System.Security.Cryptography.MD5.Create("MD5")),
-             System.Security.Cryptography.MD5CryptoServiceProvider)
-    AreEqual(type(System.Security.Cryptography.MD5.Create()),
-             System.Security.Cryptography.MD5CryptoServiceProvider)
+    if is_netstandard:
+        clr.AddReference("System.Security.Cryptography.Algorithms")
+        Assert(issubclass(type(System.Security.Cryptography.MD5.Create()),
+                 System.Security.Cryptography.MD5))
+    else:
+        AreEqual(type(System.Security.Cryptography.MD5.Create("MD5")),
+                 System.Security.Cryptography.MD5CryptoServiceProvider)
+        AreEqual(type(System.Security.Cryptography.MD5.Create()),
+                 System.Security.Cryptography.MD5CryptoServiceProvider)
 
 @skip("silverlight") #no AssertErrorWithMessage
 def test_array_error_message():

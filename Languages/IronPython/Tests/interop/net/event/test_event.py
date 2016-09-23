@@ -118,7 +118,10 @@ def test_basic():
                 x.OnAction += negate
                 
                 Flag.Set(0)
-                AssertError(StandardError, lambda: x.CallInside(14))
+                if is_netstandard: # no System.ApplicationException in netstandard
+                    AssertError(Exception, lambda: x.CallInside(14))
+                else:
+                    AssertError(StandardError, lambda: x.CallInside(14))
                 Flag.Check(1)  # this also verified double was added/thus called first
                 
                 

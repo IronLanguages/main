@@ -63,7 +63,7 @@ def gen_walker(cw, nodes, method, value):
 
 def get_python_nodes():
     nodes = get_ast(
-        clr.LoadAssemblyByPartialName("IronPython"),
+        clr.LoadAssemblyByName("IronPython"),
         [
             "IronPython.Compiler.Ast.Expression",
             "IronPython.Compiler.Ast.Statement",

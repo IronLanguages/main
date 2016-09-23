@@ -758,6 +758,9 @@ def test_subclass_dict_override__init__():
 
 #####################################################################
 
+if is_netstandard: # TODO: revert this once System.SystemException is added to netstandard (https://github.com/IronLanguages/main/issues/1399)
+    SystemError = System.InvalidOperationException
+
 def test_DictionaryUnionEnumerator():
     if is_cli == False:
         return

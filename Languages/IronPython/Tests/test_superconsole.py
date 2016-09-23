@@ -21,9 +21,13 @@ from   time import sleep
 import sys
 import re
 
+import clr
+if is_netstandard:
+    clr.AddReference("System.Diagnostics.Process")
+    clr.AddReference("System.IO.FileSystem")
+
 from   System.Diagnostics import Process, ProcessWindowStyle
 from   System.IO import File
-import clr
 
 # test case disabled - requires MAUI to run
 sys.exit(0)

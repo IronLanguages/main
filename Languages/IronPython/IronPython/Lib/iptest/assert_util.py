@@ -95,6 +95,9 @@ else:
         if not rowan_root:
             rowan_root = sys.prefix
             if is_cli:
+                if is_netstandard:
+                    import clr
+                    clr.AddReference("System.IO.FileSystem")
                 if System.IO.Directory.Exists(path_combine(rowan_root, '../../Src')):
                     basePyDir = '../../Src'
 
@@ -321,6 +324,8 @@ else:
 
     def load_iron_python_dll():
         import clr
+        if is_netstandard:
+            clr.AddReference("System.IO.FileSystem")
         from System.IO import File
         #When assemblies are installed into the GAC, we should not expect
         #IronPython.dll to exist alongside IronPython.dll
@@ -373,6 +378,8 @@ class skip:
         else: 
             self.platforms = platforms
 
+    def netstandard_test(self):
+        return is_netstandard
     def silverlight_test(self):
         return is_silverlight
     def cli64_test(self):
@@ -399,7 +406,7 @@ class skip:
             return _do_nothing(msg)
 		
         
-        platforms = 'silverlight', 'cli64', 'orcas', 'interactive', 'multiple_execute', 'stdlib', 'posix'
+        platforms = 'silverlight', 'cli64', 'orcas', 'interactive', 'multiple_execute', 'stdlib', 'posix', 'netstandard'
         for to_skip in platforms:
             platform_test = getattr(self, to_skip + '_test')
             if to_skip in self.platforms and platform_test():
@@ -436,6 +443,9 @@ def skiptest(*args):
         print '... TODO, whole test module is skipped for Silverlight failure. Need to investigate...' 
         exit_module()
     elif is_silverlight and 'silverlight' in args:
+        print '... %s, skipping whole test module...' % sys.platform
+        exit_module()
+    elif is_netstandard and 'netstandard' in args:
         print '... %s, skipping whole test module...' % sys.platform
         exit_module()
     elif is_interactive() and 'interactive' in args:
@@ -532,7 +542,7 @@ def run_test(mod_name, noOutputPlease=False):
                     print ">>> skipping %-40s" % name
     if failures:
         print_failures(total, failures)
-        if is_cli:
+        if is_cli and not is_netstandard: # System.Environment.CommandLine not in netstandard1.6
             cmd_line = System.Environment.CurrentDirectory + "> " + System.Environment.CommandLine
             print "Please run the following command to repro:"
             print "\t" + cmd_line
@@ -559,7 +569,8 @@ def AddReferenceToDlrCore():
     import clr
     import System
     if System.Environment.Version.Major >=4:
-        clr.AddReference("System.Core")
+        if not is_netstandard:
+            clr.AddReference("System.Core")
     else:
         clr.AddReference("Microsoft.Scripting.Core")
 

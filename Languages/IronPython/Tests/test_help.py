@@ -28,6 +28,8 @@ def test_z_cli_tests():    # runs last to prevent tainting the module w/ CLR nam
     import System
     load_iron_python_test()
     from IronPythonTest import WriteOnly
+    if is_netstandard:
+        clr.AddReference("System.IO.Compression")
 
     sys.stdout = stdout_reader()
     help(WriteOnly)

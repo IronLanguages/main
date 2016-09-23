@@ -17,7 +17,7 @@ from generate import generate
 import System
 import clr
 
-is_netstandard = False
+is_netstandard = clr.IsNetStandard
 
 import exceptions
 
