@@ -35,6 +35,14 @@ def test_cp35326():
     except Exception as ex:
         Fail("Unexpected exception: %s" % ex)
 
+def test_cfuncptr:
+    try:
+        res = cast(windll.kernel32.GetCurrentProcess, c_void_p)
+        if not isinstance(res, ctypes.c_void_p):
+            Fail("c_void_p expected in test_cfuncptr")
+    except Exception as ex:
+        Fail("Unexpected exception: %s" % ex)
+
 
 run_test(__name__)
 
