@@ -338,6 +338,11 @@ namespace IronPython.Modules {
                 return arr.UnsafeAddress;
             }
 
+            var _func_ptr = value as CTypes._CFuncPtr;
+            if (_func_ptr != null) {
+                return _func_ptr.UnsafeAddress;
+            }
+
             CTypes.Pointer pointer = value as CTypes.Pointer;
             if (pointer != null) {
                 return pointer.UnsafeAddress;
