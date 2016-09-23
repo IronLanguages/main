@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace IronPython.Runtime {
-#if FEATURE_NATIVE || NETSTANDARD
+#if FEATURE_NATIVE
     class NativeMethods {
         [Serializable]
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -57,11 +57,6 @@ namespace IronPython.Runtime {
             public IntPtr lpSecurityDescriptor;
             public int bInheritHandle;
         }
-
-        [DllImport("kernel32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool CreatePipe(out SafePipeHandle hReadPipe, out SafePipeHandle hWritePipe,
-           ref SECURITY_ATTRIBUTES lpPipeAttributes, uint nSize);
 
         [DllImport("kernel32.dll", SetLastError=true)]
         [return: MarshalAs(UnmanagedType.Bool)]

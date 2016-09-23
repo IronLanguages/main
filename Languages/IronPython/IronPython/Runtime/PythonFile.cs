@@ -1088,15 +1088,15 @@ namespace IronPython.Runtime {
         }
 
 #if FEATURE_PIPES
-        internal static PythonFile[] CreatePipe(CodeContext/*!*/ context, SafePipeHandle hRead, SafePipeHandle hWrite) {
+        internal static PythonFile[] CreatePipe(CodeContext/*!*/ context) {
             var pythonContext = PythonContext.GetContext(context);
             var encoding = pythonContext.DefaultEncoding;
 
-            var inPipe = new AnonymousPipeClientStream(PipeDirection.In, hRead);
+            var inPipe = new AnonymousPipeServerStream(PipeDirection.In);
             var inPipeFile = new PythonFile(context);
             inPipeFile.InitializePipe(inPipe, "r", encoding);
 
-            var outPipe = new AnonymousPipeClientStream(PipeDirection.Out, hWrite);
+            var outPipe = new AnonymousPipeClientStream(PipeDirection.Out, inPipe.ClientSafePipeHandle);
             var outPipeFile = new PythonFile(context);
             outPipeFile.InitializePipe(outPipe, "w", encoding);
             return new [] {inPipeFile, outPipeFile};
@@ -1104,16 +1104,7 @@ namespace IronPython.Runtime {
 
         [PythonHidden]
         public static PythonTuple CreatePipeAsFd(CodeContext context) {
-                    SafePipeHandle hRead, hWrite;
-            var secAttrs = new NativeMethods.SECURITY_ATTRIBUTES();
-            secAttrs.nLength = Marshal.SizeOf(secAttrs);
-
-            if (!NativeMethods.CreatePipe(out hRead, out hWrite, ref secAttrs, 0)) {
-                var err = Marshal.GetLastWin32Error();
-                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, err,
-                    new Win32Exception(err).Message);
-            }
-            var pipeFiles = CreatePipe(context, hRead, hWrite);
+            var pipeFiles = CreatePipe(context);
             return PythonTuple.MakeTuple(
                 PythonContext.GetContext(context).FileManager.AddToStrongMapping(pipeFiles[0]),
                 PythonContext.GetContext(context).FileManager.AddToStrongMapping(pipeFiles[1]));
