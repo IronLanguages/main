@@ -2988,18 +2988,13 @@ namespace IronPython.Modules {
 
         public static string GetServiceByPortNonWindows(ushort port, string protocol) {
             var netport = unchecked((ushort)IPAddress.HostToNetworkOrder(unchecked((short)port)));
-            var result = getservbyport(netport, protocol);
+            var result = getservbyport_linux(netport, protocol);
             if (IntPtr.Zero == result) {
                 throw new SocketUtilException(
                     string.Format("Could not resolve service for port {0}", port));
             }
 
-#if CLR4
-            if (Environment.Is64BitProcess)
-                return PtrToStructure<servent64>(result).s_name;
-            else
-#endif
-                return PtrToStructure<servent>(result).s_name;
+            return PtrToStructure<servent>(result).s_name;
         }
 
         public static string GetServiceByPort(ushort port, string protocol) {
@@ -3032,25 +3027,17 @@ namespace IronPython.Modules {
         }
 
         public static ushort GetServiceByNameNonWindows(string service, string protocol) {
-
-            var result = getservbyname(service, protocol);
+            var result = getservbyname_linux(service, protocol);
             if (IntPtr.Zero == result) {
                 throw new SocketUtilException(
                     string.Format("Could not resolve port for service {0}", service));
             }
 
-            ushort port;
-#if CLR4
-            if (Environment.Is64BitProcess)
-                port = PtrToStructure<servent64>(result).s_port;
-            else
-#endif
-                port = PtrToStructure<servent>(result).s_port;
-
+            ushort port = PtrToStructure<servent>(result).s_port;
             var hostport = IPAddress.NetworkToHostOrder(unchecked((short)port));
             return unchecked((ushort)hostport);
-
         }
+
         public static ushort GetServiceByName(string service, string protocol) {
             if (Environment.OSVersion.Platform == PlatformID.Unix || Environment.OSVersion.Platform == PlatformID.MacOSX)
                 return GetServiceByNameNonWindows(service, protocol);
