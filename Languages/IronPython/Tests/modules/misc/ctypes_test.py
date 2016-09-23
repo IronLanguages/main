@@ -35,7 +35,8 @@ def test_cp35326():
     except Exception as ex:
         Fail("Unexpected exception: %s" % ex)
 
-def test_cfuncptr:
+def test_gh951():
+    from ctypes import *
     try:
         res = cast(windll.kernel32.GetCurrentProcess, c_void_p)
         if not isinstance(res, ctypes.c_void_p):
