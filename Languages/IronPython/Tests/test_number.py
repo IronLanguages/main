@@ -2268,6 +2268,10 @@ def test_float_mod():
     AreEqual(0.123 % -0.001, -4.336808689942018e-18)
     AreEqual(-0.123 % -0.001, -0.0009999999999999957)
     
+def test_float_format_gprec():
+    # https://github.com/IronLanguages/main/issues/1276
+    AreEqual("%.17g" % 1021095.0286738087, '1021095.0286738087')
+    
 def test_hex_and_octal():
     for num, num_repr in [
                             (long(0x20), '32L'),
