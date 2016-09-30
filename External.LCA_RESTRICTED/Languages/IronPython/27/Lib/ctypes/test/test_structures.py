@@ -351,12 +351,12 @@ class StructureTestCase(unittest.TestCase):
             except MemoryError:
                 # MemoryErrors are OK, we just don't want to segfault
                 pass
+
     def get_except(self, func, *args):
         try:
             func(*args)
         except Exception, detail:
             return detail.__class__, str(detail)
-
 
     @unittest.skip('test disabled')
     def test_subclass_creation(self):

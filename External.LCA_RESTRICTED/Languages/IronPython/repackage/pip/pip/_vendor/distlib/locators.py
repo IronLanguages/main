@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2012-2013 Vinay Sajip.
+# Copyright (C) 2012-2015 Vinay Sajip.
 # Licensed to the Python Software Foundation under a contributor agreement.
 # See LICENSE.txt and CONTRIBUTORS.txt.
 #
@@ -14,7 +14,7 @@ import posixpath
 import re
 try:
     import threading
-except ImportError:
+except ImportError:  # pragma: no cover
     import dummy_threading as threading
 import zlib
 
@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 HASHER_HASH = re.compile('^(\w+)=([a-f0-9]+)')
 CHARSET = re.compile(r';\s*charset\s*=\s*(.*)\s*$', re.I)
 HTML_CONTENT_TYPE = re.compile('text/html|application/x(ht)?ml')
-DEFAULT_INDEX = 'http://python.org/pypi'
+DEFAULT_INDEX = 'https://pypi.python.org/pypi'
 
 def get_all_distribution_names(url=None):
     """
@@ -165,8 +165,13 @@ class Locator(object):
         for a given project release.
         """
         t = urlparse(url)
+        basename = posixpath.basename(t.path)
+        compatible = True
+        is_wheel = basename.endswith('.whl')
+        if is_wheel:
+            compatible = is_compatible(Wheel(basename), self.wheel_tags)
         return (t.scheme != 'https', 'pypi.python.org' in t.netloc,
-                posixpath.basename(t.path))
+                is_wheel, compatible, basename)
 
     def prefer_url(self, url1, url2):
         """
@@ -174,8 +179,9 @@ class Locator(object):
         archives for the same version of a distribution (for example,
         .tar.gz vs. zip).
 
-        The current implement favours http:// URLs over https://, archives
-        from PyPI over those from other locations and then the archive name.
+        The current implementation favours https:// URLs over http://, archives
+        from PyPI over those from other locations, wheel compatibility (if a
+        wheel) and then the archive name.
         """
         result = url2
         if url1:
@@ -290,9 +296,9 @@ class Locator(object):
 
     def _update_version_data(self, result, info):
         """
-        Update a result dictionary (the final result from _get_project) with a dictionary for a
-        specific version, whih typically holds information gleaned from a filename or URL for an
-        archive for the distribution.
+        Update a result dictionary (the final result from _get_project) with a
+        dictionary for a specific version, which typically holds information
+        gleaned from a filename or URL for an archive for the distribution.
         """
         name = info.pop('name')
         version = info.pop('version')
@@ -302,9 +308,12 @@ class Locator(object):
         else:
             dist = make_dist(name, version, scheme=self.scheme)
             md = dist.metadata
-        dist.digest = self._get_digest(info)
+        dist.digest = digest = self._get_digest(info)
+        url = info['url']
+        result['digests'][url] = digest
         if md.source_url != info['url']:
-            md.source_url = self.prefer_url(md.source_url, info['url'])
+            md.source_url = self.prefer_url(md.source_url, url)
+            result['urls'].setdefault(version, set()).add(url)
         dist.locator = self
         result[version] = dist
 
@@ -329,11 +338,13 @@ class Locator(object):
         self.matcher = matcher = scheme.matcher(r.requirement)
         logger.debug('matcher: %s (%s)', matcher, type(matcher).__name__)
         versions = self.get_project(r.name)
-        if versions:
+        if len(versions) > 2:   # urls and digests keys are present
             # sometimes, versions are invalid
             slist = []
             vcls = matcher.version_class
             for k in versions:
+                if k in ('urls', 'digests'):
+                    continue
                 try:
                     if not matcher.match(k):
                         logger.debug('%s did not match %r', matcher, k)
@@ -343,16 +354,25 @@ class Locator(object):
                         else:
                             logger.debug('skipping pre-release '
                                          'version %s of %s', k, matcher.name)
-                except Exception:
+                except Exception:  # pragma: no cover
                     logger.warning('error matching %s with %r', matcher, k)
                     pass # slist.append(k)
             if len(slist) > 1:
                 slist = sorted(slist, key=scheme.key)
             if slist:
                 logger.debug('sorted list: %s', slist)
-                result = versions[slist[-1]]
-        if result and r.extras:
-            result.extras = r.extras
+                version = slist[-1]
+                result = versions[version]
+        if result:
+            if r.extras:
+                result.extras = r.extras
+            result.download_urls = versions.get('urls', {}).get(version, set())
+            d = {}
+            sd = versions.get('digests', {})
+            for url in result.download_urls:
+                if url in sd:
+                    d[url] = sd[url]
+            result.digests = d
         self.matcher = None
         return result
 
@@ -380,7 +400,7 @@ class PyPIRPCLocator(Locator):
         return set(self.client.list_packages())
 
     def _get_project(self, name):
-        result = {}
+        result = {'urls': {}, 'digests': {}}
         versions = self.client.package_releases(name, True)
         for v in versions:
             urls = self.client.release_urls(name, v)
@@ -398,12 +418,17 @@ class PyPIRPCLocator(Locator):
                 dist.digest = self._get_digest(info)
                 dist.locator = self
                 result[v] = dist
+                for info in urls:
+                    url = info['url']
+                    digest = self._get_digest(info)
+                    result['urls'].setdefault(v, set()).add(url)
+                    result['digests'][url] = digest
         return result
 
 class PyPIJSONLocator(Locator):
     """
     This locator uses PyPI's JSON interface. It's very limited in functionality
-    nad probably not worth using.
+    and probably not worth using.
     """
     def __init__(self, url, **kwargs):
         super(PyPIJSONLocator, self).__init__(**kwargs)
@@ -416,7 +441,7 @@ class PyPIJSONLocator(Locator):
         raise NotImplementedError('Not available from this locator')
 
     def _get_project(self, name):
-        result = {}
+        result = {'urls': {}, 'digests': {}}
         url = urljoin(self.base_url, '%s/json' % quote(name))
         try:
             resp = self.opener.open(url)
@@ -430,13 +455,39 @@ class PyPIJSONLocator(Locator):
             md.keywords = data.get('keywords', [])
             md.summary = data.get('summary')
             dist = Distribution(md)
+            dist.locator = self
             urls = d['urls']
-            if urls:
-                info = urls[0]
-                md.source_url = info['url']
-                dist.digest = self._get_digest(info)
-                dist.locator = self
-                result[md.version] = dist
+            result[md.version] = dist
+            for info in d['urls']:
+                url = info['url']
+                dist.download_urls.add(url)
+                dist.digests[url] = self._get_digest(info)
+                result['urls'].setdefault(md.version, set()).add(url)
+                result['digests'][url] = self._get_digest(info)
+            # Now get other releases
+            for version, infos in d['releases'].items():
+                if version == md.version:
+                    continue    # already done
+                omd = Metadata(scheme=self.scheme)
+                omd.name = md.name
+                omd.version = version
+                odist = Distribution(omd)
+                odist.locator = self
+                result[version] = odist
+                for info in infos:
+                    url = info['url']
+                    odist.download_urls.add(url)
+                    odist.digests[url] = self._get_digest(info)
+                    result['urls'].setdefault(version, set()).add(url)
+                    result['digests'][url] = self._get_digest(info)
+#            for info in urls:
+#                md.source_url = info['url']
+#                dist.digest = self._get_digest(info)
+#                dist.locator = self
+#                for info in urls:
+#                    url = info['url']
+#                    result['urls'].setdefault(md.version, set()).add(url)
+#                    result['digests'][url] = self._get_digest(info)
         except Exception as e:
             logger.exception('JSON fetch failed: %s', e)
         return result
@@ -567,7 +618,7 @@ class SimpleScrapingLocator(Locator):
         self._threads = []
 
     def _get_project(self, name):
-        result = {}
+        result = {'urls': {}, 'digests': {}}
         with self._gplock:
             self.result = result
             self.project_name = name
@@ -712,18 +763,18 @@ class SimpleScrapingLocator(Locator):
                             encoding = m.group(1)
                         try:
                             data = data.decode(encoding)
-                        except UnicodeError:
+                        except UnicodeError:  # pragma: no cover
                             data = data.decode('latin-1')    # fallback
                         result = Page(data, final_url)
                         self._page_cache[final_url] = result
                 except HTTPError as e:
                     if e.code != 404:
                         logger.exception('Fetch failed: %s: %s', url, e)
-                except URLError as e:
+                except URLError as e:  # pragma: no cover
                     logger.exception('Fetch failed: %s: %s', url, e)
                     with self._lock:
                         self._bad_hosts.add(host)
-                except Exception as e:
+                except Exception as e:  # pragma: no cover
                     logger.exception('Fetch failed: %s: %s', url, e)
                 finally:
                     self._page_cache[url] = result   # even if None (failure)
@@ -761,7 +812,7 @@ class DirectoryLocator(Locator):
         self.recursive = kwargs.pop('recursive', True)
         super(DirectoryLocator, self).__init__(**kwargs)
         path = os.path.abspath(path)
-        if not os.path.isdir(path):
+        if not os.path.isdir(path):  # pragma: no cover
             raise DistlibException('Not a directory: %r' % path)
         self.base_dir = path
 
@@ -774,7 +825,7 @@ class DirectoryLocator(Locator):
         return filename.endswith(self.downloadable_extensions)
 
     def _get_project(self, name):
-        result = {}
+        result = {'urls': {}, 'digests': {}}
         for root, dirs, files in os.walk(self.base_dir):
             for fn in files:
                 if self.should_include(fn, root):
@@ -822,7 +873,7 @@ class JSONLocator(Locator):
         raise NotImplementedError('Not available from this locator')
 
     def _get_project(self, name):
-        result = {}
+        result = {'urls': {}, 'digests': {}}
         data = get_project_data(name)
         if data:
             for info in data.get('files', []):
@@ -843,6 +894,7 @@ class JSONLocator(Locator):
                 md.dependencies = info.get('requirements', {})
                 dist.exports = info.get('exports', {})
                 result[dist.version] = dist
+                result['urls'].setdefault(dist.version, set()).add(info['url'])
         return result
 
 class DistPathLocator(Locator):
@@ -863,9 +915,13 @@ class DistPathLocator(Locator):
     def _get_project(self, name):
         dist = self.distpath.get_distribution(name)
         if dist is None:
-            result = {}
+            result = {'urls': {}, 'digests': {}}
         else:
-            result = { dist.version: dist }
+            result = {
+                dist.version: dist,
+                'urls': {dist.version: set([dist.source_url])},
+                'digests': {dist.version: set([None])}
+            }
         return result
 
 
@@ -907,7 +963,20 @@ class AggregatingLocator(Locator):
             d = locator.get_project(name)
             if d:
                 if self.merge:
+                    files = result.get('urls', {})
+                    digests = result.get('digests', {})
+                    # next line could overwrite result['urls'], result['digests']
                     result.update(d)
+                    df = result.get('urls')
+                    if files and df:
+                        for k, v in files.items():
+                            if k in df:
+                                df[k] |= v
+                            else:
+                                df[k] = v
+                    dd = result.get('digests')
+                    if digests and dd:
+                        dd.update(digests)
                 else:
                     # See issue #18. If any dists are found and we're looking
                     # for specific constraints, we only return something if
@@ -1014,7 +1083,7 @@ class DependencyFinder(object):
         """
         try:
             matcher = self.scheme.matcher(reqt)
-        except UnsupportedVersionError:
+        except UnsupportedVersionError:  # pragma: no cover
             # XXX compat-mode if cannot read the version
             name = reqt.split()[0]
             matcher = self.scheme.matcher(name)
@@ -1071,7 +1140,8 @@ class DependencyFinder(object):
                 unmatched.add(s)
         if unmatched:
             # can't replace other with provider
-            problems.add(('cantreplace', provider, other, unmatched))
+            problems.add(('cantreplace', provider, other,
+                          frozenset(unmatched)))
             result = False
         else:
             # can replace other with provider

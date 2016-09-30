@@ -729,6 +729,7 @@ class ByteArrayTest(BaseBytesTest):
         self.assertEqual(c, bytearray([126, 128, 129]))
         c.remove(129)
         self.assertEqual(c, bytearray([126, 128]))
+
     def test_pop(self):
         b = bytearray(b'world')
         self.assertEqual(b.pop(), ord('d'))

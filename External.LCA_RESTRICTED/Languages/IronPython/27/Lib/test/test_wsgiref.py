@@ -8,6 +8,7 @@ from wsgiref.simple_server import WSGIServer, WSGIRequestHandler
 from wsgiref.simple_server import make_server
 from StringIO import StringIO
 from SocketServer import BaseServer
+
 import os
 import re
 import sys
@@ -38,9 +39,6 @@ class MockHandler(WSGIRequestHandler):
         pass
 
 
-
-
-
 def hello_app(environ,start_response):
     start_response("200 OK", [
         ('Content-Type','text/plain'),
@@ -59,27 +57,6 @@ def run_amock(app=hello_app, data="GET / HTTP/1.0\n\n"):
         sys.stderr = olderr
 
     return out.getvalue(), err.getvalue()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 def compare_generic_iter(make_it,match):
@@ -117,10 +94,6 @@ def compare_generic_iter(make_it,match):
             pass
         else:
             raise AssertionError("Too many items from .next()",it)
-
-
-
-
 
 
 class IntegrationTests(TestCase):
@@ -165,10 +138,6 @@ class IntegrationTests(TestCase):
         )
 
 
-
-
-
-
 class UtilityTests(TestCase):
 
     def checkShift(self,sn_in,pi_in,part,sn_out,pi_out):
@@ -205,11 +174,6 @@ class UtilityTests(TestCase):
         util.setup_testing_defaults(kw)
         self.assertEqual(util.request_uri(kw,query),uri)
 
-
-
-
-
-
     def checkFW(self,text,size,match):
 
         def make_it(text=text,size=size):
@@ -228,14 +192,12 @@ class UtilityTests(TestCase):
         it.close()
         self.assertTrue(it.filelike.closed)
 
-
     def testSimpleShifts(self):
         self.checkShift('','/', '', '/', '')
         self.checkShift('','/x', 'x', '/x', '')
         self.checkShift('/','', None, '/', '')
         self.checkShift('/a','/x/y', 'x', '/a/x', '/y')
         self.checkShift('/a','/x/',  'x', '/a/x', '/')
-
 
     def testNormalizedShifts(self):
         self.checkShift('/a/b', '/../y', '..', '/a', '/y')
@@ -249,7 +211,6 @@ class UtilityTests(TestCase):
         self.checkShift('/a/b', '/.//', '', '/a/b/', '')
         self.checkShift('/a/b', '/x//', 'x', '/a/b/x', '/')
         self.checkShift('/a/b', '/.', None, '/a/b', '')
-
 
     def testDefaults(self):
         for key, value in [
@@ -270,7 +231,6 @@ class UtilityTests(TestCase):
         ]:
             self.checkDefault(key,value)
 
-
     def testCrossDefaults(self):
         self.checkCrossDefault('HTTP_HOST',"foo.bar",SERVER_NAME="foo.bar")
         self.checkCrossDefault('wsgi.url_scheme',"https",HTTPS="on")
@@ -280,17 +240,12 @@ class UtilityTests(TestCase):
         self.checkCrossDefault('SERVER_PORT',"80",HTTPS="foo")
         self.checkCrossDefault('SERVER_PORT',"443",HTTPS="on")
 
-
     def testGuessScheme(self):
         self.assertEqual(util.guess_scheme({}), "http")
         self.assertEqual(util.guess_scheme({'HTTPS':"foo"}), "http")
         self.assertEqual(util.guess_scheme({'HTTPS':"on"}), "https")
         self.assertEqual(util.guess_scheme({'HTTPS':"yes"}), "https")
         self.assertEqual(util.guess_scheme({'HTTPS':"1"}), "https")
-
-
-
-
 
     def testAppURIs(self):
         self.checkAppURI("http://127.0.0.1/")
@@ -421,15 +376,6 @@ class TestHandler(ErrorHandler):
         raise   # for testing, we want to see what's happening
 
 
-
-
-
-
-
-
-
-
-
 class HandlerTests(TestCase):
 
     def checkEnvironAttrs(self, handler):
@@ -470,7 +416,6 @@ class HandlerTests(TestCase):
         h=TestHandler(); h.setup_environ()
         self.assertEqual(h.environ['wsgi.url_scheme'],'http')
 
-
     def testAbstractMethods(self):
         h = BaseHandler()
         for name in [
@@ -478,7 +423,6 @@ class HandlerTests(TestCase):
         ]:
             self.assertRaises(NotImplementedError, getattr(h,name))
         self.assertRaises(NotImplementedError, h._write, "test")
-
 
     def testContentLength(self):
         # Demo one reason iteration is better than write()...  ;)
@@ -558,7 +502,6 @@ class HandlerTests(TestCase):
             "Status: 200 OK\r\n"
             "\r\n"+MSG)
         self.assertNotEqual(h.stderr.getvalue().find("AssertionError"), -1)
-
 
     def testHeaderFormats(self):
 

@@ -2,7 +2,6 @@
 import sys
 import unittest
 from test.test_support import run_unittest
-
 from distutils.tests import support
 
 
@@ -17,6 +16,7 @@ class BDistMSITestCase(support.TempdirManager,
         project_dir, dist = self.create_dist()
         cmd = bdist_msi(dist)
         cmd.ensure_finalized()
+
 
 def test_suite():
     return unittest.makeSuite(BDistMSITestCase)

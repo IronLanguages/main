@@ -1,4 +1,3 @@
-
 import unittest
 from test import test_support
 import smtplib
@@ -22,6 +21,7 @@ class SmtpSSLTest(unittest.TestCase):
             server = smtplib.SMTP_SSL(self.testServer)
         server.ehlo()
         server.quit()
+
 def test_main():
     test_support.run_unittest(SmtpSSLTest)
 

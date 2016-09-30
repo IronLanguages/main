@@ -45,6 +45,7 @@ class CommandTestCase(unittest.TestCase):
         self.assertRaises(DistutilsOptionError, cmd.ensure_string_list,
                           'option3')
 
+
     def test_make_file(self):
 
         cmd = self.cmd

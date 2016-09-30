@@ -4,9 +4,6 @@ from pip._vendor.six import text_type
 from lxml import etree
 from ..treebuilders.etree import tag_regexp
 
-from gettext import gettext
-_ = gettext
-
 from . import _base
 
 from .. import ihatexml
@@ -87,10 +84,6 @@ class FragmentWrapper(object):
             self.tail = ensure_str(self.obj.tail)
         else:
             self.tail = None
-        self.isstring = isinstance(obj, str) or isinstance(obj, bytes)
-        # Support for bytes here is Py2
-        if self.isstring:
-            self.obj = ensure_str(self.obj)
 
     def __getattr__(self, name):
         return getattr(self.obj, name)
@@ -134,7 +127,7 @@ class TreeWalker(_base.NonRecursiveTreeWalker):
     def getNodeDetails(self, node):
         if isinstance(node, tuple):  # Text node
             node, key = node
-            assert key in ("text", "tail"), _("Text nodes are text or tail, found %s") % key
+            assert key in ("text", "tail"), "Text nodes are text or tail, found %s" % key
             return _base.TEXT, ensure_str(getattr(node, key))
 
         elif isinstance(node, Root):
@@ -143,7 +136,7 @@ class TreeWalker(_base.NonRecursiveTreeWalker):
         elif isinstance(node, Doctype):
             return _base.DOCTYPE, node.name, node.public_id, node.system_id
 
-        elif isinstance(node, FragmentWrapper) and node.isstring:
+        elif isinstance(node, FragmentWrapper) and not hasattr(node, "tag"):
             return _base.TEXT, node.obj
 
         elif node.tag == etree.Comment:
@@ -173,7 +166,7 @@ class TreeWalker(_base.NonRecursiveTreeWalker):
                     attrs, len(node) > 0 or node.text)
 
     def getFirstChild(self, node):
-        assert not isinstance(node, tuple), _("Text nodes have no children")
+        assert not isinstance(node, tuple), "Text nodes have no children"
 
         assert len(node) or node.text, "Node has no children"
         if node.text:
@@ -184,7 +177,7 @@ class TreeWalker(_base.NonRecursiveTreeWalker):
     def getNextSibling(self, node):
         if isinstance(node, tuple):  # Text node
             node, key = node
-            assert key in ("text", "tail"), _("Text nodes are text or tail, found %s") % key
+            assert key in ("text", "tail"), "Text nodes are text or tail, found %s" % key
             if key == "text":
                 # XXX: we cannot use a "bool(node) and node[0] or None" construct here
                 # because node[0] might evaluate to False if it has no child element
@@ -200,7 +193,7 @@ class TreeWalker(_base.NonRecursiveTreeWalker):
     def getParentNode(self, node):
         if isinstance(node, tuple):  # Text node
             node, key = node
-            assert key in ("text", "tail"), _("Text nodes are text or tail, found %s") % key
+            assert key in ("text", "tail"), "Text nodes are text or tail, found %s" % key
             if key == "text":
                 return node
             # else: fallback to "normal" processing

@@ -61,8 +61,6 @@ class StringTest(
             self.fail('exception not raised')
 
 
-
-
 class ModuleTest(unittest.TestCase):
 
     def test_attrs(self):

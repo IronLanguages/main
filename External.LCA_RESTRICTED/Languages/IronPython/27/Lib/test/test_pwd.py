@@ -44,7 +44,6 @@ class PwdTest(unittest.TestCase):
             entriesbyname.setdefault(e.pw_name, []).append(e)
             entriesbyuid.setdefault(e.pw_uid, []).append(e)
 
-
         # check whether the entry returned by getpwuid()
         # for each uid is among those from getpwall() for this uid
         for e in entries:
@@ -107,6 +106,7 @@ class PwdTest(unittest.TestCase):
         # should be out of uid_t range
         self.assertRaises(KeyError, pwd.getpwuid, 2**128)
         self.assertRaises(KeyError, pwd.getpwuid, -2**128)
+
 def test_main():
     test_support.run_unittest(PwdTest)
 

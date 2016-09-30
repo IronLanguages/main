@@ -195,6 +195,7 @@ from __future__ import print_function"""
         def read_file():
             with open(test_file, "rb") as fp:
                 return fp.read()
+
         old_contents = read_file()
         rt = self.rt(fixers=fixers, options=options)
         if mock_log_debug:

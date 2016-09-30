@@ -159,6 +159,15 @@ namespace IronPython.Runtime {
                     } else if((stringPath = path as string) != null) {
                         return ImportNestedModule(context, scope, parts, current, List.FromArrayNoCopy(stringPath));
                     }
+                } else {
+                    PythonType t = DynamicHelpers.GetPythonType(scope);
+                    if (t.TryGetMember(context, scope, "__path__", out path)) {
+                        if((listPath = path as List) != null) {
+                            return ImportNestedModule(context, scope, parts, current, listPath);
+                        } else if((stringPath = path as string) != null) {
+                            return ImportNestedModule(context, scope, parts, current, List.FromArrayNoCopy(stringPath));
+                        }
+                    }
                 }
             }
 

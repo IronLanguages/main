@@ -458,6 +458,7 @@ class _BrokenMethodDescriptor(object):
 def attrs_wo_objs(cls):
     return [t[:3] for t in inspect.classify_class_attrs(cls)]
 
+
 class TestClassesAndFunctions(unittest.TestCase):
     def test_classic_mro(self):
         # Test classic-class method resolution order.

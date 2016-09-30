@@ -141,7 +141,6 @@ class DistributionTestCase(support.TempdirManager,
                             'description': u'Café torréfié',
                             'long_description': u'Héhéhé'})
 
-
         # let's make sure the file can be written
         # with Unicode fields. they are encoded with
         # PKG_INFO_ENCODING
@@ -163,6 +162,7 @@ class DistributionTestCase(support.TempdirManager,
 
         # catching warnings
         warns = []
+
         def _warn(msg):
             warns.append(msg)
 
@@ -176,7 +176,6 @@ class DistributionTestCase(support.TempdirManager,
         self.assertNotIn('options', dir(dist))
 
     def test_finalize_options(self):
-
         attrs = {'keywords': 'one,two',
                  'platforms': 'one,two'}
 
@@ -198,7 +197,6 @@ class DistributionTestCase(support.TempdirManager,
         dist.command_packages = 'one,two'
         cmds = dist.get_command_packages()
         self.assertEqual(cmds, ['distutils.command', 'one', 'two'])
-
 
     def test_announce(self):
         # make sure the level is known
@@ -438,6 +436,7 @@ class MetadataTestCase(support.TempdirManager, support.EnvironGuard,
         self.assertEqual(metadata.platforms, ['UNKNOWN'])
         self.assertEqual(metadata.obsoletes, None)
         self.assertEqual(metadata.requires, ['foo'])
+
 
 def test_suite():
     suite = unittest.TestSuite()

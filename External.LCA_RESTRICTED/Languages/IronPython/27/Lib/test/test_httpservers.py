@@ -13,7 +13,6 @@ import shutil
 import urllib
 import httplib
 import tempfile
-
 import unittest
 import CGIHTTPServer
 
@@ -23,6 +22,8 @@ from SimpleHTTPServer import SimpleHTTPRequestHandler
 from CGIHTTPServer import CGIHTTPRequestHandler
 from StringIO import StringIO
 from test import test_support
+
+
 threading = test_support.import_module('threading')
 
 

@@ -4,7 +4,6 @@ import unittest
 from test import test_support
 test_support.requires('audio')
 import time
-
 import os
 import subprocess
 

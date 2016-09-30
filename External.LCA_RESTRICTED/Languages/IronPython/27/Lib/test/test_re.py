@@ -13,6 +13,7 @@ import string
 import traceback
 from weakref import proxy
 
+
 # Misc tests from Tim Peters' re.doc
 
 # WARNING: Don't change details in these tests if you don't know

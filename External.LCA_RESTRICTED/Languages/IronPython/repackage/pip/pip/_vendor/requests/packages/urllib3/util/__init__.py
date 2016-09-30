@@ -1,9 +1,5 @@
-# urllib3/util/__init__.py
-# Copyright 2008-2014 Andrey Petrov and contributors (see CONTRIBUTORS.txt)
-#
-# This module is part of urllib3 and is released under
-# the MIT License: http://www.opensource.org/licenses/mit-license.php
-
+from __future__ import absolute_import
+# For backwards compatibility, provide imports that used to be here.
 from .connection import is_connection_dropped
 from .request import make_headers
 from .response import is_fp_closed
@@ -19,9 +15,30 @@ from .timeout import (
     current_time,
     Timeout,
 )
+
+from .retry import Retry
 from .url import (
     get_host,
     parse_url,
     split_first,
     Url,
+)
+
+__all__ = (
+    'HAS_SNI',
+    'SSLContext',
+    'Retry',
+    'Timeout',
+    'Url',
+    'assert_fingerprint',
+    'current_time',
+    'is_connection_dropped',
+    'is_fp_closed',
+    'get_host',
+    'parse_url',
+    'make_headers',
+    'resolve_cert_reqs',
+    'resolve_ssl_version',
+    'split_first',
+    'ssl_wrap_socket',
 )

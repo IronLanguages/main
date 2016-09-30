@@ -63,6 +63,7 @@ class FakeHTTPMixin(object):
     def unfakehttp(self):
         httplib.HTTP._connection_class = httplib.HTTPConnection
 
+
 class urlopen_FileTests(unittest.TestCase):
     """Test urlopen() opening a temporary file.
 

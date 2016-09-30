@@ -1385,7 +1385,6 @@ class HelperFunctionTests(unittest.TestCase):
                          subprocess._eintr_retry_call(fake_os_func, 666))
         self.assertEqual([(256, 999), (666,), (666,)], record_calls)
 
-
 @unittest.skipUnless(mswindows, "mswindows only")
 class CommandsWithSpaces (BaseTestCase):
 

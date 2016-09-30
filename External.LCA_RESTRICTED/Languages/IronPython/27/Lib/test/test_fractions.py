@@ -91,6 +91,7 @@ class DummyRational(object):
 
 class DummyFraction(fractions.Fraction):
     """Dummy Fraction subclass for copy and deepcopy testing."""
+
 class GcdTest(unittest.TestCase):
 
     def testMisc(self):

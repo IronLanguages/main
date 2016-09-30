@@ -13,7 +13,6 @@ try:
 except ImportError:
     zlib = None
 
-
 from distutils.core import Distribution
 from distutils.command.bdist_dumb import bdist_dumb
 from distutils.tests import support
