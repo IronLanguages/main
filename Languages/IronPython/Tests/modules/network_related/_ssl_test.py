@@ -249,37 +249,38 @@ def test_SSLType_ssl():
     #TODO!
 
 
-# @retry_on_failure
-# def test_SSLType_ssl_neg():
-#     '''
-#     See comments on test_SSLType_ssl.  Basically this needs to be revisited
-#     entirely (TODO) after we're more compatible with CPython.
-#     '''
-#     s = socket.socket(socket.AF_INET)
-#     s.connect((SSL_URL, SSL_PORT))
+@disabled
+@retry_on_failure
+def test_SSLType_ssl_neg():
+    '''
+    See comments on test_SSLType_ssl.  Basically this needs to be revisited
+    entirely (TODO) after we're more compatible with CPython.
+    '''
+    s = socket.socket(socket.AF_INET)
+    s.connect((SSL_URL, SSL_PORT))
     
-#     #--Negative
+    #--Negative
     
-#     #Empty
-#     AssertError(TypeError, real_ssl.sslwrap)
-#     AssertError(TypeError, real_ssl.sslwrap, False)
+    #Empty
+    AssertError(TypeError, real_ssl.sslwrap)
+    AssertError(TypeError, real_ssl.sslwrap, False)
     
-#     #None
-#     AssertError(TypeError, real_ssl.sslwrap, None, False)
+    #None
+    AssertError(TypeError, real_ssl.sslwrap, None, False)
     
-#     #s, bad keyfile
-#     #Should throw _ssl.SSLError because both keyfile and certificate weren't specified
-#     AssertError(real_ssl.SSLError, real_ssl.sslwrap, s._sock, False, "bad keyfile")
+    #s, bad keyfile
+    #Should throw _ssl.SSLError because both keyfile and certificate weren't specified
+    AssertError(real_ssl.SSLError, real_ssl.sslwrap, s._sock, False, "bad keyfile")
     
-#     #s, bad certfile
-#     #Should throw _ssl.SSLError because both keyfile and certificate weren't specified
+    #s, bad certfile
+    #Should throw _ssl.SSLError because both keyfile and certificate weren't specified
     
-#     #s, bad keyfile, bad certfile
-#     #Should throw ssl.SSLError
-#     AssertError(real_ssl.SSLError, real_ssl.sslwrap, s._sock, False, "bad keyfile", "bad certfile")
+    #s, bad keyfile, bad certfile
+    #Should throw ssl.SSLError
+    AssertError(real_ssl.SSLError, real_ssl.sslwrap, s._sock, False, "bad keyfile", "bad certfile")
     
-#     #Cleanup
-#     s.close()
+    #Cleanup
+    s.close()
 
 @retry_on_failure    
 def test_SSLType_issuer():

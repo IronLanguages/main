@@ -590,41 +590,42 @@ def test_import_relative_error():
     def f():  exec 'from . import *'
     AssertError(ValueError, f)
 
-# @skip("silverlight") #No access to CPython stdlib
-# def test_import_hooks_import_precence():
-#     """__import__ takes precedence over import hooks"""
-#     global myimpCalled
-#     myimpCalled = None
-#     class myimp(object):
-#         def find_module(self, fullname, path=None):
-#             global myimpCalled
-#             myimpCalled = fullname, path
+@disabled
+@skip("silverlight") #No access to CPython stdlib
+def test_import_hooks_import_precence():
+    """__import__ takes precedence over import hooks"""
+    global myimpCalled
+    myimpCalled = None
+    class myimp(object):
+        def find_module(self, fullname, path=None):
+            global myimpCalled
+            myimpCalled = fullname, path
 
-#     def myimport(*args):
-#         return 'myimport'
+    def myimport(*args):
+        return 'myimport'
 
-#     import distutils
-#     import distutils.command
-#     mi = myimp()
-#     sys.meta_path.append(mi)
-#     builtinimp = get_builtins_dict()['__import__']
-#     try:
-#         get_builtins_dict()['__import__'] = myimport
+    import distutils
+    import distutils.command
+    mi = myimp()
+    sys.meta_path.append(mi)
+    builtinimp = get_builtins_dict()['__import__']
+    try:
+        get_builtins_dict()['__import__'] = myimport
     
-#         import abc
-#         AreEqual(abc, 'myimport')
-#         AreEqual(myimpCalled, None)
+        import abc
+        AreEqual(abc, 'myimport')
+        AreEqual(myimpCalled, None)
                 
-#         # reload on a built-in hits the loader protocol
-#         reload(distutils)
-#         AreEqual(myimpCalled, ('distutils', None))
+        # reload on a built-in hits the loader protocol
+        reload(distutils)
+        AreEqual(myimpCalled, ('distutils', None))
         
-#         reload(distutils.command)
-#         AreEqual(myimpCalled[0], 'distutils.command')
-#         AreEqual(myimpCalled[1][0][-7:], 'distutils')
-#     finally:
-#         get_builtins_dict()['__import__'] = builtinimp
-#         sys.meta_path.remove(mi)
+        reload(distutils.command)
+        AreEqual(myimpCalled[0], 'distutils.command')
+        AreEqual(myimpCalled[1][0][-7:], 'distutils')
+    finally:
+        get_builtins_dict()['__import__'] = builtinimp
+        sys.meta_path.remove(mi)
 
 def test_import_hooks_bad_importer():
     class bad_importer(object): pass
