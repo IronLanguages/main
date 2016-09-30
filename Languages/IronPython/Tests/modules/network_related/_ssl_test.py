@@ -86,7 +86,7 @@ def test_PROTOCOL_TLSv1_2():
 @skip("silverlight")
 def test_OP_NO_SSLv2():
     AreEqual(real_ssl.OP_NO_SSLv2,
-             0x1000000)
+             0x0000000)
 
 @skip("silverlight")
 def test_OP_NO_SSLv3():
@@ -128,20 +128,6 @@ def test_RAND_add():
     AssertError(TypeError, real_ssl.RAND_add, "")
     AssertError(TypeError, real_ssl.RAND_add, 3.14)
     AssertError(TypeError, real_ssl.RAND_add, "", 3.14, "")
-
-
-def test_RAND_egd():
-    #--Positive
-    if not is_cpython:
-        AreEqual(real_ssl.RAND_egd(""),
-                 None)
-    
-    #--Negative
-    AssertError(TypeError, real_ssl.RAND_egd)
-    AssertError(TypeError, real_ssl.RAND_add, None)
-    AssertError(TypeError, real_ssl.RAND_add, 1)
-    AssertError(TypeError, real_ssl.RAND_add, 3.14)
-    AssertError(TypeError, real_ssl.RAND_add, "", "")
 
 
 def test_RAND_status():
@@ -263,37 +249,37 @@ def test_SSLType_ssl():
     #TODO!
 
 
-@retry_on_failure
-def test_SSLType_ssl_neg():
-    '''
-    See comments on test_SSLType_ssl.  Basically this needs to be revisited
-    entirely (TODO) after we're more compatible with CPython.
-    '''
-    s = socket.socket(socket.AF_INET)
-    s.connect((SSL_URL, SSL_PORT))
+# @retry_on_failure
+# def test_SSLType_ssl_neg():
+#     '''
+#     See comments on test_SSLType_ssl.  Basically this needs to be revisited
+#     entirely (TODO) after we're more compatible with CPython.
+#     '''
+#     s = socket.socket(socket.AF_INET)
+#     s.connect((SSL_URL, SSL_PORT))
     
-    #--Negative
+#     #--Negative
     
-    #Empty
-    AssertError(TypeError, real_ssl.sslwrap)
-    AssertError(TypeError, real_ssl.sslwrap, False)
+#     #Empty
+#     AssertError(TypeError, real_ssl.sslwrap)
+#     AssertError(TypeError, real_ssl.sslwrap, False)
     
-    #None
-    AssertError(TypeError, real_ssl.sslwrap, None, False)
+#     #None
+#     AssertError(TypeError, real_ssl.sslwrap, None, False)
     
-    #s, bad keyfile
-    #Should throw _ssl.SSLError because both keyfile and certificate weren't specified
-    AssertError(real_ssl.SSLError, real_ssl.sslwrap, s._sock, False, "bad keyfile")
+#     #s, bad keyfile
+#     #Should throw _ssl.SSLError because both keyfile and certificate weren't specified
+#     AssertError(real_ssl.SSLError, real_ssl.sslwrap, s._sock, False, "bad keyfile")
     
-    #s, bad certfile
-    #Should throw _ssl.SSLError because both keyfile and certificate weren't specified
+#     #s, bad certfile
+#     #Should throw _ssl.SSLError because both keyfile and certificate weren't specified
     
-    #s, bad keyfile, bad certfile
-    #Should throw ssl.SSLError
-    AssertError(real_ssl.SSLError, real_ssl.sslwrap, s._sock, False, "bad keyfile", "bad certfile")
+#     #s, bad keyfile, bad certfile
+#     #Should throw ssl.SSLError
+#     AssertError(real_ssl.SSLError, real_ssl.sslwrap, s._sock, False, "bad keyfile", "bad certfile")
     
-    #Cleanup
-    s.close()
+#     #Cleanup
+#     s.close()
 
 @retry_on_failure    
 def test_SSLType_issuer():
