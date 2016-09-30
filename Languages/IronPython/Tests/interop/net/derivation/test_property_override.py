@@ -25,7 +25,6 @@ add_clr_assemblies("baseclasscs", "baseclassvb", "typesamples")
 from Merlin.Testing import *
 from Merlin.Testing.BaseClass import *
 
-
 def test_read_write_interface(): 
     class C(IProperty10):   
         def set_IntProperty(self, value):
@@ -66,7 +65,7 @@ def test_read_write_interface():
     x = C()
     AreEqual(p.GetValue(x), 30)
     AssertErrorWithMessage(AttributeError, "readonly attribute", lambda: p.__set__(x, 40))
-    
+
 def test_readonly_interface():
     class C(IProperty11):
         def set_StrProperty(self, value):
@@ -78,7 +77,10 @@ def test_readonly_interface():
     x = C()
     p = IProperty11.StrProperty
     p.__set__(x, 'abc')     # no-op equivalent?
-    AssertError(SystemError, lambda: p.SetValue(x, 'def'))  # ?
+    if is_netstandard: # TODO: revert this once System.SystemException is added to netstandard (https://github.com/IronLanguages/main/issues/1399)
+        AssertError(Exception, lambda: p.SetValue(x, 'def'))  # ?
+    else:
+        AssertError(SystemError, lambda: p.SetValue(x, 'def'))  # ?
     AssertError(AttributeError, lambda: x.field)  # make sure x.field not set yet
     
     x.field = 'python'

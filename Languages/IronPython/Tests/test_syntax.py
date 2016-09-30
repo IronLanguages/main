@@ -709,7 +709,7 @@ def test_parser_recovery():
         def __init__(self, text):
             self.text = text
         def GetReader(self):
-            return SourceCodeReader(StringReader(self.text), Encoding.Default)
+            return SourceCodeReader(StringReader(self.text), Encoding.GetEncoding(0))
 
     def parse_text(text):
         errorSink = MyErrorSink()

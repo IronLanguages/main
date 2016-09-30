@@ -92,6 +92,7 @@ The loaded generic type is C`3, now you try to load
 from iptest.assert_util import *
 from iptest.process_util import *
 
+skiptest("netstandard") # none of the test DLLs load in .NET Core
 skiptest("silverlight")
 
 def test_all():

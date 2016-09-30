@@ -161,3 +161,11 @@ notifications:
     #subject: 'Build {{status}}'                  # optional
     #message: "{{message}}, {{commitId}}, ..."    # optional
     on_build_status_changed: true
+
+  # Gitter
+  - provider: Webhook
+    url: https://webhooks.gitter.im/e/efce32d9ed58ffe48ee7
+    #headers: ? message payload? whatzit?
+    on_build_success: true
+    on_build_failure: true
+    on_build_status_changed: true

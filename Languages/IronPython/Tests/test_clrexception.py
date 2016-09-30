@@ -15,6 +15,11 @@
 
 from iptest.assert_util import *
 skiptest("win32")
+
+if is_netstandard:
+    import clr
+    clr.AddReference("Microsoft.Win32.Primitives")
+
 import System
 import System.IO
 import System.ComponentModel
@@ -93,8 +98,15 @@ if not is_silverlight:
     clr_to_py_positive(System.Text.EncoderFallbackException, UnicodeEncodeError)
     py_to_clr_positive_with_args(UnicodeEncodeError, System.Text.EncoderFallbackException, ('abc','abc',3,4,'abc'))
 
-    clr_to_py_positive(System.ComponentModel.WarningException, Warning, msg = "System.ComponentModel.WarningException -> Warning")
-    py_to_clr_positive(Warning, System.ComponentModel.WarningException, msg = "Warning -> System.ComponentModel.WarningException")
+if not is_silverlight:
+    if is_netstandard: # no FEATURE_WARNING_EXCEPTION
+        clr.AddReference("IronPython")
+        import IronPython
+        clr_to_py_positive(IronPython.Runtime.Exceptions.WarningException, Warning, msg = "IronPython.Runtime.Exceptions.WarningException -> Warning")
+        py_to_clr_positive(Warning, IronPython.Runtime.Exceptions.WarningException, msg = "Warning -> IronPython.Runtime.Exceptions.WarningException")
+    else:
+        clr_to_py_positive(System.ComponentModel.WarningException, Warning, msg = "System.ComponentModel.WarningException -> Warning")
+        py_to_clr_positive(Warning, System.ComponentModel.WarningException, msg = "Warning -> System.ComponentModel.WarningException")
 
 clr_to_py_positive(System.OutOfMemoryException, MemoryError, msg = "System.OutOfMemoryException -> MemoryError")
 py_to_clr_positive(MemoryError, System.OutOfMemoryException, msg = "MemoryError -> System.OutOfMemoryException")

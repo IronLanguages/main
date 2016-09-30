@@ -426,7 +426,10 @@ def test_dir():
             clr.AddReference("Microsoft.Scripting.Core")
         except Exception, e:
             if is_net40:
-                clr.AddReference("System.Core")
+                if is_netstandard:
+                    clr.AddReference("System.Dynamic.Runtime")
+                else:
+                    clr.AddReference("System.Core")
             else:
                 raise e
         
@@ -660,7 +663,7 @@ def test_cp16000():
     if is_cli:
         import System
         temp_list += [  System.Exception, System.InvalidOperationException(),
-                        System.Single, System.UInt16(5), System.Version()]
+                        System.Single, System.UInt16(5), System.Version(0, 0)]
 
     for x in temp_list:
         Assert(type(id(x)) in [int, long], 

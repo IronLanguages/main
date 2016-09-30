@@ -13,7 +13,7 @@ using System.Xml.Serialization;
 namespace TestRunner
 {
     class Program {
-        private bool _verbose, _runLongRunning, _admin, _quiet, _isUnix = false;
+        private bool _verbose, _runLongRunning, _runDisabled, _admin, _quiet, _isUnix = false;
         private int _threadCount = 1;
         private List<TestResult> _results = new List<TestResult>();
 
@@ -60,6 +60,8 @@ namespace TestRunner
                     _verbose = true;
                 } else if (args[i] == "/runlong") {
                     _runLongRunning = true;
+                } else if (args[i] == "/rundisabled") {
+                    _runDisabled = true;
                 } else if (args[i] == "/admin") {
                     _admin = true;
                 } else if (args[i] == "/quiet") {
@@ -295,7 +297,7 @@ namespace TestRunner
         /// Runs a single test caseand returns the result.
         /// </summary>
         private TestResult RunTest(Test test) {
-            if (test.Disabled) {
+            if (test.Disabled && !_runDisabled) {
                 return new TestResult(test, TestResultStatus.Disabled, 0, null);
             } else if ((test.LongRunning && !_runLongRunning) || (test.RequiresAdmin && !_admin)) {
                 return new TestResult(test, TestResultStatus.Skipped, 0, null);

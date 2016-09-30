@@ -104,6 +104,7 @@ def test_cs_scenarios():
     # try other types
     x = ClassWithDefaultMemberCtor(1)
 
+@skip("netstandard") # TODO
 def test_cp_19510():
     """Test indexing on .NET classes with default members"""
     import clr

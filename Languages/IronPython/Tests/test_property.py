@@ -19,6 +19,9 @@ array_list_options = []
 if is_cli or is_silverlight:
     array_list_options.append(System.Collections.Generic.List[int])
     if not is_silverlight:
+        if is_netstandard:
+            import clr
+            clr.AddReference("System.Collections.NonGeneric")
         array_list_options.append(System.Collections.ArrayList)
 
 for ArrayList in array_list_options:

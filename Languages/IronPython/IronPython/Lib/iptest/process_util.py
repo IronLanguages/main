@@ -17,7 +17,7 @@
 
 import os
 import sys
-from assert_util import testpath, is_cli, is_posix
+from assert_util import testpath, is_cli, is_posix, is_netstandard
 
 one_arg_params = ("-X:Optimize", "-W", "-c", "-X:MaxRecursion", "-X:AssembliesDir")
 
@@ -83,6 +83,9 @@ def launch_ironpython_changing_extensions(test, add=[], remove=[], additionalScr
 
 def run_tool(cmd, args=""):
     import System
+    if is_netstandard:
+        import clr
+        clr.AddReference("System.Diagnostics.Process")
     process = System.Diagnostics.Process()
     process.StartInfo.FileName = cmd
     process.StartInfo.Arguments = args
@@ -148,6 +151,8 @@ def kill_process(arg):
 
 def get_clr_dir():
     import clr
-    from System import Type
-    from System.IO import Path
-    return Path.GetDirectoryName(Type.GetType('System.Int32').Assembly.Location)
+    import System
+    if is_netstandard:
+        clr.AddReference("System.Runtime.Extensions")
+        return System.IO.Path.Combine(System.Environment.GetEnvironmentVariable("windir"), r"Microsoft.NET\Framework\v4.0.30319")
+    return System.IO.Path.GetDirectoryName(System.Type.GetType('System.Int32').Assembly.Location)

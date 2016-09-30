@@ -16,6 +16,7 @@
 '''
 #------------------------------------------------------------------------------
 from iptest.assert_util import *
+skiptest("netstandard") # TODO
 
 import clr
 from System.Reflection import Assembly

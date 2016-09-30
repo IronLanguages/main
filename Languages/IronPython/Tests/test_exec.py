@@ -185,6 +185,10 @@ if is_silverlight==False:
 # and now verify it'll take a .NET Stream as well...
 if is_cli:
     import System
+    if is_netstandard:
+        import clr
+        clr.AddReference("System.IO.FileSystem")
+        clr.AddReference("System.IO.FileSystem.Primitives")
     f = System.IO.FileStream(fn, System.IO.FileMode.Open)
     exec(f)
     f.Close()

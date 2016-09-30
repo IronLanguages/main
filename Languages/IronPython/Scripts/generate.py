@@ -49,6 +49,9 @@ PREFIX = r"^([ \t]*)"
 if sys.platform=="cli":
     import nt
     import System.IO        
+    import clr
+    if clr.IsNetStandard:
+        clr.AddReference("System.IO.FileSystem")
         
     def pathjoin(dir, file):
         if(dir[-1] == '\\'):

@@ -32,6 +32,7 @@ if is_ironpython:
     import clr
     is_posix = sys.platform == 'posix' or System.Environment.OSVersion.Platform == System.PlatformID.Unix
 
+is_netstandard = is_ironpython and clr.IsNetStandard
 
 #--The bittedness of the Python implementation
 is_cli32, is_cli64 = False, False
