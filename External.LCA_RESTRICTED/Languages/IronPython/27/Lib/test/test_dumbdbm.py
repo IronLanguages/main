@@ -40,7 +40,6 @@ class DumbDBMTestCase(unittest.TestCase):
     @unittest.skipUnless(hasattr(os, 'chmod'), 'os.chmod not available')
     @unittest.skipUnless(hasattr(os, 'umask'), 'os.umask not available')
     def test_dumbdbm_creation_mode(self):
-
         try:
             old_umask = os.umask(0002)
             f = dumbdbm.open(_fname, 'c', 0637)
@@ -114,7 +113,9 @@ class DumbDBMTestCase(unittest.TestCase):
         f = dumbdbm.open(_fname)
         self.assertEqual(f['1'], 'hello')
         self.assertEqual(f['2'], 'hello2')
+
         f.close()
+
 
     def read_helper(self, f):
         keys = self.keys_helper(f)
@@ -170,6 +171,7 @@ class DumbDBMTestCase(unittest.TestCase):
             with self.assertRaises(ValueError):
                 dumbdbm.open(_fname).close()
             self.assertEqual(stdout.getvalue(), '')
+
     def tearDown(self):
         _delete_files()
 

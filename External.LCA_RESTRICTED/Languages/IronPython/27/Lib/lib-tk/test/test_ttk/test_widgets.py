@@ -1353,7 +1353,6 @@ class TreeviewTest(AbstractWidgetTest, unittest.TestCase):
         self.assertRaises(tkinter.TclError, self.tv.heading, '#0',
             anchor=1)
 
-
     def test_heading_callback(self):
         def simulate_heading_click(x, y):
             simulate_mouse_click(self.tv, x, y)

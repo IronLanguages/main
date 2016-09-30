@@ -943,7 +943,6 @@ class BufferedReaderTest(unittest.TestCase, CommonBufferedTests):
         # Inject some None's in there to simulate EWOULDBLOCK
         rawio = self.MockRawIO((b"abc", b"d", None, b"efg", None, None, None))
         bufio = self.tp(rawio)
-
         self.assertEqual(b"abcd", bufio.read(6))
         self.assertEqual(b"e", bufio.read(1))
         self.assertEqual(b"fg", bufio.read())
@@ -3232,6 +3231,7 @@ class SignalsTest(unittest.TestCase):
             wio.flush()
             write_finished = True
             t.join()
+
             self.assertIsNone(error[0])
             self.assertEqual(N, sum(len(x) for x in read_results))
         finally:

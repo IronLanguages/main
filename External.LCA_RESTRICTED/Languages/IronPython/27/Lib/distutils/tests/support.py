@@ -12,12 +12,14 @@ from distutils import log
 from distutils.log import DEBUG, INFO, WARN, ERROR, FATAL
 from distutils.core import Distribution
 
+
 def capture_warnings(func):
     def _capture_warnings(*args, **kw):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             return func(*args, **kw)
     return _capture_warnings
+
 
 class LoggingSilencer(object):
 
@@ -51,6 +53,7 @@ class LoggingSilencer(object):
 
     def clear_logs(self):
         self.logs = []
+
 
 class TempdirManager(object):
     """Mix-in class that handles temporary directories for test cases.
@@ -112,6 +115,7 @@ class TempdirManager(object):
 
         return pkg_dir, dist
 
+
 class DummyCommand:
     """Class to store options for retrieval via set_undefined_options()."""
 
@@ -121,6 +125,7 @@ class DummyCommand:
 
     def ensure_finalized(self):
         pass
+
 
 class EnvironGuard(object):
 

@@ -38,7 +38,6 @@ class DictTest(unittest.TestCase):
         self.assertIn('b', k)
         self.assertTrue(d.has_key('a'))
         self.assertTrue(d.has_key('b'))
-
         self.assertRaises(TypeError, d.keys, None)
 
     def test_values(self):
@@ -690,6 +689,7 @@ class DictTest(unittest.TestCase):
         test_support.check_free_after_iterating(self, lambda d: iter(d.viewkeys()), dict)
         test_support.check_free_after_iterating(self, lambda d: iter(d.viewvalues()), dict)
         test_support.check_free_after_iterating(self, lambda d: iter(d.viewitems()), dict)
+
 from test import mapping_tests
 
 class GeneralMappingTests(mapping_tests.BasicTestMappingProtocol):

@@ -5,7 +5,9 @@ import urllib2
 import BaseHTTPServer
 import unittest
 import hashlib
+
 from test import test_support
+
 mimetools = test_support.import_module('mimetools', deprecated=True)
 threading = test_support.import_module('threading')
 

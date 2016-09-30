@@ -3252,7 +3252,6 @@ A very long line that must get split to something other than at the
         self.assertEqual(res, '=?iso-8859-2?q?abc?=')
         self.assertIsInstance(res, str)
 
-
 # Test RFC 2231 header parameters (en/de)coding
 class TestRFC2231(TestEmailBase):
     def test_get_param(self):

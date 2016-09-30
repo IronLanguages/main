@@ -77,7 +77,6 @@ class TestWintypes(unittest.TestCase):
         self.assertEqual(ex.details, ("details",))
 
 class Structures(unittest.TestCase):
-
     def test_struct_by_value(self):
         class POINT(Structure):
             _fields_ = [("x", c_long),

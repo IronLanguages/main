@@ -380,7 +380,6 @@ class PosixPathTest(unittest.TestCase):
                     base = basename(ABSTFN)
                     self.assertEqual(realpath(base + "link"), ABSTFN)
                     self.assertEqual(realpath(base + "link/k"), ABSTFN + "/k")
-
             finally:
                 test_support.unlink(ABSTFN + "link")
                 safe_rmdir(ABSTFN + "/k")
@@ -425,6 +424,7 @@ class PosixPathTest(unittest.TestCase):
             env[swnonascii] = 'baz' + swnonascii
             self.assertEqual(posixpath.expandvars(u'$%s bar' % uwnonascii),
                              u'baz%s bar' % uwnonascii)
+
 
 class PosixCommonTest(test_genericpath.CommonTest):
     pathmodule = posixpath

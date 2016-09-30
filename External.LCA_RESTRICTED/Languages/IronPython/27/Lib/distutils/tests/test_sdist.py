@@ -298,7 +298,6 @@ class SDistTestCase(PyPIRCCommandTestCase):
         self.assertEqual(len(output), num_formats)
 
     def test_finalize_options(self):
-
         dist, cmd = self.get_cmd()
         cmd.finalize_options()
 
@@ -497,6 +496,7 @@ class SDistTestCase(PyPIRCCommandTestCase):
             archive.close()
         self.assertEqual(sorted(filenames), ['fake-1.0', 'fake-1.0/PKG-INFO',
                                              'fake-1.0/README.manual'])
+
 def test_suite():
     return unittest.makeSuite(SDistTestCase)
 

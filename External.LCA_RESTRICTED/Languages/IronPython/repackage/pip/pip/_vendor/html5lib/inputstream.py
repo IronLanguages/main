@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, unicode_literals
 from pip._vendor.six import text_type
+from pip._vendor.six.moves import http_client
 
 import codecs
 import re
@@ -27,7 +28,18 @@ asciiLettersBytes = frozenset([item.encode("ascii") for item in asciiLetters])
 asciiUppercaseBytes = frozenset([item.encode("ascii") for item in asciiUppercase])
 spacesAngleBrackets = spaceCharactersBytes | frozenset([b">", b"<"])
 
-invalid_unicode_re = re.compile("[\u0001-\u0008\u000B\u000E-\u001F\u007F-\u009F\uD800-\uDFFF\uFDD0-\uFDEF\uFFFE\uFFFF\U0001FFFE\U0001FFFF\U0002FFFE\U0002FFFF\U0003FFFE\U0003FFFF\U0004FFFE\U0004FFFF\U0005FFFE\U0005FFFF\U0006FFFE\U0006FFFF\U0007FFFE\U0007FFFF\U0008FFFE\U0008FFFF\U0009FFFE\U0009FFFF\U000AFFFE\U000AFFFF\U000BFFFE\U000BFFFF\U000CFFFE\U000CFFFF\U000DFFFE\U000DFFFF\U000EFFFE\U000EFFFF\U000FFFFE\U000FFFFF\U0010FFFE\U0010FFFF]")
+
+invalid_unicode_no_surrogate = "[\u0001-\u0008\u000B\u000E-\u001F\u007F-\u009F\uFDD0-\uFDEF\uFFFE\uFFFF\U0001FFFE\U0001FFFF\U0002FFFE\U0002FFFF\U0003FFFE\U0003FFFF\U0004FFFE\U0004FFFF\U0005FFFE\U0005FFFF\U0006FFFE\U0006FFFF\U0007FFFE\U0007FFFF\U0008FFFE\U0008FFFF\U0009FFFE\U0009FFFF\U000AFFFE\U000AFFFF\U000BFFFE\U000BFFFF\U000CFFFE\U000CFFFF\U000DFFFE\U000DFFFF\U000EFFFE\U000EFFFF\U000FFFFE\U000FFFFF\U0010FFFE\U0010FFFF]"
+
+if utils.supports_lone_surrogates:
+    # Use one extra step of indirection and create surrogates with
+    # unichr. Not using this indirection would introduce an illegal
+    # unicode literal on platforms not supporting such lone
+    # surrogates.
+    invalid_unicode_re = re.compile(invalid_unicode_no_surrogate +
+                                    eval('"\\uD800-\\uDFFF"'))
+else:
+    invalid_unicode_re = re.compile(invalid_unicode_no_surrogate)
 
 non_bmp_invalid_codepoints = set([0x1FFFE, 0x1FFFF, 0x2FFFE, 0x2FFFF, 0x3FFFE,
                                   0x3FFFF, 0x4FFFE, 0x4FFFF, 0x5FFFE, 0x5FFFF,
@@ -118,14 +130,18 @@ class BufferedStream(object):
 
 
 def HTMLInputStream(source, encoding=None, parseMeta=True, chardet=True):
-    if hasattr(source, "read"):
+    if isinstance(source, http_client.HTTPResponse):
+        # Work around Python bug #20007: read(0) closes the connection.
+        # http://bugs.python.org/issue20007
+        isUnicode = False
+    elif hasattr(source, "read"):
         isUnicode = isinstance(source.read(0), text_type)
     else:
         isUnicode = isinstance(source, text_type)
 
     if isUnicode:
-        if encoding is not None:
-            raise TypeError("Cannot explicitly set an encoding with a unicode string")
+        #if encoding is not None:
+        #    raise TypeError("Cannot explicitly set an encoding with a unicode string")
 
         return HTMLUnicodeInputStream(source)
     else:
@@ -159,13 +175,18 @@ class HTMLUnicodeInputStream(object):
 
         """
 
-        # Craziness
-        if len("\U0010FFFF") == 1:
+        if not utils.supports_lone_surrogates:
+            # Such platforms will have already checked for such
+            # surrogate errors, so no need to do this checking.
+            self.reportCharacterErrors = None
+            self.replaceCharactersRegexp = None
+        elif len("\U0010FFFF") == 1:
             self.reportCharacterErrors = self.characterErrorsUCS4
-            self.replaceCharactersRegexp = re.compile("[\uD800-\uDFFF]")
+            self.replaceCharactersRegexp = re.compile(eval('"[\\uD800-\\uDFFF]"'))
         else:
             self.reportCharacterErrors = self.characterErrorsUCS2
-            self.replaceCharactersRegexp = re.compile("([\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF])")
+            self.replaceCharactersRegexp = re.compile(
+                eval('"([\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|(?<![\\uD800-\\uDBFF])[\\uDC00-\\uDFFF])"'))
 
         # List of where new lines occur
         self.newLines = [0]
@@ -260,11 +281,12 @@ class HTMLUnicodeInputStream(object):
                 self._bufferedCharacter = data[-1]
                 data = data[:-1]
 
-        self.reportCharacterErrors(data)
+        if self.reportCharacterErrors:
+            self.reportCharacterErrors(data)
 
-        # Replace invalid characters
-        # Note U+0000 is dealt with in the tokenizer
-        data = self.replaceCharactersRegexp.sub("\ufffd", data)
+            # Replace invalid characters
+            # Note U+0000 is dealt with in the tokenizer
+            data = self.replaceCharactersRegexp.sub("\ufffd", data)
 
         data = data.replace("\r\n", "\n")
         data = data.replace("\r", "\n")

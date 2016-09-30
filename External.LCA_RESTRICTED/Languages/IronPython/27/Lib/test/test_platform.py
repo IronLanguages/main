@@ -100,6 +100,7 @@ class PlatformTest(unittest.TestCase):
                 ("CPython", "2.6.1", "tags/r261", "67515",
                  ('r261:67515', 'Dec  6 2008 15:26:00'),
                  'GCC 4.0.1 (Apple Computer, Inc. build 5370)'),
+
             ("IronPython 2.0 (2.0.0.0) on .NET 2.0.50727.3053", None, "cli")
             :
                 ("IronPython", "2.0.0", "", "", ("", ""),
@@ -120,6 +121,7 @@ class PlatformTest(unittest.TestCase):
             :
                 ("Jython", "2.5.0", "trunk", "6107",
                  ('trunk:6107', 'Mar 26 2009'), "java1.5.0_16"),
+
             ("2.5.2 (63378, Mar 26 2009, 18:03:29)\n[PyPy 1.0.0]",
              ('PyPy', 'trunk', '63378'), self.save_platform)
             :

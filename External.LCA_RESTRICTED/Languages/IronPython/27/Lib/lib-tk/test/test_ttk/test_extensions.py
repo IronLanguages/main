@@ -13,7 +13,6 @@ class LabeledScaleTest(AbstractTkTest, unittest.TestCase):
         self.root.update_idletasks()
         super(LabeledScaleTest, self).tearDown()
 
-
     def test_widget_destroy(self):
         # automatically created variable
         x = ttk.LabeledScale(self.root)

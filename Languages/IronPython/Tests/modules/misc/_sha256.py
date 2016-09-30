@@ -59,12 +59,6 @@ def test_sha256_sanity():
     
     
 def test_sha224_sanity():
-    if is_cli:
-        #CodePlex 16870
-        AssertError(NotImplementedError, _sha256.sha224)
-        AssertError(NotImplementedError, _sha256.sha224, 1234)
-        return
-
     x = _sha256.sha224()
     AreEqual(x.block_size, 64)
     AreEqual(x.digest(),

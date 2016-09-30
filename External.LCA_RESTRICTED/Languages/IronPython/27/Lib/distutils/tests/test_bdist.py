@@ -12,7 +12,6 @@ class BuildTestCase(support.TempdirManager,
                     unittest.TestCase):
 
     def test_formats(self):
-
         # let's create a command and make sure
         # we can set the format
         dist = self.create_dist()[1]

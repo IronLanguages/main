@@ -438,6 +438,7 @@ class StrTest(
         # issue #7267
         self.assertRaises(OverflowError, '{0:c}'.format, -1)
         self.assertRaises(OverflowError, '{0:c}'.format, 256)
+
     def test_buffer_is_readonly(self):
         self.assertRaises(TypeError, sys.stdin.readinto, b"")
 

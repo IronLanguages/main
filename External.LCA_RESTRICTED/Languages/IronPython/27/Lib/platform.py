@@ -1372,6 +1372,7 @@ def _sys_version(sys_version=None):
             raise ValueError(
                 'failed to parse IronPython sys.version: %s' %
                 repr(sys_version))
+
         version, alt_version, compiler = match.groups()
         buildno = ''
         builddate = ''

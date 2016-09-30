@@ -86,7 +86,7 @@ def test_PROTOCOL_TLSv1_2():
 @skip("silverlight")
 def test_OP_NO_SSLv2():
     AreEqual(real_ssl.OP_NO_SSLv2,
-             0x1000000)
+             0x0000000)
 
 @skip("silverlight")
 def test_OP_NO_SSLv3():
@@ -128,20 +128,6 @@ def test_RAND_add():
     AssertError(TypeError, real_ssl.RAND_add, "")
     AssertError(TypeError, real_ssl.RAND_add, 3.14)
     AssertError(TypeError, real_ssl.RAND_add, "", 3.14, "")
-
-
-def test_RAND_egd():
-    #--Positive
-    if not is_cpython:
-        AreEqual(real_ssl.RAND_egd(""),
-                 None)
-    
-    #--Negative
-    AssertError(TypeError, real_ssl.RAND_egd)
-    AssertError(TypeError, real_ssl.RAND_add, None)
-    AssertError(TypeError, real_ssl.RAND_add, 1)
-    AssertError(TypeError, real_ssl.RAND_add, 3.14)
-    AssertError(TypeError, real_ssl.RAND_add, "", "")
 
 
 def test_RAND_status():
@@ -263,6 +249,7 @@ def test_SSLType_ssl():
     #TODO!
 
 
+@disabled
 @retry_on_failure
 def test_SSLType_ssl_neg():
     '''

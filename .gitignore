@@ -57,3 +57,5 @@ Languages/IronPython/Tests/compat/*.pyc
 Languages/IronPython/Tests/compat/*/*.pyc
 Languages/IronPython/Tests/compat/sbs_library.dll
 Languages/IronPython/Tests/compat/tempfile.txt
+Languages/IronPython/Tests/Tools/stdmodules.py.stdout.log
+Languages/IronPython/Tests/test_data.gz

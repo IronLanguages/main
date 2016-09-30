@@ -8,7 +8,6 @@ import os
 import struct
 import sys
 
-
 class SysModuleTest(unittest.TestCase):
 
     def tearDown(self):
@@ -179,11 +178,9 @@ class SysModuleTest(unittest.TestCase):
             b"unflushed,message")
 
         # test that the unicode message is encoded to the stderr encoding
-        env = os.environ.copy()
-        env['PYTHONIOENCODING'] = 'latin-1'
         check_exit_message(
             r'import sys; sys.exit(u"h\xe9")',
-            b"h\xe9", env=env)
+            b"h\xe9", PYTHONIOENCODING='latin-1')
 
     def test_getdefaultencoding(self):
         if test.test_support.have_unicode:
@@ -426,7 +423,7 @@ class SysModuleTest(unittest.TestCase):
     def test_43581(self):
         # Can't use sys.stdout, as this is a cStringIO object when
         # the test runs under regrtest.
-        if not (os.environ.get(_PYTHONIOENCODING) or
+        if not (os.environ.get('PYTHONIOENCODING') or
                 (sys.__stdout__.isatty() and sys.__stderr__.isatty())):
             self.skipTest('stdout/stderr encoding is not set')
         self.assertEqual(sys.__stdout__.encoding, sys.__stderr__.encoding)

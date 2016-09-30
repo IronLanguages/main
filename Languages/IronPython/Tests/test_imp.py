@@ -590,6 +590,7 @@ def test_import_relative_error():
     def f():  exec 'from . import *'
     AssertError(ValueError, f)
 
+@disabled
 @skip("silverlight") #No access to CPython stdlib
 def test_import_hooks_import_precence():
     """__import__ takes precedence over import hooks"""
@@ -603,8 +604,8 @@ def test_import_hooks_import_precence():
     def myimport(*args):
         return 'myimport'
 
-    import idlelib
-    import idlelib.idlever
+    import distutils
+    import distutils.command
     mi = myimp()
     sys.meta_path.append(mi)
     builtinimp = get_builtins_dict()['__import__']
@@ -616,12 +617,12 @@ def test_import_hooks_import_precence():
         AreEqual(myimpCalled, None)
                 
         # reload on a built-in hits the loader protocol
-        reload(idlelib)
-        AreEqual(myimpCalled, ('idlelib', None))
+        reload(distutils)
+        AreEqual(myimpCalled, ('distutils', None))
         
-        reload(idlelib.idlever)
-        AreEqual(myimpCalled[0], 'idlelib.idlever')
-        AreEqual(myimpCalled[1][0][-7:], 'idlelib')
+        reload(distutils.command)
+        AreEqual(myimpCalled[0], 'distutils.command')
+        AreEqual(myimpCalled[1][0][-7:], 'distutils')
     finally:
         get_builtins_dict()['__import__'] = builtinimp
         sys.meta_path.remove(mi)

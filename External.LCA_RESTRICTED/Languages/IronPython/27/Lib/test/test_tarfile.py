@@ -895,7 +895,6 @@ class WriteTest(WriteTestBase):
     def test_add_self(self):
         # Test for #1257255.
         dstname = os.path.abspath(tmpname)
-
         tar = tarfile.open(tmpname, self.mode)
         try:
             self.assertTrue(tar.name == dstname, "archive name must be absolute")

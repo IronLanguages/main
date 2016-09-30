@@ -31,6 +31,6 @@ def repackage(subdir, wheel):
     shutil.copy(wheel, "../27/Lib/ensurepip/_bundled")
 
 
-repackage("pip", "pip-1.5.6-py2.py3-none-any.whl")
-repackage("setuptools", "setuptools-3.6-py2.py3-none-any.whl")
+repackage("pip", "pip-8.1.1-py2.py3-none-any.whl")
+#repackage("setuptools", "setuptools-3.6-py2.py3-none-any.whl")
 

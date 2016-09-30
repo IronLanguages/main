@@ -25,9 +25,6 @@ import StringIO
 from traceback import extract_tb, extract_stack, print_tb
 raise_src = 'def do_raise(): raise TypeError\n'
 
-# so we only run testAFakeZlib once if this test is run repeatedly
-# which happens when we look for ref leaks
-test_imported = False
 
 if sys.platform != 'cli':
     def make_pyc(co, mtime):

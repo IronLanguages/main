@@ -2521,13 +2521,13 @@ namespace IronPython.Modules {
                 }
             }
 
-            public ssl(CodeContext context, PythonSocket.socket sock, [DefaultParameterValue(null)] string keyfile, [DefaultParameterValue(null)] string certfile) {
+            public ssl(CodeContext context, PythonSocket.socket sock, [DefaultParameterValue(null)] string keyfile, [DefaultParameterValue(null)] string certfile, [DefaultParameterValue(null)] X509Certificate2Collection certs) {
                 _context = context;
                 _sslStream = new SslStream(new NetworkStream(sock._socket, false), true, CertValidationCallback);
                 _socket = sock;
-                _certCollection = new X509Certificate2Collection();
                 _protocol = PythonSsl.PROTOCOL_SSLv23 | PythonSsl.OP_NO_SSLv2 | PythonSsl.OP_NO_SSLv3;
                 _validate = false;
+                _certCollection = certs ?? new X509Certificate2Collection();
             }
 
             internal ssl(CodeContext context,
@@ -2537,17 +2537,12 @@ namespace IronPython.Modules {
                [DefaultParameterValue(null)] string certfile,
                [DefaultParameterValue(PythonSsl.CERT_NONE)]int certs_mode,
                [DefaultParameterValue(PythonSsl.PROTOCOL_SSLv23 | PythonSsl.OP_NO_SSLv2 | PythonSsl.OP_NO_SSLv3)]int protocol,
-               string cacertsfile) {
+               string cacertsfile,
+               [DefaultParameterValue(null)] X509Certificate2Collection certs) {
                 if (sock == null) {
                     throw PythonOps.TypeError("expected socket object, got None");
                 }
-                if ((keyfile == null) != (certfile == null)) {
-                    throw PythonExceptions.CreateThrowable(
-                        PythonSsl.SSLError(context),
-                        "When key or certificate is provided both must be provided"
-                    );
-                }
-
+                
                 _serverSide = server_side;
                 bool validate;
                 _certsMode = certs_mode;
@@ -2572,17 +2567,22 @@ namespace IronPython.Modules {
 
                 _callback = callback;
 
+                if(certs != null) {
+                    _certCollection = certs;
+                }
+                
                 if (certfile != null) {
                     _cert = PythonSsl.ReadCertificate(context, certfile);
+                }
+                
+                if(cacertsfile != null) {
+                    _certCollection = new X509Certificate2Collection(new[] { PythonSsl.ReadCertificate(context, cacertsfile) });
                 }
 
                 _socket = sock;
 
                 EnsureSslStream(false);
-
-                _certCollection = cacertsfile != null ?
-                    new X509Certificate2Collection(new[] { PythonSsl.ReadCertificate(context, cacertsfile) }) :
-                    new X509Certificate2Collection();
+                                
                 _protocol = protocol;
                 _validate = validate;
                 _context = context;
@@ -2629,9 +2629,19 @@ namespace IronPython.Modules {
             }
 
             internal X509Certificate CertSelectLocal(object sender, string targetHost, X509CertificateCollection collection, X509Certificate remoteCertificate, string[] acceptableIssuers) {
-                if (collection.Count > 0) {
+                if (acceptableIssuers != null && acceptableIssuers.Length > 0 && collection != null && collection.Count > 0) {
+                    // Use the first certificate that is from an acceptable issuer.
+                    foreach (X509Certificate certificate in collection) {
+                        string issuer = certificate.Issuer;
+                        if (Array.IndexOf(acceptableIssuers, issuer) != -1)
+                            return certificate;
+                    }
+                }
+
+                if (collection != null && collection.Count > 0) {
                     return collection[0];
                 }
+
                 return null;
             }
 
@@ -2650,8 +2660,16 @@ namespace IronPython.Modules {
 
             private void ValidateCertificate(X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
                 chain = new X509Chain();
-                chain.ChainPolicy.ExtraStore.AddRange(_certCollection);
-                chain.Build((X509Certificate2)certificate);
+                X509Certificate2Collection certificates = new X509Certificate2Collection();
+                foreach(object cert in _certCollection) {
+                    if(cert is X509Certificate) {
+                        certificates.Add(new X509Certificate2((X509Certificate)cert));
+                    } else if(cert is X509Certificate2) {
+                        certificates.Add((X509Certificate2)cert);
+                    }
+                }
+                chain.ChainPolicy.ExtraStore.AddRange(certificates);
+                chain.Build(new X509Certificate2(certificate));
                 if (chain.ChainStatus.Length > 0) {
                     foreach (var elem in chain.ChainStatus) {
                         if (elem.Status == X509ChainStatusFlags.UntrustedRoot) {
@@ -2693,9 +2711,9 @@ namespace IronPython.Modules {
                 try {
                     if (_serverSide) {
 #if NETSTANDARD
-                        _sslStream.AuthenticateAsServerAsync(_cert, _certsMode == PythonSsl.CERT_REQUIRED, GetProtocolType(_protocol), false).Wait();
+                        _sslStream.AuthenticateAsServerAsync(_cert, _certsMode == PythonSsl.CERT_REQUIRED, SslProtocols.Default, false).Wait();
 #else
-                        _sslStream.AuthenticateAsServer(_cert, _certsMode == PythonSsl.CERT_REQUIRED, GetProtocolType(_protocol), false);
+                        _sslStream.AuthenticateAsServer(_cert, _certsMode == PythonSsl.CERT_REQUIRED, SslProtocols.Default, false);
 #endif
                     } else {
 
@@ -2705,9 +2723,9 @@ namespace IronPython.Modules {
                             collection.Add(_cert);
                         }
 #if NETSTANDARD
-                        _sslStream.AuthenticateAsClientAsync(_socket._hostName, collection, GetProtocolType(_protocol), false).Wait();
+                        _sslStream.AuthenticateAsClientAsync(_socket._hostName, collection, SslProtocols.Default, false).Wait();
 #else
-                        _sslStream.AuthenticateAsClient(_socket._hostName, collection, GetProtocolType(_protocol), false);
+                        _sslStream.AuthenticateAsClient(_socket._hostName, collection, SslProtocols.Default, false);
 #endif
                     }
                 } catch (AuthenticationException e) {

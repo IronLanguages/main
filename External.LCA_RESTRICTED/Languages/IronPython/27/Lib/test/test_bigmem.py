@@ -125,7 +125,6 @@ class StrTest(unittest.TestCase):
     def test_decodeascii(self, size):
         self.basic_encode_test(size, 'ascii', c='A')
 
-
     @bigmemtest(minsize=_2G, memuse=2)
     def test_endswith(self, size):
         SUBSTR = ' abc def ghi'
