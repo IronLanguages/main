@@ -79,6 +79,9 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
     lines = temp_file.readlines()
     temp_file.close()
     AreEqual(len(lines), 100)
+
+    os.unlink(test_file_name)
+    os.unlink(test_log_name)
     
 #------------------------------------------------------------------------------
 def test_cp17274():
@@ -862,7 +865,21 @@ def test_cp24677():
         pass
 
 
+def test_gh1357():
+    import os
+    filename = os.path.join(testpath.temporary_dir, 'gh1357.py')
+    dll = os.path.join(testpath.temporary_dir, "test.dll")
+    with open(filename, 'w') as f:
+        f.write('{(1,): None}')
 
+    import clr
+    try:
+        clr.CompileModules(dll, filename)
+    except:
+        Fail('Failed to compile the specified file')
+    finally:
+        os.unlink(filename)
+        os.unlink(dll)
 
 
 #------------------------------------------------------------------------------
