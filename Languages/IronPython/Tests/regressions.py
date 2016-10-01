@@ -862,7 +862,21 @@ def test_cp24677():
         pass
 
 
+def test_gh1357():
+    import os
+    filename = os.path.join(test.tempdir, 'gh1357.py')
+    dll = os.path.join(test.tempdir, "test.dll")
+    with open(filename, 'w') as f:
+        f.write('{(1,): None}')
 
+    import clr
+    try:
+        clr.CompileModules(dll, filename)
+    except:
+        Fail('Failed to compile the specified file')
+    finally:
+        os.unlink(filename)
+        os.unlink(dll)
 
 
 #------------------------------------------------------------------------------
