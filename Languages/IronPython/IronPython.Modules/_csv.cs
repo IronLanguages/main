@@ -696,7 +696,7 @@ in CSV format.")]
                             // End of input OR exception
                             if(_field.Length > 0 || _state == State.InQuotedField) {
                                 if(_reader._dialect.strict) {
-                                    throw MakeError("unexpceted end of data");
+                                    throw MakeError("unexpected end of data");
                                 } else {
                                     ParseSaveField();
                                     return true;

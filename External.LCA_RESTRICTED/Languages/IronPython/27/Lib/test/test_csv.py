@@ -255,12 +255,12 @@ class Test_Csv(unittest.TestCase):
 
     def test_read_eof(self):
         self._read_test(['a,"'], [['a', '']])
-        #self._read_test(['"a'], [['a']])
-        #self._read_test(['^'], [['\n']], escapechar='^')
-        #self.assertRaises(csv.Error, self._read_test, ['a,"'], [], strict=True)
-        #self.assertRaises(csv.Error, self._read_test, ['"a'], [], strict=True)
-        #self.assertRaises(csv.Error, self._read_test,
-        #                  ['^'], [], escapechar='^', strict=True)
+        self._read_test(['"a'], [['a']])
+        self._read_test(['^'], [['\n']], escapechar='^')
+        self.assertRaises(csv.Error, self._read_test, ['a,"'], [], strict=True)
+        self.assertRaises(csv.Error, self._read_test, ['"a'], [], strict=True)
+        self.assertRaises(csv.Error, self._read_test,
+                          ['^'], [], escapechar='^', strict=True)
 
     def test_read_escape(self):
         self._read_test(['a,\\b,c'], [['a', 'b', 'c']], escapechar='\\')
@@ -1164,16 +1164,16 @@ class TestLeaks(unittest.TestCase):
 ## class TestUnicode(unittest.TestCase):
 ##     def test_unicode_read(self):
 ##         import codecs
-##         f = codecs.EncodedFile(StringIO("Martin von L�wis,"
-##                                         "Marc Andr� Lemburg,"
+##         f = codecs.EncodedFile(StringIO("Martin von Löwis,"
+##                                         "Marc André Lemburg,"
 ##                                         "Guido van Rossum,"
-##                                         "Fran�ois Pinard\r\n"),
+##                                         "François Pinard\r\n"),
 ##                                data_encoding='iso-8859-1')
 ##         reader = csv.reader(f)
-##         self.assertEqual(list(reader), [[u"Martin von L�wis",
-##                                          u"Marc Andr� Lemburg",
+##         self.assertEqual(list(reader), [[u"Martin von Löwis",
+##                                          u"Marc André Lemburg",
 ##                                          u"Guido van Rossum",
-##                                          u"Fran�ois Pinardn"]])
+##                                          u"François Pinardn"]])
 
 def test_main():
     mod = sys.modules[__name__]
