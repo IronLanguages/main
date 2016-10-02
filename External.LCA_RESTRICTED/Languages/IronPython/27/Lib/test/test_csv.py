@@ -940,11 +940,12 @@ class TestDialectValidity(unittest.TestCase):
         self.assertEqual(str(cm.exception),
                          '"delimiter" must be an 1-character string')
 
-        mydialect.delimiter = u","
-        with self.assertRaises(csv.Error) as cm:
-            mydialect()
-        self.assertEqual(str(cm.exception),
-                         '"delimiter" must be string, not unicode')
+        if sys.platform != 'cli':
+            mydialect.delimiter = u","
+            with self.assertRaises(csv.Error) as cm:
+                mydialect()
+            self.assertEqual(str(cm.exception),
+                            '"delimiter" must be string, not unicode')
 
         mydialect.delimiter = 4
         with self.assertRaises(csv.Error) as cm:
@@ -1163,16 +1164,16 @@ class TestLeaks(unittest.TestCase):
 ## class TestUnicode(unittest.TestCase):
 ##     def test_unicode_read(self):
 ##         import codecs
-##         f = codecs.EncodedFile(StringIO("Martin von Löwis,"
-##                                         "Marc André Lemburg,"
+##         f = codecs.EncodedFile(StringIO("Martin von LÃ¶wis,"
+##                                         "Marc AndrÃ© Lemburg,"
 ##                                         "Guido van Rossum,"
-##                                         "François Pinard\r\n"),
+##                                         "FranÃ§ois Pinard\r\n"),
 ##                                data_encoding='iso-8859-1')
 ##         reader = csv.reader(f)
-##         self.assertEqual(list(reader), [[u"Martin von Löwis",
-##                                          u"Marc André Lemburg",
+##         self.assertEqual(list(reader), [[u"Martin von LÃ¶wis",
+##                                          u"Marc AndrÃ© Lemburg",
 ##                                          u"Guido van Rossum",
-##                                          u"François Pinardn"]])
+##                                          u"FranÃ§ois Pinardn"]])
 
 def test_main():
     mod = sys.modules[__name__]

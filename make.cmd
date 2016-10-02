@@ -64,6 +64,10 @@ goto :exit
 Test\test-ipy-tc.cmd /all /runlong
 goto :exit
 
+:testalldisabled
+Test\test-ipy-tc.cmd /all /runlong /rundisabled
+goto :exit
+
 :distclean
 msbuild /t:DistClean /p:BaseConfiguration=Release /verbosity:minimal /nologo
 msbuild /t:DistClean /p:BaseConfiguration=Debug /verbosity:minimal /nologo
