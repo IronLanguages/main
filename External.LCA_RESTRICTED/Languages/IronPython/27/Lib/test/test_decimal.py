@@ -552,16 +552,6 @@ class DecimalExplicitConstructionTest(unittest.TestCase):
         for i in range(200):
             x = random.expovariate(0.01) * (random.random() * 2.0 - 1.0)
             self.assertEqual(x, float(Decimal(x))) # roundtrip
-    
-    @unittest.skipIf(sys.platform != 'cli', 'System.Decimal is only on IronPython')
-    def test_explicit_from_System_Decimal(self):
-        import System
-        
-        #int
-        self.assertEqual(str(Decimal(System.Decimal.Parse('45'))), '45')
-
-        #float
-        self.assertEqual(str(Decimal(System.Decimal.Parse('45.34'))), '45.34')        
 
     def test_explicit_context_create_decimal(self):
 
