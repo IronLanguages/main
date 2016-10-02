@@ -212,7 +212,7 @@ namespace TestRunner
         private void RunTestForConsole(Test test) {
             lock (this) {
                 if (!_quiet && _verbose) {
-                    Console.Write("{0,-100}", test.Category.Name + " " + test.Name);
+                    Console.Write("{0,-80}", test.Category.Name + " " + test.Name);
                 }
             }
 
@@ -226,24 +226,24 @@ namespace TestRunner
             lock (this) {
                 if (!_quiet) {
                     if (_verbose) {
-                        const string resultFormat = "{0,-10}";
+                        const string resultFormat = "{0,-25}";
                         var originalColor = Console.ForegroundColor;
                         switch (result.Status) {
                             case TestResultStatus.Skipped:
                                 Console.ForegroundColor = ConsoleColor.Yellow;
-                                Console.Write(resultFormat, "SKIPPED");
+                                Console.Write(resultFormat, test.Disabled && _runDisabled ? "SKIPPED (DISABLED)" : "SKIPPED");
                                 break;
                             case TestResultStatus.TimedOut:
                                 Console.ForegroundColor = ConsoleColor.Red;
-                                Console.Write(resultFormat, "TIMEOUT");
+                                Console.Write(resultFormat, test.Disabled && _runDisabled ? "TIMEOUT (DISABLED)" : "TIMEOUT");
                                 break;
                             case TestResultStatus.Passed:
                                 Console.ForegroundColor = ConsoleColor.Green;
-                                Console.Write(resultFormat, "PASSED");
+                                Console.Write(resultFormat, test.Disabled && _runDisabled ? "PASSED (DISABLED)" : "PASSED");
                                 break;
                             case TestResultStatus.Failed:
                                 Console.ForegroundColor = ConsoleColor.Red;
-                                Console.Write(resultFormat, "FAILED");
+                                Console.Write(resultFormat, test.Disabled && _runDisabled ? "FAILED (DISABLED)" : "FAILED");
                                 break;
                             case TestResultStatus.Disabled:
                                 Console.ForegroundColor = ConsoleColor.Blue;
