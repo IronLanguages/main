@@ -656,28 +656,28 @@ namespace IronPython.Runtime
         public PythonType EnsureModuleException(object key, PythonDictionary dict, string name, string module) {
             return (PythonType)(dict[name] = GetOrCreateModuleState(
                 key,
-                () => PythonExceptions.CreateSubType(this, PythonExceptions.Exception, name, module, "", PythonType.DefaultMakeException)
+                () => PythonExceptions.CreateSubType(this, PythonExceptions.Exception, name, module, null, PythonType.DefaultMakeException)
             ));
         }
 
         public PythonType EnsureModuleException(object key, PythonType baseType, PythonDictionary dict, string name, string module) {
             return (PythonType)(dict[name] = GetOrCreateModuleState(
                 key,
-                () => PythonExceptions.CreateSubType(this, baseType, name, module, "", PythonType.DefaultMakeException)
+                () => PythonExceptions.CreateSubType(this, baseType, name, module, null, PythonType.DefaultMakeException)
             ));
         }
 
         public PythonType EnsureModuleException(object key, PythonType baseType, Type underlyingType, PythonDictionary dict, string name, string module, Func<string, Exception> exceptionMaker) {
             return (PythonType)(dict[name] = GetOrCreateModuleState(
                 key,
-                () => PythonExceptions.CreateSubType(this, baseType, underlyingType, name, module, "", exceptionMaker)
+                () => PythonExceptions.CreateSubType(this, baseType, underlyingType, name, module, null, exceptionMaker)
             ));
         }
 
         public PythonType EnsureModuleException(object key, PythonType[] baseTypes, Type underlyingType, PythonDictionary dict, string name, string module) {
             return (PythonType)(dict[name] = GetOrCreateModuleState(
                 key,
-                () => PythonExceptions.CreateSubType(this, baseTypes, underlyingType, name, module, "", PythonType.DefaultMakeException)
+                () => PythonExceptions.CreateSubType(this, baseTypes, underlyingType, name, module, null, PythonType.DefaultMakeException)
             ));
         }
 
