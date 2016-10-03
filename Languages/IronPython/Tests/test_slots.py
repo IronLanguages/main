@@ -42,8 +42,8 @@ def test_basic():
     
     AreEqual(C.__dict__['a'], C.a)
     
-    #C.__dict__['a'].__set__(x, 3)  # bug 364459
-    #AreEqual(4, C.a.__get__(x))
+    C.__dict__['a'].__set__(x, 3)  # bug 364459
+    AreEqual(3, C.a.__get__(x))
 
 def test_remove_slots_afterwards():
     class C(object):
