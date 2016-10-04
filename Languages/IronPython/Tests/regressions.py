@@ -320,7 +320,7 @@ def test_reraise_backtrace_cp20051():
         # CPython reports 2 frames, IroPython includes the re-raise and reports 3
         Assert(len(exc2_list) >= 2)
 
-@skip("silverlight")
+@skip("silverlight", "posix")
 def test_winreg_error_cp17050():
     import _winreg
     AreEqual(_winreg.error, WindowsError)
@@ -451,6 +451,8 @@ def test_type_delegate_conversion():
 
 
 def test_module_alias_cp19656():
+    old_path = [x for x in sys.path]
+    sys.path.append(testpath.public_testdir);
     stuff_mod = path_combine(testpath.public_testdir, "stuff.py")
     check_mod = path_combine(testpath.public_testdir, "check.py")
     
@@ -464,18 +466,20 @@ def test_module_alias_cp19656():
         import os
         os.unlink(stuff_mod)
         os.unlink(check_mod)
+        sys.path = old_path
 
 def test_cp24691():
     import os
     pwd = os.getcwd()
     AreEqual(os.path.abspath("bad:"),
-             os.getcwd() + "\\bad:")
+             os.path.join(os.getcwd(), "bad:"))
 
 def test_cp24690():
     import errno
     AreEqual(errno.errorcode[2],
              "ENOENT")
 
+@skip("posix")
 def test_cp24692():
     import errno, os, stat
     dir_name = "cp24692_testdir"
@@ -670,11 +674,12 @@ def test_cp23545():
     AreEqual(ClassWithDefaultField().Field, 10)
 
 def test_cp20174():
-    cp20174_path = testpath.public_testdir + r"\cp20174"
+    old_path = [x for x in sys.path]
+
+    sys.path.append(testpath.public_testdir)
+    cp20174_path = path_combine(testpath.public_testdir, "cp20174")
     
     try:
-        os.mkdir(cp20174_path)
-        
         cp20174_init = path_combine(cp20174_path, "__init__.py")
         write_to_file(cp20174_init, "import a")
         
@@ -696,6 +701,7 @@ class C:
         for x in os.listdir(cp20174_path):
             os.unlink(path_combine(cp20174_path, x))
         os.rmdir(cp20174_path)
+        sys.path = old_path
 
 @skip("win32")
 def test_cp20370():
@@ -773,13 +779,13 @@ def test_cp24169():
     
     orig_syspath = [x for x in sys.path]
     try:
-        sys.path.append(os.getcwd() + r"\encoded_files")
+        sys.path.append(os.path.join(os.getcwd(), "encoded_files"))
         import cp20472 #no encoding specified and has non-ascii characters
         raise Exception("Line above should had thrown!")
     except SyntaxError, e:
         Assert(e.msg.startswith("Non-ASCII character '\\xcf' in file"))
         Assert(e.msg.endswith("on line 1, but no encoding declared; see http://www.python.org/peps/pep-0263.html for details"))
-        Assert("\\encoded_files\\cp20472.py" in e.msg, e.msg)
+        Assert("%sencoded_files%scp20472.py" % (os.sep, os.sep) in e.msg, e.msg)
     finally:
         sys.path = orig_syspath
 

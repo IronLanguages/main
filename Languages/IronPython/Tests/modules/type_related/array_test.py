@@ -510,8 +510,9 @@ def test_coverage():
     #--Negative
     AssertError(OverflowError, lambda: 4567206470L*a)
     AssertError(OverflowError, lambda: a*4567206470L)
-    AssertError(MemoryError,   lambda: 2147483646L*a)
-    AssertError(MemoryError,   lambda: a*2147483646L)
+    if not is_posix: # these do not fail on Mono
+        AssertError(MemoryError,   lambda: 2147483646L*a)
+        AssertError(MemoryError,   lambda: a*2147483646L)
     
     #--Positive
     a = array.array('b', 'abc')

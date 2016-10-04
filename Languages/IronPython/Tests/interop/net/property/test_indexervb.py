@@ -17,7 +17,7 @@ Named indexer
 '''
 #------------------------------------------------------------------------------
 from iptest.assert_util import *
-skiptest("silverlight")
+skiptest("silverlight", "posix")
 add_clr_assemblies("indexerdefinitionsvb", "typesamples")
 
 from Merlin.Testing import *

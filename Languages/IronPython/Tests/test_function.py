@@ -58,7 +58,7 @@ def CreateSubType(t):
     class SubType(t): pass
     return SubType
     
-if is_silverlight==False:
+if not is_silverlight:
     AssertErrorWithMatch(TypeError, ".*\n?.* is not an acceptable base type", CreateSubType, type(foo))
 else:
     try:

@@ -36,7 +36,7 @@ def directory_exists(path):
     if sys.platform=="win32":
         return os.access(path, os.F_OK)
     else:
-        try:    
+        try:
             os.stat(path)
             return True
         except: 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -209,6 +210,57 @@ namespace TestRunner
             return failures.Count;
         }
 
+        private bool ConditionMatched(Test test) {
+            bool result = true;
+            if(!string.IsNullOrEmpty(test.Condition)) {
+                try {
+                    result = EvaluateExpression(test.Condition);
+                } catch(Exception ex) {
+                    Console.WriteLine("Error evaluating test condition '{0}', will run the test anyway: {1}", test.Condition, ex.Message);
+                    result = true;
+                }
+            }
+
+            return result;
+        }
+
+        private bool EvaluateExpression(string expression) {
+            var dummy = new DataTable();
+            string filter = expression;
+            var replacements = new Dictionary<string, string>() {
+                // variables
+                { "$(OS)", Environment.OSVersion.Platform.ToString() },
+
+                // operators
+                { "==", "=" },
+                { "||", "OR" },
+                { "\"\"", "\"" },
+                { "\"", "'" },
+                { "&&", "AND" },
+                { "!=", "<>" }
+            };
+
+            foreach (var replacement in replacements) {
+                expression = expression.Replace(replacement.Key, replacement.Value);
+            }
+
+            try {
+                object res = dummy.Compute(expression, null);
+                if (res is bool) {
+                    return (bool)res;
+                }
+            } catch (EvaluateException ex) {
+                if (ex.Message.StartsWith("The expression contains undefined function call", StringComparison.Ordinal)) {
+                    throw new Exception("A variable used in the filter expression is not defined");
+                }
+                throw new Exception(string.Format("Invalid filter: {0}", ex.Message));
+            } catch(SyntaxErrorException ex) {
+                throw new Exception(string.Format("Invalid filter: {0}", ex.Message));
+            }
+
+            throw new Exception(string.Format("Invalid filter, does not evaluate to true or false: {0}", filter));
+        }
+
         private void RunTestForConsole(Test test) {
             lock (this) {
                 if (!_quiet && _verbose) {
@@ -217,10 +269,15 @@ namespace TestRunner
             }
 
             TestResult result = null;
-            try {
-                result = RunTest(test);
-            } catch (Exception e) {
-                result = new TestResult(test, TestResultStatus.Failed, 0, new List<string> { e.ToString() });
+
+            if(!string.IsNullOrEmpty(test.Condition) && !ConditionMatched(test)) {
+                result = new TestResult(test, TestResultStatus.SkippedCondition, 0, null);
+            } else {
+                try {
+                    result = RunTest(test);
+                } catch (Exception e) {
+                    result = new TestResult(test, TestResultStatus.Failed, 0, new List<string> { e.ToString() });
+                }
             }
 
             lock (this) {
@@ -248,6 +305,10 @@ namespace TestRunner
                             case TestResultStatus.Disabled:
                                 Console.ForegroundColor = ConsoleColor.Blue;
                                 Console.Write(resultFormat, "DISABLED");
+                                break;
+                            case TestResultStatus.SkippedCondition:
+                                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                                Console.Write(resultFormat, "SKIPPED (CONDITION)");
                                 break;
                         }
                         Console.ForegroundColor = originalColor;
@@ -277,9 +338,10 @@ namespace TestRunner
                         Console.WriteLine("{0} {1}={2}", _isUnix ? "export" : "SET", envVar.Name, envVar.Value);
                     }
                 }
+
                 if(_isUnix) {
                     Console.WriteLine("cd {0}", test.WorkingDirectory.Replace("\\", "/"));
-                    Console.WriteLine("{0} {1}", test.Filename.Replace(".bat", ".sh"), test.Arguments.Replace("\\", "/"));
+                    Console.WriteLine("{0} {1}", test.Filename.Replace(".bat", ".sh").Replace("\\", "/"), test.Arguments.Replace("\\", "/"));
                 } else {
                     Console.WriteLine("CD /D {0}", test.WorkingDirectory);
                     Console.WriteLine("{0} {1}", test.Filename, test.Arguments);

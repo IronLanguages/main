@@ -321,7 +321,7 @@ print final"""
             Assert('-> print final\n' in out)
             Assert('(Pdb) ' in out)
         finally:
-            nt.unlink('temp.py')
+            os.unlink('temp.py')
 
 
 @skip("win32")
@@ -426,7 +426,7 @@ f()
         import cp24381
     finally:
         sys.settrace(orig_sys_trace_func)
-        nt.unlink(cp24381_file_name)
+        os.unlink(cp24381_file_name)
 
     AreEqual(CP24381_MESSAGES,
              ['call', None, 'line', None, 'line', None, 'line', None, 'line', 

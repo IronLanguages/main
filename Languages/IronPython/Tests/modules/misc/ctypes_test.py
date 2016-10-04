@@ -27,6 +27,7 @@ def test_cp34892():
         # there should be no exception of any kind
         Fail("Unexpected exception: %s" % ex)
 
+@skip("posix")
 def test_cp35326():
     GetStdHandle = ctypes.windll.kernel32.GetStdHandle
     GetStdHandle.argtypes = [ ctypes.wintypes.DWORD, ]

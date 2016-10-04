@@ -14,12 +14,12 @@
 #####################################################################################
 
 
-""" This provides a more convenient harness for running this
-    benchmark and collecting separate timings for each component.
+""" This provides a more convenieos harness for running this
+    benchmark and collecting separate timings for each componeos.
 """
 
-import sys, nt
-sys.path.append([nt.environ[x] for x in nt.environ.keys() if x.lower() == "dlr_root"][0] + "\\External.LCA_RESTRICTED\\Languages\\IronPython\\27\\Lib\\Test")
+import sys, os
+sys.path.append(os.path.join([os.environ[x] for x in os.environ.keys() if x.lower() == "dlr_root"][0], "External.LCA_RESTRICTED", "Languages", "IronPython", "27", "Lib", "test"))
 
 def test_main(type="short"):
     import pystone

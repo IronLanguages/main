@@ -13,7 +13,7 @@
 #
 #####################################################################################
 
-import nt
+import os
 import sys
 import rulediff
 import traceback
@@ -33,8 +33,8 @@ def get_sbs_tests():
         if System.IntPtr.Size == 8:
             not_run_tests = ["sbs_exceptions.py"]	
 
-    import nt
-    return [x[:-3] for x in nt.listdir(compat_test_path) 
+    import os
+    return [x[:-3] for x in os.listdir(compat_test_path)
                    if x.startswith("sbs_") and x.endswith(".py") and (x.lower() not in not_run_tests)]
 
 success = failure = compfail = 0
