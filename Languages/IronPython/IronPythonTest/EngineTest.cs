@@ -36,7 +36,7 @@ using System.Security.Policy;
 #endif
 using System.Text;
 using System.Threading;
-#if FEATURE_WPF && !__MonoCS__
+#if FEATURE_WPF
 using System.Windows.Markup;
 #endif
 
@@ -53,7 +53,7 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-#if FEATURE_WPF && !__MonoCS__
+#if FEATURE_WPF
 using DependencyObject = System.Windows.DependencyObject;
 #endif
 
@@ -95,7 +95,7 @@ namespace IronPythonTest {
     public delegate int RefIntDelegate(ref int arg);
     public delegate T GenericDelegate<T, U, V>(U arg1, V arg2);
 
-#if FEATURE_WPF && !__MonoCS__
+#if FEATURE_WPF
     [ContentProperty("Content")]
     public class XamlTestObject : DependencyObject {
         public event IntIntDelegate Event;

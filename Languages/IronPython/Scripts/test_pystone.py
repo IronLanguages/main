@@ -14,8 +14,8 @@
 #####################################################################################
 
 
-""" This provides a more convenieos harness for running this
-    benchmark and collecting separate timings for each componeos.
+""" This provides a more convenient harness for running this
+    benchmark and collecting separate timings for each component.
 """
 
 import sys, os

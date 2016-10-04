@@ -252,8 +252,9 @@ def AssertErrorWithMessage(exc, expectedMessage, func, *args, **kwargs):
     Assert(expectedMessage, "expectedMessage cannot be null")
     try:   func(*args, **kwargs)
     except exc, inst:
-        Assert(expectedMessage == inst.__str__().replace('\r', ''), \
-               "Exception %r message (%r) does not match %r" % (type(inst), inst.__str__(), expectedMessage))
+        msg = inst.__str__().replace('\r', '')
+        Assert(expectedMessage == msg, \
+               "Exception %r message (%r) does not match %r" % (type(inst), msg, expectedMessage))
     else:  Assert(False, "Expected %r but got no exception" % exc)
 
 def AssertErrorWithPartialMessage(exc, expectedMessage, func, *args, **kwargs):

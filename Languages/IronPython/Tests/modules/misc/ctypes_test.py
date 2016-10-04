@@ -37,6 +37,7 @@ def test_cp35326():
     except Exception as ex:
         Fail("Unexpected exception: %s" % ex)
 
+@skip("posix")
 def test_gh951():
     from ctypes import *
     try:
