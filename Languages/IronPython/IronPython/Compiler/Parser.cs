@@ -1792,7 +1792,7 @@ namespace IronPython.Compiler {
                 if (!MaybeEat(TokenKind.Indent)) {
                     // no indent?  report the indentation error.
                     if (cur.Token.Kind == TokenKind.Dedent) {
-                        ReportSyntaxError(_lookahead.Span.Start, _lookahead.Span.End, "expected an indented block", ErrorCodes.SyntaxError | ErrorCodes.IncompleteStatement);
+                        ReportSyntaxError(_lookahead.Span.Start, _lookahead.Span.End, Resources.ExpectedIndentation, ErrorCodes.IndentationError | ErrorCodes.IncompleteStatement);
                     } else {
                         ReportSyntaxError(cur, ErrorCodes.IndentationError);
                     }
