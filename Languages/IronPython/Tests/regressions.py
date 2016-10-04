@@ -648,7 +648,6 @@ def cp22692_helper(source, flags):
         retVal.append(type(err2))
     return retVal 
 
-@skip("cli", "silverlight")
 def test_cp22692():
     AreEqual(cp22692_helper("if 1:", 0x200),
              [SyntaxError, IndentationError])
