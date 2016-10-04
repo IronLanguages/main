@@ -253,6 +253,7 @@ def AssertErrorWithMessage(exc, expectedMessage, func, *args, **kwargs):
     try:   func(*args, **kwargs)
     except exc, inst:
         msg = inst.__str__().replace('\r', '')
+        expectedMessage = expectedMessage.replace('\r', '')
         Assert(expectedMessage == msg, \
                "Exception %r message (%r) does not match %r" % (type(inst), msg, expectedMessage))
     else:  Assert(False, "Expected %r but got no exception" % exc)
