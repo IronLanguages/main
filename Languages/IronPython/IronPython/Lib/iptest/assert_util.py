@@ -123,7 +123,7 @@ else:
         if is_cli: 
             ipython_executable  = sys.executable
             if is_posix:
-				cpython_executable  = '/usr/bin/python2.7'
+                cpython_executable  = '/usr/bin/python2.7'
             else:
                 cpython_executable  = path_combine(external_dir, '27/python.exe')
         else: 
