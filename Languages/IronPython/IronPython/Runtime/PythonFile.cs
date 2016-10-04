@@ -1070,6 +1070,104 @@ namespace IronPython.Runtime {
             TranslateAndValidateMode(mode, out fmode, out access, out seekEnd);
         }
 
+        private static bool ValidateModeWindows(string mode) {
+            bool encoding = false;
+            mode = mode.TrimStart();
+            int index = 0;
+
+            if (mode[index] != 'r' && mode[index] != 'w' && mode[index] != 'a') { // must start with one of these
+                return false;
+            }
+
+            index++;
+
+            string[] needles = { "+", "T", "D" };
+            foreach (string needle in needles) {
+                int needleCount = (mode.Length - mode.Replace(needle, "").Length) / needle.Length;
+                if (needleCount > 1) {
+                    return false;
+                }
+            }
+
+            Tuple<string, string>[] pairs = new Tuple<string, string>[] {
+                new Tuple<string, string>("b", "t"),
+                new Tuple<string, string>("c", "n"),
+                new Tuple<string, string>( "S", "R")
+            };
+
+            foreach (Tuple<string, string> pair in pairs) {
+                int needleCount = ((mode.Length - mode.Replace(pair.Item1, "").Length) / pair.Item1.Length) +
+                    ((mode.Length - mode.Replace(pair.Item2, "").Length) / pair.Item2.Length);
+                if (needleCount > 1) {
+                    return false;
+                }
+            }
+
+            char[] allowed = { 'b', 't', 'c', 'n', 'S', 'R', '+', 'T', 'D' };
+
+            while (index < mode.Length) {
+                if (mode[index] == ' ' || mode[index] == 'N') { // ignore spaces and N 
+                    index++;
+                    continue;
+                }
+
+                if (Array.IndexOf(allowed, mode[index]) >= 0) {
+                    index++;
+                    continue;
+                }
+                
+                if (mode[index] == ',') {
+                    index++;
+                    encoding = true;
+                    break;
+                }
+                return false; // found an invalid char 
+            }
+
+            if (encoding) {
+                string[] e = { "UTF-8", "UTF-16LE", "UNICODE" };
+                while (mode[index] == ' ') {
+                    ++index;
+                }
+                // find 'ccs ='
+                if (mode.Substring(index, 3) != "ccs") {
+                    return false;
+                }
+                
+                index += 3;
+                while (mode[index] == ' ') {
+                    ++index;
+                }
+                
+                if (mode[index] != '=') {
+                    return false;
+                }
+                
+                while (mode[index] == ' ') {
+                    ++index;
+                }
+
+                int enc;
+                for (enc = 0; enc < e.Length; ++enc) {
+                    int l = e[enc].Length;
+                    if (string.Compare(mode.Substring(index, l), e[enc]) == 0) {
+                        index += l; // found a valid encoding 
+                        break;
+                    }
+                }
+
+                if (enc == e.Length)
+                    return false;
+            }
+
+            // skip trailing spaces 
+            while (index < mode.Length && mode[index] == ' ') {
+                ++index;
+            }
+
+            return index == mode.Length; // must be at the end of the string 
+        }
+
         private static void TranslateAndValidateMode(string mode, out FileMode fmode, out FileAccess faccess, out bool seekEnd) {
             if (mode.Length == 0) {
                 throw PythonOps.ValueError("empty mode string");
@@ -1078,16 +1176,21 @@ namespace IronPython.Runtime {
             // remember the original mode for error reporting
             string inMode = mode;
 
+            // Replace U with rb like CPython
             if (mode.IndexOf('U') != -1) {
                 mode = mode.Replace("U", String.Empty);
                 if (mode.Length == 0) {
-                    mode = "r";
+                    mode = "rb";
                 } else if (mode == "+") {
-                    mode = "r+";
+                    mode = "rb+";
                 } else if (mode[0] == 'w' || mode[0] == 'a') {
                     throw PythonOps.ValueError("universal newline mode can only be used with modes starting with 'r'");
-                } else {
+                } else if(mode.IndexOf('b') >= 0) {
                     mode = "r" + mode;
+                } else if(mode.IndexOf('r') >= 0) {
+                    mode = mode + "b";
+                } else {
+                    mode = "rb" + mode;
                 }
             }
 
@@ -1099,6 +1202,13 @@ namespace IronPython.Runtime {
                 case 'a': fmode = FileMode.Append; break;
                 default:
                     throw PythonOps.ValueError("mode string must begin with one of 'r', 'w', 'a' or 'U', not '{0}'", inMode);
+            }
+
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT || Environment.OSVersion.Platform == PlatformID.Win32Windows) {
+                // CPython on Windows does some extra mode checks
+                if (!ValidateModeWindows(mode)) {
+                    throw PythonOps.ValueError("Invalid mode ('{0}')", mode);
+                }
             }
 
             // process +
@@ -1786,6 +1896,7 @@ namespace IronPython.Runtime {
 
 #if FEATURE_NATIVE
         public bool isatty() {
+            ThrowIfClosed();
             return IsConsole && !isRedirected();
         }
 
