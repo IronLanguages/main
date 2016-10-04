@@ -46,7 +46,13 @@ skiptest("win32")
 
 import System
 import clr
-import nt, os
+
+if is_posix:
+    import posix as _os
+else:
+    import nt as _os
+
+import os
 
 clr.AddReference("Microsoft.Dynamic")
 
@@ -651,7 +657,7 @@ def test_neg_type___clrtype__():
                                   type.__clrtype__, 3.14)
                            
     for x in [None, [], (None,), Exception("message"), 3.14, 3L, 0, 5j, "string", u"string",
-              True, System, nt, os, exit, lambda: 3.14]:
+              True, System, _os, os, exit, lambda: 3.14]:
         AssertError(TypeError, 
                     type.__clrtype__, x)
 

@@ -134,7 +134,10 @@ def run_csc(args):
 
 def run_vbc(args):
     import file_util
-    return run_tool(file_util.path_combine(get_clr_dir(),"vbc.exe"), args)
+    if is_posix:
+        return run_tool("/usr/bin/vbnc", args)
+    else:
+        return run_tool(file_util.path_combine(get_clr_dir(),"vbc.exe"), args)
 
 def run_ilasm(args):
     import file_util

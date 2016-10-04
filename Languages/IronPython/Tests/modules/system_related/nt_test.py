@@ -14,7 +14,7 @@
 #####################################################################################
 
 from iptest.assert_util import *
-skiptest("silverlight")
+skiptest("silverlight", "posix")
 from iptest.file_util import *
 import _random
 from exceptions import IOError

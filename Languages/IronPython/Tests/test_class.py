@@ -3689,7 +3689,8 @@ def test_cp22832():
         
     Assert("KOldStuff" in dir(KNew))
 
-@skip("silverlight")
+# mono's GC apparently behaves differently...
+@skip("silverlight", "posix")
 def test_cp23564():
     global A
     A = 0

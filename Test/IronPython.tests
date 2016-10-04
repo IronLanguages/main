@@ -106,7 +106,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>test_complex_20</Name>
@@ -320,7 +320,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Scripts</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Scripts</WorkingDirectory>
         </Test>
         <Test>
           <Name>test_compiler_20</Name>
@@ -342,7 +342,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>test_peverify_20</Name>
@@ -353,7 +353,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
       </Tests>
     </TestCategory>
@@ -366,7 +366,7 @@
       <Tests>
         <Test>
           <Name>sbs_builtin_20</Name>
-          <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
+          <Filename>%DLR_ROOT%\Test\scripts\_runip_sbs.bat</Filename>
           <Arguments>sbs_builtin.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
@@ -377,7 +377,7 @@
         </Test>
         <Test>
           <Name>sbs_parse_string_20</Name>
-          <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
+          <Filename>%DLR_ROOT%\Test\scripts\_runip_sbs.bat</Filename>
           <Arguments>sbs_parse_string.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
@@ -393,7 +393,7 @@
       <Tests>
         <Test>
           <Name>sbs_class_compare_20</Name>
-          <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
+          <Filename>%DLR_ROOT%\Test\scripts\_runip_sbs.bat</Filename>
           <Arguments>sbs_class_compare.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>true</LongRunning>
@@ -415,7 +415,7 @@
         </Test>
         <Test>
           <Name>sbs_simple_compare_20</Name>
-          <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
+          <Filename>%DLR_ROOT%\Test\scripts\_runip_sbs.bat</Filename>
           <Arguments>sbs_simple_compare.py</Arguments>
           <MaxDuration>1800000</MaxDuration>
           <LongRunning>true</LongRunning>
@@ -431,7 +431,7 @@
       <Tests>
         <Test>
           <Name>sbs_exceptions_define_20</Name>
-          <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
+          <Filename>%DLR_ROOT%\Test\scripts\_runip_sbs.bat</Filename>
           <Arguments>sbs_exceptions\define.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
@@ -442,7 +442,7 @@
         </Test>
         <Test>
           <Name>sbs_exceptions_for_loop_20</Name>
-          <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
+          <Filename>%DLR_ROOT%\Test\scripts\_runip_sbs.bat</Filename>
           <Arguments>sbs_exceptions\for_loop.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
@@ -453,7 +453,7 @@
         </Test>
         <Test>
           <Name>sbs_exceptions_if_false_20</Name>
-          <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
+          <Filename>%DLR_ROOT%\Test\scripts\_runip_sbs.bat</Filename>
           <Arguments>sbs_exceptions\if_false.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
@@ -464,7 +464,7 @@
         </Test>
         <Test>
           <Name>sbs_exceptions_if_true_20</Name>
-          <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
+          <Filename>%DLR_ROOT%\Test\scripts\_runip_sbs.bat</Filename>
           <Arguments>sbs_exceptions\if_true.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
@@ -475,7 +475,7 @@
         </Test>
         <Test>
           <Name>sbs_exceptions_try_else_20</Name>
-          <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
+          <Filename>%DLR_ROOT%\Test\scripts\_runip_sbs.bat</Filename>
           <Arguments>sbs_exceptions\try_else.py</Arguments>
           <MaxDuration>900000</MaxDuration>
           <LongRunning>true</LongRunning>
@@ -486,7 +486,7 @@
         </Test>
         <Test>
           <Name>sbs_exceptions_try_except1_20</Name>
-          <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
+          <Filename>%DLR_ROOT%\Test\scripts\_runip_sbs.bat</Filename>
           <Arguments>sbs_exceptions\try_except1.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
@@ -497,7 +497,7 @@
         </Test>
         <Test>
           <Name>sbs_exceptions_try_except2_20</Name>
-          <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
+          <Filename>%DLR_ROOT%\Test\scripts\_runip_sbs.bat</Filename>
           <Arguments>sbs_exceptions\try_except2.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
@@ -508,7 +508,7 @@
         </Test>
         <Test>
           <Name>sbs_exceptions_try_except3_20</Name>
-          <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
+          <Filename>%DLR_ROOT%\Test\scripts\_runip_sbs.bat</Filename>
           <Arguments>sbs_exceptions\try_except3.py</Arguments>
           <MaxDuration>900000</MaxDuration>
           <LongRunning>true</LongRunning>
@@ -519,7 +519,7 @@
         </Test>
         <Test>
           <Name>sbs_exceptions_try_finally1_20</Name>
-          <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
+          <Filename>%DLR_ROOT%\Test\scripts\_runip_sbs.bat</Filename>
           <Arguments>sbs_exceptions\try_finally1.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
@@ -530,7 +530,7 @@
         </Test>
         <Test>
           <Name>sbs_exceptions_try_finally2_20</Name>
-          <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
+          <Filename>%DLR_ROOT%\Test\scripts\_runip_sbs.bat</Filename>
           <Arguments>sbs_exceptions\try_finally2.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
@@ -541,7 +541,7 @@
         </Test>
         <Test>
           <Name>sbs_exceptions_try_finally3_20</Name>
-          <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
+          <Filename>%DLR_ROOT%\Test\scripts\_runip_sbs.bat</Filename>
           <Arguments>sbs_exceptions\try_finally3.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
@@ -552,7 +552,7 @@
         </Test>
         <Test>
           <Name>sbs_exceptions_while_loop_20</Name>
-          <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
+          <Filename>%DLR_ROOT%\Test\scripts\_runip_sbs.bat</Filename>
           <Arguments>sbs_exceptions\while_loop.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
@@ -568,7 +568,7 @@
       <Tests>
         <Test>
           <Name>sbs_func_args_20</Name>
-          <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
+          <Filename>%DLR_ROOT%\Test\scripts\_runip_sbs.bat</Filename>
           <Arguments>sbs_func_args.py</Arguments>
           <MaxDuration>1500000</MaxDuration>
           <LongRunning>true</LongRunning>
@@ -579,7 +579,7 @@
         </Test>
         <Test>
           <Name>sbs_simple_ops_20</Name>
-          <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
+          <Filename>%DLR_ROOT%\Test\scripts\_runip_sbs.bat</Filename>
           <Arguments>sbs_simple_ops.py</Arguments>
           <MaxDuration>1500000</MaxDuration>
           <LongRunning>true</LongRunning>
@@ -590,7 +590,7 @@
         </Test>
         <Test>
           <Name>sbs_true_division_20</Name>
-          <Filename>%DLR_ROOT%\test\scripts\_runip_sbs.bat</Filename>
+          <Filename>%DLR_ROOT%\Test\scripts\_runip_sbs.bat</Filename>
           <Arguments>sbs_true_division.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
@@ -613,7 +613,7 @@
           <Disabled>true</Disabled> <!-- Too many errors -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>test_interactive_hosting_20</Name>
@@ -663,7 +663,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
       </Tests>
     </TestCategory>
@@ -679,7 +679,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>test_ipyc_20</Name>
@@ -816,7 +816,7 @@
           <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>test_exceptionconverter_20</Name>
@@ -975,7 +975,7 @@
           <Disabled>true</Disabled> <!-- The files for this benchmark are not in the repo -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Scripts</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Scripts</WorkingDirectory>
         </Test>
       </Tests>
     </TestCategory>
@@ -991,7 +991,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Scripts</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Scripts</WorkingDirectory>
         </Test>
       </Tests>
     </TestCategory>
@@ -1007,18 +1007,18 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>RunAgainstCpy_20</Name>
-          <Filename>%DLR_ROOT%\languages\ironpython\internal\cpy.bat</Filename>
+          <Filename>%DLR_ROOT%\Languages\IronPython\Internal\cpy.bat</Filename>
           <Arguments>RunAgainstCpy.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>true</LongRunning>
           <Disabled>true</Disabled> <!-- Not sure of the value of this test. -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>test_assert_20</Name>
@@ -1502,7 +1502,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>test_with_20</Name>
@@ -1573,7 +1573,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>test_memory_20</Name>
@@ -1633,7 +1633,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>test_conditional_20</Name>
@@ -1680,6 +1680,7 @@
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
+          <Condition>'$(OS)' != 'Unix'</Condition>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib\site-packages\adodbapi\tests</WorkingDirectory>
@@ -4116,6 +4117,7 @@
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
+          <Condition>'$(OS)' != 'Unix'</Condition>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -4732,6 +4734,7 @@
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
+          <Condition>'$(OS)' != 'Unix'</Condition>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -4743,6 +4746,7 @@
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>
+          <Condition>'$(OS)' != 'Unix'</Condition>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -4816,7 +4820,7 @@
         <Test>
           <Name>test_zipfile_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>test\test_zipfile.py</Arguments>
+          <Arguments>-X:Frames test\test_zipfile.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- The tests do not properly clean up temp files inall cases, which causes them to fail. -->
@@ -4827,7 +4831,7 @@
         <Test>
           <Name>test_zipfile64_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>test\test_zipfile64.py</Arguments>
+          <Arguments>-X:Frames test\test_zipfile64.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled>
@@ -4841,7 +4845,7 @@
           <Arguments>test\test_zipimport.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled>
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
@@ -4871,7 +4875,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>com_dispevents_py</Name>
@@ -4882,7 +4886,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>true</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>com_dlrcomserver_py</Name>
@@ -4893,7 +4897,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>true</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>com_excel_py</Name>
@@ -4904,7 +4908,7 @@
           <Disabled>true</Disabled> <!-- requires Microsoft Excel -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>com_InOutParams</Name>
@@ -4915,7 +4919,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>true</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>com_msagent_py</Name>
@@ -4926,7 +4930,7 @@
           <Disabled>true</Disabled> <!-- requires Microsoft Agent -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>com_MultiOffice_py</Name>
@@ -4937,7 +4941,7 @@
           <Disabled>true</Disabled> <!-- requires Microsoft Office -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>com_MultipleParams_py</Name>
@@ -4948,7 +4952,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>true</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>com_OptionalParams_py</Name>
@@ -4959,7 +4963,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>true</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>com_outparams</Name>
@@ -4970,7 +4974,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>true</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>com_paramsinretval_py</Name>
@@ -4981,7 +4985,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>true</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>com_properties_py</Name>
@@ -4992,7 +4996,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>true</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>com_pytraits_method_py</Name>
@@ -5003,7 +5007,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>true</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>com_pytraits_obj_py</Name>
@@ -5014,7 +5018,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>true</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>com_pytraits_prop_py</Name>
@@ -5025,7 +5029,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>true</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>com_returnvalues_py</Name>
@@ -5036,7 +5040,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>true</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>com_scriptpw_py</Name>
@@ -5047,7 +5051,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>com_simpleerrors_py</Name>
@@ -5058,7 +5062,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>true</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>com_typelib</Name>
@@ -5069,7 +5073,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>true</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>com_word_py</Name>
@@ -5080,7 +5084,7 @@
           <Disabled>true</Disabled> <!-- requires Microsoft Word -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
       </Tests>
     </TestCategory>
@@ -5096,7 +5100,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
       </Tests>
     </TestCategory>
@@ -5112,7 +5116,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>interop_net_derivation_ipy</Name>
@@ -5123,7 +5127,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>interop_net_dynamicobjectmodel_ipy</Name>
@@ -5134,7 +5138,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>interop_net_event_ipy</Name>
@@ -5145,7 +5149,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>interop_net_field_ipy</Name>
@@ -5156,7 +5160,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>interop_net_loadorder_ipy</Name>
@@ -5167,7 +5171,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>interop_net_method_ipy</Name>
@@ -5178,7 +5182,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>interop_net_property_ipy</Name>
@@ -5189,7 +5193,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>interop_net_type_ipy</Name>
@@ -5200,7 +5204,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>interop_net_versions_ipy</Name>
@@ -5211,7 +5215,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
       </Tests>
     </TestCategory>
@@ -5243,7 +5247,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>true</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>modules_misc_ipy</Name>
@@ -5254,7 +5258,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>modules_network_related_ipy</Name>
@@ -5265,7 +5269,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>modules_system_related_ipy</Name>
@@ -5276,7 +5280,7 @@
           <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>modules_type_related_ipy</Name>
@@ -5287,7 +5291,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
         <Test>
           <Name>test_stdmodules_ipy</Name>
@@ -5451,7 +5455,7 @@
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
       </Tests>
     </TestCategory>
@@ -5464,7 +5468,7 @@
           <Arguments>%DLR_ROOT%\Languages\IronPython\Tests\pyc\test_pyc.ps1 %DLR_ROOT%\Languages\IronPython\Public\Tools\Scripts</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>false</Disabled>
+          <Disabled>true</Disabled> <!-- Need to create a test for ipyc.exe -->
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests\pyc</WorkingDirectory>
@@ -5476,14 +5480,14 @@
       <Tests>
         <Test>
           <Name>versions_python26_ipy</Name>
-          <Filename>%DLR_ROOT%\languages\ironpython\Internal\ipy.bat</Filename>
+          <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
           <Arguments>versions\python26.py</Arguments>
           <MaxDuration>-1</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
-          <WorkingDirectory>%DLR_ROOT%\languages\ironpython\Tests</WorkingDirectory>
+          <WorkingDirectory>%DLR_ROOT%\Languages\IronPython\Tests</WorkingDirectory>
         </Test>
       </Tests>
     </TestCategory>

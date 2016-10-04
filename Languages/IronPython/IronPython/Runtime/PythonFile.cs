@@ -1321,7 +1321,7 @@ namespace IronPython.Runtime {
                     return new PythonTextWriter(writer, "\r");
 
                 case PythonFileMode.TextLf:
-                    return new PythonTextWriter(writer, null);
+                    return new PythonTextWriter(writer, "\n");
             }
 
             throw Assert.Unreachable;

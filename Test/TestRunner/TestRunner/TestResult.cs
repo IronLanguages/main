@@ -29,7 +29,7 @@ namespace TestRunner {
         {
             get
             {
-                return Status != TestResultStatus.Disabled && Status != TestResultStatus.Skipped && Status != TestResultStatus.None;
+                return Status != TestResultStatus.Disabled && Status != TestResultStatus.Skipped && Status != TestResultStatus.None && Status != TestResultStatus.SkippedCondition;
             }
         }
     }
@@ -41,5 +41,6 @@ namespace TestRunner {
         Skipped,
         TimedOut,
         Disabled,
+        SkippedCondition
     }
 }

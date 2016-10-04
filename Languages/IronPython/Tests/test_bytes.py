@@ -840,11 +840,6 @@ def test_add_mul():
     
         class mylong(long): pass
         
-        if is_cli:
-            from System.IO import Path
-            AreEqual("foo\\", "foo" + Path.DirectorySeparatorChar)
-            AreEqual("\\\\", Path.DirectorySeparatorChar + '\\')
-    
         # multiply
         AreEqual("aaaa", "a" * 4L)
         AreEqual("aaaa", "a" * mylong(4L))

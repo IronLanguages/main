@@ -788,8 +788,7 @@ End Class
         f.close()
         
         name = 'vbproptest%f.dll' % (r.random())
-        x = run_vbc('/target:library vbproptest1.vb "/out:%s"' % name)        
-        AreEqual(x, 0)
+        AreEqual(run_vbc('/target:library vbproptest1.vb /out:"%s"' % name), 0)
 
         clr.AddReferenceToFileAndPath(name)
         import VbPropertyTest, VbPropertyTest2
@@ -1464,6 +1463,7 @@ def test_clr_dir():
     Assert('IndexOf' not in clr.Dir('abc'))
     Assert('IndexOf' in clr.DirClr('abc'))
 
+@skip("posix")
 def test_array_contains():
     AssertError(KeyError, lambda : System.Array[str].__dict__['__contains__'])
 
@@ -1534,8 +1534,7 @@ def test_valuetype_iter():
     AreEqual(it.next().Key, 'a')
     AreEqual(it.next().Key, 'b')
 
-@skip("netstandard") # code doesn't compile in netstandard
-@skip("silverlight")
+@skip("silverlight", "posix", "netstandard")
 def test_abstract_class_no_interface_impl():
     # this can't be defined in C# or VB, it's a class which is 
     # abstract and therefore doesn't implement the interface method
@@ -1620,7 +1619,7 @@ def test_abstract_class_no_interface_impl():
     try:
         run_ilasm("/dll testilcode.il")
         
-        clr.AddReference('testilcode')
+        clr.AddReference('testilcode.dll')
         import AbstractILTest
         
         class x(AbstractILTest):

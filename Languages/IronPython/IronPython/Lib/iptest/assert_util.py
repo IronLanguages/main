@@ -122,7 +122,10 @@ else:
 
         if is_cli: 
             ipython_executable  = sys.executable
-            cpython_executable  = path_combine(external_dir, '27/python.exe')
+            if is_posix:
+                cpython_executable  = '/usr/bin/python2.7'
+            else:
+                cpython_executable  = path_combine(external_dir, '27/python.exe')
         else: 
             ipython_executable  = path_combine(sys.prefix, 'ipy.exe')
             cpython_executable  = sys.executable
@@ -249,8 +252,10 @@ def AssertErrorWithMessage(exc, expectedMessage, func, *args, **kwargs):
     Assert(expectedMessage, "expectedMessage cannot be null")
     try:   func(*args, **kwargs)
     except exc, inst:
-        Assert(expectedMessage == inst.__str__(), \
-               "Exception %r message (%r) does not match %r" % (type(inst), inst.__str__(), expectedMessage))
+        msg = inst.__str__().replace('\r', '')
+        expectedMessage = expectedMessage.replace('\r', '')
+        Assert(expectedMessage == msg, \
+               "Exception %r message (%r) does not match %r" % (type(inst), msg, expectedMessage))
     else:  Assert(False, "Expected %r but got no exception" % exc)
 
 def AssertErrorWithPartialMessage(exc, expectedMessage, func, *args, **kwargs):

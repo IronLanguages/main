@@ -2391,6 +2391,12 @@ if id(a) == id(b):
 
         public void ScenarioStackFrameLineInfo() {
             const string lineNumber = "raise.py:line";
+            // TODO: Should this work on Mono?
+            if(Environment.OSVersion.Platform == PlatformID.Unix)
+            {
+                Console.WriteLine("Skipping StackFrameLineInfo test on Mono");
+                return;
+            }
 
             // TODO: clone setup?
             var scope = Python.CreateRuntime().CreateScope("py");

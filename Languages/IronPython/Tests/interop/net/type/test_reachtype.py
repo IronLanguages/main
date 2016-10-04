@@ -114,11 +114,14 @@ def test_generic_types():
                                "The type or method has 1 generic parameter(s), but 0 generic argument(s) were provided. A generic argument must be provided for each generic parameter.", lambda: G3[()])
     else: #.NET changed the error message with .NET 4.0
         AssertErrorWithMessage(ValueError, 
-                               "The number of generic arguments provided doesn't equal the arity of the generic type definition.\r\nParameter name: instantiation", 
+                               "The number of generic arguments provided doesn't equal the arity of the generic type definition.\nParameter name: instantiation", 
                                lambda: G3[()])
     
                 
-    AssertErrorWithMessage(ValueError, "GenericArguments[0], 'System.Exception', on 'NSwGeneric.G3`1[T]' violates the constraint of type 'T'.", lambda: G3[System.Exception])
+    if is_posix:
+        AssertErrorWithMessage(ValueError, "Invalid generic arguments\nParameter name: typeArguments", lambda: G3[System.Exception])
+    else:
+        AssertErrorWithMessage(ValueError, "GenericArguments[0], 'System.Exception', on 'NSwGeneric.G3`1[T]' violates the constraint of type 'T'.", lambda: G3[System.Exception])
     AreEqual(G3[int].A, 50)
     
     AssertErrorWithMessage(SystemError, "MakeGenericType on non-generic type", lambda: G4[()])
@@ -197,7 +200,7 @@ def test_type_forward1():
     AreEqual(NSwForwardee1.Foo.A, 120)
     AreEqual(NSwForwardee1.Bar.A, -120)
 
-@skip("multiple_execute")    
+@skip("multiple_execute", "posix")
 def test_type_forward2():    
     add_clr_assemblies("typeforwarder2")
     from NSwForwardee2 import *      
@@ -213,6 +216,7 @@ def test_type_forward3():
     #import NSwForwardee3                   # TRACKING BUG: 291692
     #AreEqual(NSwForwardee3.Foo.A, 210)
     
+@skip("posix")
 def test_type_causing_load_exception():
     add_clr_assemblies("loadexception")
     from PossibleLoadException import A, C
@@ -223,7 +227,7 @@ def test_type_causing_load_exception():
     try:
         from PossibleLoadException import B
         AssertUnreachable()
-    except ImportError: 
+    except ImportError:
         pass
 
     import PossibleLoadException

@@ -143,8 +143,7 @@ t1.start()
         stdin, stdout = os.popen2(sys.executable +  ' temp.py')
         Assert('bye bye\n' in list(stdout))
     finally:
-        import nt
-        nt.unlink('temp.py')
+        os.unlink('temp.py')
     
 @skip("win32")
 def test_thread_local():

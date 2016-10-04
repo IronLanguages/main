@@ -23,6 +23,7 @@ namespace TestRunner
         public string WorkingDirectory;
         public EnvironmentVariable[] EnvironmentVariables;
         public TestCategory Category;
+        public string Condition;
     }
 
     public class EnvironmentVariable {

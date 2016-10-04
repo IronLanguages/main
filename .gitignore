@@ -6,6 +6,7 @@ bin/
 /bin/
 /Stage
 /Packages
+/.vscode
 
 # Temporary VS files
 *.suo

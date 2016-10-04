@@ -20,7 +20,10 @@ How to re-define a property in Python.
 from iptest.assert_util import *
 skiptest("silverlight")
 
-add_clr_assemblies("baseclasscs", "baseclassvb", "typesamples")
+if is_posix:
+    add_clr_assemblies("baseclasscs", "typesamples")
+else:
+    add_clr_assemblies("baseclasscs", "baseclassvb", "typesamples")
 
 from Merlin.Testing import *
 from Merlin.Testing.BaseClass import *
@@ -148,6 +151,7 @@ def test_csindexer():
     x[1, 2] = x[3, 4] + "something"
     AreEqual(x.field, "-1 2 start-3 4something")
 
+@skip("posix")
 def test_vbindexer():
     class C(IVbIndexer10): 
         def __init__(self):
