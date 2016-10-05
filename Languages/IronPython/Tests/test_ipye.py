@@ -98,7 +98,7 @@ def test_formatexception():
         exc_string = service.FormatException(System.Exception("first",
                                                         System.Exception("second",
                                                                          System.Exception())))
-        AreEqual(exc_string, 'Traceback (most recent call last):\r\nException: first\r\n')
+        AreEqual(exc_string, 'Traceback (most recent call last):[NEWLINE]Exception: first[NEWLINE]'.replace('[NEWLINE]',  System.Environment.NewLine))
         exc_string = service.FormatException(c())
         AreEqual(exc_string.count(" File "), 4)
         AreEqual(exc_string.count(" line "), 4)
@@ -115,12 +115,12 @@ def test_formatexception_showclrexceptions():
     exc_string = pe.GetService[Microsoft.Scripting.Hosting.ExceptionOperations]().FormatException(System.Exception("first",
                                                     System.Exception("second",
                                                                      System.Exception())))
-    AreEqual(exc_string, "Traceback (most recent call last):\r\nException: first\r\nCLR Exception: \r\n    Exception\r\n: \r\nfirst\r\n    Exception\r\n: \r\nsecond\r\n    Exception\r\n: \r\nException of type 'System.Exception' was thrown.\r\n")
+    AreEqual(exc_string, "Traceback (most recent call last):[NEWLINE]Exception: first[NEWLINE]CLR Exception: [NEWLINE]    Exception[NEWLINE]: [NEWLINE]first[NEWLINE]    Exception[NEWLINE]: [NEWLINE]second[NEWLINE]    Exception[NEWLINE]: [NEWLINE]Exception of type 'System.Exception' was thrown.[NEWLINE]".replace("[NEWLINE]", System.Environment.NewLine))
     exc_string = pe.GetService[Microsoft.Scripting.Hosting.ExceptionOperations]().FormatException(c())
     
     AreEqual(exc_string.count(" File "), 4)
     AreEqual(exc_string.count(" line "), 4)
-    Assert(exc_string.endswith("CLR Exception: \r\n    Exception\r\n: \r\nfirst\r\n    Exception\r\n: \r\nsecond\r\n    Exception\r\n: \r\nException of type 'System.Exception' was thrown.\r\n"))
+    Assert(exc_string.endswith("CLR Exception: [NEWLINE]    Exception[NEWLINE]: [NEWLINE]first[NEWLINE]    Exception[NEWLINE]: [NEWLINE]second[NEWLINE]    Exception[NEWLINE]: [NEWLINE]Exception of type 'System.Exception' was thrown.[NEWLINE]".replace("[NEWLINE]", System.Environment.NewLine)))
 
 @skip("silverlight", "multiple_execute") #CodePlex 20636 - multi-execute
 def test_formatexception_exceptiondetail():
@@ -134,13 +134,12 @@ def test_formatexception_exceptiondetail():
         x[None] = 42
     except System.Exception, e:
         pass
-    import re
     
     exc_string = pe.GetService[Microsoft.Scripting.Hosting.ExceptionOperations]().FormatException(System.Exception("first", e))
     Assert(exc_string.startswith("first"))
-    Assert(re.match("first\r\n(   at .*ThrowArgumentNullException.*\n)?   at .*Insert.*\n(   at .*\n)*",exc_string) is not None) 
+    Assert(exc_string.find('Insert') >= 0) 
     exc_string = pe.GetService[Microsoft.Scripting.Hosting.ExceptionOperations]().FormatException(c())
-    Assert(exc_string.endswith("Exception: first\r\n"))
+    Assert(exc_string.endswith("Exception: first[NEWLINE]".replace("[NEWLINE]", System.Environment.NewLine)))
 
 @skip("silverlight")
 def test_engine_access_from_within():

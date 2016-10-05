@@ -16,7 +16,7 @@
 from common import runtests, printwith
 
 import sys
-import nt
+import os
 
 class CodeHolder(object):
     def __init__(self):
@@ -329,7 +329,7 @@ class test_exceptions(object):
                     if curTest in knownFailures:
                         continue
                     
-                    if 'IRONPYTHON_RUNSLOWTESTS' in nt.environ:
+                    if 'IRONPYTHON_RUNSLOWTESTS' in os.environ:
                         uniqueCount = 0
     
                         # run without a function                    

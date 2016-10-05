@@ -24,7 +24,7 @@ if is_cli:
     from iptest.process_util import run_csc 
     run_csc("/nologo /target:library /out:sbs_library.dll sbs_library.cs")
     import clr
-    clr.AddReference("sbs_library")
+    clr.AddReference("sbs_library.dll")
     from SbsTest import C
     o = C()
     g1 = o.M1
@@ -33,13 +33,13 @@ if is_cli:
     
     #for peverify runs
     from System.IO import Path, File, Directory
-    if File.Exists(Path.GetTempPath() + r"\sbs_library.dll"):
+    if File.Exists(Path.Combine(Path.GetTempPath(), "sbs_library.dll")):
         try:
-            File.Delete(Path.GetTempPath() + r"\sbs_library.dll")
+            File.Delete(Path.Combine(Path.GetTempPath(), "sbs_library.dll"))
         except:
             pass
-    if not File.Exists(Path.GetTempPath() + r"\sbs_library.dll"):
-        File.Copy(Directory.GetCurrentDirectory() + r"\sbs_library.dll", Path.GetTempPath() + r"\sbs_library.dll")
+    if not File.Exists(Path.Combine(Path.GetTempPath(), "sbs_library.dll")):
+        File.Copy(Path.Combine(Directory.GetCurrentDirectory(), "sbs_library.dll"), Path.Combine(Path.GetTempPath(), "sbs_library.dll"))
     
 else:
     g1 = f1
