@@ -136,6 +136,7 @@ def test_formatexception_exceptiondetail():
         pass
     
     exc_string = pe.GetService[Microsoft.Scripting.Hosting.ExceptionOperations]().FormatException(System.Exception("first", e))
+    print '\n\n\nexc_string = %s\n\n\n' % exc_string
     Assert(exc_string.startswith("first"))
     Assert(exc_string.find('first') >= 0 and exc_string.find('ThrowArgumentNullException') >= 0 and exc_string.find('Insert') >= 0) 
     exc_string = pe.GetService[Microsoft.Scripting.Hosting.ExceptionOperations]().FormatException(c())
