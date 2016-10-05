@@ -92,5 +92,5 @@ if __name__ == "__main__":
     if len(args) == 1 :
         run(compare = bCompare)
     else:
-        run(tests = [ x[:-3].replace("\\", ".") for x in args[1:] ], compare = bCompare)
+        run(tests = [ x[:-3].replace(os.sep, ".") for x in args[1:] ], compare = bCompare)
         

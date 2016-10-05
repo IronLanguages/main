@@ -13,7 +13,7 @@
 #
 #####################################################################################
 
-import nt
+import os
 import sys
 import time
 import rulediff
@@ -25,7 +25,7 @@ result_fail = 1
 
 def file_exists(file):
     try:
-        nt.stat(file)
+        os.stat(file)
         return True
     except:
         return False
@@ -34,50 +34,40 @@ def Assert(c):
     if not c: raise AssertionError("Assertion Failed")
 
 def get_environ_variable(key):
-    l = [nt.environ[x] for x in nt.environ.keys() if x.lower() == key.lower()]
+    l = [os.environ[x] for x in os.environ.keys() if x.lower() == key.lower()]
     if l: return l[0]
     else: return None
 
 def get_all_paths():
-    if get_environ_variable('DLR_ROOT') and file_exists(get_environ_variable('DLR_ROOT')+'/External.LCA_RESTRICTED/Languages/ironpython/27/python.exe'):
-        #We're in the new world
-        if sys.platform == "cli":
-            ipython_executable = sys.executable
-            compat_test_path   = get_environ_variable('DLR_ROOT') + "/Languages/IronPython/Tests/Compat/"
-            cpython_executable = get_environ_variable('DLR_ROOT')+'/External.LCA_RESTRICTED/Languages/ironpython/27/python.exe'
-            cpython_lib_path   = get_environ_variable('DLR_ROOT')+'/External.LCA_RESTRICTED/Languages/ironpython/27/Lib'
-            
-        elif sys.platform == "win32":
-            dlr_bin = get_environ_variable('DLR_BIN')
-            if dlr_bin:
-                if dlr_bin.startswith('"'):
-                    # strip quotes when DLR_BIN has spaces, e.g. "bin\Debug\v4Debug"
-                    Assert(dlr_bin.endswith('"'))
-                    dlr_bin = dlr_bin[1:-1]
-            elif not get_environ_variable('THISISSNAP'):
-                dlr_bin = get_environ_variable('DLR_ROOT') + '/Bin/Debug'
-            cpython_executable = sys.executable
-            cpython_lib_path   = sys.prefix + "/Lib"
-            ipython_executable = dlr_bin+'/ipy.exe'
-            compat_test_path   = get_environ_variable('DLR_ROOT')+'/Languages/IronPython/Tests/Compat/'
+    #We're in the new world
+    if sys.platform == "cli":
+        ipython_executable = sys.executable
+        compat_test_path   = os.path.join(get_environ_variable('DLR_ROOT'), "Languages", "IronPython", "Tests", "compat")
+        if os.name=="posix":
+            cpython_executable = '/usr/bin/python2.7'
+            cpython_lib_path   = '/usr/lib/python2.7'
         else:
-            raise AssertionError        
+            cpython_executable = os.path.join(get_environ_variable('DLR_ROOT'), 'External.LCA_RESTRICTED', 'Languages', 'IronPython', '27', 'python.exe')
+            cpython_lib_path   = os.path.join(get_environ_variable('DLR_ROOT'), 'External.LCA_RESTRICTED', 'Languages', 'IronPython', '27', 'Lib')
+
+            
+    elif sys.platform == "win32" or sys.platform.startswith("linux"):
+        dlr_bin = get_environ_variable('DLR_BIN')
+        if dlr_bin:
+            if dlr_bin.startswith('"'):
+                # strip quotes when DLR_BIN has spaces, e.g. "bin\Debug\v4Debug"
+                Assert(dlr_bin.endswith('"'))
+                dlr_bin = dlr_bin[1:-1]
+        elif not get_environ_variable('THISISSNAP'):
+            dlr_bin = os.path.join(get_environ_variable('DLR_ROOT'), 'bin', 'Debug')
+        cpython_executable = sys.executable
+        cpython_lib_path   = sys.path[0]
+        ipython_executable = os.path.join(dlr_bin, 'ipy.exe')
+        compat_test_path   = os.path.join(get_environ_variable('DLR_ROOT'), 'Languages', 'IronPython', 'Tests', 'compat')
+
     else:
-        #We're in the old world
-        if sys.platform == "cli":
-            ipython_executable = sys.executable
-            compat_test_path   = sys.prefix + "/Tests/Compat/"
-            cpython_executable = sys.prefix + "/External.LCA_RESTRICTED/Python25/Python.exe"
-            cpython_lib_path   = sys.prefix + "/External.LCA_RESTRICTED/Python25/Lib"
-            
-        elif sys.platform == "win32":
-            cpython_executable = sys.executable
-            cpython_lib_path   = sys.prefix + "/Lib"
-            ipython_executable = sys.prefix + "/../../ipy.exe"
-            compat_test_path   = sys.prefix + "/../../Tests/Compat/"
-        else:
-            raise AssertionError
-    
+        raise AssertionError
+
     Assert(file_exists(cpython_executable))
     Assert(file_exists(cpython_lib_path))
     Assert(file_exists(ipython_executable))
@@ -89,10 +79,10 @@ cpython_executable, cpython_lib_path, ipython_executable, compat_test_path = get
  
 def delete_files(files):
     for f in files: 
-        nt.remove(f)
+        os.remove(f)
 
 def launch(executable, test):
-    return nt.spawnv(0, executable, (executable, test))
+    return os.spawnv(0, executable, (executable, test))
         
 class my_stdout:
     def __init__(self, o):
@@ -133,10 +123,10 @@ def printwithtype(arg):
         print "same##", transform(arg)
 
 def fullpath(file):
-    return compat_test_path + file
+    return os.path.join(compat_test_path, file)
 
 def run_single_test(test, filename = None):
-    if filename == None: 
+    if not filename: 
         ret = test()
     else :
         filename = fullpath(filename)
@@ -160,7 +150,7 @@ def get_platform_string(current = None):
         import sys
         current = sys.platform
         
-    if current.startswith("win"): return "win"
+    if current.startswith("win") or current.startswith("linux"): return "nat"
     if current.startswith("cli"): return "cli"
     return "non"
 
@@ -201,18 +191,18 @@ def runtests(type):
         
         if is_cli:
             cli_log     = log_filename
-            win_log     = 'win_' + log_filename[4:]
+            nat_log     = 'nat_' + log_filename[4:]
             dif_log     = 'dif_' + log_filename[4:]
             dif_logfile = open(fullpath(dif_log),"w+")
 
             print "comparing ...", 
-            (val, summary) = rulediff.compare(fullpath(win_log), fullpath(cli_log), dif_logfile)
+            (val, summary) = rulediff.compare(fullpath(nat_log), fullpath(cli_log), dif_logfile)
             
             if val == 0:
                 print "PASS "
             else: 
                 print "FAIL [%s]" % summary
-                print "         windiff %s %s" % (win_log, cli_log)
+                print "         windiff %s %s" % (nat_log, cli_log)
                 print "         notepad %s " % dif_log
                 failCnt += 1
             dif_logfile.close()
