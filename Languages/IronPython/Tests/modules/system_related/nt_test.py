@@ -249,10 +249,10 @@ def test_chmod():
 
 def test_popen():
     # open a pipe just for reading...
-    pipe_modes = [["ping 127.0.0.1", "r"],
-                  ["ping 127.0.0.1"]]
+    pipe_modes = [["ping 127.0.0.1 -n 1", "r"],
+                  ["ping 127.0.0.1 -n 1"]]
     if is_cli:
-        pipe_modes.append(["ping 127.0.0.1", ""])
+        pipe_modes.append(["ping 127.0.0.1 -n 1", ""])
         
     for args in pipe_modes:
         x = nt.popen(*args)
@@ -271,7 +271,7 @@ def test_popen():
     #AreEqual(x.close(), None)
 
     # once w/ default mode
-    AssertError(ValueError, nt.popen, "ping 127.0.0.1", "a")
+    AssertError(ValueError, nt.popen, "ping 127.0.0.1 -n 1", "a")
 
     # popen uses cmd.exe to run stuff -- at least sometimes
     dir_pipe = nt.popen('dir')
@@ -601,7 +601,7 @@ def test_spawnl():
     #sanity check
     #CPython nt has no spawnl function
     pint_cmd = ping_cmd = get_environ_variable("windir") + "\system32\ping.exe"
-    nt.spawnl(nt.P_WAIT, ping_cmd , "ping","127.0.0.1")
+    nt.spawnl(nt.P_WAIT, ping_cmd , "ping","127.0.0.1","-n","1")
     nt.spawnl(nt.P_WAIT, ping_cmd , "ping","/?")
     nt.spawnl(nt.P_WAIT, ping_cmd , "ping")
     
@@ -615,8 +615,7 @@ def test_spawnv():
     #sanity check
     ping_cmd = get_environ_variable("windir") + "\system32\ping"
     nt.spawnv(nt.P_WAIT, ping_cmd , ["ping"])
-    nt.spawnv(nt.P_WAIT, ping_cmd , ["ping","127.0.0.1"])
-    nt.spawnv(nt.P_WAIT, ping_cmd, ["ping", "-n", "5", "-w", "5000", "127.0.0.1"])
+    nt.spawnv(nt.P_WAIT, ping_cmd , ["ping","127.0.0.1","-n","1"])
     
         
 # spawnve tests
@@ -628,7 +627,7 @@ def test_spawnve():
     #simple sanity checks
     nt.spawnve(nt.P_WAIT, ping_cmd, ["ping", "/?"], {})
     nt.spawnve(nt.P_WAIT, ping_cmd, ["ping", "127.0.0.1"], {})
-    nt.spawnve(nt.P_WAIT, ping_cmd, ["ping", "-n", "6", "-w", "1000", "127.0.0.1"], {})
+    nt.spawnve(nt.P_WAIT, ping_cmd, ["ping", "-n", "2", "-w", "1000", "127.0.0.1"], {})
     
     #negative cases
     AssertError(TypeError, nt.spawnve, nt.P_WAIT, ping_cmd , ["ping", "/?"], None)
@@ -655,7 +654,7 @@ def test_waitpid():
     '''
     #sanity check
     ping_cmd = get_environ_variable("windir") + "\system32\ping"
-    pid = nt.spawnv(nt.P_NOWAIT, ping_cmd ,  ["ping", "-n", "5", "-w", "1000", "127.0.0.1"])
+    pid = nt.spawnv(nt.P_NOWAIT, ping_cmd ,  ["ping", "-n", "1", "127.0.0.1"])
     
     new_pid, exit_stat = nt.waitpid(pid, 0)
     
@@ -972,9 +971,9 @@ def test_open():
 
 def test_system_minimal():
     Assert(hasattr(nt, "system"))
-    AreEqual(nt.system("ping localhost"), 0)
-    AreEqual(nt.system('"ping localhost"'), 0)
-    AreEqual(nt.system('"ping localhost'), 0)
+    AreEqual(nt.system("ping localhost -n 1"), 0)
+    AreEqual(nt.system('"ping localhost -n 1"'), 0)
+    AreEqual(nt.system('"ping localhost -n 1'), 0)
         
     AreEqual(nt.system("ping"), 1)
     

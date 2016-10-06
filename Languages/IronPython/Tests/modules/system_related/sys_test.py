@@ -501,12 +501,13 @@ def test_cp30130():
     sys.settrace(None)
 
 def test_getrefcount():
+    import warnings
     with warnings.catch_warnings(record = True) as w:
         count = sys.getrefcount(None)
         
     AreNotEqual(0, count)
     Assert(w)
-    Assert('runtime' in w[0])
+    Assert('dummy result' in str(w[0].message))
     
 #--MAIN------------------------------------------------------------------------    
 
