@@ -106,7 +106,7 @@ def test_sleep():
         print "Bailing test_sleep for certain AMD64 machines!"
         return
         
-    sleep_time = 5
+    sleep_time = 3
     safe_deviation = 0.20
 
     x = time.clock()
