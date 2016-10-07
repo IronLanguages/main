@@ -16,14 +16,16 @@ namespace TestRunner
         public List<TestResult> Results { get; set; }
         public string InputFile { get; set; }
         public TimeSpan TotalTime { get; set; }
+        public bool AllMessages { get; set; }
 
         const string ElapsedTimeFormat = "0.000";
 
-        public NUnitResultsWriter(List<TestResult> results, string inputFile, TimeSpan totalTestTime)
+        public NUnitResultsWriter(List<TestResult> results, string inputFile, TimeSpan totalTestTime, bool allMessages)
         {
             Results = results;
             InputFile = inputFile;
             TotalTime = totalTestTime;
+            AllMessages = allMessages;
         }
 
         public void Save(string path)
@@ -132,7 +134,7 @@ namespace TestRunner
                                  new XAttribute("asserts", "1"));
                 }
 
-                if (testResult.IsFailure)
+                if (testResult.IsFailure || AllMessages)
                 {
                     var message = string.Join(Environment.NewLine, testResult.Output);
                     message = string.Join("", message.Where(c => IsLegalXmlChar((int)c)));
