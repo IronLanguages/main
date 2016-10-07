@@ -17,8 +17,7 @@ namespace Microsoft.Scripting.Debugging {
     public interface ITracePipeline {
         void Close();
 
-        bool CanSetNextStatement(string sourceFile, SourceSpan sourceSpan);
-        void SetNextStatement(string sourceFile, SourceSpan sourceSpan);
+        bool TrySetNextStatement(string sourceFile, SourceSpan sourceSpan);
 
         ITraceCallback TraceCallback { get; set; }
     }

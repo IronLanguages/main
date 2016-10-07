@@ -14,31 +14,30 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading;
 using Microsoft.Scripting.Debugging.CompilerServices;
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Debugging {
     /// <summary>
-    /// TraceSession
+    /// TraceSession.
+    /// 
+    /// Basically holds a list of last encountered DebugFrame instances 
+    /// (one per running thread).
     /// </summary>
     public sealed class TracePipeline : ITracePipeline, IDebugCallback {
         private readonly DebugContext _debugContext;
-        private readonly ThreadLocal<DebugFrame> _traceFrame;
+        private readonly ThreadLocal<DebugFrame> _traceFrame = new ThreadLocal<DebugFrame>();
         private ITraceCallback _traceCallback;
         private bool _closed;
 
         private TracePipeline(DebugContext debugContext) {
             _debugContext = debugContext;
-            _traceFrame = new ThreadLocal<DebugFrame>();
             debugContext.DebugCallback = this;
             debugContext.DebugMode = DebugMode.FullyEnabled;
         }
 
-        public static ITracePipeline CreateInstance(DebugContext debugContext) {
+        public static TracePipeline CreateInstance(DebugContext debugContext) {
             ContractUtils.RequiresNotNull(debugContext, "debugContext");
 
             if (debugContext.DebugCallback != null)
@@ -56,7 +55,7 @@ namespace Microsoft.Scripting.Debugging {
             _closed = true;
         }
 
-        public bool CanSetNextStatement(string sourceFile, SourceSpan sourceSpan) {
+        public bool TrySetNextStatement(string sourceFile, SourceSpan sourceSpan) {
             VerifyNotClosed();
             ContractUtils.RequiresNotNull(sourceFile, "sourceFile");
             ContractUtils.Requires(sourceSpan != SourceSpan.Invalid && sourceSpan != SourceSpan.None, ErrorStrings.InvalidSourceSpan);
@@ -67,26 +66,12 @@ namespace Microsoft.Scripting.Debugging {
                 return false;
             }
 
-            return GetSequencePointIndexForSourceSpan(sourceFile, sourceSpan, traceFrame) != Int32.MaxValue;
-        }
-
-        public void SetNextStatement(string sourceFile, SourceSpan sourceSpan) {
-            VerifyNotClosed();
-            ContractUtils.RequiresNotNull(sourceFile, "sourceFile");
-            ContractUtils.Requires(sourceSpan != SourceSpan.Invalid && sourceSpan != SourceSpan.None, ErrorStrings.InvalidSourceSpan);  
-
-            // Find the thread object
-            DebugFrame traceFrame = _traceFrame.Value;
-            if (traceFrame == null) {
-                throw new InvalidOperationException(ErrorStrings.SetNextStatementOnlyAllowedInsideTraceback);
-            }
-
             int sequencePointIndex = GetSequencePointIndexForSourceSpan(sourceFile, sourceSpan, traceFrame);
-            if (sequencePointIndex == Int32.MaxValue) {
-                throw new InvalidOperationException(ErrorStrings.InvalidSourceSpan);
-            }
+            if (sequencePointIndex == Int32.MaxValue)
+                return false;
 
             traceFrame.CurrentSequencePointIndex = sequencePointIndex;
+            return true;
         }
 
         public ITraceCallback TraceCallback {

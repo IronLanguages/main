@@ -15,7 +15,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -306,8 +305,7 @@ namespace IronPython.Runtime.Exceptions {
                     }
                 }
 
-                if (_traceAdapter.PythonContext.TracePipeline.CanSetNextStatement((string)((FunctionCode)_code).co_filename, span)) {
-                    _traceAdapter.PythonContext.TracePipeline.SetNextStatement((string)((FunctionCode)_code).co_filename, span);
+                if (_traceAdapter.PythonContext.TracePipeline.TrySetNextStatement(_code.co_filename, span)) {
                     _lineNo = newLineNum;
                     return;
                 }
