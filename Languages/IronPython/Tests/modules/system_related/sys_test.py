@@ -323,41 +323,6 @@ print final"""
         finally:
             os.unlink('temp.py')
 
-def test_settrace_concurrent():
-    # see https://github.com/IronLanguages/main/issues/1375
-    import thread
-
-    done = []
-    donelock = thread.allocate_lock()
-
-    def starter():
-        def tracer(*args):
-            return tracer
-
-        def test_thread():
-            result = None
-            try:
-                sys.settrace(tracer)
-                time.sleep(0.1)
-                sys.settrace(None)
-            except Exception as e:
-                result = e
-            with donelock: 
-                done.append(result)
-
-        thread.start_new_thread(test_thread, ())
-
-    cnt = 2
-    for _ in xrange(cnt):
-        starter()
-    while True:
-        with donelock:
-            if len(done) == cnt:
-                break
-        time.sleep(0)
-
-    AreEqual([i for i in done if i], [])
-
 def test_call_tracing():
     def f(i):
         return i * 2

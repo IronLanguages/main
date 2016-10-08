@@ -195,7 +195,7 @@ def test_start_new():
     thread.start_new(tempFunc, ())
     while CALLED==False:
         print ".",
-        Thread.Sleep(100)
+        time.sleep(0.1)
     AreEqual(CALLED, 3.14)
     CALLED = False
 
@@ -215,13 +215,13 @@ def test_start_new_thread():
     id = thread.start_new_thread(tempFunc, (), {"mykw_param":7})
     while CALLED==False:
         print ".",
-        Thread.Sleep(100)
+        time.sleep(0.1)
     AreEqual(CALLED, 7)
     
     id = thread.start_new_thread(tempFunc, (), {"mykw_param":8})
     while CALLED!=8:  #Hang forever if this is broken
         print ".",
-        Thread.Sleep(100)
+        time.sleep(0.1)
     
     #--Sanity Negative
     global temp_stderr
