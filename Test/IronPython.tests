@@ -4291,7 +4291,7 @@
         <Test>
           <Name>test_sys_settrace_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
-          <Arguments>-X:Frames -X:MaxRecursion 1000 test\test_sys_settrace.py</Arguments>
+          <Arguments>-X:Frames -X:MaxRecursion 1000 -X:Tracing test\test_sys_settrace.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>false</Disabled>

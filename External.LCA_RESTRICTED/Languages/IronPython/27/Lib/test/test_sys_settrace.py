@@ -311,10 +311,8 @@ class TraceTestCase(unittest.TestCase):
     def test_07_raise(self):
         self.run_test(test_raise)
 
-    @unittest.skipIf(sys.platform == 'cli', 'TODO: investigate')
     def test_08_settrace_and_return(self):
         self.run_test2(settrace_and_return)
-    @unittest.skipIf(sys.platform == 'cli', 'TODO: investigate')
     def test_09_settrace_and_raise(self):
         self.run_test2(settrace_and_raise)
     @unittest.skipIf(sys.platform == 'cli', 'TODO: investigate')
@@ -769,6 +767,7 @@ class JumpTestCase(unittest.TestCase):
         self.run_test(no_jump_out_of_finally_block)
     def test_18_no_jump_to_non_integers(self):
         self.run_test(no_jump_to_non_integers)
+    @unittest.skipIf(sys.platform == 'cli', 'TODO: investigate')
     def test_19_no_jump_without_trace_function(self):
         no_jump_without_trace_function()
     def test_jump_across_with(self):
