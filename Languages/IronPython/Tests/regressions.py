@@ -28,7 +28,7 @@ Work Item number.
 #------------------------------------------------------------------------------
 #--Imports
 from iptest.assert_util import *
-from iptest.process_util import launch
+from iptest.process_util import launch, run_csc
 import sys
 
 #------------------------------------------------------------------------------
@@ -885,6 +885,97 @@ def test_gh1357():
     finally:
         os.unlink(filename)
         os.unlink(dll)
+
+def test_gh1435():
+    code = """
+using System;
+
+ /// <summary>
+/// Some description1.
+/// </summary>
+public class gh1435
+{
+    /// <summary>
+    /// Some description2.
+    /// </summary>
+    public static String strFoo= "foo";
+
+    /// <summary>
+    /// Some description3.
+    /// </summary>
+    public gh1435()
+    {
+
+    }
+
+    /// <summary>
+    /// Some description4.
+    /// </summary>
+    public int someMethod1()
+    {
+        return 8;
+    }
+
+    /// <summary>
+    /// Some description5.
+    /// </summary>
+    public int someMethod2(string strSome)
+    {
+        return 8;
+    }
+
+    /// <summary>
+    /// Some description6.
+    /// </summary>
+    public int someMethod3(out string strSome)
+    {
+        strSome = "Some string.";
+        return 8;
+    }
+
+    /// <summary>
+    /// Another description1
+    /// </summary>
+    public int someMethod4(out string strSome, ref int foo) 
+    {
+        strSome = "Another string";
+        foo = 10;
+        return 5;
+    }
+}
+"""
+    
+    tmp = testpath.temporary_dir
+
+    test_cs, test_dll, test_xml = path_combine(tmp, 'gh1435.cs'), path_combine(tmp, 'gh1435.dll'), path_combine(tmp, 'gh1435.xml')
+
+    write_to_file(test_cs, code)
+
+    AreEqual(run_csc("/nologo /doc:" + test_xml + " /target:library /out:" + test_dll + " " + test_cs), 0)
+    
+    from cStringIO import StringIO
+    class _Capturing(list):
+        def __enter__(self):
+            self._stdout = sys.stdout
+            sys.stdout = self._stringio = StringIO()
+            return self
+
+        def __exit__(self, *args):
+            self.extend(self._stringio.getvalue())
+            sys.stdout = self._stdout
+
+    expected = """Help on method_descriptor:
+
+someMethod4(...)
+    someMethod4(self: clsBar, foo: int) -> (int, str, int)
+
+    Another description1""".replace('\r', '')
+
+    clr.AddReferenceToFileAndPath(test_dll)
+    import gh1435
+    with _Capturing() as output:
+        help(gh1435.someMethod4)
+    Assert('\n'.join(output), expected) 
 
 
 #------------------------------------------------------------------------------

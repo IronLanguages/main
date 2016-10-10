@@ -464,9 +464,10 @@ namespace IronPython.Runtime.Types {
         private static string GetXmlNameForProperty(Type declaringType, string propertyName) {
             StringBuilder res = new StringBuilder();
             res.Append("P:");
-
-            res.Append(declaringType.Namespace);
-            res.Append('.');
+            if (!string.IsNullOrEmpty(declaringType.Namespace)) {
+                res.Append(declaringType.Namespace);
+                res.Append('.');
+            }
             res.Append(declaringType.Name);
             res.Append('.');
             res.Append(propertyName);
@@ -477,8 +478,10 @@ namespace IronPython.Runtime.Types {
         private static string GetXmlName(MethodBase info) {
             StringBuilder res = new StringBuilder();
             res.Append("M:");
-            res.Append(info.DeclaringType.Namespace);
-            res.Append('.');
+            if (!string.IsNullOrEmpty(info.DeclaringType.Namespace)) {
+                res.Append(info.DeclaringType.Namespace);
+                res.Append('.');
+            }
             res.Append(info.DeclaringType.Name);
             res.Append('.');
             res.Append(info.Name);
@@ -489,7 +492,7 @@ namespace IronPython.Runtime.Types {
                     Type curType = pi[i].ParameterType;
 
                     if (i != 0) res.Append(',');
-                    AppendTypeFormat(curType, res);
+                    AppendTypeFormat(curType, res, pi[i]);
                 }
                 res.Append(')');
             }
@@ -500,7 +503,7 @@ namespace IronPython.Runtime.Types {
         /// Converts a Type object into a string suitable for lookup in the help file.  All generic types are
         /// converted down to their generic type definition.
         /// </summary>
-        private static void AppendTypeFormat(Type curType, StringBuilder res) {
+        private static void AppendTypeFormat(Type curType, StringBuilder res, ParameterInfo pi=null) {
             if (curType.GetTypeInfo().IsGenericType) {
                 curType = curType.GetGenericTypeDefinition();
             }
@@ -509,8 +512,10 @@ namespace IronPython.Runtime.Types {
                 res.Append(ReflectionUtils.GenericArityDelimiter);
                 res.Append(curType.GenericParameterPosition);
             } else if (curType.GetTypeInfo().ContainsGenericParameters) {
-                res.Append(curType.Namespace);
-                res.Append('.');
+                if (!string.IsNullOrEmpty(curType.Namespace)) {
+                    res.Append(curType.Namespace);
+                    res.Append('.');
+                }
                 res.Append(curType.Name.Substring(0, curType.Name.Length - 2));
                 res.Append('{');
                 Type[] types = curType.GetGenericArguments();
@@ -526,7 +531,15 @@ namespace IronPython.Runtime.Types {
                 }
                 res.Append('}');
             } else {
-                res.Append(curType.FullName);
+                if (pi != null) {
+                    if((pi.IsOut || pi.ParameterType.IsByRef) && curType.FullName.EndsWith("&")) {
+                        res.Append(curType.FullName.Replace("&", "@"));
+                    } else {
+                        res.Append(curType.FullName);
+                    }
+                } else {
+                    res.Append(curType.FullName);
+                }
             }
         }
 
