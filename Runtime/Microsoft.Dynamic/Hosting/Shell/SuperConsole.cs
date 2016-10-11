@@ -21,7 +21,7 @@ using System.Diagnostics;
 using Microsoft.Scripting.Utils;
 using System.Text;
 
-#if NETSTANDARD1_6
+#if NETCOREAPP1_0
 using Environment = System.FakeEnvironment;
 #endif
 

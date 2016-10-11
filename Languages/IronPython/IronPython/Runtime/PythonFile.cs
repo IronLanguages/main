@@ -41,7 +41,7 @@ using System.Numerics;
 using Microsoft.Scripting.Math;
 #endif
 
-#if NETSTANDARD1_6
+#if NETCOREAPP1_0
 using Environment = System.FakeEnvironment;
 #endif
 

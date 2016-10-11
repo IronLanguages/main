@@ -51,7 +51,7 @@ using IronPython.Runtime.Types;
 using Debugging = Microsoft.Scripting.Debugging;
 using PyAst = IronPython.Compiler.Ast;
 
-#if NETSTANDARD1_6
+#if NETCOREAPP1_0
 using Environment = System.FakeEnvironment;
 #endif
 
