@@ -24,7 +24,7 @@ from iptest.file_util import *
 from iptest.process_util import *
 
 import sys
-import nt
+import os
 
 import System
 from   System.Collections.Generic import List
@@ -116,7 +116,7 @@ def RunPythonExe(file, *args):
     realargs = [temppath]
     realargs.extend(args)
     try:
-        retval = nt.spawnv(0, temppath, realargs)
+        retval = os.spawnv(0, temppath, realargs)
     except:
         retval = 1
 

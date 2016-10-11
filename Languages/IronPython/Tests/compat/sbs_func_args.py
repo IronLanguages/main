@@ -20,11 +20,11 @@ def f1(arg0, arg1, arg2, arg3): return "same## %s %s %s %s" % (arg0, arg1, arg2,
 def f2(arg0, arg1, arg2=6, arg3=7): return "same## %s %s %s %s" % (arg0, arg1, arg2, arg3)
 def f3(arg0, arg1, arg2, *arg3): return "same## %s %s %s %s" % (arg0, arg1, arg2, arg3)
 
-if is_cli: 
+if is_cli:
     from iptest.process_util import run_csc 
     run_csc("/nologo /target:library /out:sbs_library.dll sbs_library.cs")
     import clr
-    clr.AddReference("sbs_library.dll")
+    clr.AddReferenceToFileAndPath("sbs_library.dll")
     from SbsTest import C
     o = C()
     g1 = o.M1
@@ -32,6 +32,8 @@ if is_cli:
     g3 = o.M3
     
     #for peverify runs
+    if clr.IsNetStandard:
+        clr.AddReference("System.IO.FileSystem")
     from System.IO import Path, File, Directory
     if File.Exists(Path.Combine(Path.GetTempPath(), "sbs_library.dll")):
         try:

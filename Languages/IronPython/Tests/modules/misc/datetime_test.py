@@ -1116,7 +1116,7 @@ def test_pickle():
 @skip("silverlight")
 def test_datetime_datetime_pickled_by_cpy():
     import cPickle
-    with open(r"pickles\cp18666.pickle", "rb") as f:
+    with open(r"pickles/cp18666.pickle", "rb") as f:
         expected_dt    = datetime.datetime(2009, 8, 6, 8, 42, 38, 196000)
         pickled_cpy_dt = cPickle.load(f)
         AreEqual(expected_dt, pickled_cpy_dt)
