@@ -663,6 +663,8 @@ def test_import_inside_exec():
     exec 'from another import *'
     AssertInOrNot(dir(), ['a1', 'a2', 'a3'], ['_a4'])
 
+    os.unlink(_f_module)
+
 @skip("silverlight")
 def test___import___and_packages():
     try:
@@ -695,6 +697,7 @@ def test___import___and_packages():
         os.unlink(_f_init)
         os.unlink(_f_pkg_y)
         os.unlink(_f_y)
+        os.rmdir(_f_dir)
 
 @skip("silverlight", "multiple_execute")
 def test_relative_imports():
@@ -771,9 +774,21 @@ from ..temp import foo1
     finally:
         sys.modules = mod_backup
         os.unlink(_f_init)
+        os.unlink(_f_pkg_x)
         os.unlink(_f_pkg_y)
         os.unlink(_f_subinit)
+        os.unlink(_f_subpkg_x)
         os.unlink(_f_subpkg_y)
+        os.unlink(_f_subpkg_z)
+        os.unlink(_f_subpkg_a)
+        os.unlink(_f_subpkg_b)
+        os.rmdir(_f_subdir)
+        os.rmdir(_f_dir)
+        os.unlink(_f_o_init)
+        os.unlink(_f_temp)
+        os.unlink(_f_sub_init)
+        os.rmdir(path_combine(testpath.public_testdir, _d_test, _subdir))
+        os.rmdir(path_combine(testpath.public_testdir, _d_test))
 
 @skip("silverlight")
 def test_import_globals():
@@ -820,6 +835,8 @@ sys.test4 = __import__("y", {}, {'__name__' : 'the_dir2.x.y'}).a
         os.unlink(_f_x_y)
         os.unlink(_f_y)
         os.unlink(_f_test)
+        os.rmdir(_f_x)
+        os.rmdir(_f_dir)
 
 @skip("silverlight", "multiple_execute")
 def test_package_back_patching():
@@ -859,10 +876,10 @@ def test_package_back_patching():
 if not is_silverlight: #cp3194
     try:
         mod_backup = dict(sys.modules)
-        _f_module = path_combine(testpath.public_testdir, 'the_test.py')
+        _f_module2 = path_combine(testpath.public_testdir, 'the_test.py')
         
         # write the files
-        write_to_file(_f_module, '''def foo(some_obj): return 3.14''')
+        write_to_file(_f_module2, '''def foo(some_obj): return 3.14''')
         
         from the_test import *
         AreEqual(foo(None), 3.14)
@@ -874,7 +891,7 @@ if not is_silverlight: #cp3194
     finally:
         sys.modules = mod_backup
         import os
-        os.unlink(_f_module)
+        os.unlink(_f_module2)
         
         
 @skip("silverlight", "multiple_execute")
@@ -903,6 +920,8 @@ def test_pack_module_relative_collision():
         os.unlink(_f_foo_py)
         os.unlink(_f_foo_init)
         os.unlink(_f_init)
+        os.rmdir(_f_foo_dir)
+        os.rmdir(_f_dir)
 
 @skip("silverlight", "multiple_execute")
 def test_from_import_publishes_in_package():
@@ -924,6 +943,7 @@ def test_from_import_publishes_in_package():
         sys.modules = mod_backup
         os.unlink(_f_foo_py)
         os.unlink(_f_init)
+        os.rmdir(_f_dir)
 
 @skip("silverlight", "multiple_execute")
 def test_from_import_publishes_in_package_relative():
@@ -949,6 +969,7 @@ def test_from_import_publishes_in_package_relative():
         sys.modules = mod_backup
         os.unlink(_f_foo_py)
         os.unlink(_f_init)
+        os.rmdir(_f_dir)
 
 @skip("silverlight", "multiple_execute")
 def test_from_import_publishes_in_package_relative():
@@ -973,6 +994,7 @@ def test_from_import_publishes_in_package_relative():
         sys.modules = mod_backup
         os.unlink(_f_foo_py)
         os.unlink(_f_init)
+        os.rmdir(_f_dir)
 
 @skip("silverlight", "multiple_execute")
 def test_from_import_publishes_in_package_relative_self():
@@ -997,6 +1019,7 @@ def test_from_import_publishes_in_package_relative_self():
         sys.modules = mod_backup
         os.unlink(_f_foo_py)
         os.unlink(_f_init)
+        os.rmdir(_f_dir)
 
 @skip("silverlight")
 def test_multiple_relative_imports_and_package():
@@ -1023,6 +1046,7 @@ def test_multiple_relative_imports_and_package():
         os.unlink(_f_foo_py)
         os.unlink(_f_bar_py)
         os.unlink(_f_init)
+        os.rmdir(_f_dir)
 
 @skip("silverlight")
 def test_cp34551():
@@ -1058,6 +1082,8 @@ def bar():
         os.unlink(_f_foo_py)
         os.unlink(_f_subinit)
         os.unlink(_f_init)
+        os.rmdir(_f_subdir)
+        os.rmdir(_f_dir)
 
 def test_cp35116():
     try:
@@ -1109,7 +1135,9 @@ def test_cp35116():
         os.unlink(_f_pkg2init)
         os.unlink(_f_pkg1init)
         os.unlink(_f_init)
-
+        os.rmdir(_f_pkg1)
+        os.rmdir(_f_pkg2)
+        os.rmdir(_f_dir)
 
 
 #--MAIN------------------------------------------------------------------------
@@ -1117,4 +1145,4 @@ run_test(__name__)
 
 # remove all test files
 if not is_silverlight:
-    delete_all_f(__name__)
+    delete_all_f(__name__, remove_folders=True)

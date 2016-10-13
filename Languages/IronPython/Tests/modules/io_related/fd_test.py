@@ -152,7 +152,7 @@ def test_open():
     os.close(fd3)
     os.close(fd4)
 
-    for i in range(1, 4):
+    for i in range(1, 5):
         os.unlink(test_filename + str(i))
 
 def test_write():
@@ -221,7 +221,7 @@ def test_pipe_fds():
     os.close(w)
     os.close(fd)
     f.close()
-    for i in range(1, 2):
+    for i in range(1, 3):
         os.unlink(test_filename + str(i))
 
 

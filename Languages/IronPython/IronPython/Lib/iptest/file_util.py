@@ -149,11 +149,16 @@ def filecopy(oldpath, newpath):
         if of: of.close()
         if nf: nf.close()
         
-def clean_directory(path):
+def clean_directory(path, remove=False):
     for f in os.listdir(path):
         try: 
             os.unlink(path_combine(path, f))
         except: 
+            pass
+    if remove:
+        try:
+            os.rmdir(path)
+        except:
             pass
 
 def get_directory_name(file):
@@ -198,14 +203,20 @@ def get_mod_names(filename):
     
     return ret_val
     
-        
-
-def delete_all_f(module_name):
+def delete_all_f(module_name, remove_folders=False):
     module = sys.modules[module_name]
+    folders = {}
     for x in dir(module):
         if x.startswith('_f_'):
             fn = getattr(module, x)
             if isinstance(fn, str):
-                try:    os.unlink(fn)
+                try:
+                    os.unlink(fn)
+                    name = os.path.dirname(fn)
+                    if os.path.isdir(name):
+                        folders[name] = None
                 except: pass
-                
+    if remove_folders:
+        for x in sorted(folders.iterkeys(), reverse=True):
+            try: os.rmdir(x)
+            except: pass

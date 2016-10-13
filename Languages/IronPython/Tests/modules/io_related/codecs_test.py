@@ -505,6 +505,7 @@ def test_file_encodings():
     finally:
         #cleanup
         sys.path.remove(path_combine(os.getcwd(), "tmp_encodings"))
+        os.rmdir(path_combine(os.getcwd(), "tmp_encodings"))
 
 @skip("silverlight")
 @skip("netstandard") # sys.executable isn't an executable
@@ -548,25 +549,23 @@ def test_file_encodings_negative():
     - need variations on the encoding names
     '''
     import sys
-    if is_posix:
-        import posix as _os
-    else:
-        import nt as _os
-    sys.path.append(path_combine(_os.getcwd(), "tmp_encodings"))
+    sys.path.append(path_combine(os.getcwd(), "tmp_encodings"))
     try:
-        _os.mkdir(path_combine(_os.getcwd(), "tmp_encodings"))
+        os.mkdir(path_combine(os.getcwd(), "tmp_encodings"))
     except:
         pass
              
     try:
         #negative case
-        f = open(path_combine(_os.getcwd(), "tmp_encodings", "bad_encoding.py"), "w")
+        f = open(path_combine(os.getcwd(), "tmp_encodings", "bad_encoding.py"), "w")
         f.write("# coding: bad")
         f.close()
         AssertError(SyntaxError, __import__, "bad_encoding")
+        os.remove(path_combine(os.getcwd(), "tmp_encodings", "bad_encoding.py"))
     finally:
         #cleanup
-        sys.path.remove(path_combine(_os.getcwd(), "tmp_encodings"))
+        sys.path.remove(path_combine(os.getcwd(), "tmp_encodings"))
+        os.rmdir(path_combine(os.getcwd(), "tmp_encodings"))
 
 @disabled
 def test_cp1214():

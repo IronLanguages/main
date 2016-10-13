@@ -1534,7 +1534,7 @@ def test_valuetype_iter():
     AreEqual(it.next().Key, 'a')
     AreEqual(it.next().Key, 'b')
 
-@skip("silverlight", "posix", "netstandard")
+@skip("silverlight", "posix")
 def test_abstract_class_no_interface_impl():
     # this can't be defined in C# or VB, it's a class which is 
     # abstract and therefore doesn't implement the interface method
@@ -1619,7 +1619,7 @@ def test_abstract_class_no_interface_impl():
     try:
         run_ilasm("/dll testilcode.il")
         
-        clr.AddReference('testilcode.dll')
+        clr.AddReferenceToFile('testilcode.dll')
         import AbstractILTest
         
         class x(AbstractILTest):
@@ -1852,8 +1852,8 @@ def test_xaml_support():
                 inp.Dispose()
 
     finally:
-        #os.unlink('test.xaml')
-        pass
+        import os
+        os.unlink('test.xaml')
 
 
 @skip("silverlight")
@@ -2016,4 +2016,3 @@ AreEqual(''.join(prod for prod in pd), 'Cat: Flange, ID: F423, Qty: 12')
     
 #--MAIN------------------------------------------------------------------------
 run_test(__name__)
-
