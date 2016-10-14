@@ -47,7 +47,7 @@ using PythonArray = IronPython.Modules.ArrayModule.array;
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 using Microsoft.Scripting.Utils;
 
-#if NETSTANDARD1_6
+#if NETCOREAPP1_0
 using Environment = System.FakeEnvironment;
 #endif
 
@@ -2660,16 +2660,23 @@ namespace IronPython.Modules {
 
             private void ValidateCertificate(X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
                 chain = new X509Chain();
+#if NETSTANDARD
+                // missing the X509Certificate2.ctor(X509Certificate) in .NET Core 1.0
+                chain.ChainPolicy.ExtraStore.AddRange(_certCollection);
+                chain.Build((X509Certificate2)certificate);
+#else
                 X509Certificate2Collection certificates = new X509Certificate2Collection();
-                foreach(object cert in _certCollection) {
-                    if(cert is X509Certificate) {
-                        certificates.Add(new X509Certificate2((X509Certificate)cert));
-                    } else if(cert is X509Certificate2) {
+                foreach (object cert in _certCollection) {
+                    if (cert is X509Certificate2) {
                         certificates.Add((X509Certificate2)cert);
+                    }
+                    else if (cert is X509Certificate) {
+                        certificates.Add(new X509Certificate2((X509Certificate)cert));
                     }
                 }
                 chain.ChainPolicy.ExtraStore.AddRange(certificates);
                 chain.Build(new X509Certificate2(certificate));
+#endif
                 if (chain.ChainStatus.Length > 0) {
                     foreach (var elem in chain.ChainStatus) {
                         if (elem.Status == X509ChainStatusFlags.UntrustedRoot) {
@@ -2711,7 +2718,7 @@ namespace IronPython.Modules {
                 try {
                     if (_serverSide) {
 #if NETSTANDARD
-                        _sslStream.AuthenticateAsServerAsync(_cert, _certsMode == PythonSsl.CERT_REQUIRED, SslProtocols.Default, false).Wait();
+                        _sslStream.AuthenticateAsServerAsync(_cert, _certsMode == PythonSsl.CERT_REQUIRED, SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false).Wait();
 #else
                         _sslStream.AuthenticateAsServer(_cert, _certsMode == PythonSsl.CERT_REQUIRED, SslProtocols.Default, false);
 #endif
@@ -2723,7 +2730,7 @@ namespace IronPython.Modules {
                             collection.Add(_cert);
                         }
 #if NETSTANDARD
-                        _sslStream.AuthenticateAsClientAsync(_socket._hostName, collection, SslProtocols.Default, false).Wait();
+                        _sslStream.AuthenticateAsClientAsync(_socket._hostName, collection, SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false).Wait();
 #else
                         _sslStream.AuthenticateAsClient(_socket._hostName, collection, SslProtocols.Default, false);
 #endif

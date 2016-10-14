@@ -308,7 +308,7 @@ if is_cli or is_silverlight:
     # an OpsExtensibleType and doesn't define __str__ on this
     # overload
     
-    AreEqual('1.00', System.Double.ToString(1.0, 'f'))
+    AreEqual(System.Double.ToString(1.0, 'f'), '1.00')
 
 ######################################################################################
 # Incorrect number of arguments

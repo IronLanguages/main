@@ -316,7 +316,11 @@ namespace IronPython.Modules {
 
             } finally {
                 if(store != null) {
+#if NETSTANDARD
+                    store.Dispose();
+#else
                     store.Close();
+#endif
                 }
             }
             return new List();
@@ -339,7 +343,11 @@ namespace IronPython.Modules {
 
             } finally {
                 if (store != null) {
+#if NETSTANDARD
+                    store.Dispose();
+#else
                     store.Close();
+#endif
                 }
             }
             return new List();
@@ -734,9 +742,6 @@ namespace IronPython.Modules {
         private const int SSL_VERIFY_PEER = 0x01;
         private const int SSL_VERIFY_FAIL_IF_NO_PEER_CERT = 0x02;
         private const int SSL_VERIFY_CLIENT_ONCE = 0x04;
-
-        
-        
 
         #endregion
     }

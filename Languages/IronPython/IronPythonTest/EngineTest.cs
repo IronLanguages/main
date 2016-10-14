@@ -31,7 +31,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security;
-#if !NETSTANDARD
+#if FEATURE_REMOTING
 using System.Security.Policy;
 #endif
 using System.Text;
@@ -1031,37 +1031,41 @@ i = int
         public void ScenarioDlrInterop() {
             string actionOfT = typeof(Action<>).FullName.Split('`')[0];
 
-#if !SILVERLIGHT && !NETSTANDARD
+#if !SILVERLIGHT
             ScriptScope scope = _env.CreateScope();
             ScriptSource src = _pe.CreateScriptSourceFromString(@"
-from System.Collections import ArrayList
 import clr
-clr.AddReference('System.Windows.Forms')
-from System.Windows.Forms import Control
-import System
+if clr.IsNetStandard:
+    clr.AddReference('System.Collections.NonGeneric')
+else:
+    clr.AddReference('System.Windows.Forms')
+    from System.Windows.Forms import Control
 
+import System
+from System.Collections import ArrayList
 
 somecallable = " + actionOfT + @"[object](lambda : 'Delegate')
 
-class control(Control):
-    pass
-
-class control_setattr(Control):
-    def __init__(self):
-        object.__setattr__(self, 'lastset', None)
-    
-    def __setattr__(self, name, value):
-        object.__setattr__(self, 'lastset', (name, value))
-
-class control_override_prop(Control):
-    def __setattr__(self, name, value):
+if not clr.IsNetStandard:
+    class control(Control):
         pass
 
-    def get_AllowDrop(self):
-        return 'abc'
+    class control_setattr(Control):
+        def __init__(self):
+            object.__setattr__(self, 'lastset', None)
+    
+        def __setattr__(self, name, value):
+            object.__setattr__(self, 'lastset', (name, value))
 
-    def set_AllowDrop(self, value):
-        super(control_setattr, self).AllowDrop.SetValue(value)
+    class control_override_prop(Control):
+        def __setattr__(self, name, value):
+            pass
+
+        def get_AllowDrop(self):
+            return 'abc'
+
+        def set_AllowDrop(self, value):
+            super(control_setattr, self).AllowDrop.SetValue(value)
 
 class ns(object):
     ClassVal = 'ClassVal'
@@ -1261,7 +1265,8 @@ TestFunc.TestFunc = TestFunc
 TestFunc.InstVal = 'InstVal'
 TestFunc.ClassVal = 'ClassVal'  # just here to simplify tests
 
-controlinst = control()
+if not clr.IsNetStandard:
+    controlinst = control()
 nsinst = ns()
 iterable = IterableObject()
 iterableos = IterableObjectOs()
@@ -1452,6 +1457,7 @@ xrange = xrange
 
             // get on .NET member should fallback
 
+#if !NETSTANDARD
             // property
             site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("AllowDrop"));
             AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
@@ -1467,7 +1473,7 @@ xrange = xrange
             // event
             site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("DoubleClick"));
             AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
-
+#endif
 
             site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("something", new CallInfo(0)));
             AreEqual(site.Target(site, (object)scope.GetVariable("ns_getattrinst")), "FallbackInvokegetattrsomething");

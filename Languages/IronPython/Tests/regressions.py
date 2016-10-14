@@ -870,6 +870,7 @@ def test_cp24677():
         pass
 
 
+@skip("netstandard") # no clr.CompileModules
 def test_gh1357():
     import os
     filename = os.path.join(testpath.temporary_dir, 'gh1357.py')

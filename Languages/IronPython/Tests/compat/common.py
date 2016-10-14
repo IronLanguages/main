@@ -70,7 +70,8 @@ def get_all_paths():
 
     Assert(file_exists(cpython_executable))
     Assert(file_exists(cpython_lib_path))
-    Assert(file_exists(ipython_executable))
+    if is_cli:
+        Assert(file_exists(ipython_executable))
     Assert(file_exists(compat_test_path))
     
     return cpython_executable, cpython_lib_path, ipython_executable, compat_test_path

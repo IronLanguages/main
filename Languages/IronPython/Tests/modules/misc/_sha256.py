@@ -57,7 +57,7 @@ def test_sha256_sanity():
     Assert(x!=x_copy)
     AreEqual(x.hexdigest(), x_copy.hexdigest())
     
-    
+@skip("netstandard")
 def test_sha224_sanity():
     x = _sha256.sha224()
     AreEqual(x.block_size, 64)

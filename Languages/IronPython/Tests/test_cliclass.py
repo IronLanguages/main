@@ -1776,8 +1776,7 @@ def test_silverlight_access_isolated_storage():
         # IsolatedStorage may not actually be available
         pass
     
-@skip("netstandard") # no WPF in netstandard
-@skip("silverlight", "posix")
+@skip("silverlight", "posix", "netstandard") # no WPF in netstandard
 def test_xaml_support():
     text = """<custom:XamlTestObject 
    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
