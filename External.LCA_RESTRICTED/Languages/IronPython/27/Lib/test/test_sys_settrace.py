@@ -315,7 +315,7 @@ class TraceTestCase(unittest.TestCase):
         self.run_test2(settrace_and_return)
     def test_09_settrace_and_raise(self):
         self.run_test2(settrace_and_raise)
-    @unittest.skipIf(sys.platform == 'cli', 'TODO: investigate')
+    @unittest.skipIf(sys.platform == 'cli', 'TODO (code generation)')
     def test_10_ireturn(self):
         self.run_test(ireturn_example)
     def test_11_tightloop(self):
@@ -323,7 +323,7 @@ class TraceTestCase(unittest.TestCase):
     def test_12_tighterloop(self):
         self.run_test(tighterloop_example)
 
-    @unittest.skipIf(sys.platform == 'cli', 'TODO: investigate')
+    @unittest.skipIf(sys.platform == 'cli', 'TODO (code generation)')
     def test_13_genexp(self):
         self.run_test(generator_example)
         # issue1265: if the trace function contains a generator,
@@ -767,7 +767,6 @@ class JumpTestCase(unittest.TestCase):
         self.run_test(no_jump_out_of_finally_block)
     def test_18_no_jump_to_non_integers(self):
         self.run_test(no_jump_to_non_integers)
-    @unittest.skipIf(sys.platform == 'cli', 'TODO: investigate')
     def test_19_no_jump_without_trace_function(self):
         no_jump_without_trace_function()
     def test_jump_across_with(self):
@@ -791,7 +790,7 @@ class JumpTestCase(unittest.TestCase):
         f.output = [0]
         self.run_test(f)
 
-    @unittest.skipIf(sys.platform == 'cli', 'TODO: investigate')
+    @unittest.skipIf(sys.platform == 'cli', 'TODO (code generation): there is no "line" callback for the first statement, only "call"')
     def test_jump_to_firstlineno(self):
         # This tests that PDB can jump back to the first line in a
         # file.  See issue #1689458.  It can only be triggered in a
