@@ -83,6 +83,9 @@ else:
             exec 'from System import *'
             Assert('Int32' in dir())
 
+    delete_files(_f_imfp_start)
+    clean_directory(path_combine(testpath.public_testdir, _imfp), remove=True)
+
 def test_imp_basic():
     magic = imp.get_magic()
     suffixes = imp.get_suffixes()
@@ -92,7 +95,7 @@ def test_imp_basic():
         AreEqual(len(suffix), 3)
     Assert((".py", "U", 1) in suffixes)
 
-if is_silverlight==False:
+if not is_silverlight:
     _testdir = "ImpTest"
     _imptestdir = path_combine(testpath.public_testdir, _testdir)
     _f_init = path_combine(_imptestdir, "__init__.py")
@@ -358,6 +361,7 @@ def test_sys_path_none_userpy():
         
     finally:
         sys.path = prevPath
+        delete_files(path_combine(testpath.public_testdir, "temp_syspath_none.py"))
 
 
 def test_sys_path_none_negative():
@@ -530,7 +534,7 @@ called = 3.14
             AreEqual(temp_mod.called, 3.14)
     finally:
         sys.path.remove(path_combine(testpath.public_testdir, "cp7007"))
-        delete_files(strange_file_names)
+        clean_directory(path_combine(testpath.public_testdir, "cp7007"), remove=True)
 
 def test_relative_control():
     """test various flavors of relative/absolute import and ensure the right
@@ -1073,6 +1077,9 @@ class Test(object):
     t = new.classobj('Test1', (getattr(module, 'Test'),), {})
     i = t()
     AreEqual(i.a(), 34)
+
+    moduleInfo[0].close()
+    delete_files(_f_imp_cp13736)
     
 def test_import_path_seperator():
     """verify using the path seperator in a direct call will result in an ImportError"""
@@ -1354,5 +1361,5 @@ def test_new_builtin_modules():
 
 #------------------------------------------------------------------------------
 run_test(__name__)
-if is_silverlight==False:
-    delete_all_f(__name__)
+if not is_silverlight:
+    delete_all_f(__name__, remove_folders=True)

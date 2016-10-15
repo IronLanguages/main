@@ -66,6 +66,9 @@ def test_file_io():
         AreEqual(ms.GetBuffer()[4], ord('o'))
         ms.Close()
 
+    import os
+    os.remove("testfile.tmp")
+
 # more tests for 'open'
 @skip("silverlight")
 def test_open():
@@ -128,6 +131,9 @@ def test_redirect():
     l = f.readlines()
     Assert(l == ["1\n", "2\n", "2\n", "3\n", "4\n", "5\n", "6\n", "7\n", "8\n", "9\n", "0\n"])
     f.close()
+
+    import os
+    os.remove("testfile.tmp")
 
 def test_conversions():
     success=False

@@ -700,7 +700,7 @@ End Class
     """)
         f.close()
         
-        name = 'vbproptest%f.dll' % (r.random())
+        name = path_combine(testpath.temporary_dir, 'vbproptest%f.dll' % (r.random()))
         x = run_vbc('/target:library vbproptest1.vb "/out:%s"' % name)        
         AreEqual(x, 0)
         
@@ -787,7 +787,7 @@ End Class
     """)
         f.close()
         
-        name = 'vbproptest%f.dll' % (r.random())
+        name = path_combine(testpath.temporary_dir, 'vbproptest%f.dll' % (r.random()))
         AreEqual(run_vbc('/target:library vbproptest1.vb /out:"%s"' % name), 0)
 
         clr.AddReferenceToFileAndPath(name)
@@ -1534,7 +1534,7 @@ def test_valuetype_iter():
     AreEqual(it.next().Key, 'a')
     AreEqual(it.next().Key, 'b')
 
-@skip("silverlight", "posix", "netstandard")
+@skip("silverlight", "posix")
 def test_abstract_class_no_interface_impl():
     # this can't be defined in C# or VB, it's a class which is 
     # abstract and therefore doesn't implement the interface method
@@ -1613,13 +1613,15 @@ def test_abstract_class_no_interface_impl():
 } // end of class foo
 """
     from iptest.process_util import run_ilasm
-    f = file('testilcode.il', 'w+')
+    testilcode = path_combine(testpath.temporary_dir, 'testilcode.il')
+
+    f = file(testilcode, 'w+')
     f.write(ilcode)
     f.close()
     try:
-        run_ilasm("/dll testilcode.il")
+        run_ilasm("/dll " + testilcode)
         
-        clr.AddReference('testilcode.dll')
+        clr.AddReferenceToFileAndPath(path_combine(testpath.temporary_dir, 'testilcode.dll'))
         import AbstractILTest
         
         class x(AbstractILTest):
@@ -1629,7 +1631,7 @@ def test_abstract_class_no_interface_impl():
         AreEqual(AbstractILTest.Helper(a), "42")
     finally:
         import os
-        os.unlink('testilcode.il')
+        os.unlink(testilcode)
 
 def test_field_assign():
     """assign to an instance field through the type"""
@@ -1852,8 +1854,8 @@ def test_xaml_support():
                 inp.Dispose()
 
     finally:
-        #os.unlink('test.xaml')
-        pass
+        import os
+        os.unlink('test.xaml')
 
 
 @skip("silverlight")
@@ -2016,4 +2018,3 @@ AreEqual(''.join(prod for prod in pd), 'Cat: Flange, ID: F423, Qty: 12')
     
 #--MAIN------------------------------------------------------------------------
 run_test(__name__)
-

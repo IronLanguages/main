@@ -38,7 +38,14 @@ namespace Microsoft.Scripting.Runtime {
         }
 
         public override SourceCodeReader GetReader() {
-            return _context.GetSourceReader(_streamProvider.GetStream(), _defaultEncoding, _path);
+            Stream stream = _streamProvider.GetStream();
+            try {
+                return _context.GetSourceReader(stream, _defaultEncoding, _path);
+            }
+            catch {
+                stream.Dispose();
+                throw;
+            }
         }
     }
 }

@@ -14,7 +14,7 @@
 #####################################################################################
 
 from iptest.assert_util import *
-if is_silverlight==False:
+if not is_silverlight:
     from iptest.file_util import *
 
 import marshal
@@ -135,6 +135,9 @@ def test_file_multiple_reads():
     for i in xrange(10):
         obj = marshal.load(f)
         AreEqual(obj, {i:i})
+
+    f.close()
+    delete_files('tempfile.txt')
 
 def test_string_interning():
     AreEqual(marshal.dumps(['abc', 'abc'], 1), '[\x02\x00\x00\x00t\x03\x00\x00\x00abcR\x00\x00\x00\x00')

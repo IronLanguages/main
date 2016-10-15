@@ -66,6 +66,9 @@ def test_sanity():
         AssertError(ValueError, f.write, "abc")
         AssertError(ValueError, f.writelines, ["abc","def"])
 
+    os.unlink("onlyread.tmp")
+    os.unlink("onlywrite.tmp")
+
     ###
 
 # The name of a temporary test data file that will be used for the following
@@ -612,6 +615,8 @@ def test_newline():
     
     test_newline(norm, "r")
     test_newline(unnorm, "rb")
+
+    os.unlink("testfile.tmp")
 
 def test_creation():
     f = file.__new__(file, None)

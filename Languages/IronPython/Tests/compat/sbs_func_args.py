@@ -24,7 +24,7 @@ if is_cli:
     from iptest.process_util import run_csc 
     run_csc("/nologo /target:library /out:sbs_library.dll sbs_library.cs")
     import clr
-    clr.AddReferenceToFileAndPath("sbs_library.dll")
+    clr.AddReferenceToFile("sbs_library.dll")
     from SbsTest import C
     o = C()
     g1 = o.M1

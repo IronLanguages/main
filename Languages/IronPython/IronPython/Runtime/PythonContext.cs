@@ -984,7 +984,7 @@ namespace IronPython.Runtime
             ContractUtils.RequiresNotNull(defaultEncoding, "defaultEncoding");
             ContractUtils.Requires(stream.CanSeek && stream.CanRead, "stream", "The stream must support seeking and reading");
 
-            // we choose ASCII by default, if the file has a Unicode pheader though
+            // we choose ASCII by default, if the file has a Unicode header though
             // we'll automatically get it as unicode.
             Encoding encoding = PythonAsciiEncoding.SourceEncoding;
 
