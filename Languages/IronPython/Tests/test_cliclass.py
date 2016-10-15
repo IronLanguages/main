@@ -700,7 +700,7 @@ End Class
     """)
         f.close()
         
-        name = 'vbproptest%f.dll' % (r.random())
+        name = path_combine(testpath.temporary_dir, 'vbproptest%f.dll' % (r.random()))
         x = run_vbc('/target:library vbproptest1.vb "/out:%s"' % name)        
         AreEqual(x, 0)
         
@@ -787,7 +787,7 @@ End Class
     """)
         f.close()
         
-        name = 'vbproptest%f.dll' % (r.random())
+        name = path_combine(testpath.temporary_dir, 'vbproptest%f.dll' % (r.random()))
         AreEqual(run_vbc('/target:library vbproptest1.vb /out:"%s"' % name), 0)
 
         clr.AddReferenceToFileAndPath(name)
@@ -1613,13 +1613,15 @@ def test_abstract_class_no_interface_impl():
 } // end of class foo
 """
     from iptest.process_util import run_ilasm
-    f = file('testilcode.il', 'w+')
+    testilcode = path_combine(testpath.temporary_dir, 'testilcode.il')
+
+    f = file(testilcode, 'w+')
     f.write(ilcode)
     f.close()
     try:
-        run_ilasm("/dll testilcode.il")
+        run_ilasm("/dll " + testilcode)
         
-        clr.AddReferenceToFile('testilcode.dll')
+        clr.AddReferenceToFileAndPath(path_combine(testpath.temporary_dir, 'testilcode.dll'))
         import AbstractILTest
         
         class x(AbstractILTest):
@@ -1629,7 +1631,7 @@ def test_abstract_class_no_interface_impl():
         AreEqual(AbstractILTest.Helper(a), "42")
     finally:
         import os
-        os.unlink('testilcode.il')
+        os.unlink(testilcode)
 
 def test_field_assign():
     """assign to an instance field through the type"""

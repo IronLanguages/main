@@ -399,22 +399,24 @@ def test_compiled_code():
 
     import clr
     
+    pyil = os.path.join(testpath.temporary_dir, 'test.pyil')
+
     # make sure we can compile
-    clr.CompileModules('test.pyil', testpath.public_testdir + '\\test_class.py')
+    clr.CompileModules(pyil, os.path.join(testpath.public_testdir, 'test_class.py'))
     
     # make sure we can compile multiple files
-    clr.CompileModules('test.pyil', testpath.public_testdir + '\\test_class.py', testpath.public_testdir + '\\test_slice.py')
+    clr.CompileModules(pyil, os.path.join(testpath.public_testdir, 'test_class.py'), os.path.join(testpath.public_testdir, 'test_slice.py'))
     
-    clr.AddReference('test.pyil')
+    clr.AddReferenceToFileAndPath(pyil)
     import nt
     
     # and make sure we can run some reasonable sophisticated code...
-    System.IO.File.Move(testpath.public_testdir + '\\test_class.py', 'old_test_class.py')
+    System.IO.File.Move(os.path.join(testpath.public_testdir, 'test_class.py'), 'old_test_class.py')
     try:
         import test_class
         Assert(test_class.test_oldstyle_getattr.__doc__ != '')
     finally:
-        System.IO.File.Move('old_test_class.py', testpath.public_testdir + '\\test_class.py')
+        System.IO.File.Move('old_test_class.py', os.path.join(testpath.public_testdir, 'test_class.py'))
         
 @skip("multiple_execute")
 @skip("netstandard") # no System.ICloneable in netstandard
@@ -422,7 +424,10 @@ def test_cached_types():
     import clr
     from System import IComparable, IFormattable, ICloneable
     import IronPythonTest    
-    
+
+    cwd = os.getcwd()
+    os.chdir(testpath.temporary_dir)
+
     # basic sanity test that we can compile...
     clr.CompileSubclassTypes('test', (object, ))
     clr.CompileSubclassTypes('test', object)
@@ -433,7 +438,7 @@ def test_cached_types():
     # build an unlikely existing type and make sure construction gives us
     # back the correct type.
     clr.CompileSubclassTypes('cached_type_dll', (object, IComparable[()], IFormattable, ICloneable))
-    asm = System.Reflection.Assembly.Load('cached_type_dll')
+    asm = System.Reflection.Assembly.LoadFrom(os.path.join(testpath.temporary_dir, 'cached_type_dll.dll'))
     clr.AddReference(asm)
     
     class x(object, IComparable[()], IFormattable, ICloneable):
@@ -459,7 +464,7 @@ def test_cached_types():
                 queue.append(attr)
 
     clr.CompileSubclassTypes('InheritanceTypes', *types)
-    clr.AddReference('InheritanceTypes')
+    clr.AddReferenceToFileAndPath(os.path.join(testpath.temporary_dir, 'InheritanceTypes.dll'))
     import test_inheritance
 
     #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21892
@@ -467,4 +472,8 @@ def test_cached_types():
     clr.CompileSubclassTypes('finaltest', *clr.GetSubclassedTypes())
     clr.AddReference('finaltest')
 
+    os.chdir(cwd)
+
 run_test(__name__)
+
+os.remove('tempFile1.tpy')

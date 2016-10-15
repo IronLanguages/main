@@ -23,20 +23,11 @@ Solutions/TestResults/
 Runtime/Samples/Hosting/Scenarios/bin/
 
 # TODO - testing scripts should not create these files
-debug.log
 External.LCA_RESTRICTED/Languages/IronPython/27/Lib/@test_*
-External.LCA_RESTRICTED/Languages/IronPython/27/Lib/lib2to3/Grammar2.9.9.alpha.0.pickle
-External.LCA_RESTRICTED/Languages/IronPython/27/Lib/lib2to3/PatternGrammar2.9.9.alpha.0.pickle
-# TODO: clean up after test_ipyc.py
-Languages/IronPython/Tests/InheritanceTypes.dll
-Languages/IronPython/Tests/cached_type_dll.dll
-Languages/IronPython/Tests/finaltest.dll
-Languages/IronPython/Tests/tempFile1.tpy
-Languages/IronPython/Tests/test.dll
-Languages/IronPython/Tests/test.pyil
-# TODO: clean up after test_cliclass.py
-Languages/IronPython/Tests/testilcode.dll
-Languages/IronPython/Tests/vbproptest0.*.dll
+
+# created by CPython tests
+External.LCA_RESTRICTED/Languages/IronPython/27/Lib/lib2to3/Grammar*.pickle
+External.LCA_RESTRICTED/Languages/IronPython/27/Lib/lib2to3/PatternGrammar*.pickle
 
 # created by side by side tests
 Languages/IronPython/Tests/compat/*.log
