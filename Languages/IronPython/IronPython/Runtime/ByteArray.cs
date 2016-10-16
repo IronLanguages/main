@@ -521,7 +521,7 @@ namespace IronPython.Runtime {
             if (_bytes.Count != 0) {
                 int index = find(sep);
                 if (index == -1) {
-                    obj[0] = this;
+                    obj[0] = CopyThis();
                 } else {
                     obj[0] = new ByteArray(_bytes.Substring(0, index));
                     obj[1] = sep;
@@ -629,7 +629,7 @@ namespace IronPython.Runtime {
                 if (_bytes.Count != 0) {
                     int index = rfind(sep);
                     if (index == -1) {
-                        obj[2] = this;
+                        obj[2] = CopyThis();
                     } else {
                         obj[0] = new ByteArray(_bytes.Substring(0, index));
                         obj[1] = new ByteArray(new List<byte>(sep));

@@ -356,10 +356,10 @@ def test_partition():
         
         x = testType(b'abc')
         one, two, three = x.partition(b'd')
-        if is_ironpython or testType==str: #http://ironpython.codeplex.com/workitem/27906
-            AreEqual(id(one), id(x))
+        if testType == bytearray:
+            Assert(id(one) != id(x))
         else:
-            Assert(id(one)!=id(x))
+            AreEqual(id(one), id(x))
     
     one, two, three = b''.partition(b'abc')
     AreEqual(id(one), id(two))
@@ -506,10 +506,10 @@ def test_rpartition():
         
         x = testType(b'abc')
         one, two, three = x.rpartition(b'd')        
-        if is_ironpython or testType==str: #http://ironpython.codeplex.com/workitem/27906
-            AreEqual(id(three), id(x))
-        else:
+        if testType == bytearray:
             Assert(id(three) != id(x))
+        else:
+            AreEqual(id(three), id(x))
         
         b = testType(b'mississippi')
         AreEqual(b.rpartition(b'i'), (b'mississipp', b'i', b''))
