@@ -27,7 +27,7 @@ using System.Security;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
 [assembly: AssemblyProduct("Microsoft.Scripting")]
-[assembly: AssemblyCopyright("© Microsoft Corporation.  All rights reserved.")]
+[assembly: AssemblyCopyright("ï¿½ Microsoft Corporation.  All rights reserved.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -51,8 +51,8 @@ using System.Security;
 #endif
 
 #if !SILVERLIGHT
-[assembly: AssemblyVersion("1.1.1.21")]
-[assembly: AssemblyFileVersion("1.1.1.21")]
+[assembly: AssemblyVersion("1.1.1.22")]
+[assembly: AssemblyFileVersion("1.1.1.22")]
 [assembly: AssemblyInformationalVersion("1.1")]
 #endif
 

@@ -283,7 +283,7 @@ namespace TestRunner
             lock (this) {
                 if (!_quiet) {
                     if (_verbose) {
-                        const string resultFormat = "{0,-25}";
+                        const string resultFormat = "{0,-20}";
                         var originalColor = Console.ForegroundColor;
                         switch (result.Status) {
                             case TestResultStatus.Skipped:
