@@ -237,28 +237,15 @@ def test_array___reduce__():
     TODO: revisit
     '''
     x = array.array('i', [1,2,3])
-    if is_cpython: #http://ironpython.codeplex.com/workitem/28211
-        AreEqual(repr(x.__reduce__()), 
-                 "(<type 'array.array'>, ('i', [1, 2, 3]), None)")
-    else:
-        AreEqual(repr(x.__reduce__()), 
-                 "(<type 'array.array'>, ('i', '\\x01\\x00\\x00\\x00\\x02\\x00\\x00\\x00\\x03\\x00\\x00\\x00'), None)")
+    AreEqual(repr(x.__reduce__()), "(<type 'array.array'>, ('i', [1, 2, 3]), None)")
 
 def test_array___reduce_ex__():
     '''
     TODO: revisit
     '''
     x = array.array('i', [1,2,3])
-    if is_cpython: #http://ironpython.codeplex.com/workitem/28211
-        AreEqual(repr(x.__reduce_ex__(1)), 
-                 "(<type 'array.array'>, ('i', [1, 2, 3]), None)")
-        AreEqual(repr(x.__reduce_ex__()), 
-                 "(<type 'array.array'>, ('i', [1, 2, 3]), None)")
-    else:
-        AreEqual(repr(x.__reduce_ex__(1)), 
-                 "(<type 'array.array'>, ('i', '\\x01\\x00\\x00\\x00\\x02\\x00\\x00\\x00\\x03\\x00\\x00\\x00'), None)")
-        AreEqual(repr(x.__reduce_ex__()), 
-                 "(<type 'array.array'>, ('i', '\\x01\\x00\\x00\\x00\\x02\\x00\\x00\\x00\\x03\\x00\\x00\\x00'), None)")
+    AreEqual(repr(x.__reduce_ex__(1)), "(<type 'array.array'>, ('i', [1, 2, 3]), None)")
+    AreEqual(repr(x.__reduce_ex__()), "(<type 'array.array'>, ('i', [1, 2, 3]), None)")
 
 def test_array___repr__():
     '''
