@@ -90,5 +90,8 @@ def test_cp34689():
 
     Assert(caught)
 
+def test_gh590():
+    AreEqual(unicode(''.join(chr(i) for i in range(0x80, 0x100)), 'ascii', 'replace'), u'\ufffd'*0x80)
+
 #--MAIN------------------------------------------------------------------------
 run_test(__name__)
