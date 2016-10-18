@@ -164,7 +164,7 @@ namespace IronPython.Modules {
                     out SafeRegistryHandle phkResult,
                     out int lpdwDisposition);
 
-        [DllImport("advapi32.dll", SetLastError = true)]
+        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         static extern int RegQueryValueEx(
               SafeRegistryHandle hKey,
               string lpValueName,
@@ -431,7 +431,7 @@ namespace IronPython.Modules {
             pyKey.GetKey().SetValue(null, value);
         }
 
-        public static void SetValueEx(object key, string valueName, int reserved, int type, object value) {
+        public static void SetValueEx(object key, string valueName, object reserved, int type, object value) {
             HKEYType rootKey = GetRootKey(key);
             RegistryValueKind regKind = (RegistryValueKind)type;
 
