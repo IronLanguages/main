@@ -4734,7 +4734,7 @@
           <Arguments>test\test_winreg.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED -->
+          <Disabled>false</Disabled>
           <Condition>'$(OS)' != 'Unix'</Condition>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
