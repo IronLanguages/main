@@ -85,7 +85,7 @@ namespace IronPython.Runtime {
 
         public void OnTraceEvent(Debugging.TraceEventKind kind, string name, string sourceFileName, SourceSpan sourceSpan, Func<IDictionary<object, object>> scopeCallback, object payload, object customPayload) {        
             if (kind == Debugging.TraceEventKind.ThreadExit ||                  // We don't care about thread-exit events
-#if PROFILER_SUPPORT
+#if PROFILE_SUPPORT
                 (_profile && kind == Debugging.TraceEventKind.TracePoint) ||    // Ignore code execute tracebacks when in profile mode
 #endif
                 kind == Debugging.TraceEventKind.ExceptionUnwind) {             // and we always have a try/catch so we don't care about methods unwinding.

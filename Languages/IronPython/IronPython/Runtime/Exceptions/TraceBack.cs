@@ -244,7 +244,7 @@ namespace IronPython.Runtime.Exceptions {
         private void SetLineNumber(int newLineNum) {
             var pyThread = PythonOps.GetFunctionStackNoCreate();
             if (_traceAdapter == null || !IsTopMostFrame(pyThread)) {
-                throw PythonOps.ValueError("f_lineno can only be set by a trace function");
+                throw PythonOps.ValueError("f_lineno can only be set by a trace function on the topmost frame");
             }
 
             FunctionCode funcCode = _debugProperties.Code;
