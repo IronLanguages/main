@@ -112,7 +112,7 @@ def test_new_thread_is_background():
         done = Thread.CurrentThread.IsBackground
     thread.start_new_thread(f, ())
     while done == None:
-        Thread.Sleep(1000)
+        Thread.Sleep(100)
     Assert(done)
 
 @skip("silverlight")
@@ -163,7 +163,7 @@ def test_thread_local():
     thread.start_new_thread(f, ())
 
     while found == None:
-        Thread.Sleep(1000)
+        Thread.Sleep(100)
 
     Assert(not found)
     
@@ -195,7 +195,7 @@ def test_start_new():
     thread.start_new(tempFunc, ())
     while CALLED==False:
         print ".",
-        time.sleep(1)
+        time.sleep(0.1)
     AreEqual(CALLED, 3.14)
     CALLED = False
 
@@ -215,13 +215,13 @@ def test_start_new_thread():
     id = thread.start_new_thread(tempFunc, (), {"mykw_param":7})
     while CALLED==False:
         print ".",
-        time.sleep(1)
+        time.sleep(0.1)
     AreEqual(CALLED, 7)
     
     id = thread.start_new_thread(tempFunc, (), {"mykw_param":8})
     while CALLED!=8:  #Hang forever if this is broken
         print ".",
-        time.sleep(1)
+        time.sleep(0.1)
     
     #--Sanity Negative
     global temp_stderr
@@ -237,7 +237,7 @@ def test_start_new_thread():
         sys.stderr = myStdOut()
         
         id = thread.start_new_thread(tempFunc, (), {"my_misspelled_kw_param":9})
-        time.sleep(5)
+        time.sleep(1)
         if not is_silverlight:
             se.flush()
     finally:

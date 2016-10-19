@@ -323,7 +323,30 @@ print final"""
         finally:
             os.unlink('temp.py')
 
-
+def test_call_tracing():
+    def f(i):
+        return i * 2
+    def g():
+        pass
+        
+    # outside of a traceback
+    AreEqual(10, sys.call_tracing(f, (5, )))
+    
+    # inside of a traceback
+    log = []
+    def thandler(frm, evt, pl):
+        if evt == 'call':
+            log.append(frm.f_code.co_name)
+            if log[-1] == 'g':
+                sys.call_tracing(f, (5, ))
+        return thandler
+        
+    sys.settrace(thandler)
+    g()
+    sys.settrace(None)
+    
+    AreEqual(log, ['g', 'f'])
+            
 @skip("win32")
 def test_getrefcount():
     # getrefcount
@@ -433,46 +456,6 @@ f()
               None, 'line', None, 'call', None, 'line', None, 'return', None, 
               'return', None])
 
-def test_cp30129():
-    frames = []
-    def f(*args):
-        if args[1] == 'call':
-            frames.append(args[0])
-            if len(frames) == 3:
-                res.append('setting' + str(frames[1].f_lineno))
-                frames[1].f_lineno = 457
-        return f
-    
-    
-    import sys
-    sys.settrace(f)
-    
-    res = []
-    def a():
-        res.append('foo')
-        res.append('bar')
-        res.append('baz')
-    
-    def b():
-        a()
-        res.append('x')
-        res.append('y')
-        res.append('z')
-    
-    def c():
-        b()
-        res.append('hello')
-        res.append('goodbye')
-        res.append('see ya')
-    
-    
-    c()
-    
-    AreEqual(res, ['setting457', 'foo', 'bar', 'baz', 'x', 'y', 'z', 'hello', 'goodbye', 'see ya'])
-    
-    sys.settrace(None)
-    
-
 def test_cp30130():
     def f(frame, event, arg):
         if event == 'exception':
@@ -501,12 +484,13 @@ def test_cp30130():
     sys.settrace(None)
 
 def test_getrefcount():
+    import warnings
     with warnings.catch_warnings(record = True) as w:
         count = sys.getrefcount(None)
         
     AreNotEqual(0, count)
     Assert(w)
-    Assert('runtime' in w[0])
+    Assert('dummy result' in str(w[0].message))
     
 #--MAIN------------------------------------------------------------------------    
 

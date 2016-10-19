@@ -23,11 +23,11 @@ using Microsoft.Scripting.Ast;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Debugging.CompilerServices;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
@@ -44,7 +44,7 @@ namespace IronPython.Runtime {
     /// passing it into exec or eval.
     /// </summary>
     [PythonType("code")]
-    public class FunctionCode : IExpressionSerializable {
+    public class FunctionCode : IExpressionSerializable, ICodeFormattable {
         [PythonHidden]
         internal Delegate Target, LightThrowTarget;                 // the current target for the function.  This can change based upon adaptive compilation, recursion enforcement, and tracing.
         internal Delegate _normalDelegate;                          // the normal delegate - this can be a compiled or interpreted delegate.
@@ -557,6 +557,19 @@ namespace IronPython.Runtime {
             get {
                 throw PythonOps.NotImplementedError("");
             }
+        }
+
+        #endregion
+
+        #region ICodeFormattable Members
+
+        public string/*!*/ __repr__(CodeContext/*!*/ context) {
+            return string.Format(
+                "<code object {0} at {1}, file {2}, line {3}>",
+                co_name,
+                PythonOps.HexId(this),
+                !string.IsNullOrEmpty(co_filename) ? string.Format("\"{0}\"", co_filename) : "???",
+                co_firstlineno != 0 ? co_firstlineno : -1);
         }
 
         #endregion

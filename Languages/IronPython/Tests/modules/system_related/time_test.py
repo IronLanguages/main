@@ -106,7 +106,7 @@ def test_sleep():
         print "Bailing test_sleep for certain AMD64 machines!"
         return
         
-    sleep_time = 5
+    sleep_time = 3
     safe_deviation = 0.20
 
     x = time.clock()
@@ -125,7 +125,7 @@ def test_dst():
     if is_silverlight:
         print "Dev10 524020"
         return
-    AreEqual(time.altzone, time.timezone+[3600,-3600][time.daylight])
+    if time.daylight: AreEqual(time.altzone, time.timezone-3600)
     t = time.time()
     AreEqual(time.mktime(time.gmtime(t))-time.mktime(time.localtime(t)), time.timezone)
 

@@ -53,9 +53,7 @@ namespace TestRunner
                     tests.Add(args[i].Substring("/test:".Length));
                 } else if (args[i].StartsWith("/binpath:")) {
                     binPath = Path.Combine(dlrRoot, args[i].Substring("/binpath:".Length));
-                }
-                else if (args[i].StartsWith("/nunitoutput:"))
-                {
+                } else if (args[i].StartsWith("/nunitoutput:")) {
                     nunitOutputPath = args[i].Substring("/nunitoutput:".Length);
                 } else if (args[i] == "/verbose") {
                     _verbose = true;
@@ -173,7 +171,7 @@ namespace TestRunner
             var failures = _results.Where(r => r.IsFailure).ToList();
 
             if (failures.Count > 0) {
-                if (_verbose) {
+                if (!_quiet) {
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("Failed test output:");
                     Console.ForegroundColor = ConsoleColor.Gray;
@@ -200,7 +198,7 @@ namespace TestRunner
 
             if (!string.IsNullOrWhiteSpace(nunitOutputPath))
             {
-                var resultsWriter = new NUnitResultsWriter(_results, inputFiles.First(), elapsedTime);
+                var resultsWriter = new NUnitResultsWriter(_results, inputFiles.First(), elapsedTime, allMessages: _verbose);
                 resultsWriter.Save(nunitOutputPath);
             }
 
@@ -263,7 +261,7 @@ namespace TestRunner
 
         private void RunTestForConsole(Test test) {
             lock (this) {
-                if (!_quiet && _verbose) {
+                if (!_quiet) {
                     Console.Write("{0,-95}", test.Category.Name + " " + test.Name);
                 }
             }
@@ -282,71 +280,63 @@ namespace TestRunner
 
             lock (this) {
                 if (!_quiet) {
-                    if (_verbose) {
-                        const string resultFormat = "{0,-20}";
-                        var originalColor = Console.ForegroundColor;
-                        switch (result.Status) {
-                            case TestResultStatus.Skipped:
-                                Console.ForegroundColor = ConsoleColor.Yellow;
-                                Console.Write(resultFormat, test.Disabled && _runDisabled ? "SKIPPED (DISABLED)" : "SKIPPED");
-                                break;
-                            case TestResultStatus.TimedOut:
-                                Console.ForegroundColor = ConsoleColor.Red;
-                                Console.Write(resultFormat, test.Disabled && _runDisabled ? "TIMEOUT (DISABLED)" : "TIMEOUT");
-                                break;
-                            case TestResultStatus.Passed:
-                                Console.ForegroundColor = ConsoleColor.Green;
-                                Console.Write(resultFormat, test.Disabled && _runDisabled ? "PASSED (DISABLED)" : "PASSED");
-                                break;
-                            case TestResultStatus.Failed:
-                                Console.ForegroundColor = ConsoleColor.Red;
-                                Console.Write(resultFormat, test.Disabled && _runDisabled ? "FAILED (DISABLED)" : "FAILED");
-                                break;
-                            case TestResultStatus.Disabled:
-                                Console.ForegroundColor = ConsoleColor.Blue;
-                                Console.Write(resultFormat, "DISABLED");
-                                break;
-                            case TestResultStatus.SkippedCondition:
-                                Console.ForegroundColor = ConsoleColor.DarkYellow;
-                                Console.Write(resultFormat, "SKIPPED (CONDITION)");
-                                break;
-                        }
-                        Console.ForegroundColor = originalColor;
-                        Console.WriteLine(result.EllapsedSeconds);
-                    } else {
-                        if (result.Status == TestResultStatus.Passed) {
-                            Console.Write(".");
-                        } else {
-                            Console.Write(result.Status.ToString()[0]);
-                        }
+                    const string resultFormat = "{0,-25}";
+                    var originalColor = Console.ForegroundColor;
+                    switch (result.Status) {
+                        case TestResultStatus.Skipped:
+                            Console.ForegroundColor = ConsoleColor.Yellow;
+                            Console.Write(resultFormat, test.Disabled && _runDisabled ? "SKIPPED (DISABLED)" : "SKIPPED");
+                            break;
+                        case TestResultStatus.TimedOut:
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.Write(resultFormat, test.Disabled && _runDisabled ? "TIMEOUT (DISABLED)" : "TIMEOUT");
+                            break;
+                        case TestResultStatus.Passed:
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            Console.Write(resultFormat, test.Disabled && _runDisabled ? "PASSED (DISABLED)" : "PASSED");
+                            break;
+                        case TestResultStatus.Failed:
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.Write(resultFormat, test.Disabled && _runDisabled ? "FAILED (DISABLED)" : "FAILED");
+                            break;
+                        case TestResultStatus.Disabled:
+                            Console.ForegroundColor = ConsoleColor.Blue;
+                            Console.Write(resultFormat, "DISABLED");
+                            break;
+                        case TestResultStatus.SkippedCondition:
+                            Console.ForegroundColor = ConsoleColor.DarkYellow;
+                            Console.Write(resultFormat, "SKIPPED (CONDITION)");
+                            break;
                     }
+                    Console.ForegroundColor = originalColor;
+                    Console.WriteLine(result.EllapsedSeconds);
                 }
 
-                if (result.IsFailure) {
-                    DisplayFailure(test, result);
+                if (result.WasRun && (_verbose || (result.IsFailure && !_quiet))) {
+                    DisplayOutput(test, result);
                 }
 
                 _results.Add(result);
             }
         }
 
-        private void DisplayFailure(Test test, TestResult result) {
-            if (_verbose && !_quiet) {
-                Console.WriteLine("Repro:");
-                if (test.EnvironmentVariables != null) {
-                    foreach (var envVar in test.EnvironmentVariables) {
-                        Console.WriteLine("{0} {1}={2}", _isUnix ? "export" : "SET", envVar.Name, envVar.Value);
-                    }
+        private void DisplayOutput(Test test, TestResult result) {
+            Console.WriteLine("Repro:");
+            if (test.EnvironmentVariables != null) {
+                foreach (var envVar in test.EnvironmentVariables) {
+                    Console.WriteLine("{0} {1}={2}", _isUnix ? "export" : "SET", envVar.Name, envVar.Value);
                 }
+            }
 
-                if(_isUnix) {
-                    Console.WriteLine("cd {0}", test.WorkingDirectory.Replace("\\", "/"));
-                    Console.WriteLine("{0} {1}", test.Filename.Replace(".bat", ".sh").Replace("\\", "/"), test.Arguments.Replace("\\", "/"));
-                } else {
-                    Console.WriteLine("CD /D {0}", test.WorkingDirectory);
-                    Console.WriteLine("{0} {1}", test.Filename, test.Arguments);
-                }
+            if(_isUnix) {
+                Console.WriteLine("cd {0}", test.WorkingDirectory.Replace("\\", "/"));
+                Console.WriteLine("{0} {1}", test.Filename.Replace(".bat", ".sh").Replace("\\", "/"), test.Arguments.Replace("\\", "/"));
+            } else {
+                Console.WriteLine("CD /D {0}", test.WorkingDirectory);
+                Console.WriteLine("{0} {1}", test.Filename, test.Arguments);
+            }
 
+            if (result != null && result.Output != null) {
                 Console.WriteLine();
                 Console.WriteLine("Result: ");
                 foreach (var line in result.Output) {
