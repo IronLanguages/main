@@ -1764,6 +1764,10 @@ namespace IronPython.Runtime.Operations {
         }
 #endif
 
+#if FEATURE_ENCODING
+        private static DecoderFallback ReplacementFallback = new DecoderReplacementFallback("\ufffd");
+#endif
+
         internal static string DoDecode(CodeContext context, string s, string errors, string encoding, Encoding e) {
 #if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
@@ -1774,7 +1778,7 @@ namespace IronPython.Runtime.Operations {
                 case "backslashreplace":
                 case "xmlcharrefreplace":
                 case "strict": SetDecoderFallback(e, DecoderFallback.ExceptionFallback); break;
-                case "replace": SetDecoderFallback(e, DecoderFallback.ReplacementFallback); break;
+                case "replace": SetDecoderFallback(e, ReplacementFallback); break;
                 case "ignore":  SetDecoderFallback(e, new PythonDecoderFallback(encoding, s, null)); break;
                 default:
                     SetDecoderFallback(e, new PythonDecoderFallback(encoding, s, LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors))));
@@ -1793,7 +1797,7 @@ namespace IronPython.Runtime.Operations {
             catch (NullReferenceException)
             {
                 // bug in netstandard1.6, instead of failing try with a DecoderReplacementFallback
-                SetDecoderFallback(e, DecoderFallback.ReplacementFallback);
+                SetDecoderFallback(e, ReplacementFallback);
             }
 #endif
 

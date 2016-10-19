@@ -38,7 +38,7 @@ using System.Numerics;
 using Microsoft.Scripting.Math;
 #endif
 
-#if NETSTANDARD1_6
+#if NETCOREAPP1_0
 using Environment = System.FakeEnvironment;
 #endif
 
@@ -1791,7 +1791,7 @@ are defined in the signal module.")]
                 return true;
             }
 
-#if !NETSTANDARD1_6
+#if !NETCOREAPP1_0
             // TODO: need revisit
             string sysdir = System.Environment.GetFolderPath(System.Environment.SpecialFolder.System);
             foreach (string suffix in new string[] { string.Empty, ".com", ".exe", "cmd", ".bat" }) {

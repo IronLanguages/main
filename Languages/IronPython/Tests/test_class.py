@@ -134,8 +134,8 @@ def test_getattr():
         c.close()
 
     try:
-        import nt
-        nt.unlink(tmpfile)
+        import os
+        os.unlink(tmpfile)
     except:
         pass
             
