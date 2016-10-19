@@ -14,11 +14,13 @@
  * ***************************************************************************/
 
 using System;
+using System.Diagnostics;
 
 namespace Microsoft.Scripting.Debugging {
     /// <summary>
     /// Combines source file and span.  Also provides Contains and Intersects functionality.
     /// </summary>
+    [DebuggerDisplay("{LineStart}, {ColumnStart} - {LineEnd}, {ColumnEnd}")]
     internal sealed class DebugSourceSpan {
         private readonly DebugSourceFile _sourceFile;
         private readonly int _lineStart;

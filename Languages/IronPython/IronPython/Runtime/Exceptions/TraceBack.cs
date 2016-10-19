@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -87,6 +88,7 @@ namespace IronPython.Runtime.Exceptions {
     }
 
     [PythonType("frame")]
+    [DebuggerDisplay("Code = {f_code.co_name}, Line = {f_lineno}")]
     [Serializable]
     public class TraceBackFrame {
         private readonly PythonTracebackListener _traceAdapter;

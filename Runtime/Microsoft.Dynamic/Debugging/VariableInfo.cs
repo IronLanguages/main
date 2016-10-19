@@ -20,6 +20,7 @@ namespace Microsoft.Scripting.Debugging {
     /// <summary>
     /// Used to provide information about locals/parameters at debug time.
     /// </summary>
+    [DebuggerDisplay("{Name}")]
     internal sealed class VariableInfo {
         private string _name;
         private Type _type;

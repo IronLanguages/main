@@ -13,6 +13,8 @@ bin/
 *.csproj.user
 *.wixproj.user
 *.pidb
+*.db
+*.opendb
 
 # Generated files
 BuildInfo.Generated.cs

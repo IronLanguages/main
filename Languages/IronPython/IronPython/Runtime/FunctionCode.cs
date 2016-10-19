@@ -44,6 +44,7 @@ namespace IronPython.Runtime {
     /// passing it into exec or eval.
     /// </summary>
     [PythonType("code")]
+    [DebuggerDisplay("{co_name}, FileName = {co_filename}")]
     public class FunctionCode : IExpressionSerializable, ICodeFormattable {
         [PythonHidden]
         internal Delegate Target, LightThrowTarget;                 // the current target for the function.  This can change based upon adaptive compilation, recursion enforcement, and tracing.

@@ -14,11 +14,13 @@
  * ***************************************************************************/
 
 using System.Runtime.CompilerServices;
+using System.Diagnostics;
 
 namespace Microsoft.Scripting.Debugging {
     /// <summary>
     /// Implementation of IDebugRuntimeVariables, which wraps IRuntimeVariables + FunctionInfo/DebugMarker
     /// </summary>
+    [DebuggerDisplay("Count = {Count}")]
     internal class DebugRuntimeVariables : IDebugRuntimeVariables {
         private readonly IRuntimeVariables _runtimeVariables;
 

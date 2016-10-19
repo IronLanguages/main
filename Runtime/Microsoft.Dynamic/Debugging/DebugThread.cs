@@ -15,11 +15,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading;
+using System.Diagnostics;
+
 using Microsoft.Scripting.Debugging.CompilerServices;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Debugging {
+    [DebuggerDisplay("ThreadId = {_threadId}")]
     public abstract class DebugThread {
         private readonly DebugContext _debugContext;
         private Exception _leafFrameException;
