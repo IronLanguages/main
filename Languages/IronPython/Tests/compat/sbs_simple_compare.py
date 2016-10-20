@@ -215,7 +215,7 @@ class test_dict(test_onetype):
         Override this as its busted.
         Please remove the function entirely once Dev10 438851 gets fixed.
         '''
-        if sys.platform!="win32" and not ({} < 2):
+        if sys.platform == "cli" and not ({} < 2):
             printwith("Dev10 438851 has been fixed.  Please remove this.")
             
 
@@ -224,7 +224,7 @@ class test_dict(test_onetype):
         Override this as its busted.
         Please remove the function entirely once Dev10 438851 gets fixed.
         '''
-        if sys.platform!="win32" and not ({} < 2):
+        if sys.platform == "cli" and not ({} < 2):
             printwith("Dev10 438851 has been fixed.  Please remove this.")
 
 

@@ -94,7 +94,7 @@ else:
         AreEqual("_InternalClsPart__Property" in dir(InternalClsPart), True)
         AreEqual("_InternalClsPart__Method" in dir(InternalClsPart), True)
 
-    @skip("silverlight") # no winforms
+    @skip("silverlight", "netstandard") # no System.Windows.Forms
     def test_override_createparams():
         """verify we can override the CreateParams property and get the expected value from the base class"""
     
@@ -129,6 +129,6 @@ else:
 
 run_test(__name__, noOutputPlease=True)
 
-if not privateBinding and not is_silverlight and not is_netstandard: # sys.executable isn't an executable
+if not privateBinding and not is_silverlight:
     from iptest.process_util import launch_ironpython_changing_extensions
     AreEqual(launch_ironpython_changing_extensions(__file__, add=["-X:PrivateBinding"]), 0)

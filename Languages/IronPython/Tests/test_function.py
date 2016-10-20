@@ -552,7 +552,7 @@ AreEqual(foo('', 'index'), True)
 
 # dispatch to a ReflectOptimized method
 
-if is_cli and not is_silverlight and not is_netstandard: # sys.executable isn't an executable
+if is_cli:
     from iptest.console_util import IronPythonInstance
     from System import Environment
     from sys import executable
@@ -736,7 +736,7 @@ for case in cases:
 
 # verify we can call the base init directly
 
-if is_cli and not is_silverlight and not is_netstandard: # no System.Windows.Forms in netstandard
+if is_cli and not is_netstandard: # no System.Windows.Forms in netstandard
     import clr
     clr.AddReferenceByPartialName('System.Windows.Forms')
     from System.Windows.Forms import *

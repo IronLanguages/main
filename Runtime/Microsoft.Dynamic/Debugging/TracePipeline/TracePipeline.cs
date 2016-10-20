@@ -15,6 +15,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Threading;
 using Microsoft.Scripting.Debugging.CompilerServices;
 using Microsoft.Scripting.Utils;
 

@@ -33,7 +33,7 @@ if exist "%CD%\@test" (
 REM ---------------------------------------------------------------------------
 REM GLOBALS
 
-set EXECUTABLE=%DLR_BIN%\ipy.exe
+set EXECUTABLE=%DLR_BIN%\ipy
 set TEST=%*
 set ORIG_TEST_OPTIONS=%TEST_OPTIONS%
 

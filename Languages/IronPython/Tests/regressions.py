@@ -51,7 +51,7 @@ def test_cp18345():
     AreEqual(z, 100)
 
 #------------------------------------------------------------------------------
-@skip("netstandard") # sys.executable isn't an executable
+@skip("netstandard") # TODO: figure out
 @skip("silverlight")
 def test_cp17420():
     #Create a temporary Python file
