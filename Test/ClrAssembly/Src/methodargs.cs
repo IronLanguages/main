@@ -30,7 +30,7 @@ namespace Merlin.Testing.Call {
         public void M200(int arg) { Flag.Set(arg); }
         public void M201([DefaultParameterValue(20)] int arg) { Flag.Set(arg); }
         public void M202(params int[] arg) { Flag.Set(arg.Length); }
-        public void M203([ParamDictionaryAttribute] IDictionary<object, object> arg) { Flag.Set(arg.Count); }
+        public void M203([ParamDictionary] IDictionary<object, object> arg) { Flag.Set(arg.Count); }
 
         // optional (get missing value)
         // - check the value actually passed in

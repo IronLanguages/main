@@ -243,6 +243,12 @@ namespace IronPython.Hosting {
             if (entryAssembly != null) {
                 executable = entryAssembly.Location;
                 prefix = Path.GetDirectoryName(executable);
+#if NETSTANDARD
+                if (Path.GetExtension(executable) == ".dll") {
+                    var runner = Path.Combine(prefix, "ipy.bat");
+                    if (File.Exists(runner)) executable = runner;
+                }
+#endif
             }
 
             // Make sure there an IronPython Lib directory, and if not keep looking up

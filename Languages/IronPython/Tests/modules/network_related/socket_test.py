@@ -364,9 +364,9 @@ def test_gethostbyname_ex():
     '''
     #sanity
     joe = socket.gethostbyname_ex("localhost")[2]
-    Assert(joe.count("127.0.0.1")==1)
+    Assert("127.0.0.1" in joe)
     joe = socket.gethostbyname_ex("127.0.0.1")[2]
-    Assert(joe.count("127.0.0.1")==1)
+    Assert("127.0.0.1" in joe)
     
     #negative
     AssertError(socket.gaierror, socket.gethostbyname_ex, "should never work")

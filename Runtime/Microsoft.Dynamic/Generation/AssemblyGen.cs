@@ -309,7 +309,7 @@ namespace Microsoft.Scripting.Generation {
             return _myModule.DefineType(name, attr, parent);
         }
 
-#if FEATURE_FILESYSTEM && !NETSTANDARD
+#if FEATURE_FILESYSTEM
         internal void SetEntryPoint(MethodInfo mi, PEFileKinds kind) {
             _myAssembly.SetEntryPoint(mi, kind);
         }

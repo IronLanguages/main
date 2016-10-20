@@ -246,6 +246,7 @@ def test_api_version():
     # api_version
     AreEqual(sys.api_version, 0)
 
+@skip("netstandard") # IRuntimeVariables
 @skip("silverlight")
 def test_settrace():
     """TODO: now that sys.settrace has been implemented this test case needs to be fully revisited"""
@@ -323,6 +324,7 @@ print final"""
         finally:
             os.unlink('temp.py')
 
+@skip("netstandard") # IRuntimeVariables
 def test_call_tracing():
     def f(i):
         return i * 2
@@ -352,6 +354,7 @@ def test_getrefcount():
     # getrefcount
     Assert(hasattr(sys, 'getrefcount'))
 
+@skip("netstandard") # TODO
 @skip("win32 silverlight")
 def test_version():
     import re
@@ -382,6 +385,7 @@ def test_getsizeof():
     else:
         AreEqual(sys.getsizeof(1), sys.getsizeof(1.0))
 
+@skip("netstandard") # IRuntimeVariables
 @skip("silverlight")
 def test_gettrace():
     '''TODO: revisit'''
@@ -456,6 +460,7 @@ f()
               None, 'line', None, 'call', None, 'line', None, 'return', None, 
               'return', None])
 
+@skip("netstandard") # IRuntimeVariables
 def test_cp30130():
     def f(frame, event, arg):
         if event == 'exception':
@@ -503,7 +508,7 @@ if testDelGetFrame:
 else:
     run_test(__name__)
     # this is a destructive test, run it in separate instance of IronPython
-    if not is_silverlight and sys.platform!="win32":
+    if is_cli and not is_netstandard: # TODO: figure out
         from iptest.process_util import launch_ironpython_changing_extensions
         AreEqual(0, launch_ironpython_changing_extensions(__file__, ["-X:FullFrames"], [], ("Test_GetFrame",)))
     elif sys.platform == "win32":

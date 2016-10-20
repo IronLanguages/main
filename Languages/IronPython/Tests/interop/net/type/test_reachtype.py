@@ -117,8 +117,7 @@ def test_generic_types():
                                "The number of generic arguments provided doesn't equal the arity of the generic type definition.\nParameter name: instantiation", 
                                lambda: G3[()])
     
-                
-    if is_posix:
+    if is_posix and not is_netstandard:
         AssertErrorWithMessage(ValueError, "Invalid generic arguments\nParameter name: typeArguments", lambda: G3[System.Exception])
     else:
         AssertErrorWithMessage(ValueError, "GenericArguments[0], 'System.Exception', on 'NSwGeneric.G3`1[T]' violates the constraint of type 'T'.", lambda: G3[System.Exception])
