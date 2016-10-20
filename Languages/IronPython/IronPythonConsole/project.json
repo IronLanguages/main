@@ -1,0 +1,63 @@
+﻿{
+  "buildOptions": {
+    "compile": {
+      "include": [ "../AssemblyVersion.cs" ]
+    },
+    "copyToOutput": {
+      "mappings": {
+        "Lib/": "../IronPython/Lib/",
+        "Lib/os.py": "../../../External.LCA_RESTRICTED/Languages/IronPython/27/Lib/os.py"
+      }
+    },
+    "define": [ "TRACE" ],
+    "emitEntryPoint": true,
+    "platform": "anycpu"
+  },
+  "commands": {
+    "IronPythonConsole": "IronPythonConsole"
+  },
+  "configurations": {
+    "Debug": {
+      "buildOptions": {
+        "debugType": "full",
+        "define": [ "DEBUG" ],
+        "keyFile": "../../../Solutions/Key.snk"
+      }
+    },
+    "Release": {
+      "buildOptions": {
+        "debugType": "portable",
+        "keyFile": "../../../Solutions/DevelKey.snk",
+        "optimize": true
+      }
+    }
+  },
+  "dependencies": {
+    "IronPython": "2.7.7.0",
+    "IronPython.Modules": "2.7.7.0",
+    "IronPythonTest": "2.7.7.0",
+    "Microsoft.Dynamic": "1.1.1.22",
+    "Microsoft.Scripting": "1.1.1.22"
+  },
+  "frameworks": {
+    "netcoreapp1.0": {
+      "copyToOutput": {
+        "mappings": {
+          "ipy.bat": "../Runners/netcoreapp1.0/ipy.bat"
+        }
+      },
+      "buildOptions": {
+        "define": [
+          "FEATURE_FULL_CONSOLE",
+          "CLR4"
+        ]
+      },
+      "dependencies": {
+        "Microsoft.NETCore.App": {
+          "type": "platform",
+          "version": "1.0.1"
+        }
+      }
+    }
+  }
+}

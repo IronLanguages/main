@@ -1,0 +1,84 @@
+﻿{
+  "version": "1.1.1.22",
+  "buildOptions": {
+    "compile": {
+      "include": [ "../../Hosts/Silverlight/SilverlightVersion.cs" ]
+    },
+    "define": [ "TRACE" ],
+    "platform": "anycpu"
+  },
+  "configurations": {
+    "Debug": {
+      "buildOptions": {
+        "debugType": "full",
+        "define": [ "DEBUG" ],
+        "keyFile": "../../Solutions/DevelKey.snk"
+      }
+    },
+    "Release": {
+      "buildOptions": {
+        "debugType": "portable",
+        "keyFile": "../../Solutions/Key.snk",
+        "optimize": true
+      }
+    }
+  },
+  "dependencies": {
+    "Microsoft.Scripting": "1.1.1.22"
+  },
+  "frameworks": {
+    "netcoreapp1.0": {
+      "buildOptions": {
+        "define": [
+          "FEATURE_APTCA",
+          "FEATURE_ASSEMBLY_CODEBASE",
+          "FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY",
+          "FEATURE_BASIC_CONSOLE",
+          "FEATURE_COMPRESSION",
+          "FEATURE_CORE_DLR",
+          "FEATURE_CUSTOM_MODIFIERS",
+          "FEATURE_CUSTOM_TYPE_DESCRIPTOR",
+          "FEATURE_DBNULL",
+          "FEATURE_DEFAULT_PARAMETER_VALUE",
+          "FEATURE_DRIVENOTFOUNDEXCEPTION",
+          "FEATURE_DYNAMIC_EXPRESSION_VISITOR",
+          "FEATURE_ENCODING",
+          "FEATURE_ENUM_NAMES_VALUES",
+          "FEATURE_FULL_CONSOLE",
+          "FEATURE_FULL_CRYPTO",
+          "FEATURE_FULL_NET",
+          "FEATURE_FUNCS_5_16",
+          "FEATURE_GETINVALIDFILENAMECHARS",
+          "FEATURE_GET_METHOD_INFO",
+          "FEATURE_IPV6",
+          "FEATURE_NUMERICS",
+          "FEATURE_PIPES",
+          "FEATURE_PROCESS",
+          "FEATURE_READONLY_DICTIONARY",
+          "FEATURE_REFEMIT",
+          "FEATURE_REGISTRY",
+          "FEATURE_STACK_TRACE",
+          "FEATURE_STOPWATCH",
+          "FEATURE_SYNC_SOCKETS",
+          "FEATURE_TASKS",
+          "FEATURE_TYPE_INFO",
+          "FEATURE_TYPECONVERTER",
+          "FEATURE_VALUE_EQUALITY",
+          "FEATURE_VARIANCE",
+          "FEATURE_WIN32EXCEPTION",
+          "FEATURE_XMLDOC",
+          "CLR4",
+          "CLR45",
+          "NETSTANDARD"
+        ]
+      },
+      "dependencies": {
+        "Microsoft.NETCore.App": "1.0.1",
+        "System.ComponentModel.TypeConverter": "4.1.0",
+        "System.Data.Common": "4.1.0",
+        "System.Diagnostics.StackTrace": "4.0.1",
+        "System.Reflection.Emit.Lightweight": "4.0.1"
+      }
+    }
+  }
+}

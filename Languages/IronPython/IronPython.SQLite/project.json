@@ -1,0 +1,110 @@
+{
+  "version": "2.7.7.0",
+  "buildOptions": {
+    "compile": {
+      "include": [ "../AssemblyVersion.cs" ]
+    },
+    "define": [
+      "TRACE",
+      "SQLITE_DEBUG",
+      "TRUE",
+      "WIN32",
+      "_MSC_VER",
+      "SQLITE_ASCII",
+      "SQLITE_MEM_POOL",
+      "SQLITE_ENABLE_COLUMN_METADATA",
+      "SQLITE_OS_WIN",
+      "SQLITE_SYSTEM_MALLOC",
+      "VDBE_PROFILE_OFF",
+      "SQLITE_OMIT_AUTHORIZATION",
+      "SQLITE_OMIT_DEPRECATED",
+      "SQLITE_OMIT_GET_TABLE",
+      "SQLITE_OMIT_INCRBLOB",
+      "SQLITE_OMIT_LOOKASIDE",
+      "SQLITE_OMIT_SHARED_CACHE",
+      "SQLITE_OMIT_UTF16",
+      "SQLITE_OMIT_WAL"
+    ],
+    "nowarn": [ "0168", "0169", "0414", "0618", "0649", "1587", "219", "1570" ],
+    "platform": "anycpu"
+  },
+  "configurations": {
+    "Debug": {
+      "buildOptions": {
+        "debugType": "full",
+        "define": [
+          "DEBUG",
+          "SQLITE_ENABLE_OVERSIZE_CELL_CHECK"
+        ],
+        "keyFile": "../../../Solutions/DevelKey.snk"
+      }
+    },
+    "Release": {
+      "buildOptions": {
+        "debugType": "portable",
+        "define": [ "NDEBUG" ],
+        "keyFile": "../../../Solutions/Key.snk",
+        "optimize": true
+      }
+    }
+  },
+  "dependencies": {
+    "IronPython": "2.7.7.0"
+  },
+  "frameworks": {
+    "netcoreapp1.0": {
+      "buildOptions": {
+        "define": [
+          "FEATURE_APTCA",
+          "FEATURE_ASSEMBLY_CODEBASE",
+          "FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY",
+          "FEATURE_BASIC_CONSOLE",
+          "FEATURE_COMPRESSION",
+          "FEATURE_CORE_DLR",
+          "FEATURE_CUSTOM_MODIFIERS",
+          "FEATURE_CUSTOM_TYPE_DESCRIPTOR",
+          "FEATURE_DBNULL",
+          "FEATURE_DEFAULT_PARAMETER_VALUE",
+          "FEATURE_DRIVENOTFOUNDEXCEPTION",
+          "FEATURE_DYNAMIC_EXPRESSION_VISITOR",
+          "FEATURE_ENCODING",
+          "FEATURE_ENUM_NAMES_VALUES",
+          "FEATURE_FILESYSTEM",
+          "FEATURE_FULL_CONSOLE",
+          "FEATURE_FULL_CRYPTO",
+          "FEATURE_FULL_NET",
+          "FEATURE_FUNCS_5_16",
+          "FEATURE_GETINVALIDFILENAMECHARS",
+          "FEATURE_GET_METHOD_INFO",
+          "FEATURE_IPV6",
+          "FEATURE_NUMERICS",
+          "FEATURE_PIPES",
+          "FEATURE_PROCESS",
+          "FEATURE_READONLY_DICTIONARY",
+          "FEATURE_REFEMIT",
+          "FEATURE_REGISTRY",
+          "FEATURE_STACK_TRACE",
+          "FEATURE_STOPWATCH",
+          "FEATURE_SYNC_SOCKETS",
+          "FEATURE_TASKS",
+          "FEATURE_TYPE_INFO",
+          "FEATURE_TYPECONVERTER",
+          "FEATURE_VALUE_EQUALITY",
+          "FEATURE_VARIANCE",
+          "FEATURE_WIN32EXCEPTION",
+          "FEATURE_XMLDOC",
+          "CLR4",
+          "CLR45",
+          "NETSTANDARD",
+          "NET_40",
+          "SQLITE_MUTEX_W32",
+          "SQLITE_THREADSAFE"
+        ]
+      },
+      "dependencies": {
+        "Microsoft.NETCore.App": "1.0.1",
+        "System.Threading.Overlapped": "4.0.1"
+      }
+    }
+  }
+}
