@@ -35,7 +35,7 @@
     <BuildProject Include="$(Solution)" Condition=" '$(Mono)' != 'true' ">
       <Properties>Configuration=Silverlight5$(BaseConfiguration)</Properties>
     </BuildProject>
-    <InstallerProject Include="$(BaseDir)\Msi\Python\IronPython.Installer.wixproj">
+    <InstallerProject Include="$(BaseDir)\Package\msi\Python\IronPython.Installer.wixproj">
       <Properties>Configuration=$(BaseConfiguration);BaseInputPaths=$(StageDir);WixToolPath=$(UtilDir)\Wix35\;OutputPath=$(PackageDir);BuildDir=$(BuildDir)</Properties>
     </InstallerProject>
   </ItemGroup>
@@ -154,13 +154,13 @@
     <Copy SourceFiles="@(TutorialFiles)" DestinationFiles="@(TutorialFiles->'$(StageDir)\Tutorial\%(RecursiveDir)%(Filename)%(Extension)')" />
 
     <!-- Continue to copy the Silverlight files here for compatibility with previous releases. -->
-    <Copy SourceFiles="@(DlrLibs->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" />
-    <Copy SourceFiles="@(SilverlightDlrLibs->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" />
-    <Copy SourceFiles="@(IronPythonLibs->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" />
-    <Copy SourceFiles="@(ChironBins->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" />
+    <Copy SourceFiles="@(DlrLibs->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" Condition="'$(OS)' == 'Windows_NT'"/>
+    <Copy SourceFiles="@(SilverlightDlrLibs->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin" Condition="'$(OS)' == 'Windows_NT'" />
+    <Copy SourceFiles="@(IronPythonLibs->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin"  Condition="'$(OS)' == 'Windows_NT'" />
+    <Copy SourceFiles="@(ChironBins->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Silverlight\bin"  Condition="'$(OS)' == 'Windows_NT'" />
 
-    <Copy SourceFiles="@(SilverlightScriptFiles)" DestinationFiles="@(SilverlightScriptFiles->'$(StageDir)\Silverlight\script\%(RecursiveDir)%(Filename)%(Extension)')" />
-    <Copy SourceFiles="@(SilverlightScriptTemplates)" DestinationFiles="@(SilverlightScriptTemplates->'$(StageDir)\Silverlight\script\templates\python\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(SilverlightScriptFiles)" DestinationFiles="@(SilverlightScriptFiles->'$(StageDir)\Silverlight\script\%(RecursiveDir)%(Filename)%(Extension)')"  Condition="'$(OS)' == 'Windows_NT'"/>
+    <Copy SourceFiles="@(SilverlightScriptTemplates)" DestinationFiles="@(SilverlightScriptTemplates->'$(StageDir)\Silverlight\script\templates\python\%(RecursiveDir)%(Filename)%(Extension)')"  Condition="'$(OS)' == 'Windows_NT'"/>
 
     <!-- .NET 4 -->
     <Copy SourceFiles="@(DlrLibs->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net40" />
@@ -170,24 +170,24 @@
     <Copy SourceFiles="@(IronPythonModules->'$(BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net40" />
     
     <!-- .NET 4.5 -->
-    <Copy SourceFiles="@(DlrLibs->'$(v45BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net45" />
-    <Copy SourceFiles="@(ClrDlrLibs->'$(v45BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net45" />
-    <Copy SourceFiles="@(IronPythonLibs->'$(v45BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net45" />
-    <Copy SourceFiles="@(v4IronPythonModules->'$(v45BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net45" />
-    <Copy SourceFiles="@(IronPythonModules->'$(v45BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net45" />
+    <Copy SourceFiles="@(DlrLibs->'$(v45BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net45" Condition="'$(OS)' == 'Windows_NT'"/>
+    <Copy SourceFiles="@(ClrDlrLibs->'$(v45BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net45" Condition="'$(OS)' == 'Windows_NT'" />
+    <Copy SourceFiles="@(IronPythonLibs->'$(v45BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net45" Condition="'$(OS)' == 'Windows_NT'"/>
+    <Copy SourceFiles="@(v4IronPythonModules->'$(v45BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net45" Condition="'$(OS)' == 'Windows_NT'"/>
+    <Copy SourceFiles="@(IronPythonModules->'$(v45BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net45" Condition="'$(OS)' == 'Windows_NT'"/>
 
     <!-- .NET 3.5 -->
-    <Copy SourceFiles="@(DlrLibs->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" />
-    <Copy SourceFiles="@(ClrDlrLibs->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" />
-    <Copy SourceFiles="@(v2DlrLibs->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" />
-    <Copy SourceFiles="@(IronPythonLibs->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" />
-    <Copy SourceFiles="@(IronPythonModules->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" />
+    <Copy SourceFiles="@(DlrLibs->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" Condition="'$(OS)' == 'Windows_NT'"/>
+    <Copy SourceFiles="@(ClrDlrLibs->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" Condition="'$(OS)' == 'Windows_NT'"/>
+    <Copy SourceFiles="@(v2DlrLibs->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" Condition="'$(OS)' == 'Windows_NT'"/>
+    <Copy SourceFiles="@(IronPythonLibs->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" Condition="'$(OS)' == 'Windows_NT'"/>
+    <Copy SourceFiles="@(IronPythonModules->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" Condition="'$(OS)' == 'Windows_NT'"/>
 
     <!-- Silverlight 5 -->
-    <Copy SourceFiles="@(DlrLibs->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl5" />
-    <Copy SourceFiles="@(SilverlightDlrLibs->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl5" />
-    <Copy SourceFiles="@(IronPythonLibs->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl5" />
-    <Copy SourceFiles="@(IronPythonModules->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl5" />
+    <Copy SourceFiles="@(DlrLibs->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl5" Condition="'$(OS)' == 'Windows_NT'"/>
+    <Copy SourceFiles="@(SilverlightDlrLibs->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl5" Condition="'$(OS)' == 'Windows_NT'" />
+    <Copy SourceFiles="@(IronPythonLibs->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl5" Condition="'$(OS)' == 'Windows_NT'" />
+    <Copy SourceFiles="@(IronPythonModules->'$(Silverlight5BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl5" Condition="'$(OS)' == 'Windows_NT'" />
   </Target>
   
   <Target Name="NuGetPackage" DependsOnTargets="Stage" Condition="'$(OS)' == 'Windows_NT'">
@@ -205,9 +205,10 @@
     <Exec Command="$(UtilDir)\Misc\NuGet.exe pack -Version $(NuGetVersion) &quot;$(BaseDir)\Languages\IronPython\IronPython.StdLib.nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
   </Target>
 
-  <Target Name="ZipPackage" DependsOnTargets="Stage" Condition="'$(OS)' == 'Windows_NT'">
+  <Target Name="ZipPackage" DependsOnTargets="Stage">
     <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
-    <Exec Command="$(UtilDir)\Misc\zip.exe -9 -r &quot;$(PackageDir)\IronPython-$(DisplayVersion).zip&quot; &quot;IronPython-$(DisplayVersion)&quot;" WorkingDirectory="$(StageDir)\.." />
+    <Exec Command="$(UtilDir)\Misc\zip.exe -9 -r &quot;$(PackageDir)\IronPython-$(DisplayVersion)-win.zip&quot; &quot;IronPython-$(DisplayVersion)&quot;" WorkingDirectory="$(StageDir)\.." Condition="'$(OS)' == 'Windows_NT'" />
+    <Exec Command="tar cjf &quot;$(PackageDir)/IronPython-$(DisplayVersion)-unix.tar.bz2&quot; &quot;IronPython-$(DisplayVersion)&quot;" WorkingDirectory="$(StageDir)/.." Condition="'$(OS)' != 'Windows_NT'" />
   </Target>
   
   <Target Name="Installer" DependsOnTargets="Stage" Condition="'$(OS)' == 'Windows_NT'">

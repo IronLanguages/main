@@ -46,6 +46,9 @@ test-ipy-disabled-release: ironpython-release testrunner-release
 		      mono Test/TestRunner/TestRunner/bin/Release/TestRunner.exe \
 		      Test/IronPython.tests /binpath:bin/Release /all /runlong /rundisabled
 
+package-release: 
+	xbuild Build.proj /t:Package "/p:Mono=true;BaseConfiguration=Release" /nologo
+
 clean:
 	xbuild Build.proj /t:Clean /p:Mono=true /verbosity:minimal /nologo
 

@@ -19,11 +19,10 @@ pushd %DLR_ROOT%\Languages\IronPython\StdLib\
 popd
 
 :GenerateMSI
-pushd %DLR_ROOT%\Msi\Python
-%DLR_ROOT%\Bin\%BUILD_FLAVOR%\ir.exe generate_wxis.rb
+pushd %DLR_ROOT%\Package\msi\Python
 popd
 
-msbuild %DLR_ROOT%\Msi\Installer.proj /p:Configuration=%BUILD_FLAVOR% /v:minimal
+msbuild %DLR_ROOT%\Package\msi\Installer.proj /p:Configuration=%BUILD_FLAVOR% /v:minimal
 copy /Y %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython.msi %DLR_ROOT%\Bin\%BUILD_FLAVOR%\IronPython-%IPY_VERSION%.msi
 
 :GenerateZip
