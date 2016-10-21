@@ -15,6 +15,11 @@ bin/
 *.pidb
 *.db
 *.opendb
+*.lock.json
+*.nuget.targets
+
+# Visual Studio 2015 cache/options directory
+.vs/
 
 # Generated files
 BuildInfo.Generated.cs

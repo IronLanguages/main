@@ -77,5 +77,12 @@ goto :main
 msbuild /t:%_target% /p:BaseConfiguration=%_flavour% /verbosity:minimal /nologo
 goto :exit
 
+:core
+dotnet restore
+set _flavour=Release
+dotnet build -c %_flavour% -o bin\netcoreapp1.0%_flavour%  -f netcoreapp1.0 .\Languages\IronPython\IronPythonConsole
+msbuild Test\ClrAssembly\ClrAssembly.csproj /p:Configuration=%_flavour%
+copy bin\%_flavour%\rowantest* bin\netcoreapp1.0%_flavour%
+
 :exit
 endlocal
