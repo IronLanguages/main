@@ -278,6 +278,13 @@ namespace IronPython.Modules {
                 dwRet = RegQueryValueEx(handle, valueName, IntPtr.Zero, out valueKind, data, ref length);
             }
 
+            if (dwRet == PythonExceptions._WindowsError.ERROR_FILE_NOT_FOUND) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, PythonExceptions._WindowsError.ERROR_FILE_NOT_FOUND, "The system cannot find the file specified");
+            }
+            if (dwRet != ERROR_SUCCESS) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, dwRet);
+            }
+
             // convert the result into a Python object
 
             switch (valueKind) {
