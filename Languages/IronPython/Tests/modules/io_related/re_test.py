@@ -118,6 +118,7 @@ def test_sanity_re():
     AreEqual(re.sub("(abc){1}", "1", "abcd", count=0), "1d")
     AreEqual(re.sub("(abc){1}", "1", "abcdabcd", 1), "1dabcd")
     AreEqual(re.sub("(abc){1}", "1", "abcdabcd", 2), "1d1d")
+    AreEqual(re.sub("(abc){1}", "1", "ABCdabcd", 2, flags=re.I), "1d1d")
     
     #subn
     AreEqual(re.subn("(abc){1}", "9", "abcd"), ("9d", 1))
@@ -126,6 +127,7 @@ def test_sanity_re():
     AreEqual(re.subn("(abc){1}", "1", "abcd", count=0), ("1d",1))
     AreEqual(re.subn("(abc){1}", "1", "abcdabcd", 1), ("1dabcd",1))
     AreEqual(re.subn("(abc){1}", "1", "abcdabcd", 2), ("1d1d",2))
+    AreEqual(re.subn("(abc){1}", "1", "ABCdabcd", 2, flags=re.I), ("1d1d",2))
     
     #escape
     AreEqual(re.escape("abc"), "abc")
