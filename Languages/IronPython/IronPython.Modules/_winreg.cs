@@ -265,6 +265,7 @@ namespace IronPython.Modules {
         }
 
         private static void QueryValueExImpl(SafeRegistryHandle handle, string valueName, out int valueKind, out object value) {
+            valueName = valueName ?? ""; // it looks like RegQueryValueEx can fail with null, use empty string instead
             valueKind = 0;
             int dwRet;
             byte[] data = new byte[128];
@@ -276,6 +277,13 @@ namespace IronPython.Modules {
                 data = new byte[data.Length * 2];
                 length = (uint)data.Length;
                 dwRet = RegQueryValueEx(handle, valueName, IntPtr.Zero, out valueKind, data, ref length);
+            }
+
+            if (dwRet == PythonExceptions._WindowsError.ERROR_FILE_NOT_FOUND) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, PythonExceptions._WindowsError.ERROR_FILE_NOT_FOUND, "The system cannot find the file specified");
+            }
+            if (dwRet != ERROR_SUCCESS) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, dwRet);
             }
 
             // convert the result into a Python object
