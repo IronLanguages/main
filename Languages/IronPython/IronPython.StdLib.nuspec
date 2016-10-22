@@ -3,7 +3,7 @@
   <metadata xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <id>IronPython.StdLib</id>
     <title>IronPython Standard Library</title>
-    <version>2.7.0</version>
+    <version>2.7.7</version>
     <authors>IronPython Contributors,Python Contributors</authors>
     <owners>IronPython Community</owners>
     <projectUrl>http://ironpython.net</projectUrl>
@@ -14,7 +14,7 @@
     <language>en-US</language>
     <tags>ironpython python dynamic dlr standard library</tags>
     <dependencies>
-      <dependency id="IronPython" version="2.7.0" />
+      <dependency id="IronPython" version="2.7.7" />
     </dependencies>
   </metadata>
   <files>
