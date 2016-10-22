@@ -265,6 +265,7 @@ namespace IronPython.Modules {
         }
 
         private static void QueryValueExImpl(SafeRegistryHandle handle, string valueName, out int valueKind, out object value) {
+            valueName = valueName ?? ""; // it looks like RegQueryValueEx can fail with null, use empty string instead
             valueKind = 0;
             int dwRet;
             byte[] data = new byte[128];
