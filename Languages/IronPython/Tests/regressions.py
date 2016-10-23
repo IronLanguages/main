@@ -978,7 +978,19 @@ someMethod4(...)
         help(gh1435.someMethod4)
     Assert('\n'.join(output), expected) 
 
+def test_gh278():
+    import _random  
+    r = _random.Random()
+    s1 = r.getstate()
+    s2 = r.getstate()
+    AreNotSame(s1, s2)
+    AreEqual(s1, s2)
 
+    r.jumpahead(100)
+    s3 = r.getstate()
+    AreNotSame(s3, s1)
+    AreNotEqual(s3, s1)
+    
 #------------------------------------------------------------------------------
 #--Main
 run_test(__name__)
