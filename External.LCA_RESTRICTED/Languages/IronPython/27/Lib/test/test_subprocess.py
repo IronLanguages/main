@@ -19,7 +19,7 @@ try:
 except ImportError:
     threading = None
 
-mswindows = (sys.platform == "win32")
+mswindows = (sys.platform == "win32" or (sys.platform == "cli" and os.name == "nt"))
 
 #
 # Depends on the following external programs: Python

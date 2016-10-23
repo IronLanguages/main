@@ -538,6 +538,7 @@ namespace IronPython.Runtime.Exceptions {
 
             private const int EACCES = 13;
             private const int ENOENT = 2;
+            private const int EPIPE = 32;
 
             [PythonHidden]
             protected internal override void InitializeFromClr(System.Exception/*!*/ exception) {
@@ -564,8 +565,12 @@ namespace IronPython.Runtime.Exceptions {
                     try {
                         uint hr = (uint)GetHRForException(exception);
                         if ((hr & 0xffff0000U) == 0x80070000U) {
-                            // win32 error code, get the real error code...
-                            __init__(hr & 0xffff, exception.Message);
+                            if ((hr & 0xffff) == _WindowsError.ERROR_BROKEN_PIPE) {
+                                __init__(EPIPE, exception.Message);
+                            } else {
+                                // win32 error code, get the real error code...
+                                __init__(hr & 0xffff, exception.Message);
+                            }
                             return;
                         }
                     } catch (MethodAccessException) {
