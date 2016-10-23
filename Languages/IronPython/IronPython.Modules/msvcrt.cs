@@ -72,13 +72,9 @@ if fd is not recognized.")]
         public static object get_osfhandle(CodeContext context, int fd) {
             PythonFile pfile = context.LanguageContext.FileManager.GetFileFromId(context.LanguageContext, fd);
 
-            Stream stream = pfile._stream;
-            if (stream is FileStream) {
-                return ((FileStream)stream).SafeFileHandle.DangerousGetHandle().ToPython();
-            }
-            if (stream is PipeStream) {
-                return ((PipeStream)stream).SafePipeHandle.DangerousGetHandle().ToPython();
-            }
+            object handle;
+            if (pfile.TryGetFileHandle(out handle)) return handle;
+
             return -1;
         }
 

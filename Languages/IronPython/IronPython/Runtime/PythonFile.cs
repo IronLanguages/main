@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -1446,6 +1447,36 @@ namespace IronPython.Runtime {
         }
 
         #endregion
+
+#if !SILVERLIGHT
+        internal bool TryGetFileHandle(out object handle) {
+            Stream stream = _stream;
+            SharedIO io = _io;
+
+            if (stream == null && io != null) {
+                stream = io.GetStream(_consoleStreamType);
+            }
+
+            if (stream is FileStream) {
+                handle = ((FileStream)stream).SafeFileHandle.DangerousGetHandle().ToPython();
+                return true;
+            }
+            if (stream is PipeStream) {
+                handle = ((PipeStream)stream).SafePipeHandle.DangerousGetHandle().ToPython();
+                return true;
+            }
+
+            // if all else fails try reflection
+            var sfh = stream.GetType().GetField("_handle", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(stream);
+            if (sfh is SafeFileHandle) {
+                handle = ((SafeFileHandle)sfh).DangerousGetHandle().ToPython();
+                return true;
+            }
+
+            handle = null;
+            return false;
+        }
+#endif
 
         // Enumeration of each stream mode.
         private enum PythonFileMode {

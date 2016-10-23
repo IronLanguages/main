@@ -1545,7 +1545,7 @@ namespace IronPython.Modules {
         }
 #endif
 
-        public static int write(CodeContext/*!*/ context, int fd, string text) {
+        public static int write(CodeContext/*!*/ context, int fd, [BytesConversion]string text) {
             try {
                 PythonContext pythonContext = PythonContext.GetContext(context);
                 PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
