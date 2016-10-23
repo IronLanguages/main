@@ -262,7 +262,7 @@ namespace TestRunner
         private void RunTestForConsole(Test test) {
             lock (this) {
                 if (!_quiet) {
-                    Console.Write("{0,-95}", test.Category.Name + " " + test.Name);
+                    Console.Write("{0,-80}", test.Category.Name + " " + test.Name);
                 }
             }
 
