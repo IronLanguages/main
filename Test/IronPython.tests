@@ -2,7 +2,7 @@
 <Categories xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Categories>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\2.X\builtinfuncs</Name>
+      <Name>Languages\IronPython\2.X\builtinfuncs</Name>
       <Tests>
         <Test>
           <Name>test_builtinfunc_20</Name>
@@ -62,7 +62,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\2.X\builtintypes</Name>
+      <Name>Languages\IronPython\2.X\builtintypes</Name>
       <Tests>
         <Test>
           <Name>test_bigint_20</Name>
@@ -309,7 +309,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\2.X\cgcheck</Name>
+      <Name>Languages\IronPython\2.X\cgcheck</Name>
       <Tests>
         <Test>
           <Name>test_cgcheck_20</Name>
@@ -358,11 +358,11 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\2.X\codedom</Name>
+      <Name>Languages\IronPython\2.X\codedom</Name>
       <Tests />
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\2.X\compat\builtin</Name>
+      <Name>Languages\IronPython\2.X\compat\builtin</Name>
       <Tests>
         <Test>
           <Name>sbs_builtin_20</Name>
@@ -389,7 +389,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\2.X\compat\compare</Name>
+      <Name>Languages\IronPython\2.X\compat\compare</Name>
       <Tests>
         <Test>
           <Name>sbs_class_compare_20</Name>
@@ -427,7 +427,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\2.X\compat\exceptions</Name>
+      <Name>Languages\IronPython\2.X\compat\exceptions</Name>
       <Tests>
         <Test>
           <Name>sbs_exceptions_define_20</Name>
@@ -564,7 +564,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\2.X\compat\ops</Name>
+      <Name>Languages\IronPython\2.X\compat\ops</Name>
       <Tests>
         <Test>
           <Name>sbs_func_args_20</Name>
@@ -602,7 +602,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\2.X\console</Name>
+      <Name>Languages\IronPython\2.X\console</Name>
       <Tests>
         <Test>
           <Name>test_interactive_20</Name>
@@ -668,7 +668,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\2.X\hosting</Name>
+      <Name>Languages\IronPython\2.X\hosting</Name>
       <Tests>
         <Test>
           <Name>hosting_editor_svcs_20</Name>
@@ -706,7 +706,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\2.X\netinterop</Name>
+      <Name>Languages\IronPython\2.X\netinterop</Name>
       <Tests>
         <Test>
           <Name>test_array_20</Name>
@@ -964,7 +964,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\2.X\parrot</Name>
+      <Name>Languages\IronPython\2.X\parrot</Name>
       <Tests>
         <Test>
           <Name>test_parrot_20</Name>
@@ -980,7 +980,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\2.X\pystone</Name>
+      <Name>Languages\IronPython\2.X\pystone</Name>
       <Tests>
         <Test>
           <Name>test_pystone_20</Name>
@@ -996,7 +996,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\2.X\standard</Name>
+      <Name>Languages\IronPython\2.X\standard</Name>
       <Tests>
         <Test>
           <Name>functions_ipy</Name>
@@ -1562,7 +1562,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\2.X\stress</Name>
+      <Name>Languages\IronPython\2.X\stress</Name>
       <Tests>
         <Test>
           <Name>hosting_stress_20</Name>
@@ -1611,7 +1611,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\2.X</Name>
+      <Name>Languages\IronPython\2.X</Name>
       <Tests>
         <Test>
           <Name>ipy_tutorial</Name>
@@ -1671,7 +1671,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\appcompat</Name>
+      <Name>Languages\IronPython\appcompat</Name>
       <Tests>
         <Test>
           <Name>adodbapitest_pywin32</Name>
@@ -1699,7 +1699,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\cpy</Name>
+      <Name>Languages\IronPython\cpy</Name>
       <Tests>
         <Test>
           <Name>test_abc_cpy</Name>
@@ -4876,7 +4876,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\interop\com</Name>
+      <Name>Languages\IronPython\interop\com</Name>
       <Tests>
         <Test>
           <Name>com_adodb_py</Name>
@@ -5101,7 +5101,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\interop\dynamic</Name>
+      <Name>Languages\IronPython\interop\dynamic</Name>
       <Tests>
         <Test>
           <Name>interop_net_dynamic_ipy</Name>
@@ -5117,7 +5117,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\interop\net</Name>
+      <Name>Languages\IronPython\interop\net</Name>
       <Tests>
         <Test>
           <Name>interop_net_accessibility_ipy</Name>
@@ -5232,7 +5232,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\Modes</Name>
+      <Name>Languages\IronPython\Modes</Name>
       <Tests>
         <Test>
           <Name>consoleflags_ipy</Name>
@@ -5248,7 +5248,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\modules</Name>
+      <Name>Languages\IronPython\modules</Name>
       <Tests>
         <Test>
           <Name>modules_io_related_ipy</Name>
@@ -5319,7 +5319,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\Samples</Name>
+      <Name>Languages\IronPython\Samples</Name>
       <Tests>
         <Test>
           <Name>BadPaint_ipy</Name>
@@ -5456,7 +5456,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\stress</Name>
+      <Name>Languages\IronPython\stress</Name>
       <Tests>
         <Test>
           <Name>stress_ipy</Name>
@@ -5472,7 +5472,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\tools</Name>
+      <Name>Languages\IronPython\tools</Name>
       <Tests>
         <Test>
           <Name>test_pyc_ipy</Name>
@@ -5488,7 +5488,7 @@
       </Tests>
     </TestCategory>
     <TestCategory>
-      <Name>Languages\IronPython\IronPython\versions</Name>
+      <Name>Languages\IronPython\versions</Name>
       <Tests>
         <Test>
           <Name>versions_python26_ipy</Name>
