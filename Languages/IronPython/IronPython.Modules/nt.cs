@@ -1560,6 +1560,8 @@ namespace IronPython.Modules {
         [Documentation(@"Send signal sig to the process pid. Constants for the specific signals available on the host platform 
 are defined in the signal module.")]
         public static void kill(CodeContext/*!*/ context, int pid, int sig) {
+            if (PythonSignal.NativeSignal.GenerateConsoleCtrlEvent((uint)sig, (uint)pid)) return;
+
             //If the calls to GenerateConsoleCtrlEvent didn't work, simply
             //forcefully kill the process.
             Process toKill = Process.GetProcessById(pid);
