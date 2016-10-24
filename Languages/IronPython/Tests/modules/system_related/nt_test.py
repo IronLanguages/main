@@ -1023,11 +1023,7 @@ def test_access():
 def test_umask():
     orig = nt.umask(0)
     try:
-       
-        if is_cpython: #http://ironpython.codeplex.com/workitem/28208
-            AssertError(TypeError, nt.umask, 3.14)
-        else:
-            AreEqual(nt.umask(3.14), 0)
+        AssertError(TypeError, nt.umask, 3.14)
 
         for i in [0, 1, 5, int((2**(31))-1)]:
             AreEqual(nt.umask(i), 0)
