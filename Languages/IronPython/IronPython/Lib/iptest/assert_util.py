@@ -208,10 +208,10 @@ def AreEqual(a, b):
     Assert(a == b, "expected %r, but found %r" % (b, a))
 
 def AreSame(a, b):
-    Assert(a is b, "objects are not the same and should be (%r and %r)" % (b, a))
+    Assert(a is b, "objects are not the same and should be (%r and %r)" % (a, b))
 
 def AreNotSame(a, b):
-    AssertFalse(a is b, "objects are the same and should not be (%r and %r)" % (b, a))
+    AssertFalse(a is b, "objects are the same and should not be (%r and %r)" % (a, b))
 
 def AreNotEqual(a, b):
     Assert(a <> b, "expected only one of the values to be %r" % (a, ))
