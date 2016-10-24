@@ -1499,6 +1499,10 @@ namespace IronPython.Modules {
             }
         }
 
+        public static int umask(double mask) {
+            throw PythonOps.TypeError("integer argument expected, got float");
+        }
+
 #if FEATURE_FILESYSTEM
         public static void utime(string path, PythonTuple times) {
             try {
