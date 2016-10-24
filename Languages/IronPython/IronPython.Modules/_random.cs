@@ -17,7 +17,6 @@ using System;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using Microsoft.Scripting.Utils;
-using System.Linq;
 
 #if FEATURE_NUMERICS
 using System.Numerics;
@@ -27,6 +26,7 @@ using Microsoft.Scripting.Math;
 
 #if FEATURE_SERIALIZATION
 using System.IO;
+using System.Linq;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 #endif
@@ -67,13 +67,7 @@ namespace IronPython.Modules {
                 lock (this) {
                     formatter.Serialize(stream, _rnd);
                 }
-                byte[] buf = stream.GetBuffer();
-                int[] retarr = new int[buf.Length];
-                for (int i = 0; i < buf.Length; i++) {
-                    retarr[i] = buf[i];
-                }
-                return PythonTuple.MakeTuple(retarr.Cast<object>().ToArray());
-
+                return PythonTuple.MakeTuple(stream.GetBuffer().Select(x => (int)x).Cast<object>().ToArray());
 #else
                 return _rnd;
 #endif
@@ -168,7 +162,7 @@ namespace IronPython.Modules {
 #endif
 }
 
-#endregion
+            #endregion
         }
     }
 }
