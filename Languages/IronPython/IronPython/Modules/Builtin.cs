@@ -1579,6 +1579,14 @@ namespace IronPython.Modules {
             return res;            
         }
 
+        public static PythonFile open(CodeContext context, string name, [DefaultParameterValue("r")]string mode, BigInteger buffering) {
+            return open(context, name, mode, (int)buffering);
+        }
+
+        public static PythonFile open(CodeContext context, string name, [DefaultParameterValue("r")]string mode, double buffering) {
+            throw PythonOps.TypeError("integer argument expected, got float");
+        }
+
         /// <summary>
         /// Creates a new Python file object from a .NET stream object.
         /// 

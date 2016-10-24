@@ -1124,6 +1124,14 @@ namespace IronPython.Runtime {
 
         #region Python initialization
 
+        public void __init__(CodeContext/*!*/ context, string name, [DefaultParameterValue("r")]string mode, double buffering) {
+            throw PythonOps.TypeError("integer argument expected, got float");
+        }
+
+        public void __init__(CodeContext/*!*/ context, string name, [DefaultParameterValue("r")]string mode, BigInteger buffering) {
+            __init__(context, name, mode, (int)buffering);
+        }
+
         //
         // Here are the mode rules for IronPython "file":
         //          (r|a|w|rU|U|Ur) [ [+][b|t] | [b|t][+] ]
