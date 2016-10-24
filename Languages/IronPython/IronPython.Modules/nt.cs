@@ -1499,6 +1499,10 @@ namespace IronPython.Modules {
             }
         }
 
+        public static int umask(CodeContext/*!*/ context, BigInteger mask) {
+            return umask(context, (int)mask);
+        }
+
         public static int umask(double mask) {
             throw PythonOps.TypeError("integer argument expected, got float");
         }
