@@ -207,8 +207,14 @@ def AssertUnreachable(m = None):
 def AreEqual(a, b):
     Assert(a == b, "expected %r, but found %r" % (b, a))
 
+def AreSame(a, b):
+    Assert(a is b, "objects are not the same and should be (%r and %r)" % (a, b))
+
+def AreNotSame(a, b):
+    AssertFalse(a is b, "objects are the same and should not be (%r and %r)" % (a, b))
+
 def AreNotEqual(a, b):
-    Assert(a <> b, "expected only one of the values to be %r" % a)
+    Assert(a <> b, "expected only one of the values to be %r" % (a, ))
 
 def AssertContains(containing_string, substring):
     Assert(substring in containing_string, "%s should be in %s" % (substring, containing_string))
