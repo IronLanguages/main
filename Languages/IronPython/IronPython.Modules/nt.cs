@@ -21,6 +21,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -1022,7 +1023,17 @@ namespace IronPython.Modules {
             }
 
             public override string ToString() {
-                return MakeTuple().ToString();
+                return string.Format("nt.stat_result("
+                    + "st_mode={0}, "
+                    + "st_ino={1}, "
+                    + "st_dev={2}, "
+                    + "st_nlink={3}, "
+                    + "st_uid={4}, "
+                    + "st_gid={5}, "
+                    + "st_size={6}, "
+                    + "st_atime={7}, "
+                    + "st_mtime={8}, "
+                    + "st_ctime={9})", MakeTuple().ToArray());
             }
 
             public string/*!*/ __repr__() {
@@ -1078,6 +1089,7 @@ namespace IronPython.Modules {
             #endregion
 
             private PythonTuple MakeTuple() {
+
                 return PythonTuple.MakeTuple(
                     st_mode,
                     st_ino,
