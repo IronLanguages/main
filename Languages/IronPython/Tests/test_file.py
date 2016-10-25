@@ -832,13 +832,8 @@ def test_buffering_kwparam():
         f.close()
         os.unlink('some_test_file.txt')
     
-    if is_cpython: #http://ironpython.codeplex.com/workitem/28214
-        AssertErrorWithMessage(TypeError, "integer argument expected, got float",
+    AssertErrorWithMessage(TypeError, "integer argument expected, got float",
                                file, 'some_test_file.txt', 'w', 3.14)
-    else:
-        f = file(name = 'some_test_file.txt', mode = 'w', buffering=3.14)
-        f.close()
-        os.unlink('some_test_file.txt') 
 
     #--Negative
     for x in [None, "abc", u"", [], tuple()]:
