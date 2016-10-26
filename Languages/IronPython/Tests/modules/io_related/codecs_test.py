@@ -378,11 +378,8 @@ def test_utf_8_encode():
 def test_charbuffer_encode():
     '''
     '''
-    #function takes one parameter, not 0
     if is_cli:
-        #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=4563
-        #AssertError(NotImplementedError, codecs.charbuffer_encode, "abc")
-        AssertError(NotImplementedError, codecs.charbuffer_encode)
+        AssertError(NotImplementedError, codecs.charbuffer_encode, "abc")
 
 def test_charmap_encode():
     #Sanity
@@ -438,26 +435,20 @@ def test_mbcs_encode():
 def test_readbuffer_encode():
     '''
     '''
-    #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=4563
     if is_cli:
-        #AssertError(NotImplementedError, codecs.readbuffer_encode, "abc")
-        AssertError(NotImplementedError, codecs.readbuffer_encode)
+        AssertError(NotImplementedError, codecs.readbuffer_encode, "abc")
 
 def test_unicode_escape_decode():
     '''
     '''
-    #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=4563
     if is_cli:
-        #AssertError(NotImplementedError, codecs.unicode_escape_decode, "abc")
-        AssertError(NotImplementedError, codecs.unicode_escape_decode)
+        AssertError(NotImplementedError, codecs.unicode_escape_decode, "abc")
 
 def test_unicode_escape_encode():
     '''
     '''
-    #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=4563
     if is_cli:
-        #AssertError(NotImplementedError, codecs.unicode_escape_encode, "abc")
-        AssertError(NotImplementedError, codecs.unicode_escape_encode)
+        AssertError(NotImplementedError, codecs.unicode_escape_encode, "abc")
 
 def test_utf_16_encode():
     #Sanity
