@@ -86,7 +86,7 @@ namespace IronPython.Modules {
                 throw PythonOps.TypeError("set_threshold() takes at most 3 arguments ({0} given)", args.Length);
             }
 
-            if(args.Any(x => x is float)) {
+            if(args.Any(x => x is double)) {
                 throw PythonOps.TypeError("integer argument expected, got float");
             }
 
