@@ -116,7 +116,7 @@ namespace IronPython.Modules {
             return PythonTuple.MakeTuple(res.ToString(), res.Length);
         }
 
-        public static object charbuffer_encode() {
+        public static object charbuffer_encode(string input) {
             throw PythonOps.NotImplementedError("charbuffer_encode");
         }
 
@@ -366,7 +366,7 @@ namespace IronPython.Modules {
             );
         }
 
-        public static object readbuffer_encode() {
+        public static object readbuffer_encode(string input) {
             throw PythonOps.NotImplementedError("readbuffer_encode");
         }
 
@@ -380,11 +380,11 @@ namespace IronPython.Modules {
 
         #region Unicode Escape Encoding
 
-        public static PythonTuple unicode_escape_decode() {
+        public static PythonTuple unicode_escape_decode(string input) {
             throw PythonOps.NotImplementedError("unicode_escape_decode");
         }
 
-        public static PythonTuple unicode_escape_encode() {
+        public static PythonTuple unicode_escape_encode(string input) {
             throw PythonOps.NotImplementedError("unicode_escape_encode");
         }
 
