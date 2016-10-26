@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Linq;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -77,6 +78,9 @@ namespace IronPython.Modules {
         }
 
         public static void set_threshold(CodeContext/*!*/ context, params object[] args) {
+            if(!args.All(x => x is int)) {
+                throw PythonOps.TypeError("an integer is required");
+            }
             SetThresholds(context, PythonTuple.MakeTuple(args));
         }
 
