@@ -263,8 +263,7 @@ def test_cp21929():
     import os
     AreEqual(os.listdir("."),
              os.listdir(os.getcwd()))
-    if is_cpython: #http://ironpython.codeplex.com/workitem/28207
-        AssertError(WindowsError, os.listdir, "")
+    AssertError(WindowsError, os.listdir, "")
 
 @skip("netstandard") # missing FEATURE_SORTKEY
 def test_cp34188():

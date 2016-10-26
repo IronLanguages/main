@@ -3438,11 +3438,8 @@ def test_bad_mro_error_message():
     
     class B(A): pass
     
-    if is_ironpython: #http://ironpython.codeplex.com/workitem/27907
-        AssertErrorWithPartialMessage(TypeError, "A, B", type, "X", (A,B), {})
-    else:
-        AssertErrorWithPartialMessage(TypeError, "Cannot create a consistent method resolution\norder (MRO) for bases", 
-                                      type, "X", (A,B), {})
+    AssertErrorWithPartialMessage(TypeError, "Cannot create a consistent method resolution\norder (MRO) for bases A, B",
+                                  type, "X", (A,B), {})
 
 def test_finalizer():
     """returning the same object from __new__ shouldn't cause it to be finalized"""
