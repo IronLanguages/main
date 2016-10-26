@@ -68,28 +68,28 @@ def test_set_threshold():
     
     #a argument is a float
     #CodePlex Work Item 8522
-    #gc.set_threshold(2.1)
-    #gc.set_threshold(3,-1.3)
+    AssertError(TypeError,gc.set_threshold,2.1)
+    AssertError(TypeError,gc.set_threshold,3,-1.3)
     
     #a argument is a string
     #CodePlex Work Item 8522
-    #AssertError(TypeError,gc.set_threshold,"1")
-    #AssertError(TypeError,gc.set_threshold,"str","xdv#4")
-    #AssertError(TypeError,gc.set_threshold,2,"1")
-    #AssertError(TypeError,gc.set_threshold,31,-123,"asdfasdf","1")
+    AssertError(TypeError,gc.set_threshold,"1")
+    AssertError(TypeError,gc.set_threshold,"str","xdv#4")
+    AssertError(TypeError,gc.set_threshold,2,"1")
+    AssertError(TypeError,gc.set_threshold,31,-123,"asdfasdf","1")
     
     #a argument is a object
     #CodePlex Work Item 8522
-    #o  = object()
-    #o2 = object()
-    #AssertError(TypeError,gc.set_threshold,o)
-    #AssertError(TypeError,gc.set_threshold,o,o2)
-    #AssertError(TypeError,gc.set_threshold,1,-123,o)
-    #o  = _random.Random()
-    #o2 = _random.Random()
-    #AssertError(TypeError,gc.set_threshold,o)
-    #AssertError(TypeError,gc.set_threshold,o,o2)
-    #AssertError(TypeError,gc.set_threshold,8,64,o)
+    o  = object()
+    o2 = object()
+    AssertError(TypeError,gc.set_threshold,o)
+    AssertError(TypeError,gc.set_threshold,o,o2)
+    AssertError(TypeError,gc.set_threshold,1,-123,o)
+    o  = _random.Random()
+    o2 = _random.Random()
+    AssertError(TypeError,gc.set_threshold,o)
+    AssertError(TypeError,gc.set_threshold,o,o2)
+    AssertError(TypeError,gc.set_threshold,8,64,o)
     
 #get_referrers
 def test_get_referrers():
