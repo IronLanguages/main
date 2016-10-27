@@ -201,6 +201,15 @@ namespace IronPython.Hosting {
                     break;
 
                 default:
+                    if(arg.StartsWith("-W")) {
+                        if (_warningFilters == null) {
+                            _warningFilters = new List<string>();
+                        }
+
+                        _warningFilters.Add(arg.Substring(2));
+                        break;
+                    }
+
                     base.ParseArgument(arg);
 
                     if (ConsoleOptions.FileName != null) {

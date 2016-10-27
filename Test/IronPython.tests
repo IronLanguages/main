@@ -3072,7 +3072,7 @@
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
           <Disabled>true</Disabled> <!-- FAILED -->
-          <RequiresAdmin>false</RequiresAdmin>
+          <RequiresAdmin>true</RequiresAdmin>
           <NotParallelSafe>true</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
         </Test>
