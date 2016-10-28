@@ -159,6 +159,7 @@ namespace IronPython.Hosting {
             Language.DomainManager.LoadAssembly(typeof(System.Diagnostics.Debug).GetTypeInfo().Assembly);
 
             InitializePath(ref pathIndex);
+            InitializeEnvironmentVariables();
             InitializeModules();
             InitializeExtensionDLLs();
 
@@ -228,6 +229,27 @@ namespace IronPython.Hosting {
                     string[] paths = path.Split(Path.PathSeparator);
                     foreach (string p in paths) {
                         PythonContext.InsertIntoPath(pathIndex++, p);
+                    }
+                }
+            }
+#endif
+        }
+
+        private void InitializeEnvironmentVariables() {
+#if !SILVERLIGHT
+            if(!Options.IgnoreEnvironmentVariables) {
+                string warnings = Environment.GetEnvironmentVariable("IRONPYTHONWARNINGS");
+                object o = PythonContext.GetSystemStateValue("warnoptions");
+                if (o == null) {
+                    o = new List();
+                    PythonContext.SetSystemStateValue("warnoptions", o);
+                }
+
+                List warnoptions = o as List;
+                if (warnoptions != null && !string.IsNullOrEmpty(warnings)) {
+                    string[] warns = warnings.Split(',');
+                    foreach(string warn in warns) {
+                        warnoptions.Add(warn);
                     }
                 }
             }

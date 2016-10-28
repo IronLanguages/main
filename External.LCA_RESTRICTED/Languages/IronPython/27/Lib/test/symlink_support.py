@@ -89,7 +89,7 @@ def _symlink_win32(target, link, target_is_directory=False):
     handle_nonzero_success(CreateSymbolicLink(link, target, target_is_directory))
 
 symlink = os.symlink if hasattr(os, 'symlink') else (
-    _symlink_win32 if platform.system() == 'Windows' else None
+    _symlink_win32 if platform.system() == 'Windows' or (platform.system() == 'cli' and os.name == 'nt') else None
 )
 
 def remove_symlink(name):

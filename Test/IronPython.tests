@@ -3071,7 +3071,7 @@
           <Arguments>-X:Frames test\test_import.py</Arguments>
           <MaxDuration>1200000</MaxDuration>
           <LongRunning>false</LongRunning>
-          <Disabled>true</Disabled> <!-- FAILED -->
+          <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>true</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
