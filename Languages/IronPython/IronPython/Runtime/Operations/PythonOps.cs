@@ -319,9 +319,10 @@ namespace IronPython.Runtime.Operations {
         public static bool IsSubClass(PythonType/*!*/ c, PythonType/*!*/ typeinfo) {
             Assert.NotNull(c, typeinfo);
 
-            if (typeinfo == Builtin.basestring) {
-                return IsSubClass(c, DynamicHelpers.GetPythonTypeFromType(typeof(string))) ||
-                    IsSubClass(c, DynamicHelpers.GetPythonTypeFromType(typeof(Bytes)));
+            if (typeinfo == Builtin.basestring &&
+                (IsSubClass(c, DynamicHelpers.GetPythonTypeFromType(typeof(string))) ||
+                IsSubClass(c, DynamicHelpers.GetPythonTypeFromType(typeof(Bytes))))) {
+                return true;
             }
 
             if (c.OldClass != null) {
