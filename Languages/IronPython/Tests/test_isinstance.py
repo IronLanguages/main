@@ -410,7 +410,11 @@ def test_cli_subclasses():
     Assert(not issubclass(str, int))
     Assert(not issubclass(int, (str, str)))
     Assert(issubclass(int, (str, int)))
-    
+
+    Assert(issubclass(bytes, basestring))
+    Assert(issubclass(str, basestring))
+    Assert(issubclass(unicode, basestring))
+
     Assert(str(None) == "None")
     Assert(issubclass(type(None),type(None)))
     Assert(str(type(None)) == "<type 'NoneType'>")
