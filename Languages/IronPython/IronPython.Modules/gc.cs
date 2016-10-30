@@ -70,7 +70,7 @@ namespace IronPython.Modules {
         }
 
         public static object get_debug() {
-            return null;
+            return 0;
         }
 
         public static object[] get_objects() {
@@ -94,7 +94,11 @@ namespace IronPython.Modules {
                 throw PythonOps.TypeError("an integer is required");
             }
 
-            SetThresholds(context, PythonTuple.MakeTuple(args));
+            PythonTuple current = get_threshold(context);
+            object[] threshold = args.Take(args.Length)
+                                     .Concat(current.ToArray().Skip(args.Length))
+                                     .ToArray();
+            SetThresholds(context, PythonTuple.MakeTuple(threshold));
         }
 
         public static PythonTuple get_threshold(CodeContext/*!*/ context) {
