@@ -49,7 +49,7 @@ def test_set_threshold():
     AreEqual(result[0],0)
     AreEqual(result[1],128)
     #CodePlex Work Item 8523
-    #AreEqual(result[2],2)
+    AreEqual(result[2],2)
     
    
     #the method has only one argument
@@ -57,8 +57,8 @@ def test_set_threshold():
     result= gc.get_threshold()
     AreEqual(result[0],-10009)
     #CodePlex Work Item 8523
-    #AreEqual(result[1],128)
-    #AreEqual(result[2],2)
+    AreEqual(result[1],128)
+    AreEqual(result[2],2)
     
     #the argument is a random int
     for i in xrange(1,65535,6):
@@ -168,7 +168,7 @@ def test_setdebug():
     if is_cli or is_silverlight:
         for debug in debug_list:
             AssertError(NotImplementedError, gc.set_debug,debug)
-            AreEqual(None,gc.get_debug())
+            AreEqual(0,gc.get_debug())
     else:
         for debug in debug_list:
             gc.set_debug(debug)
@@ -203,7 +203,7 @@ def test_get_debug():
         Fail("Returned value of getdebug method is not valid value:" + str(result))
 
 #CodePlex Work Item# 8202
-#if gc.get_debug()!=0:
-#    raise "Failed - get_debug should return 0 if set_debug has not been used"
+if gc.get_debug()!=0:
+    raise "Failed - get_debug should return 0 if set_debug has not been used"
    
 run_test(__name__)
