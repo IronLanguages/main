@@ -8,6 +8,9 @@ bin/
 /Packages
 /.vscode
 
+#Backup files
+*.bak
+
 # Temporary VS files
 *.suo
 *.csproj.user

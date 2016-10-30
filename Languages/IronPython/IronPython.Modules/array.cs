@@ -351,6 +351,7 @@ namespace IronPython.Modules {
                 return res;
             }
 
+            [Python3Warning("array.read() not supported in 3.x; use array.fromfile()")]
             public void read(PythonFile f, int n) {
                 fromfile(f, n);
             }
@@ -633,6 +634,7 @@ namespace IronPython.Modules {
                 return new string(((ArrayData<char>)_data).Data, 0, _data.Length);
             }
 
+            [Python3Warning("array.write() not supported in 3.x; use array.tofile()")]
             public void write(PythonFile f) {
                 tofile(f);
             }

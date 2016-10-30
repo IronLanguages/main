@@ -945,6 +945,11 @@ namespace IronPython.Runtime {
                          [DefaultParameterValue(null)] object cmp,
                          [DefaultParameterValue(null)] object key,
                          [DefaultParameterValue(false)] bool reverse) {
+            
+            if (cmp != null) {
+                PythonOps.Warn3k(context, "the cmp argument is not supported in 3.x");
+            }
+
             // the empty list is already sorted
             if (_size != 0) {                
                 IComparer comparer = PythonContext.GetContext(context).GetComparer(

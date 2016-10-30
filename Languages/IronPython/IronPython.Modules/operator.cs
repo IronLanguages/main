@@ -435,6 +435,7 @@ namespace IronPython.Modules {
             return repeat(context, a, b);
         }
 
+        [Python3Warning("operator.sequenceIncludes() is not supported in 3.x. Use operator.contains().")]
         public static object sequenceIncludes(CodeContext/*!*/ context, object a, object b) {
             return contains(context, a, b);
         }
@@ -455,6 +456,7 @@ namespace IronPython.Modules {
             setslice(context, a, b, c, v);
         }
 
+        [Python3Warning("operator.isCallable() is not supported in 3.x. Use hasattr(obj, '__call__').")]
         public static bool isCallable(CodeContext/*!*/ context, object o) {
             return PythonOps.IsCallable(context, o);
         }

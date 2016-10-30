@@ -330,6 +330,7 @@ namespace IronPython.Runtime {
             _storage.Clear(ref _storage);
         }
 
+        [Python3Warning("dict.has_key() not supported in 3.x; use the in operator")]
         public bool has_key(object key) {
             return DictionaryOps.has_key(this, key);
         }

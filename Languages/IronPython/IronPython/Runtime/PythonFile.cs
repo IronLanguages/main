@@ -1709,9 +1709,11 @@ namespace IronPython.Runtime {
         }
 
         public bool softspace {
+            [Python3Warning("file.softspace not supported in 3.x")]
             get {
                 return _softspace;
             }
+            [Python3Warning("file.softspace not supported in 3.x")]
             set {
                 _softspace = value;
             }
