@@ -3588,7 +3588,9 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static void Warn3k(CodeContext/*!*/ context, string message, params object[] args) {
-            Warn(context, PythonExceptions.DeprecationWarning, message, args);
+            if (context.GetPythonContext().PythonOptions.WarnPython30) {
+                Warn(context, PythonExceptions.DeprecationWarning, message, args);
+            }
         }
 
         public static void ShowWarning(CodeContext/*!*/ context, PythonType category, string message, string filename, int lineNo) {
