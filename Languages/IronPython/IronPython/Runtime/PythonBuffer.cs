@@ -46,8 +46,8 @@ namespace IronPython.Runtime {
             : this(context, @object, offset, -1) {
         }
 
-        [Python3Warning("buffer() not supported in 3.x")]
         public PythonBuffer(CodeContext/*!*/ context, object @object, int offset, int size) {
+            PythonOps.Warn3k(context, "buffer() not supported in 3.x");
             if (!InitBufferObject(@object, offset, size)) {
                 throw PythonOps.TypeError("expected buffer object");
             }
