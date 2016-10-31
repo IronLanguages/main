@@ -35,10 +35,8 @@ namespace IronPython.Modules {
         [ThreadStatic]
         private static SHA256 _hasher256;
 
-#if !NETSTANDARD
         [ThreadStatic]
         private static SHA224 _hasher224;
-#endif
 
         private const int blockSize = 64;
 
@@ -55,14 +53,12 @@ namespace IronPython.Modules {
             return _hasher256;
         }
 
-# if !NETSTANDARD
         private static SHA224 GetHasherSHA224() {
             if (_hasher224 == null) {
                 _hasher224 = new SHA224();
             }
             return _hasher224;
         }
-#endif
 
         public static Sha256Object sha256(object data) {
             return new Sha256Object(data);
@@ -125,15 +121,6 @@ namespace IronPython.Modules {
             public const string name = "SHA256";
         }
 
-#if NETSTANDARD
-        public static Sha256Object sha224(object data) {
-            throw new NotImplementedException();
-        }
-
-        public static Sha256Object sha224() {
-            throw new NotImplementedException();
-        }
-#else
         public static Sha224Object sha224(object data) {
             return new Sha224Object(data);
         }
@@ -194,10 +181,8 @@ namespace IronPython.Modules {
             public const int digestsize = 28;
             public const string name = "SHA224";
         }
-#endif
     }
 
-#if !NETSTANDARD
     [PythonHidden]
     public class SHA224 : HashAlgorithm {
         private const int BLOCK_SIZE_BYTES = 64;
@@ -241,7 +226,9 @@ namespace IronPython.Modules {
 
         protected override void HashCore(byte[] array, int ibStart, int cbSize) {
             int i;
+#if !NETSTANDARD
             State = 1;
+#endif
 
             if (_nextBlockCount != 0) {
                 if (cbSize < (BLOCK_SIZE_BYTES - _nextBlockCount)) {
@@ -280,7 +267,9 @@ namespace IronPython.Modules {
                 }
             }
 
+#if !NETSTANDARD
             State = 0;
+#endif
             return hash;
         }
 
@@ -417,7 +406,6 @@ namespace IronPython.Modules {
                 ^ ((x >> 25) | (x << 7));
         }
     }
-#endif
 
     public class HashBase {
         internal byte[] _bytes;
