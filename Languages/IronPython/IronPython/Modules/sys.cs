@@ -142,7 +142,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
         // warnoptions is set by PythonContext and updated on each reload        
 
-        [Python3Warning("'sys.exc_clear() not supported in 3.x; use except clauses'")]
+        [Python3Warning("sys.exc_clear() not supported in 3.x; use except clauses")]
         public static void exc_clear() {
             PythonOps.ClearCurrentException();
         }
