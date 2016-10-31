@@ -209,12 +209,14 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         public object f_exc_traceback {
+            [Python3Warning("f_exc_traceback has been removed in 3.x")]
             get {
                 return null;
             }
         }
 
         public object f_exc_type {
+            [Python3Warning("f_exc_type has been removed in 3.x")]
             get {
                 return null;
             }

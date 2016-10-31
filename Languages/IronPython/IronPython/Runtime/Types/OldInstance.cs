@@ -252,6 +252,7 @@ namespace IronPython.Runtime.Types {
             throw PythonOps.AttributeErrorForOldInstanceMissingAttribute(_class.Name, "__delitem__");
         }
 
+        [Python3Warning("in 3.x, __getslice__ has been removed; use __getitem__")]
         public object __getslice__(CodeContext context, int i, int j) {
             object callable;
             if (TryRawGetAttr(context, "__getslice__", out callable)) {
@@ -263,6 +264,7 @@ namespace IronPython.Runtime.Types {
             throw PythonOps.TypeError("instance {0} does not have __getslice__ or __getitem__", _class.Name);
         }
         
+        [Python3Warning("in 3.x, __setslice__ has been removed; use __setitem__")]
         public void __setslice__(CodeContext context, int i, int j, object value) {
             object callable;
             if (TryRawGetAttr(context, "__setslice__", out callable)) {
@@ -276,6 +278,7 @@ namespace IronPython.Runtime.Types {
             throw PythonOps.TypeError("instance {0} does not have __setslice__ or __setitem__", _class.Name);
         }
 
+        [Python3Warning("in 3.x, __delslice__ has been removed; use __delitem__")]
         public object __delslice__(CodeContext context, int i, int j) {
             object callable;
             if (TryRawGetAttr(context, "__delslice__", out callable)) {

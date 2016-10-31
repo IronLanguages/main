@@ -166,14 +166,17 @@ namespace IronPython.Modules {
         }
 
         [Documentation("apply(object[, args[, kwargs]]) -> value\n\nDeprecated.\nInstead, use:\n    function(*args, **keywords).")]
+        [Python3Warning("apply() not supported in 3.x; use func(*args, **kwargs)")]
         public static object apply(CodeContext/*!*/ context, object func) {
             return PythonOps.CallWithContext(context, func);
         }
 
+        [Python3Warning("apply() not supported in 3.x; use func(*args, **kwargs)")]
         public static object apply(CodeContext/*!*/ context, object func, object args) {
             return PythonOps.CallWithArgsTupleAndContext(context, func, ArrayUtils.EmptyObjects, args);
         }
 
+        [Python3Warning("apply() not supported in 3.x; use func(*args, **kwargs)")]
         public static object apply(CodeContext/*!*/ context, object func, object args, object kws) {
             return context.LanguageContext.CallWithKeywords(func, args, kws);
         }
@@ -260,6 +263,7 @@ namespace IronPython.Modules {
         }
 
         [Documentation("coerce(x, y) -> (x1, y1)\n\nReturn a tuple consisting of the two numeric arguments converted to\na common type. If coercion is not possible, raise TypeError.")]
+        [Python3Warning("coerce() not supported in 3.x")]
         public static object coerce(CodeContext/*!*/ context, object x, object y) {
             object converted;
 
@@ -530,14 +534,17 @@ namespace IronPython.Modules {
             return code.Call(scope);
         }
 
+        [Python3Warning("execfile() not supported in 3.x; use exec()")]
         public static void execfile(CodeContext/*!*/ context, object/*!*/ filename) {
             execfile(context, filename, null, null);
         }
 
+        [Python3Warning("execfile() not supported in 3.x; use exec()")]
         public static void execfile(CodeContext/*!*/ context, object/*!*/ filename, object globals) {
             execfile(context, filename, globals, null);
         }
 
+        [Python3Warning("execfile() not supported in 3.x; use exec()")]
         public static void execfile(CodeContext/*!*/ context, object/*!*/ filename, object globals, object locals) {
             if (filename == null) {
                 throw PythonOps.TypeError("execfile() argument 1 must be string, not None");
@@ -1152,6 +1159,8 @@ namespace IronPython.Modules {
 
             if (func != null) {
                 mapSite = MakeMapSite<object, object>(context);
+            } else {
+                PythonOps.Warn3k(context, "map(None, ...) not supported in 3.x; use list(...)");
             }
 
             while (en.MoveNext()) {
@@ -1977,6 +1986,7 @@ namespace IronPython.Modules {
             return line;
         }
 
+        [Python3Warning("reduce() not supported in 3.x; use functools.reduce()")]
         public static object reduce(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object, object, object>>> siteData, object func, object seq) {
             IEnumerator i = PythonOps.GetEnumerator(seq);
             if (!i.MoveNext()) {
@@ -1993,6 +2003,7 @@ namespace IronPython.Modules {
             return ret;
         }
 
+        [Python3Warning("reduce() not supported in 3.x; use functools.reduce()")]
         public static object reduce(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object, object, object>>> siteData, object func, object seq, object initializer) {
             IEnumerator i = PythonOps.GetEnumerator(seq);
             EnsureReduceData(context, siteData);
@@ -2020,6 +2031,7 @@ namespace IronPython.Modules {
         [ThreadStatic]
         private static List<PythonModule> _reloadStack;
 
+        [Python3Warning("In 3.x, reload() is renamed to imp.reload()")]
         public static object reload(CodeContext/*!*/ context, PythonModule/*!*/ module) {
             if (module == null) {
                 throw PythonOps.TypeError("unexpected type: NoneType");
