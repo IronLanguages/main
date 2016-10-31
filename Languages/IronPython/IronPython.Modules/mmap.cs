@@ -147,9 +147,8 @@ namespace IronPython.Modules {
                     _file = MemoryMappedFile.CreateOrOpen(_mapName, length, _fileAccess);
                 } else {
                     // Memory-map an actual file
-                    long capacity = checked(_offset + length);
                     _offset = offset;
-                    
+
                     PythonFile file;
                     PythonContext pContext = PythonContext.GetContext(context);
                     if (!pContext.FileManager.TryGetFileFromId(pContext, fileno, out file)) {
@@ -163,6 +162,16 @@ namespace IronPython.Modules {
                     if (_fileAccess == MemoryMappedFileAccess.ReadWrite && !_sourceStream.CanWrite) {
                         throw WindowsError(PythonExceptions._WindowsError.ERROR_ACCESS_DENIED);
                     }
+
+                    if (length == 0) {
+                        length = _sourceStream.Length;
+                        if (_offset >= length) {
+                            throw PythonOps.ValueError("mmap offset is greater than file size");
+                        }
+                        length -= _offset;
+                    }
+
+                    long capacity = checked(_offset + length);
 
                     // Enlarge the file as needed.
                     if (capacity > _sourceStream.Length) {
