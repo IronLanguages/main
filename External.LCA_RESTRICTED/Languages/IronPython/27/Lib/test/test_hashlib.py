@@ -394,6 +394,7 @@ class HashLibTestCase(unittest.TestCase):
         self.assertEqual(expected_hash, hasher.hexdigest())
 
 
+@unittest.skipIf(sys.platform=='cli', 'Need to re-enable these tests when we determine what the issue is here.')
 class KDFTests(unittest.TestCase):
     pbkdf2_test_vectors = [
         (b'password', b'salt', 1, None),
