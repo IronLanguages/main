@@ -15,6 +15,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -33,24 +35,15 @@ namespace IronPython.Modules {
     public static class PythonSha {
         public const string __doc__ = "implements the SHA1 hash algorithm";
 
-        [ThreadStatic]
-        private static SHA1 _hasher;
-        private const int blockSize = 64;
+        private const int DIGEST_SIZE = 20;
+        private const int BLOCK_SIZE = 64;
 
-        private static SHA1 GetHasher() {
-            if (_hasher == null) {
-#if SILVERLIGHT || WP75
-                 _hasher = new SHA1Managed();
-#else
-                _hasher = SHA1.Create();
-#endif
-            }
-            return _hasher;
-        }
+        private static readonly Encoding _raw = Encoding.GetEncoding("iso-8859-1");
+        private static readonly byte[] _empty = _raw.GetBytes(string.Empty);
 
         public static int digest_size {
             [Documentation("Size of the resulting digest in bytes (constant)")]
-            get { return GetHasher().HashSize / 8; }
+            get { return DIGEST_SIZE; }
         }
 
         public static int digestsize {
@@ -60,11 +53,16 @@ namespace IronPython.Modules {
 
         public static int blocksize {
             [Documentation("Block size")]
-            get { return blockSize; }
+            get { return BLOCK_SIZE; }
         }
 
         [Documentation("new([data]) -> object (object used to calculate hash)")]
         public static sha @new(object data) {
+            return new sha(data);
+        }
+
+        [Documentation("new([data]) -> object (object used to calculate hash)")]
+        public static sha @new(ArrayModule.array data) {
             return new sha(data);
         }
 
@@ -90,77 +88,28 @@ namespace IronPython.Modules {
 
         [Documentation("new([data]) -> object (object used to calculate hash)")]
         [PythonType, PythonHidden]
-        public class sha
-#if FEATURE_ICLONEABLE
-            : ICloneable 
-#endif
+        public class sha : HashBase<SHA1>
         {
-            byte[] _bytes;
-            byte[] _hash;
-            public static readonly int digest_size = PythonSha.digest_size;
-            public static readonly int block_size = PythonSha.blocksize;
+            public sha() : base("SHA1", BLOCK_SIZE, DIGEST_SIZE) { }
 
-            public sha() : this(new byte[0]) { }
-
-            public sha(object initialData) {
-                _bytes = new byte[0];
+            public sha(object initialData) : this() {
                 update(initialData);
             }
 
-            internal sha(IList<byte> initialBytes) {
-                _bytes = new byte[0];
+            internal sha(IList<byte> initialBytes) : this() {
                 update(initialBytes);
             }
 
-            [Documentation("update(string) -> None (update digest with string data)")]
-            public void update(object newData) {
-                update(Converter.ConvertToString(newData).MakeByteArray());
-            }
-
-            public void update(Bytes newBytes) {
-                update((IList<byte>)newBytes);
-            }
-
-            public void update(PythonBuffer newBytes) {
-                update((IList<byte>)newBytes);
-            }
-
-            public void update(ByteArray newBytes) {
-                update((IList<byte>)newBytes);
-            }
-
-            private void update(IList<byte> newBytes) {
-                byte[] updatedBytes = new byte[_bytes.Length + newBytes.Count];
-                Array.Copy(_bytes, updatedBytes, _bytes.Length);
-                newBytes.CopyTo(updatedBytes, _bytes.Length);
-                _bytes = updatedBytes;
-                _hash = GetHasher().ComputeHash(_bytes);
-            }
-
-            [Documentation("digest() -> int (current digest value)")]
-            public string digest() {
-                return _hash.MakeString();
-            }
-
-            [Documentation("hexdigest() -> string (current digest as hex digits)")]
-            public string hexdigest() {
-                StringBuilder result = new StringBuilder(2 * _hash.Length);
-                for (int i = 0; i < _hash.Length; i++) {
-                    result.Append(_hash[i].ToString("x2"));
-                }
-                return result.ToString();
+            protected override void CreateHasher() {
+                _hasher = new SHA1Managed();
             }
 
             [Documentation("copy() -> object (copy of this object)")]
-            public sha copy() {
-                return new sha(_bytes);
+            public override HashBase<SHA1> copy() {
+                sha clone = new sha();
+                clone._hasher = CloneHasher();
+                return clone;
             }
-
-#if FEATURE_ICLONEABLE
-            object ICloneable.Clone() {
-                return copy();
-            }
-#endif
         }
     }
 }
