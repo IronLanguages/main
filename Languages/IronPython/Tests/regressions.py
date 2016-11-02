@@ -242,51 +242,26 @@ def test_struct_uint_bad_value_cp20039():
 
     import _struct
     global andCalled
-    if is_ironpython: #http://ironpython.codeplex.com/workitem/27901
-        AreEqual(_struct.Struct('L').pack(4294967296), '\x00\x00\x00\x00')
-    else:
-        AssertErrorWithMessage(_struct.error, "integer out of range for 'L' format code",
-                               _struct.Struct('L').pack, 4294967296)
-    if is_ironpython: #http://ironpython.codeplex.com/workitem/27901
-        AreEqual(_struct.Struct('L').pack(-1), '\xff\xff\xff\xff')
-    else:
-        AssertErrorWithMessage(_struct.error, "integer out of range for 'L' format code",
-                               _struct.Struct('L').pack, -1)
-    
-    if is_ironpython: #http://ironpython.codeplex.com/workitem/27901
-        AreEqual(_struct.Struct('L').pack(x(0)), '\x00\x00\x00\x00')
-        AreEqual(andCalled, True)
-    else:
-        AssertErrorWithMessage(Exception, "foo",
-                               _struct.Struct('L').pack, x(0))
-    
-    if is_ironpython: #http://ironpython.codeplex.com/workitem/27901
-        AreEqual(_struct.Struct('I').pack(4294967296), '\x00\x00\x00\x00')
-    else:
-        AssertErrorWithMessage(_struct.error, "integer out of range for 'I' format code",
-                               _struct.Struct('I').pack, 4294967296)
-
-    if is_ironpython: #http://ironpython.codeplex.com/workitem/27901
-        AreEqual(_struct.Struct('I').pack(-1), '\xff\xff\xff\xff')
-    else:
-        AssertErrorWithMessage(_struct.error, "integer out of range for 'I' format code",
-                               _struct.Struct('I').pack, -1)
     andCalled = False
-    if is_ironpython: #http://ironpython.codeplex.com/workitem/27901
-        AreEqual(_struct.Struct('I').pack(x(0)), '\x00\x00\x00\x00')
-        AreEqual(andCalled, True)
-    else:
-        AssertErrorWithMessage(Exception, "foo",
-                               _struct.Struct('I').pack, x(0))
 
-    if is_ironpython: #http://ironpython.codeplex.com/workitem/27901
-        AssertError(OverflowError, _struct.Struct('I').pack, x(-1))
-        AssertError(OverflowError, _struct.Struct('L').pack, x(-1))
-    else:
-        AssertErrorWithMessage(Exception, "foo", _struct.Struct('I').pack, x(-1))
-        AssertErrorWithMessage(Exception, "foo", _struct.Struct('L').pack, x(-1))
+    AssertErrorWithMessage(_struct.error, "integer out of range for 'L' format code",
+                           _struct.Struct('L').pack, 4294967296)
+    AssertErrorWithMessage(_struct.error, "integer out of range for 'L' format code",
+                           _struct.Struct('L').pack, -1)
+    AssertErrorWithMessage(Exception, "foo",
+                           _struct.Struct('L').pack, x(0))
+    AssertErrorWithMessage(Exception, "foo", _struct.Struct('L').pack, x(-1))
 
-    
+    AssertErrorWithMessage(_struct.error, "integer out of range for 'I' format code",
+                           _struct.Struct('I').pack, 4294967296)
+    AssertErrorWithMessage(_struct.error, "integer out of range for 'I' format code",
+                           _struct.Struct('I').pack, -1)
+    AssertErrorWithMessage(Exception, "foo",
+                           _struct.Struct('I').pack, x(0))
+    AssertErrorWithMessage(Exception, "foo", _struct.Struct('I').pack, x(-1))
+
+    # __and__ was called in Python2.6 check that this is no longer True
+    Assert(not andCalled)
 
 def test_reraise_backtrace_cp20051():
     '''
