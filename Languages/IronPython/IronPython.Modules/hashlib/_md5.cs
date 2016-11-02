@@ -25,11 +25,6 @@ using System.Text;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
-//!!! This is pretty inefficient. We should probably use hasher.TransformBlock instead of
-//!!! hanging onto all of the bytes.
-//!!! Also, we could probably make a generic version of this that could then be specialized
-//!!! for both md5 and sha.
-
 [assembly: PythonModule("_md5", typeof(IronPython.Modules.PythonMD5))]
 namespace IronPython.Modules {
     public static class PythonMD5 {

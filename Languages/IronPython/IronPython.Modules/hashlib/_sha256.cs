@@ -27,11 +27,6 @@ using Mono.Security.Cryptography;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
-//!!! This is pretty inefficient. We should probably use hasher.TransformBlock instead of
-//!!! hanging onto all of the bytes.
-//!!! Also, we could probably make a generic version of this that could then be specialized
-//!!! for both md5 and sha.
-
 [assembly: PythonModule("_sha256", typeof(IronPython.Modules.PythonSha256))]
 namespace IronPython.Modules {
     [Documentation("SHA256 hash algorithm")]
