@@ -3551,6 +3551,17 @@
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
         </Test>
         <Test>
+          <Name>test_optparse_cpy</Name>
+          <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
+          <Arguments>test\test_optparse.py</Arguments>
+          <MaxDuration>600000</MaxDuration>
+          <LongRunning>false</LongRunning>
+          <Disabled>false</Disabled>
+          <RequiresAdmin>false</RequiresAdmin>
+          <NotParallelSafe>false</NotParallelSafe>
+          <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
+        </Test>
+        <Test>
           <Name>test_os_cpy</Name>
           <Filename>%DLR_ROOT%\Languages\IronPython\Internal\ipy.bat</Filename>
           <Arguments>-X:Frames test\test_os.py</Arguments>
