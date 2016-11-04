@@ -479,6 +479,21 @@ def test_cp9350():
         a = array.array('B', [1]) * i
         AreEqual(a, array.array('B', [1]*2**8))
 
+def test_gh870():
+    string_types = ['c', 'b', 'B', 'u']
+    number_types = ['h', 'H', 'i', 'I', 'I', 'l', 'L']
+
+    for typecode in string_types:
+        a = array.array(typecode, 'a')
+        a += a
+        a.extend(a)
+        AreEqual(a, 4*array.array(typecode, 'a'))
+
+    for typecode in number_types:
+        a = array.array(typecode, [1])
+        a += a
+        a.extend(a)
+        AreEqual(a, 4*array.array(typecode, [1]))
 
 def test_coverage():
     '''

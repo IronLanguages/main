@@ -202,8 +202,15 @@ namespace IronPython.Modules {
 
             public void extend(object iterable) {
                 array pa = iterable as array;
-                if (pa != null && typecode != pa.typecode) {
-                    throw PythonOps.TypeError("cannot extend with different typecode");
+                if (pa != null) {
+                    if (typecode != pa.typecode) {
+                        throw PythonOps.TypeError("cannot extend with different typecode");
+                    }
+                    int l = pa._data.Length;
+                    for (int i = 0; i < l; i++) {
+                        _data.Append(pa._data.GetData(i));
+                    }
+                    return;
                 }
 
                 string str = iterable as string;
