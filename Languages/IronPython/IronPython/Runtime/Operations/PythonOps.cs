@@ -1772,7 +1772,7 @@ namespace IronPython.Runtime.Operations {
             string s = o == null ? "None" : PythonOps.ToString(o);
 
             PythonOps.Write(context, dest, s);
-            PythonOps.SetSoftspace(dest, !s.EndsWith("\n"));
+            PythonOps.SetSoftspace(dest, !s.EndsWith("\n") && !s.EndsWith("\t"));
         }
 
         /// <summary>
