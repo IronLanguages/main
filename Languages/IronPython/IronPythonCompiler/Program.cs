@@ -45,7 +45,7 @@ namespace IronPythonCompiler {
             var u = new Universe();
             var aName = new AssemblyName(Path.GetFileNameWithoutExtension(new FileInfo(config.Output).Name));
             var ab = u.DefineDynamicAssembly(aName, AssemblyBuilderAccess.Save, Path.GetDirectoryName(config.Output));
-            var mb = ab.DefineDynamicModule(config.Output, Path.ChangeExtension(aName.Name, ".exe"));
+            var mb = ab.DefineDynamicModule(config.Output, aName.Name + (aName.Name.EndsWith(".exe") ? string.Empty : ".exe"));
             var tb = mb.DefineType("PythonMain", IKVM.Reflection.TypeAttributes.Public);
 
             if (!string.IsNullOrEmpty(config.Win32Icon)) {
@@ -132,8 +132,8 @@ namespace IronPythonCompiler {
             LocalBuilder dictVar = null;
 
             if (config.PythonOptions.Count > 0) {
-                FieldInfo True = u.Import(typeof(ScriptingRuntimeHelpers)).GetField("True");
-                FieldInfo False = u.Import(typeof(ScriptingRuntimeHelpers)).GetField("False");
+                var True = u.Import(typeof(ScriptingRuntimeHelpers)).GetField("True");
+                var False = u.Import(typeof(ScriptingRuntimeHelpers)).GetField("False");
 
                 dictVar = gen.DeclareLocal(u.Import(typeof(Dictionary<string, object>)));
                 gen.Emit(OpCodes.Newobj, u.Import(typeof(Dictionary<string, object>)).GetConstructor(Type.EmptyTypes));
