@@ -43,7 +43,7 @@ namespace IronPython.Modules {
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             List defaultFilters = new List();
-            if (!context.PythonOptions.WarnPython30 && !context.PythonOptions.DivisionOptions.HasFlag(PythonDivisionOptions.Warn) && !context.PythonOptions.DivisionOptions.HasFlag(PythonDivisionOptions.WarnAll)) {
+            if (!context.PythonOptions.WarnPython30 && context.PythonOptions.DivisionOptions != PythonDivisionOptions.Warn && context.PythonOptions.DivisionOptions != PythonDivisionOptions.WarnAll) {
                 defaultFilters.AddNoLock(PythonTuple.MakeTuple("ignore", null, PythonExceptions.DeprecationWarning, null, 0));
             }
             defaultFilters.AddNoLock(PythonTuple.MakeTuple("ignore", null, PythonExceptions.PendingDeprecationWarning, null, 0));
