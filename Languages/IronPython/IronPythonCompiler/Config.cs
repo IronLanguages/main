@@ -158,6 +158,9 @@ namespace IronPythonCompiler {
                 } else if (Array.IndexOf(new string[] { "/?", "-?", "/h", "-h" }, args) >= 0) {
                     ConsoleOps.Usage(true);
                 } else if(arg.StartsWith("/py:")) {
+                    // if you add a parameter that takes a different type then 
+                    // ScriptingRuntimeHelpers.True/False or int
+                    // you need ot also modify Program.cs for standalone generation.
                     string[] pyargs = arg.Substring(4).Trim('"').Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                     switch(pyargs[0]) {
                         case "-X:Frames":
@@ -196,32 +199,9 @@ namespace IronPythonCompiler {
                             PythonOptions["LightweightScopes"] = ScriptingRuntimeHelpers.True;
                             break;
 
-                        case "-X:MTA":
-                            UseMta = true;
-                            break;
-                        case "-X:Python30":
-                            PythonOptions["PythonVersion"] = new Version(3, 0);
-                            break;
-
                         case "-X:Debug":
-                            //RuntimeSetup.DebugMode = true;
                             PythonOptions["Debug"] = ScriptingRuntimeHelpers.True;
                             break;
-
-                        case "-X:NoDebug":
-                            string regex = pyargs[1];
-                            try {
-                                PythonOptions["NoDebug"] = new Regex(regex);
-                            } catch {
-                                ConsoleOps.Error(true, "'{0}' is not a valid value for option '-X:NoDebug'", regex);
-                            }
-
-                            break;
-
-                        case "-X:BasicConsole":
-                            //ConsoleOptions.BasicConsole = true;
-                            break;
-
                     }
                 } else {
                     if (arg.StartsWith("@")) {

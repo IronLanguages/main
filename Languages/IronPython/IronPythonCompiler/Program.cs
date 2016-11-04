@@ -132,14 +132,30 @@ namespace IronPythonCompiler {
             LocalBuilder dictVar = null;
 
             if (config.PythonOptions.Count > 0) {
-                //dictVar = gen.DeclareLocal(u.Import(typeof(Dictionary<string, object>)));
-                //foreach (var option in config.PythonOptions) {
-                //    var objVar = gen.DeclareLocal(u.Import(typeof(object)));
-                    
-                //    gen.Emit(OpCodes.Ldstr, option.Key);
-                    
-                //    //gen.Emit(OpCodes.Ldobj, option.Value);                    
-                //}
+                FieldInfo True = u.Import(typeof(ScriptingRuntimeHelpers)).GetField("True");
+                FieldInfo False = u.Import(typeof(ScriptingRuntimeHelpers)).GetField("False");
+
+                dictVar = gen.DeclareLocal(u.Import(typeof(Dictionary<string, object>)));
+                gen.Emit(OpCodes.Newobj, u.Import(typeof(Dictionary<string, object>)).GetConstructor(Type.EmptyTypes));
+                gen.Emit(OpCodes.Stloc, dictVar);
+
+                foreach (var option in config.PythonOptions) {
+                    gen.Emit(OpCodes.Ldloc, dictVar);    
+                    gen.Emit(OpCodes.Ldstr, option.Key);
+                    if (option.Value is int) {
+                        int val = (int)option.Value;
+                        if (val >= -128 && val <= 127)
+                            gen.Emit(OpCodes.Ldc_I4_S, val); // this is more optimized
+                        else
+                            gen.Emit(OpCodes.Ldc_I4, val);
+                        gen.Emit(OpCodes.Box, u.Import(typeof(System.Int32)));
+                    } else if (option.Value.Equals(ScriptingRuntimeHelpers.True)) {
+                        gen.Emit(OpCodes.Ldsfld, True);
+                    } else if(option.Value.Equals(ScriptingRuntimeHelpers.False)) {
+                        gen.Emit(OpCodes.Ldsfld, False);
+                    }
+                    gen.EmitCall(OpCodes.Callvirt, u.Import(typeof(Dictionary<string, object>)).GetMethod("Add", new IKVM.Reflection.Type[] { u.Import(typeof(string)), u.Import(typeof(object)) }), Type.EmptyTypes);            
+                }
             }
             
             Label tryStart = gen.BeginExceptionBlock();
@@ -192,14 +208,17 @@ namespace IronPythonCompiler {
             gen.Emit(OpCodes.Ldc_I4_0);           // don't ignore environment variables for engine startup
             if(config.PythonOptions.Count > 0) {
                 gen.Emit(OpCodes.Ldloc, dictVar);
+            } else {
+                gen.Emit(OpCodes.Ldnull);
             }
 
             // call InitializeModuleEx
             // (this will also run the script)
             // and put the return code on the stack
-            gen.EmitCall(OpCodes.Call, u.Import(typeof(PythonOps)).GetMethod("InitializeModuleEx"), Type.EmptyTypes);
+            gen.EmitCall(OpCodes.Call, u.Import(typeof(PythonOps)).GetMethod("InitializeModuleEx", 
+                new IKVM.Reflection.Type[] { u.Import(typeof(System.Reflection.Assembly)), u.Import(typeof(string)), u.Import(typeof(string[])), u.Import(typeof(bool)), u.Import(typeof(Dictionary<string, object>)) }), 
+                Type.EmptyTypes);
             gen.Emit(OpCodes.Stloc, intVar);
-
             gen.BeginCatchBlock(u.Import(typeof(Exception)));
 
             if (config.Target == PEFileKinds.ConsoleApplication) {
@@ -209,7 +228,6 @@ namespace IronPythonCompiler {
                 gen.Emit(OpCodes.Ldloc, strVar);
                 gen.EmitCall(OpCodes.Call, u.Import(typeof(System.Console)).GetMethod("WriteLine", new IKVM.Reflection.Type[] { u.Import(typeof(string)), u.Import(typeof(string)) }), Type.EmptyTypes);                
             } else {
-                // what do we want to do in the case of a Windows app, show a MessageBox?
                 gen.EmitCall(OpCodes.Callvirt, u.Import(typeof(System.Exception)).GetMethod("get_Message", Type.EmptyTypes), Type.EmptyTypes);
                 gen.Emit(OpCodes.Stloc, strVar);
                 gen.Emit(OpCodes.Ldstr, config.ErrorMessageFormat);
@@ -245,7 +263,7 @@ namespace IronPythonCompiler {
             }
 
             // we don't use the engine, but we create it so we can have a default context.
-            ScriptEngine engine = Python.CreateEngine();
+            ScriptEngine engine = Python.CreateEngine(config.PythonOptions);
 
             ConsoleOps.Info("IronPython Compiler for {0} ({1})", engine.Setup.DisplayName, engine.LanguageVersion);
             ConsoleOps.Info("{0}", config);
