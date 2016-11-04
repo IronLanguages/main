@@ -45,7 +45,7 @@ namespace IronPythonCompiler {
             var u = new Universe();
             var aName = new AssemblyName(Path.GetFileNameWithoutExtension(new FileInfo(config.Output).Name));
             var ab = u.DefineDynamicAssembly(aName, AssemblyBuilderAccess.Save, Path.GetDirectoryName(config.Output));
-            var mb = ab.DefineDynamicModule(config.Output, aName.Name + (aName.Name.EndsWith(".exe") ? string.Empty : ".exe"));
+            var mb = ab.DefineDynamicModule(config.Output, Path.ChangeExtension(aName.Name, ".exe"));
             var tb = mb.DefineType("PythonMain", IKVM.Reflection.TypeAttributes.Public);
 
             if (!string.IsNullOrEmpty(config.Win32Icon)) {
@@ -129,6 +129,15 @@ namespace IronPythonCompiler {
             // variables for saving original working directory and return code of script
             var strVar = gen.DeclareLocal(u.Import(typeof(string)));
             var intVar = gen.DeclareLocal(u.Import(typeof(int)));
+            LocalBuilder dictVar = null;
+            if(config.PythonOptions.Count > 0) {
+                dictVar = gen.DeclareLocal(u.Import(typeof(Dictionary<string, object>)));
+                foreach (var option in config.PythonOptions) {
+
+
+                    gen.Emit(OpCodes.Ldstr, option.Key);                    
+                }
+            }
             
             Label tryStart = gen.BeginExceptionBlock();
             
@@ -178,8 +187,11 @@ namespace IronPythonCompiler {
             gen.Emit(OpCodes.Ldstr, "__main__");  // main module name
             gen.Emit(OpCodes.Ldnull);             // no references
             gen.Emit(OpCodes.Ldc_I4_0);           // don't ignore environment variables for engine startup
+            if(config.PythonOptions.Count > 0) {
+                gen.Emit(OpCodes.Ldloc, dictVar);
+            }
 
-            // call InitializeModule
+            // call InitializeModuleEx
             // (this will also run the script)
             // and put the return code on the stack
             gen.EmitCall(OpCodes.Call, u.Import(typeof(PythonOps)).GetMethod("InitializeModuleEx"), Type.EmptyTypes);
@@ -230,13 +242,25 @@ namespace IronPythonCompiler {
             }
 
             // we don't use the engine, but we create it so we can have a default context.
-            ScriptEngine engine = Python.CreateEngine();
+            ScriptEngine engine = null;
+            if (config.PythonOptions.Count > 0) {
+                engine = Python.CreateEngine(config.PythonOptions);
+            } else {
+                engine = Python.CreateEngine();
+            }
 
             ConsoleOps.Info("IronPython Compiler for {0} ({1})", engine.Setup.DisplayName, engine.LanguageVersion);
             ConsoleOps.Info("{0}", config);
-            ConsoleOps.Info("compiling...");            
-                        
-            ClrModule.CompileModules(DefaultContext.DefaultCLS, config.Output + ".dll", new Dictionary<string, object> { { "mainModule", config.MainName } }, config.Files.ToArray());
+            ConsoleOps.Info("compiling...");
+
+            var compileOptions = new Dictionary<string, object>() {
+                { "mainModule", config.MainName }
+            };
+
+            ClrModule.CompileModules(DefaultContext.DefaultCLS, 
+                Path.ChangeExtension(config.Output, ".dll"), 
+                compileOptions, 
+                config.Files.ToArray());
 
             if (config.Target != PEFileKinds.Dll) {
                 GenerateExe(config);

@@ -3778,7 +3778,7 @@ namespace IronPython.Runtime.Operations {
         /// the exit code that the program reported via SystemExit or 0.
         /// </summary>
         public static int InitializeModule(Assembly/*!*/ precompiled, string/*!*/ main, string[] references) {
-            return InitializeModuleEx(precompiled, main, references, false);
+            return InitializeModuleEx(precompiled, main, references, false, null);
         }
 
         /// <summary>
@@ -3787,10 +3787,17 @@ namespace IronPython.Runtime.Operations {
         /// the exit code that the program reported via SystemExit or 0.
         /// </summary>
         public static int InitializeModuleEx(Assembly/*!*/ precompiled, string/*!*/ main, string[] references, bool ignoreEnvVars) {
+            return InitializeModuleEx(precompiled, main, references, ignoreEnvVars, null);
+        }
+
+
+        public static int InitializeModuleEx(Assembly/*!*/ precompiled, string/*!*/ main, string[] references, bool ignoreEnvVars, Dictionary<string, object> options) {
             ContractUtils.RequiresNotNull(precompiled, "precompiled");
             ContractUtils.RequiresNotNull(main, "main");
 
-            Dictionary<string, object> options = new Dictionary<string, object>();
+            if(options == null) {
+                options = new Dictionary<string, object>();
+            }
             options["Arguments"] = Environment.GetCommandLineArgs();
 
             var pythonEngine = Python.CreateEngine(options);
