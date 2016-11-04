@@ -46,6 +46,7 @@ Options:
     /target:dll                               Compile only into dll.  Default
     /target:exe                               Generate CONSOLE executable stub for startup in addition to dll.
     /target:winexe                            Generate WINDOWS executable stub for startup in addition to dll.
+    /py:<option>                              Allows specifying options that modify the behavior of IronPython (e.g., -X:FullFrames)
     @<file>                                   Specifies a response file to be parsed for input files and command line options (one per line)
     /? /h                                     This message    
 
