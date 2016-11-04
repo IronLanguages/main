@@ -130,13 +130,16 @@ namespace IronPythonCompiler {
             var strVar = gen.DeclareLocal(u.Import(typeof(string)));
             var intVar = gen.DeclareLocal(u.Import(typeof(int)));
             LocalBuilder dictVar = null;
-            if(config.PythonOptions.Count > 0) {
-                dictVar = gen.DeclareLocal(u.Import(typeof(Dictionary<string, object>)));
-                foreach (var option in config.PythonOptions) {
 
-
-                    gen.Emit(OpCodes.Ldstr, option.Key);                    
-                }
+            if (config.PythonOptions.Count > 0) {
+                //dictVar = gen.DeclareLocal(u.Import(typeof(Dictionary<string, object>)));
+                //foreach (var option in config.PythonOptions) {
+                //    var objVar = gen.DeclareLocal(u.Import(typeof(object)));
+                    
+                //    gen.Emit(OpCodes.Ldstr, option.Key);
+                    
+                //    //gen.Emit(OpCodes.Ldobj, option.Value);                    
+                //}
             }
             
             Label tryStart = gen.BeginExceptionBlock();
@@ -242,12 +245,7 @@ namespace IronPythonCompiler {
             }
 
             // we don't use the engine, but we create it so we can have a default context.
-            ScriptEngine engine = null;
-            if (config.PythonOptions.Count > 0) {
-                engine = Python.CreateEngine(config.PythonOptions);
-            } else {
-                engine = Python.CreateEngine();
-            }
+            ScriptEngine engine = Python.CreateEngine();
 
             ConsoleOps.Info("IronPython Compiler for {0} ({1})", engine.Setup.DisplayName, engine.LanguageVersion);
             ConsoleOps.Info("{0}", config);
