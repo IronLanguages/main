@@ -236,7 +236,7 @@ def test_array_type():
 def test_tuple_indexer():
     array1 = System.Array.CreateInstance(int, 20, 20)
     array1[0,0] = 5
-    AreEqual(array1[0,0], array[(0,0)])
+    AreEqual(array1[0,0], array1[(0,0)])
 
 #--MAIN------------------------------------------------------------------------
 run_test(__name__)
