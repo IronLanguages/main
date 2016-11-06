@@ -896,6 +896,20 @@ namespace IronPython.Runtime.Operations {
         public static object Index(object o) {
             if (o is int) {
                 return Int32Ops.__index__((int)o);
+            } else if (o is uint) {
+                return UInt32Ops.__index__((uint)o);
+            } else if (o is ushort) {
+                return UInt16Ops.__index__((ushort)o);
+            } else if (o is short) {
+                return Int16Ops.__index__((short)o);
+            } else if (o is byte) {
+                return ByteOps.__index__((byte)o);
+            } else if (o is sbyte) {
+                return SByteOps.__index__((sbyte)o);
+            } else if (o is long) {
+                return Int64Ops.__index__((long)o);
+            } else if(o is ulong) {
+                return UInt64Ops.__index__((ulong)o);
             } else if (o is BigInteger) {
                 return BigIntegerOps.__index__((BigInteger)o);
             }
