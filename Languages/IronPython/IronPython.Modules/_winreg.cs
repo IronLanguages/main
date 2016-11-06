@@ -203,6 +203,19 @@ namespace IronPython.Modules {
             SafeRegistryHandle hKey,
             string lpSubKey);
 
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RegDisableReflectionKey(
+            SafeRegistryHandle hKey);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RegEnableReflectionKey(
+            SafeRegistryHandle hKey);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RegQueryReflectionKey(
+            SafeRegistryHandle hBase,
+            out bool bIsReflectionDisabled);
+
         public static void DeleteKey(object key, string subKeyName) {
             HKEYType rootKey = GetRootKey(key);
 
@@ -542,6 +555,48 @@ namespace IronPython.Modules {
             }
             return new HKEYType(newKey);
         }
+
+        public static void DisableReflectionKey(object key) {
+            HKEYType rootKey = GetRootKey(key);
+
+            if (!Environment.Is64BitOperatingSystem) {
+                throw new NotImplementedException("not implemented on this platform");
+            }
+
+            int dwRet = RegDisableReflectionKey(rootKey.GetKey().Handle);
+            if (dwRet != ERROR_SUCCESS) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, dwRet);
+            }
+        }
+
+        public static void EnableReflectionKey(object key) {
+            HKEYType rootKey = GetRootKey(key);
+
+            if (!Environment.Is64BitOperatingSystem) {
+                throw new NotImplementedException("not implemented on this platform");
+            }
+
+            int dwRet = RegEnableReflectionKey(rootKey.GetKey().Handle);
+            if (dwRet != ERROR_SUCCESS) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, dwRet);
+            }
+        }
+
+        public static bool QueryReflectionKey(object key) {
+            HKEYType rootKey = GetRootKey(key);
+            bool isDisabled;
+            
+            if(!Environment.Is64BitOperatingSystem) {
+                throw new NotImplementedException("not implemented on this platform");
+            }
+
+            int dwRet = RegQueryReflectionKey(rootKey.GetKey().Handle, out isDisabled);
+            if (dwRet != ERROR_SUCCESS) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, dwRet);
+            }
+            return isDisabled;
+        }
+
 #endregion
 
 #region Helpers
