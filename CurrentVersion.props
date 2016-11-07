@@ -6,17 +6,17 @@
     <MicroVersion>7</MicroVersion>
     <!-- Allowed: alpha,beta,candidate,final -->
     <ReleaseLevel>candidate</ReleaseLevel>
-    <ReleaseSerial>1</ReleaseSerial>
+    <ReleaseSerial>2</ReleaseSerial>
 
     <AssemblyRevision>0</AssemblyRevision>
   </PropertyGroup>
   <PropertyGroup>
     <DlrMajorVersion>1</DlrMajorVersion>
     <DlrMinorVersion>1</DlrMinorVersion>
-    <DlrMicroVersion>1</DlrMicroVersion>
+    <DlrMicroVersion>2</DlrMicroVersion>
     <!-- Allowed: alpha,beta,candidate,final -->
     <DlrReleaseLevel>candidate</DlrReleaseLevel>
-    <DlrReleaseSerial>1</DlrReleaseSerial>
+    <DlrReleaseSerial>2</DlrReleaseSerial>
 
     <DlrAssemblyRevision>22</DlrAssemblyRevision>
   </PropertyGroup>

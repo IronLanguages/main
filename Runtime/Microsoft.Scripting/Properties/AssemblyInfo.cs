@@ -51,8 +51,8 @@ using System.Security;
 #endif
 
 #if !SILVERLIGHT
-[assembly: AssemblyVersion("1.1.1.22")]
-[assembly: AssemblyFileVersion("1.1.1.22")]
+[assembly: AssemblyVersion("1.1.2.22")]
+[assembly: AssemblyFileVersion("1.1.2.22")]
 [assembly: AssemblyInformationalVersion("1.1")]
 #endif
 
