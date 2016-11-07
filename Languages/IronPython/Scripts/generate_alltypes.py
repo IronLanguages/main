@@ -178,10 +178,12 @@ def gen_unaryops(cw, ty):
         cw.writeline('return (x != 0);')
         cw.exit_block()
         cw.writeline()
-
-    cw.enter_block('public static string __repr__(%s x)' % (ty.name))
-    cw.writeline('return x.ToString(CultureInfo.InvariantCulture);')
-    cw.exit_block()
+    
+    # this is handled in another Ops file
+    if not ty.is_float:
+        cw.enter_block('public static string __repr__(%s x)' % (ty.name))
+        cw.writeline('return x.ToString(CultureInfo.InvariantCulture);')
+        cw.exit_block()
     
     if ty.is_float:
         cw.write(float_trunc, type=ty.name)

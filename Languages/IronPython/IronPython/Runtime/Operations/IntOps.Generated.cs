@@ -2296,9 +2296,6 @@ namespace IronPython.Runtime.Operations {
             return (x != 0);
         }
 
-        public static string __repr__(Single x) {
-            return x.ToString(CultureInfo.InvariantCulture);
-        }
         public static object __trunc__(Single x) {
             if (x >= int.MaxValue || x <= int.MinValue) {
                 return (BigInteger)x;
@@ -2431,9 +2428,6 @@ namespace IronPython.Runtime.Operations {
             return (x != 0);
         }
 
-        public static string __repr__(Double x) {
-            return x.ToString(CultureInfo.InvariantCulture);
-        }
         public static object __trunc__(Double x) {
             if (x >= int.MaxValue || x <= int.MinValue) {
                 return (BigInteger)x;
