@@ -407,10 +407,6 @@ namespace IronPython.Runtime.Operations {
             return self;
         }
 
-        public static int __index__(int self) {
-            return self;
-        }
-
         public static BigInteger __long__(int self) {
             return (BigInteger)self;
         }
@@ -562,10 +558,6 @@ namespace IronPython.Runtime.Operations {
             }
 
             return spec.AlignNumericText(digits, self == 0, self > 0);
-        }
-
-        public static string/*!*/ __repr__(int self) {
-            return self.ToString(CultureInfo.InvariantCulture);
         }
 
         private static string ToHex(int self, bool lowercase) {
