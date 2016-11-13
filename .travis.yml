@@ -29,5 +29,4 @@ matrix:
 #    - mono: weekly
 
 script:
-  - make
-  - make testrunner
+  - make test-ipy
