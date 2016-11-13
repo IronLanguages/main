@@ -1,6 +1,10 @@
 git:
   depth: 3
 
+os:
+  - linux
+  - osx
+
 dist: trusty
 sudo: false
 group: beta
