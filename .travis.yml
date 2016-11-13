@@ -3,6 +3,7 @@ git:
 
 dist: trusty
 sudo: false
+group: beta
 
 language: csharp
 matrix:
