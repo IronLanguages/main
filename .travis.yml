@@ -14,7 +14,10 @@ mono:
   - weekly
 
 
-# matrix:
+# Let's ignore mac timeouts for now
+matrix:
+  allow_failures:
+    - os: osx
 #  include:
 # Skipping on dotnet for now as xbuild is not available?
 #    - dotnet: 1.0.0-preview2-003121
