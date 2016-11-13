@@ -8,9 +8,10 @@ group: beta
 language: csharp
 matrix:
   include:
-    - dotnet: 1.0.0-preview2-003121
-      mono: none
-      env: DOTNETCORE=1
+# Skipping on dotnet for now as xbuild is not available?
+#    - dotnet: 1.0.0-preview2-003121
+#      mono: none
+#      env: DOTNETCORE=1
     - mono: latest
 script:
   - make
