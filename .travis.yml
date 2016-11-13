@@ -2,6 +2,7 @@ git:
   depth: 3
 
 language: csharp
-
+mono:
+  - latest
 script:
   - make testrunner
