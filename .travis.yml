@@ -13,6 +13,9 @@ matrix:
 #      mono: none
 #      env: DOTNETCORE=1
     - mono: latest
+    - mono: alpha
+    - mono: beta
+    - mono: weekly
 script:
   - make
   - make testrunner
