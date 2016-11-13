@@ -1,6 +1,10 @@
 git:
   depth: 3
 
+dist: trusty
+sudo: false
+group: beta
+
 language: csharp
 matrix:
   include:
