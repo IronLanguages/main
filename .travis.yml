@@ -5,4 +5,5 @@ language: csharp
 mono:
   - latest
 script:
-  - make testrunner
+  - make
+#  - make testrunner
