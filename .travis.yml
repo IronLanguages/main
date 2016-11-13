@@ -3,7 +3,6 @@ git:
 
 dist: trusty
 sudo: false
-group: beta
 
 language: csharp
 matrix:
@@ -12,10 +11,11 @@ matrix:
 #    - dotnet: 1.0.0-preview2-003121
 #      mono: none
 #      env: DOTNETCORE=1
-    - mono: latest
-    - mono: alpha
-    - mono: beta
-    - mono: weekly
+    - mono:
+      - latest
+      - alpha
+      - beta
+      - weekly
 script:
   - make
   - make testrunner
