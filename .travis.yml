@@ -12,11 +12,10 @@ matrix:
 #    - dotnet: 1.0.0-preview2-003121
 #      mono: none
 #      env: DOTNETCORE=1
-    - mono:
-      - latest
-      - alpha
-      - beta
-      - weekly
+    - mono: latest
+    - mono: alpha
+    - mono: beta
+    - mono: weekly
 script:
   - make
   - make testrunner
