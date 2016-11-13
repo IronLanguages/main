@@ -2,8 +2,12 @@ git:
   depth: 3
 
 language: csharp
-mono:
-  - latest
+matrix:
+  include:
+    - dotnet: 1.0.0-preview2-003121
+      mono: none
+      env: DOTNETCORE=1
+    - mono: latest
 script:
   - make
   - make testrunner
