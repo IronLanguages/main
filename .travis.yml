@@ -6,4 +6,4 @@ mono:
   - latest
 script:
   - make
-#  - make testrunner
+  - make testrunner
