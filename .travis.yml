@@ -1,0 +1,7 @@
+git:
+  depth: 3
+
+language: csharp
+
+script:
+  - make testrunner
