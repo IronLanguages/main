@@ -5,21 +5,26 @@ os:
   - linux
   - osx
 
-dist: trusty
-sudo: false
-group: beta
-
 language: csharp
-matrix:
-  include:
+
+mono:
+  - latest
+  - alpha
+  - beta
+  - weekly
+
+
+# matrix:
+#  include:
 # Skipping on dotnet for now as xbuild is not available?
 #    - dotnet: 1.0.0-preview2-003121
 #      mono: none
 #      env: DOTNETCORE=1
-    - mono: latest
-    - mono: alpha
-    - mono: beta
-    - mono: weekly
+#    - mono: latest
+#    - mono: alpha
+#    - mono: beta
+#    - mono: weekly
+
 script:
   - make
   - make testrunner
