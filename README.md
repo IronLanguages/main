@@ -48,4 +48,4 @@ Please see http://wiki.github.com/IronLanguages/main for information on:
 
 ## Chat/Communication
 
-Join our Gitter-Chat under: https://gitter.im/IronLanguages
+Join our Gitter-Chat under: https://gitter.im/IronLanguages/ironpython
