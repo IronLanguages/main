@@ -25,7 +25,7 @@ namespace IronPythonCompiler {
             Output = string.Empty;
             Win32Icon = string.Empty;
             Version = string.Empty;
-            ErrorMessageFormat = "Error occured: {0}";
+            ErrorMessageFormat = "Error occurred: {0}";
             PythonOptions = new Dictionary<string, object>();
         }
 
