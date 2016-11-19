@@ -272,17 +272,27 @@ namespace IronPythonCompiler {
             var compileOptions = new Dictionary<string, object>() {
                 { "mainModule", config.MainName }
             };
-
-            ClrModule.CompileModules(DefaultContext.DefaultCLS, 
-                Path.ChangeExtension(config.Output, ".dll"), 
-                compileOptions, 
-                config.Files.ToArray());
-
-            if (config.Target != PEFileKinds.Dll) {
-                GenerateExe(config);
+            
+            try
+            {
+                ClrModule.CompileModules(DefaultContext.DefaultCLS, 
+                    Path.ChangeExtension(config.Output, ".dll"), 
+                    compileOptions, 
+                    config.Files.ToArray());
+                
+                var outputfilename = Path.ChangeExtension(config.Output, ".dll");
+                if (config.Target != PEFileKinds.Dll) {
+                    outputfilename = Path.ChangeExtension(config.Output, ".exe");                    
+                    GenerateExe(config);
+                }
+                ConsoleOps.Info("Saved to {0}", config.Output);
             }
-
-            ConsoleOps.Info("Saved to {0}", config.Output);
+            catch (Exception e)
+            {
+                Console.WriteLine();
+                Console.WriteLine("Error: " + e.Message);
+                return -1;
+            }
             return 0;
         }
     }
