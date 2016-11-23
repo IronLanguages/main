@@ -290,8 +290,7 @@ namespace IronPythonCompiler {
             catch (Exception e)
             {
                 Console.WriteLine();
-                Console.WriteLine("Error: " + e.Message);
-                return -1;
+                ConsoleOps.Error(true, e.Message);
             }
             return 0;
         }
