@@ -285,7 +285,7 @@ namespace IronPythonCompiler {
                     outputfilename = Path.ChangeExtension(config.Output, ".exe");                    
                     GenerateExe(config);
                 }
-                ConsoleOps.Info("Saved to {0}", config.Output);
+                ConsoleOps.Info("Saved to {0}", outputfilename);
             }
             catch (Exception e)
             {
