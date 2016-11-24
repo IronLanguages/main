@@ -28,6 +28,8 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+#if FEATURE_FULL_CRYPTO
+
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -474,3 +476,5 @@ namespace Mono.Security.Cryptography {
         };
     }
 }
+
+#endif
