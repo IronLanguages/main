@@ -27,7 +27,10 @@ clr.AddReference("System.Configuration")
 clr.AddReference("System.Configuration.Install")
 clr.AddReference("System.Data")
 clr.AddReference("System.Data.OracleClient")
-clr.AddReference("System.Data.SqlClient")
+if is_posix:
+    clr.AddReference("System.Data.SqlClient")
+else:
+    clr.AddReference("System.Data.SqlXml")
 clr.AddReference("System.Deployment")
 clr.AddReference("System.Design")
 clr.AddReference("System.DirectoryServices")
