@@ -4251,6 +4251,7 @@
           <MaxDuration>600000</MaxDuration>
           <LongRunning>true</LongRunning>
           <Disabled>false</Disabled>
+          <Condition>'$(OS)' != 'Unix'</Condition>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
           <WorkingDirectory>%DLR_ROOT%\External.LCA_RESTRICTED\Languages\IronPython\27\Lib</WorkingDirectory>
