@@ -7,12 +7,11 @@ os:
 
 language: csharp
 
+env:
+  - CONFIGURATION=Release FLAVOUR=release
+
 mono:
   - latest
-  - alpha
-  - beta
-  - weekly
-
 
 # Let's ignore mac timeouts for now
 matrix:
