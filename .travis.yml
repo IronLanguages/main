@@ -29,6 +29,12 @@ matrix:
 #    - mono: beta
 #    - mono: weekly
 
+before_install:
+#  - curl https://api.nuget.org/downloads/nuget.exe -o nuget.exe
+# It looks like nuget is included by default with Mono
+  - nuget install NUnit
+  - nuget install NUnitLite
+
 script:
   - make test-ipy
 
