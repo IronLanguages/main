@@ -965,6 +965,13 @@ def test_gh278():
     s3 = r.getstate()
     AreNotSame(s3, s1)
     AreNotEqual(s3, s1)
+
+def test_gh1549():
+    import hashlib
+    m = hashlib.md5()
+    m.digest()
+    m.update('foo')
+    m.digest()
     
 #------------------------------------------------------------------------------
 #--Main
