@@ -1,0 +1,51 @@
+git:
+  depth: 3
+
+os:
+  - linux
+  - osx
+
+language: csharp
+
+solution: Solutions/IronPython.sln
+
+env:
+  - CONFIGURATION=Release FLAVOUR=release
+
+mono:
+  - latest
+
+# Let's ignore mac timeouts for now
+matrix:
+  allow_failures:
+    - os: osx
+#  include:
+# Skipping on dotnet for now as xbuild is not available?
+#    - dotnet: 1.0.0-preview2-003121
+#      mono: none
+#      env: DOTNETCORE=1
+#    - mono: latest
+#    - mono: alpha
+#    - mono: beta
+#    - mono: weekly
+
+before_install:
+#  - curl https://api.nuget.org/downloads/nuget.exe -o nuget.exe
+# It looks like nuget is included by default with Mono
+  - nuget install NUnit
+  - nuget install NUnitLite
+
+script:
+  - make test-ipy
+
+notifications:
+  email:
+    recipients:
+      - slide.o.mix@gmail.com
+      - ticotimo@gmail.com
+    on_success: always # default: change
+    #on_failure: [always|never|change] # default: always
+
+  webhooks:
+    urls:
+      - https://webhooks.gitter.im/e/f04e10a7af4b181c18c0
