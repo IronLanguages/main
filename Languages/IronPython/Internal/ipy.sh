@@ -1,6 +1,12 @@
 #!/bin/bash
 
-PROCESSOR_ARCHITECTURE=`lscpu | grep Architecture | sed -e 's/.*:\s*//g'`
+OS=`uname`
+
+if [[ $OS == "Darwin" ]] ; then
+    PROCESSOR_ARCHITECTURE=x86_64
+else
+    PROCESSOR_ARCHITECTURE=`lscpu | grep Architecture | sed -e 's/.*:\s*//g'`
+fi
 
 # ---------------------------------------------------------------------------
 if [[ "$PROCESSOR_ARCHITECTURE" == "x86" ]] ; then
@@ -28,7 +34,7 @@ fi
 # ---------------------------------------------------------------------------
 # GLOBALS
 
-EXECUTABLE=$DLR_BIN/ipy.exe
+EXECUTABLE="mono $DLR_BIN/ipy.exe"
 TEST=$*
 ORIG_TEST_OPTIONS=${TEST_OPTIONS}
 
