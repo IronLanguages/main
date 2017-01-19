@@ -235,7 +235,6 @@ namespace IronPython.Modules {
         }
 
         [Documentation("callable(object) -> bool\n\nReturn whether the object is callable (i.e., some kind of function).")]
-        [Python3Warning("callable() is removed in 3.x. instead call hasattr(obj, '__call__')")]
         public static bool callable(CodeContext/*!*/ context, object o) {
             return PythonOps.IsCallable(context, o);
         }
