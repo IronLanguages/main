@@ -1,0 +1,31 @@
+language: csharp
+
+sudo: required
+
+env:
+  - CONFIGURATION=Release
+
+mono:
+  - latest
+
+solution: Solutions/IronPython.sln
+
+install:
+  - sudo apt-get install -y binfmt-support libmono-system-windows-forms4.0-cil
+  - nuget restore Solutions/IronPython.sln
+
+script:
+  - xbuild Build.proj /t:Build "/p:Mono=true;BaseConfiguration=$CONFIGURATION"
+  - xbuild Test/TestRunner/TestRunner.sln /p:Configuration=$CONFIGURATION
+  - DLR_ROOT=`pwd` DLR_BIN=`pwd`bin/$CONFIGURATION mono ./Test/TestRunner/TestRunner/bin/$CONFIGURATION/TestRunner.exe Test/IronPython.tests /verbose /binpath:bin/$CONFIGURATION /all
+
+notifications:
+  email:
+    recipients:
+      - slide.o.mix@gmail.com
+      - ticotimo@gmail.com
+    on_success: always # default: change
+    #on_failure: [always|never|change] # default: always
+  webhooks:
+    urls:
+      - https://webhooks.gitter.im/e/9fdb5c75f38c850816f8
