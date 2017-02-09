@@ -973,6 +973,13 @@ def test_gh1549():
     m.update('foo')
     m.digest()
     
+def test_gh1284():
+    import math
+    AreEqual(round(math.asinh(4.),12),round(math.log(math.sqrt(17.)+4.),12))
+    AreEqual(round(math.asinh(.4),12),round(math.log(math.sqrt(1.16)+.4),12))
+    AreEqual(round(math.asinh(-.5),12),round(math.log(math.sqrt(1.25)-.5),12))
+    AreEqual(round(math.asinh(-6.),12),round(math.log(math.sqrt(37.)-6.),12))
+    
 #------------------------------------------------------------------------------
 #--Main
 run_test(__name__)
