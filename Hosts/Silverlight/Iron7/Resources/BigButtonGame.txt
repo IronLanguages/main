@@ -1,0 +1,110 @@
+# a simple button game
+
+include System
+include System::Windows
+include System::Windows::Media
+include System::Windows::Media::Imaging
+include System::Windows::Controls
+include System::Windows::Shapes
+include Microsoft::Phone::Controls::Maps
+
+CLICKS_PER_GAME = 5
+BUTTON_DIMENSION = 100
+SPARE_WIDTH = 380
+SPARE_HEIGHT = 700
+
+def set_button_idle_state
+  $button.content = "go"
+  $button.margin = Thickness.new(0,0,0,0)
+  $button.background = SolidColorBrush.new(Colors.red)
+  $button.foreground = SolidColorBrush.new(Colors.white)
+end
+
+def set_button_playing_state
+  #$button.background = SolidColorBrush.new(Colors.cyan)
+  #$button.foreground = SolidColorBrush.new(Colors.magenta)
+end
+
+def update_button_game_state
+  $button.content = $clicks_left.to_s
+  new_x = $random.next(SPARE_WIDTH)
+  new_y = $random.next(SPARE_HEIGHT)
+  $button.margin = Thickness.new(new_x,new_y,SPARE_WIDTH-new_x,SPARE_HEIGHT-new_y)
+end
+
+def format_score(name, score)
+  return System::String.format("{0}: not played", name) if score.nil? 
+  return System::String.format("{0}: {1:0.000}", name, score)
+end
+
+def update_scores_text
+  $text_block_best.text = format_score("high", $best_score)
+  $text_block_last.text = format_score("last", $last_score)
+end
+
+def init
+  $last_score = nil
+  $best_score = nil
+  stack = StackPanel.new
+  $text_block_best = TextBlock.new
+  $text_block_best.font_size = 30
+  stack.children.add($text_block_best)
+  $text_block_last = TextBlock.new
+  $text_block_last.font_size = 30
+  stack.children.add($text_block_last)
+  stack.horizontal_alignment=HorizontalAlignment.center
+  
+  $button = Button.new
+  $button.width = BUTTON_DIMENSION
+  $button.height = BUTTON_DIMENSION
+
+  $clicks_left = 0
+  $started = false
+  $when_game_started = Environment.tick_count
+  $random = Random.new
+
+  Host.content_holder.children.add(stack)
+  Host.monitor_control("button_go", $button, "button_listener")
+  Host.content_holder.children.add($button)  
+  Host.fix_orientation_portrait
+
+  update_scores_text
+  set_button_idle_state
+end
+
+def end_game
+  $started = false
+  time_taken = Environment.tick_count - $when_game_started
+  $last_score = time_taken.to_f / 1000.0
+  if $best_score.nil? || $best_score > $last_score
+    $best_score = $last_score
+  end
+  update_scores_text
+  set_button_idle_state
+end
+
+def test_for_end_of_game
+  return $clicks_left <= 0
+end
+
+def start_new_game
+  set_button_playing_state
+  $clicks_left = CLICKS_PER_GAME
+  $when_game_started = Environment.tick_count
+  $started = true
+end
+
+init if $button.nil?
+update_button_game_state
+
+def button_listener
+  if Calling_event=='button_clicked'
+    if $started
+      $clicks_left = $clicks_left - 1
+      end_game if test_for_end_of_game
+    else
+      start_new_game
+    end 
+  end
+  update_button_game_state
+end

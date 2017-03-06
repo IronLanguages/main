@@ -1,0 +1,252 @@
+# for a longer but similar tutorial
+# try http://www.troubleshooters.com/codecorn/ruby/basictutorial.htm
+# an excellent overview by Steve Litt
+
+# first let's set up a console
+include System::Windows
+include System::Windows::Controls
+include System::Windows::Media
+
+# note that $ before a variable name simply 
+# makes that variable global
+$stack = StackPanel.new
+scroll = ScrollViewer.new
+scroll.content = $stack
+Host.content_holder.children.add(scroll)
+
+def add_text_block(t, size, color)
+  tb = TextBlock.new
+  tb.text = t.nil? ? "nil" : t.to_s
+  tb.font_size = size unless size.nil?
+  tb.foreground = SolidColorBrush.new(color) unless color.nil?
+  tb.text_wrapping = TextWrapping.wrap
+  $stack.children.add(tb)
+end
+
+def add_text(t)
+  add_text_block(t, nil, nil)
+end
+
+def add_title(t)
+  add_text(" ")
+  add_text_block(t, 24, Colors.magenta)
+end
+
+# now let's go through some language constructs
+add_text_block("Ruby 101", 40, Colors.red)
+
+# a for loop
+add_title("for loops")
+
+# for loop
+for i in 1...3
+  add_text(i.to_s)
+end
+
+add_title("while statement")
+
+i = 0
+while i<10 do
+  add_text("while " + i.to_s)
+  i = i + 5
+end
+
+add_title("if statements")
+
+# if 
+if $stack.children.count>2
+  add_text("if I")
+end
+
+# if part 2
+add_text("if II") if $stack.children.count > 3
+
+# unless - not if
+add_text("unless") unless $stack.children.count > 3
+
+# if else
+if $stack.children.count > 3
+   add_text("elsif not else")
+else
+   add_text("elsif else")
+end
+
+# if elsif too - less syntax the else if
+if $stack.children.count == 2
+   add_text("elsif not else")
+elsif $stack.children.count < 20
+   add_text("elsif elsif")
+else
+   add_text("elsif else")
+end
+
+# case
+add_title("case statement")
+
+case $stack.children.count
+  when 0
+    add_text(0)
+  when 3
+    add_text(3)
+  else
+    add_text("case else")
+end
+
+add_title("arrays")
+
+# arrays
+arr = ["my","good","friend"]
+
+# array 1
+add_text("for loop iterated:")
+for i in 0...arr.length
+  add_text(arr[i])
+end
+
+# array 2
+add_text("each iterated:")
+arr.each{ |i| add_text(i) }
+
+# array 3
+add_text("popped:")
+arr.each do |i|
+  add_text(i)
+end
+
+# arrays also have useful methods like push, pop, shift, unshift
+arr2 = []
+arr2.push(1)
+arr2.push(2)
+arr2.push(3)
+add_text("popped:")
+add_text(arr2.pop)
+
+# arrays can be sparse
+# but this doesn't seem to work that well in ironruby?
+arr2 = Array.new
+arr2[0] = "0"
+arr2[2] = "2"
+arr2[4] = "4"
+add_text("sparse array:")
+for i in 0...arr2.length 
+  begin
+    add_text("arr2[" << i << "] = '" << val << "'")
+  rescue
+    add_text("exception seen for arr2[" << i << "] :/")
+  end
+end
+
+# warning - there are some reference differences between {} and do ... end
+
+# also for Lookup, we have Hashes - key/value pairs
+add_title("hashes")
+
+hash = {
+  "one" => 1,
+  "two" => 2,
+  "three" => "bee",
+  "four" => 0.6
+}
+
+add_text("hash iteration:")
+hash.each { |a,b|
+  add_text(a.to_s + ", " + b.to_s)
+}
+
+add_text("hash access:")
+add_text(hash["three"]);
+
+# Hashes can be sorted
+add_title("sorting hashes")
+sorted = hash.sort { |a,b| a[0] <=> b[0] }
+
+sorted.each { |a,b|
+  add_text(a.to_s + ", " + b.to_s)
+}
+
+# some strings
+add_title("strings")
+s = "my best friend"
+
+add_text("pre insert:" + s)
+s[3,4] = "last"
+add_text("post insert:" + s)
+
+s2 = s.reverse
+add_text("reversed:" + s2)
+
+#c style printf
+s = "printf %02d, %2d, %s" % [1,2.12345,"hello"]
+add_text(s)
+
+# some exceptions
+add_title("exceptions")
+
+begin
+	broken = nil
+	broken.do_something
+rescue 
+	add_text("problem caught - $! is " << $!)
+end
+
+# classes info at http://www.tutorialspoint.com/ruby/ruby_classes.htm
+# some classes
+add_title("classes")
+
+class Customer
+   @@no_of_customers=0
+   def initialize(name, addr)
+      @cust_id=@@no_of_customers
+      @cust_name=name
+      @cust_addr=addr
+	  @@no_of_customers = @@no_of_customers + 1
+   end
+   def say_hello
+      "Hi I'm " << @cust_name << " from " << @cust_addr << ", my id is " << @cust_id.to_s
+   end
+end
+
+# Now using above class to create objects
+customers=[]
+customers.push(Customer.new("Stuart", "London, UK"))
+customers.push(Customer.new("Thomas", "Seattle, US"))
+
+add_text("there are " << Customer.class_eval("@@no_of_customers").to_s << " customers")
+customers.each{ |c|
+   add_text(c.say_hello)
+}
+
+# lets look at modules and mixins
+add_title("modules for mixins")
+
+# modules info at http://www.tutorialspoint.com/ruby/ruby_modules.htm
+module Week
+   FIRST_DAY = "Sunday"
+   def Week.weeks_in_month
+      "You have four weeks in a month"
+   end
+   def Week.weeks_in_year
+      "You have 52 weeks in a year"
+   end
+end
+
+class Decade
+include Week
+   no_of_yrs=10
+   def no_of_months
+      number=10*12
+      number
+   end
+end
+
+d1=Decade.new
+add_text(Week::FIRST_DAY)
+add_text(Week.weeks_in_month)
+add_text(Week.weeks_in_year)
+add_text(d1.no_of_months)
+
+
+=begin
+... there's plenty more to learn and play with 
+For more ideas look on the web - the ruby community is great :)
+=end

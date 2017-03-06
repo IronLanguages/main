@@ -1,0 +1,175 @@
+.editbox {
+  padding: .4em;
+  margin: 0;
+  font-family: consolas, monospace;
+  font-size: 12pt;
+  line-height: 1.1em;
+}
+
+.editbox .rb-linenum {
+  padding:0.1em 1em 0.2em 0;
+  width:75px;
+}
+
+.editbox .rb-pan {
+  padding-bottom:0.1em;
+  padding-top:0.2em;
+}
+
+.editbox .rb-comment, .editbox .rb-long-comment {
+  font-style:italic;
+}
+
+.editbox .rb-keyword, .editbox .rb-operator {
+  font-weight:bold;
+}
+
+.editbox .rb-long-comment-whitespace {}
+
+.editbox .rb-global-variable {
+  color:#61B2DF;
+  font-style:italic;
+}
+
+
+/* dark-specific */
+.editbox-dark .rb-comment, .editbox .rb-long-comment {
+  color:#AEAEAE;
+}
+
+.editbox-dark .rb-method-parameter {
+  color:#8AA6C1;
+}
+
+.editbox-dark {
+  background-color: #000000;
+  color:#ffffff;
+}
+
+.editbox-dark .rb-linenum {
+  background-color:#EEEEEE;
+  color:#888888;
+}
+
+.editbox-dark .rb-variable, .editbox-dark .rb-method-call {
+  color:#f0f0f0;
+}
+
+.editbox-dark .rb-symbol, .editbox-dark .rb-fixnum, .editbox-dark .rb-ascii {
+  color:#6FB1FF;
+}
+.editbox-dark .rb-hexnum, .editbox-dark .rb-binary {
+  color:#DFC745;
+}
+.editbox-dark .rb-float {
+  color:#7FDF61;
+}
+.editbox-dark .rb-entity {
+  color:#89BDFF;
+}
+.editbox-dark .rb-keyword, .editbox-dark .rb-operator {
+  color:#CE864B;
+}
+.editbox-dark .rb-storage {
+  color:#99CF50;
+}
+.editbox-dark .rb-string, .editbox-dark .rb-heredoc, .editbox-dark .rb-exec {
+  color:#65B042;
+}
+.editbox-dark .rb-class, .editbox-dark .rb-constant {
+  color:#9B859D;
+}
+.editbox-dark .rb-instance-var {
+  color:#61B2DF;
+}
+.editbox-dark .rb-global-variable {
+  color:#61B2DF;
+}
+.editbox-dark .rb-class-var {
+  color:#8BC9DF;
+}
+
+.editbox-dark .rb-string .constant {
+  color:#DDF2A4;
+}
+
+.editbox-dark .rb-regexp {
+  color:#DF5045;
+}
+.editbox-dark .rb-method {
+  color:#DAD085;
+}
+
+/* light-specific */
+.editbox-light
+{
+	font-weight:bold;
+}
+.editbox-light .rb-comment, .editbox-light .rb-long-comment {
+  color:#006600;
+}
+
+.editbox-light .rb-method-parameter {
+  color:#000066;
+}
+
+.editbox-light {
+  background-color:#ffffff;
+  color:#000000;
+}
+
+.editbox-light .rb-linenum {
+  background-color:#111111;
+  color:#888888;
+}
+
+.editbox-light .rb-variable, .editbox-light .rb-method-call {
+  color:#000066;
+}
+
+.editbox-light .rb-symbol, .editbox-light .rb-ascii {
+  color:#000066;
+}
+
+.editbox-light .rb-hexnum, .editbox-light .rb-binary, .editbox-light .rb-fixnum {
+  color:#990000;
+}
+.editbox-light .rb-float {
+  color:#990000;
+}
+
+.editbox-light .rb-entity {
+  color:#FF66FF;
+}
+.editbox-light .rb-keyword, .editbox-light .rb-operator {
+  color:#660099;
+}
+.editbox-light .rb-storage {
+  color:#000066;
+}
+.editbox-light .rb-string, .editbox-light .rb-heredoc, .editbox-light .rb-exec {
+  color:#990000;
+}
+.editbox-light .rb-class, .editbox-light .rb-constant {
+  color:#660000;
+}
+.editbox-light .rb-instance-var {
+  color:#660000;
+}
+.editbox-light .rb-global-variable {
+  color:#21007F;
+}
+.editbox-light .rb-class-var {
+  color:#660000;
+}
+
+.editbox-light .rb-string .constant {
+  color:#990000;
+}
+
+.editbox-light .rb-regexp {
+  color:#660000;
+}
+.editbox-light .rb-method {
+  color:#660000;
+}

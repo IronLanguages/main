@@ -1,0 +1,51 @@
+# originally based on https://github.com/jschementi/ironruby-rubyinside-article/blob/master/ruby-squares.html
+
+include System
+include System::Windows
+include System::Windows::Shapes
+include System::Windows::Media
+include System::Windows::Controls
+
+def setup
+  $canvas = Canvas.new
+  Host.content_holder.children.add($canvas)
+  Host.fix_orientation_portrait
+  Host.start_timer("timer1", TimeSpan.from_seconds(0.1), "add_squares")
+end
+
+def add_squares
+  if $canvas.children.count > 500
+    Host.stop_timer("timer1")
+	return
+  end
+  5.times do |i|
+    my_square(15)
+  end
+end
+
+def my_square(length)
+  size = rand(480 / length)
+  left = rand(480 - size)
+  top = rand(800 - size)
+  rect = Rectangle.new
+  rect.width = size
+  rect.height = size
+  rect.fill = rand_brush
+  rect.stroke = rand_brush
+  rect.stroke_thickness = rand(480 / (length * 7)) + 4
+  rect.margin = Thickness.new(left,top,0,0)
+  rect.tag = { "left"=>left, "top"=>top, "x"=>rand(3)-1, "y"=>rand(3)-1 }
+  $canvas.children.add(rect)
+end
+    
+def brushes
+  $brushes ||= %W(red orange yellow cyan blue magenta green).map do |c| 
+    SolidColorBrush.new(Colors.send(c))
+  end
+end
+    
+def rand_brush
+  brushes[rand(brushes.size)]
+end
+    
+setup

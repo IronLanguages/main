@@ -1,0 +1,54 @@
+<html>
+<head>
+<meta name='viewport' content='width=device-width,height=device-height' /> 
+<style type='text/css'>
+html, body {width:480px;} 
+#toolbar_1 { display:none; visibility:hidden; }
+#code_editor { width: 99%; height: 50%; border: 3px solid #cccccc; padding: 5px; font-size:10pt;} 
+#code_title { width:99%; border: 3px solid #cccccc; padding: 5px; font-size:10pt; } 
+</style>
+<script type="text/javascript" src="editarea.js"></script>
+<script type='text/javascript'>
+editAreaLoader.init({
+	id: 'code_editor'	// id of the textarea to transform		
+	,start_highlight: true	// if start with highlight
+	,allow_resize: "both"
+	,allow_toggle: false
+	,word_wrap: false
+	,language: "en"
+	,syntax: "ruby"	
+	,baseUrl: "./"
+});
+</script>
+<script type='text/javascript'>
+function showCode(str)
+{
+	document.getElementById('code_editor').value=str;
+}
+function showTitle(str)
+{
+	document.getElementById('code_title').value=str;
+}
+function getCode()
+{
+	return document.getElementById('code_editor').value;
+}
+function getTitle()
+{
+	return document.getElementById('code_title').value;
+}
+</script>
+</head>
+<body>
+<p>
+Name
+</p>
+<input id='code_title' type='text'>
+<p>
+Code
+</p>
+<textarea id='code_editor'>
+Life
+</textarea>
+</body>
+</html>

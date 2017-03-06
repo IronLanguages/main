@@ -1,0 +1,120 @@
+include System
+include System::Windows
+include System::Windows::Media
+include System::Windows::Media::Imaging
+include System::Windows::Controls
+include System::Windows::Shapes
+include Microsoft::Phone::Controls::Maps
+
+def random_string
+  items = [
+	"WP7",
+	"WindowsPhone",
+	"sunset",
+	"beach",
+	"slodge",
+	"ruby",
+	"ironruby"]
+	
+  random = System::Random.new
+  which = random.next(items.length)
+
+  return items[which]
+end
+
+def init
+  stack_panel_main = StackPanel.new
+
+  $textbox_1 = TextBox.new
+  $textbox_1.text = random_string
+  stack_panel_main.children.add($textbox_1)
+
+  button_1 = Button.new
+  button_1.content = "Search"
+	
+  stack_panel_main.children.add(button_1)
+
+  $stack_panel_child = StackPanel.new
+  stack_panel_main.children.add($stack_panel_child)
+  scroll_viewer = ScrollViewer.new
+  scroll_viewer.content = stack_panel_main
+
+  Host.monitor_control("button_1", button_1, "button_listener")
+  Host.content_holder.children.add(scroll_viewer)
+end
+
+def simple_json_splitter(response)
+  return response.split("\"")
+end
+
+def find_json_property(object, name)
+  node = object.first
+  while false == node.nil?
+    property = node
+    #System::Windows::MessageBox.show(property.name + " " + property.value.value)
+    if property.name == name
+      return property.value.value
+    end
+    node = node.next
+  end
+  return ""
+end
+
+def create_image_for(image_url)
+  image = Image.new
+  image.stretch = Stretch.fill
+  image.horizontal_alignment = HorizontalAlignment.left;
+  image.vertical_alignment = VerticalAlignment.top;
+  image.height = 100
+  image.width = 100
+  bitmap_image_source = BitmapImage.new
+  bitmap_image_source.uri_source = System::Uri.new(image_url)
+  image.source = bitmap_image_source
+  return image
+end
+
+def create_textblock_for(tweet)
+  text_block = TextBlock.new
+  text_block.text = tweet
+  text_block.text_wrapping = TextWrapping.wrap
+  text_block.width = 380
+  text_block.padding = Thickness.new(10,10,0,0)
+  return text_block
+end
+
+def create_panel_for(tweet, image_url)
+  stack_panel = StackPanel.new
+  stack_panel.orientation = Orientation.horizontal
+
+  image = create_image_for(image_url)
+  stack_panel.children.add(image)
+
+  text_block = create_textblock_for(tweet)
+  stack_panel.children.add(text_block)
+
+  return stack_panel
+end
+
+def process_json(response)
+  $stack_panel_child.children.clear()
+
+  response.each { |i|
+	image_url = find_json_property(i, "profile_image_url")
+	tweet = find_json_property(i, "text")
+
+	stack_panel = create_panel_for(tweet, image_url)
+    $stack_panel_child.children.add(stack_panel)
+  }
+end
+
+init if $stack_panel_child.nil?
+
+def json_listener
+  process_json(Json_response.first.first)
+end
+
+def button_listener
+  if Calling_event=="button_clicked"
+    Host.call_json_service("twitter", "http://search.twitter.com/search.json?q=" + $textbox_1.text, "json_listener")
+  end
+end

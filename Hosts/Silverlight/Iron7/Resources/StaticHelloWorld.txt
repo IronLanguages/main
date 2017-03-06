@@ -1,0 +1,9 @@
+# everyone needs a hello world example
+
+include System::Windows::Controls
+
+text_block = TextBlock.new
+text_block.text = "HELLO WORLD"
+text_block.font_size = 64
+
+Host.content_holder.children.add(text_block)

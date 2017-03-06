@@ -1,0 +1,36 @@
+include System
+include System::Windows
+include System::Windows::Media
+include System::Windows::Media::Imaging
+include System::Windows::Controls
+include System::Windows::Shapes
+include Microsoft::Phone::Controls::Maps
+
+def init
+
+  $text_block_x = TextBlock.new
+  $text_block_y = TextBlock.new
+  $text_block_z = TextBlock.new
+
+  text_stack_panel = StackPanel.new
+  text_stack_panel.children.add($text_block_x)
+  text_stack_panel.children.add($text_block_y)
+  text_stack_panel.children.add($text_block_z)
+
+  Host.content_holder.children.add(text_stack_panel);
+
+  Host.fix_orientation_portrait
+  Host.start_accelerometer(0.1, "accelerometer_listener") # accel rate limited to one every 0.1 seconds
+
+  $initialized = 1
+end
+
+def accelerometer_listener
+  r = AccelerometerReading
+
+  $text_block_x.text = "x is " + r.x.to_s
+  $text_block_y.text = "y is " + r.y.to_s
+  $text_block_z.text = "z is " + r.z.to_s
+end
+
+init if $initialized.nil?

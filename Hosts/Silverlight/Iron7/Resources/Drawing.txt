@@ -1,0 +1,123 @@
+# this script based on fingerpaint
+# from http://sigurdsnorteland.wordpress.com/
+
+include System
+include System::Windows
+include System::Windows::Media
+include System::Windows::Media::Imaging
+include System::Windows::Controls
+include System::Windows::Shapes
+include Microsoft::Phone::Controls::Maps
+
+def get_brush(color)
+  brush = SolidColorBrush.new
+  brush.Color = color
+  return brush
+end
+
+def create_button(color)
+  rectangle = Rectangle.new
+  rectangle.height = 40
+  rectangle.width = 40	
+  rectangle.fill = get_brush(color)
+  new_button = Button.new
+  new_button.content = rectangle
+  new_button.padding = Thickness.new(0,0,0,0)
+  return new_button
+end
+
+def init
+  $colors = {
+    "magenta" => Colors.magenta, 
+    "cyan" => Colors.cyan, 
+    "yellow" => Colors.yellow, 
+    "red" => Colors.red, 
+    "green" => Colors.green, 
+    "orange" => Colors.orange, 
+    "white" => Colors.white, 
+    "black" => Colors.black 
+  }
+  $current_color = Colors.cyan
+  
+  $last_point = nil
+
+  $canvas = Canvas.new
+  $canvas.width = 800
+  $canvas.height = 800
+  $canvas.background = get_brush(Colors.white)
+
+  stack_panel_controls = StackPanel.new
+  stack_panel_controls.orientation = Orientation.horizontal
+
+  $colors.each { |key, value|
+    color_button = create_button(value)
+    stack_panel_controls.children.add(color_button)
+    Host.monitor_control(key, color_button, "button_listener")
+  }
+
+  stack_panel_main = StackPanel.new
+  stack_panel_main.children.add(stack_panel_controls)
+  stack_panel_main.children.add($canvas)
+  
+  Host.content_holder.horizontal_alignment = HorizontalAlignment.Center
+  Host.content_holder.children.add(stack_panel_main)
+  Host.monitor_control("canvas", $canvas, "canvas_listener")
+end
+
+def current_point
+  return [Mouse_x, Mouse_y]
+end
+
+def on_mouse_down	
+  $last_point = current_point
+end
+
+def on_mouse_move
+  if $last_point.nil?
+    return
+  end
+
+  new_point = current_point
+
+  new_line = Line.new
+  new_line.stroke = get_brush($current_color)
+  new_line.stroke_thickness = 20
+  new_line.stroke_start_line_cap = PenLineCap.round;
+  new_line.stroke_end_line_cap = PenLineCap.round;
+
+  new_line.opacity = 0.8;
+        
+  new_line.x1 = $last_point[0]
+  new_line.x2 = new_point[0]
+  new_line.y1 = $last_point[1]
+  new_line.y2 = new_point[1]
+
+  $canvas.children.add(new_line)
+
+  $last_point = new_point        
+end    
+
+def on_mouse_up
+  return if $last_point.nil?
+  $last_point = nil
+end    
+
+    
+init if $canvas.nil?
+
+def canvas_listener
+  case Calling_event
+    when "mouse_left_button_down"
+      on_mouse_down
+    when "mouse_left_button_up"
+      on_mouse_up
+    when "mouse_move"
+      on_mouse_move
+  end
+end
+
+def button_listener
+  if Calling_event == "button_clicked"
+    $current_color = $colors[Calling_hint.to_s]
+  end
+end

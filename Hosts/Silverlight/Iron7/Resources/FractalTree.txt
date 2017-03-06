@@ -1,0 +1,88 @@
+# fractal algortithm adapted from http://www.codeproject.com/KB/WPF/Fractals.aspx
+# used under the Code Project Open License - huge thanks to "logicchild"
+# note that drawing a fractal using lots of "Line" instances is not the most optimal way to draw!
+
+include System
+include System::Windows
+include System::Windows::Media
+include System::Windows::Media::Imaging
+include System::Windows::Controls
+include System::Windows::Shapes
+include Microsoft::Phone::Controls::Maps
+
+def init
+  $FRACTAL_WIDTH = 480
+  $FRACTAL_HEIGHT = 480
+  $LENGTH_SCALE = 0.75;
+  $DELTA_THETA = Math::PI / 5;
+  $HOP_COUNTER = 0
+  $colorNow = Colors.Magenta
+  $colors = [
+    Colors.Magenta,
+    Colors.Cyan,
+    Colors.Yellow,
+    Colors.Red,
+    Color.from_argb(255,0,255,0),
+    Colors.Orange]
+  # build our canvas
+  $canvas = Canvas.new
+  $canvas.width = $FRACTAL_WIDTH
+  $canvas.height = $FRACTAL_HEIGHT
+  
+  $text_block = TextBlock.new
+  $text_block.font_size = 30
+
+  Host.content_holder.horizontal_alignment = HorizontalAlignment.center
+  Host.content_holder.children.add($canvas)
+  Host.content_holder.children.add($text_block)
+  Host.start_timer("timer1", System::TimeSpan.FromSeconds(1), "timer_listener")
+
+  next_hop
+end
+
+def add_line(x1, y1, x2, y2)
+  line = Line.new
+  line.stroke = SolidColorBrush.new($colorNow)
+  line.stroke_thickness = 3
+  line.x1 = x1
+  line.y1 = y1
+  line.x2 = x2
+  line.y2 = y2
+  $canvas.children.add(line)
+end
+
+def drawBinaryTree(depth, x, y, length, theta)
+  x2 = x + length * Math.cos(theta)
+  y2 = y + length * Math.sin(theta)
+  
+  if depth == 1
+    add_line(x,y,x2,y2)
+  end
+  
+  if depth > 1
+    drawBinaryTree(depth - 1, x2, y2, length * $LENGTH_SCALE, theta + $DELTA_THETA)
+    drawBinaryTree(depth - 1, x2, y2, length * $LENGTH_SCALE, theta - $DELTA_THETA)
+  end
+end
+
+def next_hop
+  $HOP_COUNTER = $HOP_COUNTER + 1
+  if $HOP_COUNTER < 11
+    $colorNow = $colors[$HOP_COUNTER%$colors.length]
+    x = $canvas.width / 2
+    y = 0.83 * $canvas.height
+    drawBinaryTree($HOP_COUNTER, x, y, 0.2 * $canvas.width, - Math::PI / 2)
+    $text_block.text = "tree depth is " + $HOP_COUNTER.to_s
+  end
+
+  if $HOP_COUNTER > 20
+    $canvas.children.clear
+    $HOP_COUNTER = 0
+  end
+end
+
+init if $canvas.nil?
+
+def timer_listener
+  next_hop
+end

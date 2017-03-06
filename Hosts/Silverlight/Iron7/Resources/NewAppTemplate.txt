@@ -1,0 +1,20 @@
+include System
+include System::Windows
+include System::Windows::Media
+include System::Windows::Media::Imaging
+include System::Windows::Controls
+include System::Windows::Shapes
+include Microsoft::Phone::Controls
+include Microsoft::Phone::Controls::Maps
+
+def init
+	text_block = TextBlock.new
+	text_block.text = "HELLO WORLD"
+	text_block.font_size = 64
+
+	Host.content_holder.children.add(text_block)
+
+	$initialized = 1
+end
+
+init if $initialized.nil?

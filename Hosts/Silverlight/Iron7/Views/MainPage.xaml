@@ -1,0 +1,182 @@
+﻿<phone:PhoneApplicationPage 
+    x:Class="Iron7.Views.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:phone="clr-namespace:Microsoft.Phone.Controls;assembly=Microsoft.Phone"
+    xmlns:shell="clr-namespace:Microsoft.Phone.Shell;assembly=Microsoft.Phone"
+    xmlns:controls="clr-namespace:Microsoft.Phone.Controls;assembly=Microsoft.Phone.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    mc:Ignorable="d" d:DesignWidth="480" d:DesignHeight="800" 
+    d:DataContext="{d:DesignData SampleData/MainViewModelSampleData.xaml}"
+    FontFamily="{StaticResource PhoneFontFamilyNormal}"
+    FontSize="{StaticResource PhoneFontSizeNormal}"
+    Foreground="{StaticResource PhoneForegroundBrush}"
+    SupportedOrientations="Portrait"  Orientation="Portrait"
+    shell:SystemTray.IsVisible="False" >
+
+    <!--LayoutRoot is the root grid where all page content is placed-->
+    <Grid x:Name="LayoutRoot" Background="Transparent">
+
+        <!--Panorama control-->
+        <controls:Panorama Title="  " Name="Panorama1">
+
+            <!--Panorama item one-->
+            <controls:PanoramaItem Header="scripts">
+                <!--Double line list with text wrapping-->
+                <ListBox Margin="0,0,-12,0" ItemsSource="{Binding Items}" HorizontalAlignment="Left" Name="ListBoxScripts" >
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel HorizontalAlignment="Left" Margin="0" >                                
+                                    <Button BorderThickness="0" Margin="0" HorizontalAlignment="Left" Click="ButtonListItem_Click" Tag="{Binding}" >
+                                    <StackPanel HorizontalAlignment="Left" Width="432" >
+                                        <TextBlock Text="{Binding Title}" TextWrapping="Wrap" Style="{StaticResource PhoneTextExtraLargeStyle}" FontFamily="Courier New" FontWeight="Black" Foreground="{Binding Path=HighlightColorBrush}" />
+                                        <TextBlock Text="{Binding CategoryTag}" TextWrapping="Wrap" Margin="12,-6,12,0" Style="{StaticResource PhoneTextSubtleStyle}" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </controls:PanoramaItem>
+
+            <controls:PanoramaItem Header="create">
+                <ScrollViewer>
+                    <StackPanel Margin="20,0,20,0">
+                        <TextBlock Margin="15" Text="Download scripts from iron7.com" TextWrapping="Wrap" ></TextBlock>
+                        <HyperlinkButton FontWeight="ExtraBold" Margin="15" Content="iron7 scripts online" Click="ButtonIron7Scripts_Click" >
+                        </HyperlinkButton>
+                        <HyperlinkButton FontWeight="ExtraBold" Margin="15" Content="my scripts online" Click="ButtonMyScripts_Click" >
+                        </HyperlinkButton>
+                        <HyperlinkButton FontWeight="ExtraBold" Margin="15" Content="all scripts online" Click="ButtonDownloadScript_Click" >
+                        </HyperlinkButton>
+                        <TextBlock Margin="0,15,0,15" TextWrapping="Wrap" Text="Create new scripts:"
+                                   ></TextBlock>
+                        <HyperlinkButton FontWeight="ExtraBold" Margin="15" Content="New Accelerometer Script" Click="ButtonCreateNew_Accelerometer_Click" >
+                        </HyperlinkButton>
+                        <HyperlinkButton FontWeight="ExtraBold" Margin="15" Content="New Canvas Script" Click="ButtonCreateNew_Canvas_Click" >
+                        </HyperlinkButton>
+                        <HyperlinkButton FontWeight="ExtraBold" Margin="15" Content="New Event Based Script" Click="ButtonCreateNew_EventBased_Click" >
+                        </HyperlinkButton>
+                        <HyperlinkButton FontWeight="ExtraBold" Margin="15" Content="New Location Script" Click="ButtonCreateNew_Location_Click" >
+                        </HyperlinkButton>
+                        <HyperlinkButton FontWeight="ExtraBold" Margin="15" Content="New Simple Script" Click="ButtonCreateNew_Simple_Click" >
+                        </HyperlinkButton>
+                        <HyperlinkButton FontWeight="ExtraBold" Margin="15" Content="New Empty Script" Click="ButtonCreateNew_Click" >
+                        </HyperlinkButton>
+
+                        <TextBlock Margin="15" TextWrapping="Wrap" Text="For inspiration, ideas and information check out:"
+                                   ></TextBlock>
+                        <HyperlinkButton Content="iron7.com" Margin="20" Click="HyperlinkButtonIron7_Click" ></HyperlinkButton>
+                        <HyperlinkButton Content="ironruby.codeplex.com" Margin="20" Click="HyperlinkButton_Click" ></HyperlinkButton>
+                        <HyperlinkButton Content="create.msdn.com" Margin="20" Click="HyperlinkButtonCreateMsdnCom_Click" ></HyperlinkButton>
+                    </StackPanel>
+                </ScrollViewer>
+            </controls:PanoramaItem>
+            
+            <!--Panorama item two-->
+            <!--Use 'Orientation="Horizontal"' to enable a panel that lays out horizontally-->
+            <!--
+            <controls:PanoramaItem Header="shared scripts">
+                <StackPanel>
+                    <TextBlock TextWrapping="Wrap" Text="You can easily share scripts with other iron coders using the web services on iron7.com"
+                               ></TextBlock>
+                    <Button Margin="20" Content="Featured">
+                    </Button>
+                    <Button Margin="20" Content="Latest">
+                    </Button>
+                    <TextBox Margin="20,20,20,0" Text="search for..." Name="SearchBox"></TextBox>
+                    <Button Margin="20,-10,20,20"  Content="Search">
+                    </Button>
+                </StackPanel>
+            </controls:PanoramaItem>
+            -->
+            
+            <controls:PanoramaItem Header="iron7">
+                <ScrollViewer Height="490" >
+                    <StackPanel Height="Auto" Margin="20,0,20,0">
+                        <TextBlock Name="Purchase1" Margin="10,0,10,0" TextWrapping="Wrap"
+                               Text="Please support future iron7 development by purchasing the full version">
+                        </TextBlock>
+                        <HyperlinkButton Name="Purchase2" Margin="20,0,20,0" Content="Full Version" Click="PurchaseHyperlinkButton_Click" ></HyperlinkButton>
+                        <TextBlock Name="ThanksPurchase1" TextWrapping="Wrap"
+                               Text="Thank you for purchasing iron7">
+                        </TextBlock>
+                        <TextBlock Margin="0,20,0,10" FontSize="32" Text="Share Online"></TextBlock>
+                        <TextBlock Text="If you want to store, share, or edit your scripts online, then you need to register at:" TextWrapping="Wrap"></TextBlock>
+                        <HyperlinkButton Content="script.iron7.com" Margin="20" Click="HyperlinkButtonScriptIron7_Click" ></HyperlinkButton>
+                        <TextBlock Text="iron7 user name:"></TextBlock>
+                        <TextBox Text="{Binding Path=Account.UserName, Mode=TwoWay}" ></TextBox>
+
+                        <TextBlock Text="iron7 password:"></TextBlock>
+                        <PasswordBox Password="{Binding Path=Account.Password, Mode=TwoWay}" ></PasswordBox>
+                        <TextBlock Margin="0,20,0,10" FontSize="32" Text="About"></TextBlock>
+                        <TextBlock Margin="0,10,0,10" TextWrapping="Wrap"
+                               Text="iron 7, version 1.9">
+                        </TextBlock>
+                        <TextBlock Margin="0,10,0,10" TextWrapping="Wrap"
+                               Text="iron7 is lovingly made by stuart at cirrious">
+                        </TextBlock>
+                        <TextBlock Margin="0,10,0,10" TextWrapping="Wrap"
+                               Text="iron7 allows you to create and run scripts based on the IronRuby programming language - ruby from Yukihiro 'Matz' Matsumoto and iron from Microsoft">
+                        </TextBlock>
+                        <HyperlinkButton Content="ironruby.codeplex.com" Click="HyperlinkButton_Click" ></HyperlinkButton>
+                        <TextBlock Margin="0,10,0,10" TextWrapping="Wrap"
+                               Text="special thanks to @paulfo, @mikeormond, @ironshay, @mrlacey and @will_coleman for inspiration and support on this app">
+                        </TextBlock>
+                        <TextBlock Margin="0,10,0,10" TextWrapping="Wrap"
+                               Text="iron7 respects your privacy - no scripts or data will be shared online unless you choose to share them; no script will access your location or access web services unless you choose to allow them access, no access is provided for scripts to your emails, contacts, apps or music">
+                        </TextBlock>
+                        <TextBlock Margin="0,10,0,10" TextWrapping="Wrap"
+                               Text="all library scripts are shared under a full Creative Commons Attribution license - some scripts contain additional original credits as noted in those scripts.">
+                        </TextBlock>
+                        <HyperlinkButton Content="about Creative Commons" Click="CreativeCommonsHyperlinkButton_Click" ></HyperlinkButton>
+                        <TextBlock Margin="0,10,0,10" TextWrapping="Wrap"
+                               Text="the iron7 image is 'Pinwheel Galaxy' by jimkster - used under Creative Commons - thanks.">
+                        </TextBlock>
+                        <HyperlinkButton Content="Pinwheel Galaxy" Click="PinwheelGalaxyHyperlinkButton_Click"  ></HyperlinkButton>
+
+                        <TextBlock Margin="0,10,0,10" TextWrapping="Wrap"
+                               Text="iron7 uses the http://codemirror.net/ editor - see license.">
+                        </TextBlock>
+                        <HyperlinkButton Content="codemirror license" Click="CodeMirrorHyperlinkButton_Click" ></HyperlinkButton>
+
+                        <!--
+                        <TextBlock Margin="20" TextWrapping="Wrap"
+                               Text="if you write a script and want to share it, then please email to iron7. iron7 will consider all scripts sent in. However, iron7 reserves the right to not publish any script.">
+                        </TextBlock>
+                        -->
+
+                        <TextBlock Margin="0,10,0,10" TextWrapping="Wrap"
+                               Text="please be careful what writing new scripts or if you share scripts with others - your actions are your own responsibility">
+                        </TextBlock>
+                        <TextBlock Margin="0,10,0,10" TextWrapping="Wrap"
+                               Text="iron7 is copyright cirrious - all rights reserved. For support, please contact:">
+                        </TextBlock>
+                        <StackPanel Margin="0,10,0,10" Orientation="Horizontal">
+                            <HyperlinkButton FontSize="20" Content="&#169; Cirrious Ltd" Click="HyperlinkButtonCirrious_Click" >
+                            </HyperlinkButton>
+                            <TextBlock TextWrapping="Wrap" Text=" a BizSpark company">
+                            </TextBlock>
+                        </StackPanel>
+
+                        <TextBlock Margin="0,10,0,10" TextWrapping="Wrap"
+                               Text="THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 'AS IS' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.">
+                        </TextBlock>
+
+                        <!--
+                        <TextBlock TextWrapping="Wrap"
+                               Text="to delete your twitter account link, please choose">
+                        </TextBlock>
+                        <HyperlinkButton Content="forget Twitter link" Click="TwitterHyperlinkButton_Click" ></HyperlinkButton>
+                        -->
+
+                    </StackPanel>
+                </ScrollViewer>
+            </controls:PanoramaItem>
+        </controls:Panorama>
+    </Grid>
+
+    <!--Panorama-based applications should not show an ApplicationBar-->
+
+</phone:PhoneApplicationPage>

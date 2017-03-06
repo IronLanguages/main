@@ -1,0 +1,153 @@
+# clock based on http://www.infoq.com/articles/ironruby-wpf
+# author Edd Morgan
+# used with permission - thanks Edd!
+	
+include System
+include System::Windows
+include System::Windows::Media
+include System::Windows::Media::Imaging
+include System::Windows::Controls
+include System::Windows::Shapes
+include Microsoft::Phone::Controls::Maps
+
+def create_hand(color, thickness)
+  hand = Line.new
+  hand.stroke = SolidColorBrush.new(color)
+  hand.stroke_thickness = thickness
+  hand.stroke_end_line_cap = PenLineCap.round;
+  hand.x1 = $CLOCK_WIDTH / 2
+  hand.y1 = $CLOCK_HEIGHT / 2
+  $canvas.children.add(hand)
+  return hand
+end
+
+def init
+  $CLOCK_WIDTH     = 300
+  $CLOCK_HEIGHT    = 300
+  $LABEL_HEIGHT    = $CLOCK_HEIGHT / 7
+  $LABEL_WIDTH     = $CLOCK_WIDTH / 7
+  $HOUR_RADIUS     = $CLOCK_WIDTH / 3
+  $RADIUS          = $CLOCK_WIDTH / 2
+  $RADS            = Math::PI / 180
+  $MIN_LOCATIONS   = {}
+  $HOUR_LOCATIONS  = {}
+  $HOURTEXT_LOCATIONS = {}
+
+  calc_plot_locations
+
+  $canvas = Canvas.new
+  $canvas.width = $CLOCK_WIDTH
+  $canvas.height = $CLOCK_HEIGHT
+
+  Host.content_holder.children.add($canvas)
+
+  $hour_hand = create_hand(Colors.black, 10)
+  $minute_hand = create_hand(Colors.black, 5)
+  $second_hand = create_hand(Colors.red, 3)
+      
+  plot_face 
+  plot_labels 
+  plot_hands
+  plot_hub 
+
+  Host.start_timer("clocktimer", System::TimeSpan.FromSeconds(0.2), "timer_listener")
+end
+    
+def calc_plot_locations
+  for i in (0..60) # 60 minutes
+    a = i * 6
+    x = ($RADIUS * Math.sin(a * $RADS)).to_i + ($CLOCK_WIDTH / 2)
+    y = ($CLOCK_HEIGHT / 2) - ($RADIUS * Math.cos(a * $RADS)).to_i
+    coords = [x, y]
+    $MIN_LOCATIONS[i] = coords
+  end
+  
+  for i in (0..12) # 12 hours - for the hour hand
+    a = i * 30
+    x = ($HOUR_RADIUS * Math.sin(a * $RADS)).to_i + ($CLOCK_WIDTH / 2)
+    y = ($CLOCK_HEIGHT / 2) - ($HOUR_RADIUS * Math.cos(a * $RADS)).to_i
+    coords = [x, y]
+    $HOUR_LOCATIONS[i] = coords
+  end
+  
+  for i in (0..12) # 12 hours - for the hour text
+    a = i * 30
+    x = ($RADIUS * Math.sin(a * $RADS)).to_i + ($CLOCK_WIDTH / 2)
+    y = ($CLOCK_HEIGHT / 2) - ($RADIUS * Math.cos(a * $RADS)).to_i
+    coords = [x, y]
+    $HOURTEXT_LOCATIONS[i] = coords
+  end
+end
+    
+def plot_face
+  extra_x = ($CLOCK_WIDTH * 0.15) # pad our circle a little
+  extra_y = ($CLOCK_HEIGHT * 0.15)
+  
+  face = Ellipse.new
+  face.fill = SolidColorBrush.new(Colors.white)
+  face.width = $CLOCK_WIDTH + extra_x
+  face.height = $CLOCK_HEIGHT + extra_y
+  face.margin = Thickness.new(0 - (extra_x/2), 0 - (extra_y/2), 0, 0)
+  face.stroke = SolidColorBrush.new(Colors.dark_gray)
+  face.stroke_thickness = 5
+  Canvas.set_z_index(face, -1) # send our face to the back
+  
+  $canvas.children.add(face)
+end
+
+def plot_hub
+  hub_radius = ($RADIUS * 0.15)
+  
+  hub = Ellipse.new
+  hub.fill = SolidColorBrush.new(Colors.black)
+  hub.width = hub_radius
+  hub.height = hub_radius
+  hub.margin = Thickness.new(($CLOCK_WIDTH - hub_radius)/2, ($CLOCK_HEIGHT-hub_radius)/2, 0, 0)
+  
+  $canvas.children.add(hub)
+end
+    
+def plot_labels
+  brush = SolidColorBrush.new(Colors.dark_gray)
+  $HOURTEXT_LOCATIONS.each_pair do |p, coords|
+    unless p == 0
+      lbl = TextBlock.new
+      lbl.horizontal_alignment = HorizontalAlignment.center
+      lbl.width = $LABEL_WIDTH
+      lbl.height = $LABEL_HEIGHT
+      lbl.font_size = 36
+      lbl.text = ' ' + p.to_s
+      lbl.margin = Thickness.new(coords[0] - ($LABEL_WIDTH / 2), coords[1] - ($LABEL_HEIGHT / 2), 0, 0)
+      lbl.padding = Thickness.new(0, 0, 0, 0)
+      lbl.foreground = brush
+      $canvas.children.add(lbl)
+    end
+  end
+end
+    
+def plot_hands
+  time = Time.now
+  hours = time.hour
+  minutes = time.min
+  seconds = time.sec
+        
+  if !$minutes || minutes != $minutes
+    $hours = hours >= 12 ? hours - 12 : hours
+    $minutes = minutes == 0 ? 60 : minutes
+    $minute_hand.x2 = $MIN_LOCATIONS[$minutes][0]
+    $minute_hand.y2 = $MIN_LOCATIONS[$minutes][1]
+    $hour_hand.x2 = $HOUR_LOCATIONS[$hours][0]
+    $hour_hand.y2 = $HOUR_LOCATIONS[$hours][1]
+  end
+  if !$seconds || seconds != $seconds
+    $seconds = seconds == 0 ? 60 : seconds
+    $second_hand.x2 = $MIN_LOCATIONS[$seconds][0]
+    $second_hand.y2 = $MIN_LOCATIONS[$seconds][1]
+  end	
+end
+    
+init if $CLOCK_WIDTH.nil?
+
+def timer_listener
+  plot_hands
+end

@@ -1,0 +1,62 @@
+include System
+include System::Windows
+include System::Windows::Input
+include System::Windows::Media
+include System::Windows::Media::Imaging
+include System::Windows::Controls
+include System::Windows::Shapes
+include Microsoft::Phone::Controls::Maps
+
+def numeric_input_scope(textbox)
+  numeric_input = InputScope.new 
+  textbox.input_scope = numeric_input
+  numeric_input_name = InputScopeName.new 
+  numeric_input_name.name_value = InputScopeNameValue.Number
+  numeric_input.names.add(numeric_input_name)
+end
+
+def init
+  stack_panel_main = StackPanel.new
+  stack_panel_main.horizontal_alignment = HorizontalAlignment.center
+
+  $textbox1 = TextBox.new
+  $textbox1.text = "42"
+  numeric_input_scope($textbox1)
+  stack_panel_main.children.add($textbox1)
+
+  textblock_plus = TextBlock.new
+  textblock_plus.text = "+"
+  stack_panel_main.children.add(textblock_plus)
+
+  $textbox2 = TextBox.new  
+  $textbox2.text = "99"
+  numeric_input_scope($textbox2)
+  stack_panel_main.children.add($textbox2)
+
+  textblock_eq = TextBlock.new
+  textblock_eq.text = "="
+  stack_panel_main.children.add(textblock_eq)
+
+  $textbox3 = TextBox.new
+  $textbox3.is_read_only = true
+  stack_panel_main.children.add($textbox3)
+
+  Host.monitor_control("textbox1", $textbox1, "textbox_listener")
+  Host.monitor_control("textbox2", $textbox2, "textbox_listener")
+  Host.content_holder.children.add(stack_panel_main)
+
+  update_result
+end
+
+def textbox_listener
+  update_result
+end
+
+def update_result
+  t1 = ($textbox1.text).to_f
+  t2 = ($textbox2.text).to_f
+  total = t1+t2
+  $textbox3.text = total.to_s
+end
+
+init if $textbox1.nil?

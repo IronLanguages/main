@@ -1,0 +1,114 @@
+include System::Windows
+include System::Windows::Media
+include System::Windows::Controls
+include System::Windows::Shapes
+include System::Windows::Media::Imaging
+include Microsoft::Phone::Controls
+
+def random_string
+  items = [
+	"WP7",
+	"WindowsPhone",
+	"sunset",
+	"beach",
+	"ruby",
+	"ironruby"]
+	
+  random = System::Random.new
+  which = random.next(items.length)
+
+  return items[which]
+end
+
+def init
+  scroll_viewer = ScrollViewer.new
+  stack_panel_main = StackPanel.new
+
+  $textbox_1 = TextBox.new
+  $textbox_1.text = random_string
+  stack_panel_main.children.add($textbox_1)
+
+  button_1 = Button.new
+  button_1.content = "Search"
+	
+  stack_panel_main.children.add(button_1)
+
+  $wrap_panel = WrapPanel.new
+  stack_panel_main.children.add($wrap_panel)
+  scroll_viewer.content = stack_panel_main
+	
+  $big_image = Image.new
+  $big_image.width = 480
+  $big_image.height = 480
+  $big_image.horizontal_alignment = HorizontalAlignment.center;
+  $big_image.vertical_alignment = VerticalAlignment.center;
+  $big_image.visibility = Visibility.collapsed
+
+  grid = Grid.new
+  grid.children.add(scroll_viewer)
+  grid.children.add($big_image)
+
+  Host.monitor_control("button_1", button_1, "button_listener")
+  Host.monitor_control("-1", $big_image, "big_image_listener")	
+  Host.content_holder.children.add(grid)
+end
+
+def hack_regex_flickr_urls(response)
+  image_urls=[]	
+  # simple regex for: media": {"m":"http://farm6.static.flickr.com/nums_m.jpg"
+  regex = Regexp.new(/media.: ....:.(.*)..,$/) 
+  matchdata = regex.match(response)
+  while matchdata != nil
+    image_urls.push(matchdata[1]) # extract just the first group
+    string1 = matchdata.post_match
+    matchdata = regex.match(string1)
+  end
+
+  # MessageBox.show("num matches is " + image_urls.length.to_s)
+  # MessageBox.show("first match is " + image_urls[0])
+
+  return image_urls
+end
+
+def process_flickr(response)
+  $wrap_panel.children.clear()
+  $big_image.visibility = Visibility.collapsed
+
+  image_urls =  hack_regex_flickr_urls(response)
+  image_urls.each { |image_url|
+
+    index = $wrap_panel.children.count
+    image = Image.new
+    image.stretch = Stretch.fill
+    image.horizontal_alignment = HorizontalAlignment.left;
+    image.vertical_alignment = VerticalAlignment.top;
+    image.height = 160
+    image.width = 160
+    bitmap_image_source = BitmapImage.new
+    bitmap_image_source.uri_source = System::Uri.new(image_url)
+    image.source = bitmap_image_source
+    Host.monitor_control(index.to_s, image, "image_listener")
+
+    $wrap_panel.children.add(image)
+  }
+end
+
+init if $wrap_panel.nil?
+
+def web_listener
+  process_flickr(Web_response)
+end
+def button_listener
+  Host.call_text_web_service("flickr", "http://api.flickr.com/services/feeds/photos_public.gne?format=json&tags=" + $textbox_1.text, "web_listener")
+end
+def big_image_listener
+  if Calling_event == "mouse_left_button_down"
+    $big_image.visibility = Visibility.collapsed
+  end
+end
+def image_listener
+  if Calling_event == "mouse_left_button_down"
+    $big_image.source = Calling_sender.source
+    $big_image.visibility = Visibility.visible
+  end
+end

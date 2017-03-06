@@ -1,0 +1,166 @@
+# originally based on https://github.com/jschementi/ironruby-rubyinside-article/blob/master/ruby-squares.html
+# this script uses a timer for simple animation
+# the alien images used come royalty free from clker.com
+# sounds from http://www.freesound.org/samplesViewSingle.php?id=18397
+# and from http://www.freesound.org/samplesViewSingle.php?id=76966
+# all used under creative commons licensing
+
+include System
+include System::Windows
+include System::Windows::Shapes
+include System::Windows::Media
+include System::Windows::Media::Imaging
+include System::Windows::Controls
+
+def create_canvas(color, opacity)
+  canvas = Canvas.new
+  canvas.width = 480
+  canvas.height = 800
+  canvas.background = SolidColorBrush.new(color) unless color.nil?
+  canvas.opacity = opacity unless opacity.nil?
+  return canvas
+end
+
+def load_sound_effect(name, callback)
+  Host.load_sound_effect(name, "http://iron7.com/forapp/aliens/" + name + ".wav", callback)
+end
+
+def setup
+  $speed = 21
+  background_canvas = create_canvas(Colors.black, 0.001)
+  Host.content_holder.children.add(background_canvas)
+  $canvas = create_canvas(nil, nil)
+  Host.content_holder.children.add($canvas)
+  $laser_sound = nil;
+  $death_sound = nil;
+  Host.fix_orientation_portrait
+  Host.start_timer("timer1", TimeSpan.from_seconds(0.05), "animate")  
+  load_sound_effect("las16", "laser_loaded")
+  load_sound_effect("death", "death_loaded")
+  
+  Host.monitor_control(background_canvas, background_canvas, "alien_missed")
+  new_game
+end
+
+def death_loaded
+  if Calling_event == "sound_effect_loaded"
+    $death_sound = Calling_sender
+  end
+end
+
+def laser_loaded
+  if Calling_event == "sound_effect_loaded"
+    $laser_sound = Calling_sender
+  end
+end
+
+def new_game
+  add_aliens(10)
+end
+
+def next_level
+  $speed = $speed + 10
+end
+
+def add_aliens(count)
+  count.times do |i|
+    my_alien(15)
+  end
+end
+
+def generate_speed
+  rand($speed) - $speed/2
+end
+
+def my_alien(length)
+  size = rand(480 / length) + 60
+  left = rand(480 - size)
+  top = rand(800 - size)
+  speed_x = generate_speed 
+  speed_y = generate_speed
+  image_index = rand(10) + 1
+  image_url = Uri.new("http://iron7.com/forapp/aliens/" << image_index.to_s << ".png")
+  image_bitmap = BitmapImage.new(image_url)
+  alien = Image.new
+  alien.source = image_bitmap
+  alien.width = size
+  alien.height = size
+  alien_border = Border.new
+  alien_border.border_brush = SolidColorBrush.new(Colors.red)
+  alien_border.border_thickness = Thickness.new(1)
+  alien_border.tag = { "left"=>left, "top"=>top, "x"=>speed_x, "y"=>speed_y }
+  alien_border.margin = Thickness.new(left,top,0,0)
+  alien_border.child = alien
+  alien.tag = alien_border
+  Host.monitor_control(alien,alien,"alien_event")  
+  $canvas.children.add(alien_border)
+end
+
+def test_for_next_level
+  if $canvas.children.count == 0
+    MessageBox.show("level complete... next level gets faster")
+	next_level
+	new_game
+  end
+end
+
+def any_shot
+  $laser_sound.play unless $laser_sound.nil?
+end
+
+def alien_missed
+  any_shot
+end
+
+def alien_event
+  alien = Calling_sender
+  if Calling_event == "mouse_left_button_down"
+    alien_pressed(alien)
+  elsif Calling_event == "image_opened"
+    alien.tag.border_thickness = Thickness.new(0)
+  end
+end
+
+def alien_pressed(alien)
+  $canvas.children.remove(alien.tag)
+  any_shot
+  $death_sound.play unless $death_sound.nil?
+  Host.vibrate(TimeSpan.from_milliseconds(10))
+  test_for_next_level
+end
+    
+def brushes
+  $brushes ||= %W(red orange yellow cyan blue magenta green).map do |c| 
+    SolidColorBrush.new(Colors.send(c))
+  end
+end
+    
+def rand_brush
+  brushes[rand(brushes.size)]
+end
+
+def animate_tagged_child(tagged)
+  left = tagged.tag["left"]
+  top = tagged.tag["top"]
+  x = tagged.tag["x"]
+  y = tagged.tag["y"]
+  
+  left = left + x
+  if left > 480 - tagged.actual_width || left < 0
+    x = -x
+  end
+  top = top + y
+  if top > 800- tagged.actual_height || top < 0
+    y = -y
+  end
+  tagged.margin = Thickness.new(left,top,0,0)
+  tagged.tag = { "left"=>left, "top"=>top, "x"=>x, "y"=>y }
+end
+    
+def animate
+  $canvas.children.each { |child|
+    animate_tagged_child(child)
+  }
+end
+
+setup

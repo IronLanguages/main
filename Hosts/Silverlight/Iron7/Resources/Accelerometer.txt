@@ -1,0 +1,81 @@
+include System
+include System::Windows
+include System::Windows::Media
+include System::Windows::Media::Imaging
+include System::Windows::Controls
+include System::Windows::Shapes
+include Microsoft::Phone::Controls::Maps
+
+def get_brush(color)
+  brush = SolidColorBrush.new
+  brush.Color = color
+  return brush
+end
+
+def init
+  $WIDTH = 400
+  $HEIGHT = 400
+  $BUBBLE_RADIUS = 25
+
+  $mid_x = ($WIDTH - $BUBBLE_RADIUS)/2
+  $mid_y = ($HEIGHT - $BUBBLE_RADIUS)/2
+  $last_x = $mid_x
+  $last_y = $mid_y
+
+  $canvas = Canvas.new
+  $canvas.width = $WIDTH
+  $canvas.height = $HEIGHT
+
+  rect = Rectangle.new
+  rect.width = $WIDTH 
+  rect.height = $HEIGHT
+  rect.fill = get_brush(Colors.white)
+  rect.stroke = get_brush(Colors.light_gray)
+  $canvas.children.add(rect)
+
+  $bubble = Ellipse.new
+  $bubble.fill = get_brush(Colors.blue)
+  $bubble.width = $BUBBLE_RADIUS
+  $bubble.height = $BUBBLE_RADIUS
+  $bubble.margin = Thickness.new($last_x, $last_y, 0, 0)
+    
+  $canvas.children.add($bubble)
+
+  $text_block_x = TextBlock.new
+  $text_block_y = TextBlock.new
+  $text_block_z = TextBlock.new
+
+  text_stack_panel = StackPanel.new
+  text_stack_panel.horizontal_alignment = HorizontalAlignment.center
+  text_stack_panel.children.add($text_block_x)
+  text_stack_panel.children.add($text_block_y)
+  text_stack_panel.children.add($text_block_z)
+
+  stack_panel = StackPanel.new
+  stack_panel.horizontal_alignment = HorizontalAlignment.center
+  stack_panel.children.add($canvas)
+  stack_panel.children.add(text_stack_panel)
+
+  Host.content_holder.children.add(stack_panel);
+
+  Host.fix_orientation_portrait
+  Host.start_accelerometer(0.1, "show_current_accel")
+end
+
+def show_current_accel
+  x = AccelerometerReading.x
+  y = AccelerometerReading.y
+  z = AccelerometerReading.z
+
+  $text_block_x.text = "x is " + x.to_s
+  $text_block_y.text = "y is " + y.to_s
+  $text_block_z.text = "z is " + z.to_s
+
+  # could do with some smoothing here really...
+  $last_x = $mid_x * (1 - x)
+  $last_y = $mid_y * (1 + y)
+		
+  $bubble.margin = Thickness.new($last_x, $last_y, 0, 0)
+end
+
+init if $canvas.nil?

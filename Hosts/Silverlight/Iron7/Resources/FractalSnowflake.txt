@@ -1,0 +1,80 @@
+# fractal algortithm adapted from http://www.codeproject.com/KB/WPF/Fractals.aspx
+# thanks to logicchild
+# used under the Code Project Open License
+
+include System::Windows::Media
+include System::Windows::Controls
+include System::Windows::Shapes
+include System::Windows
+
+def init
+    $FRACTAL_WIDTH     = 300
+    $FRACTAL_HEIGHT    = 300
+	$LENGTH_SCALE    = 0.75;
+	$DELTA_THETA     = Math::PI / 5;
+	$GLOBAL_II       = 0
+
+	# build our canvas
+    $canvas = System::Windows::Controls::Canvas.new
+    $canvas.width = $FRACTAL_WIDTH
+    $canvas.height = $FRACTAL_HEIGHT
+
+	$text_block = TextBlock.new
+
+	stack_panel = StackPanel.new
+	stack_panel.horizontal_alignment = HorizontalAlignment.center
+	stack_panel.children.add($canvas)
+	stack_panel.children.add($text_block)
+
+	Phone.find_name("ContentGrid").children.add(stack_panel)
+
+	timer1 = System::Windows::Threading::DispatcherTimer.new
+	timer1.interval = System::TimeSpan.FromSeconds(1)
+	timer1.start
+	Phone.timers.add("timer1",timer1)
+
+end
+
+def drawBinaryTree(depth, x, y, length, theta)
+    x2 = x + length * Math.cos(theta);
+    y2 = y + length * Math.sin(theta);
+
+    line = System::Windows::Shapes::Line.new;
+	brush = System::Windows::Media::SolidColorBrush.new
+	brush.color = System::Windows::Media::Colors.blue
+    line.stroke = brush;
+    line.x1 = x;
+    line.y1 = y;
+    line.x2 = x2;
+    line.y2 = y2;
+    $canvas.children.add(line)
+
+    if depth > 1
+        drawBinaryTree(depth - 1, x2, y2, length * $LENGTH_SCALE, theta + $DELTA_THETA)
+        drawBinaryTree(depth - 1, x2, y2, length * $LENGTH_SCALE, theta - $DELTA_THETA)
+    end
+end
+
+def next_hop
+	$GLOBAL_II = $GLOBAL_II + 1
+	if $GLOBAL_II < 21
+		x = $canvas.width / 2
+		y = 0.83 * $canvas.height
+
+		$canvas.children.clear
+		drawBinaryTree($GLOBAL_II, x, y, 0.2 * $canvas.width, - Math::PI / 2)
+
+		$text_block.text = "tree depth is " + $GLOBAL_II.to_s
+	end
+
+	if $GLOBAL_II > 30
+		$GLOBAL_II = 0
+	end
+
+end
+
+if $canvas.nil?
+	init 
+end
+
+next_hop

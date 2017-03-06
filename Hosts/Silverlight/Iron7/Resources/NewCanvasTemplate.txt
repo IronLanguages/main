@@ -1,0 +1,92 @@
+include System
+include System::Windows
+include System::Windows::Media
+include System::Windows::Media::Imaging
+include System::Windows::Controls
+include System::Windows::Shapes
+include Microsoft::Phone::Controls::Maps
+
+def init
+  $WIDTH     = 800
+  $HEIGHT    = 800
+
+  $canvas = Canvas.new
+  $canvas.width = $WIDTH
+  $canvas.height = $HEIGHT
+
+  Host.content_holder.children.add($canvas)
+
+  ellipse_params = {
+    "margin_left"=>10, 
+    "margin_top"=>10, 
+    "width"=>100, 
+    "height"=>200, 
+    "fill_color"=>Colors.red, 
+    "stroke_color"=>Color.from_argb(128,128,0,0), 
+    "stroke_thickness"=>5 }
+  plot_ellipse(ellipse_params)
+
+  line_params = {
+    "x1"=>210, 
+    "y1"=>210,
+    "x2"=>310,
+    "y2"=>110,
+    "stroke_color"=>Colors.blue,
+    "stroke_thickness"=>20 }
+  plot_line(line_params)
+  
+  rect_params = {
+    "margin_left"=>10,
+    "margin_top"=>210,
+    "width"=>100, 
+    "height"=>200,
+    "corner_radius_x"=>10,
+    "corner_radius_y"=>20,
+    "fill_color"=>Color.from_argb(128,0,128,0), 
+    "stroke_color"=>Color.from_argb(255,0,255,0),
+    "stroke_thickness"=>1 }
+  plot_rectangle(rect_params)
+  
+  $initialized = 1
+end
+
+def plot_line(line_params)
+  line = Line.new
+  line.x1 = line_params["x1"]
+  line.x2 = line_params["x2"]
+  line.y1 = line_params["y1"]
+  line.y2 = line_params["y2"]
+  line.stroke =  SolidColorBrush.new(line_params["stroke_color"])
+  line.stroke_thickness = line_params["stroke_thickness"]
+
+  $canvas.children.add(line)
+end
+        
+def plot_ellipse(ellipse_params)
+
+  ellipse = Ellipse.new
+  ellipse.fill = SolidColorBrush.new(ellipse_params["fill_color"])
+  ellipse.width = ellipse_params["width"]
+  ellipse.height = ellipse_params["height"]
+  ellipse.margin = Thickness.new(ellipse_params["margin_left"], ellipse_params["margin_top"], 0, 0)
+  ellipse.stroke = SolidColorBrush.new(ellipse_params["stroke_color"])
+  ellipse.stroke_thickness = ellipse_params["stroke_thickness"]
+  
+  $canvas.children.add(ellipse)
+end
+
+def plot_rectangle(rect_params)
+  rect = Rectangle.new
+  rect.fill = SolidColorBrush.new(rect_params["fill_color"])
+  rect.width = rect_params["width"]
+  rect.height = rect_params["height"]
+  rect.radius_x = rect_params["corner_radius_x"]
+  rect.radius_y = rect_params["corner_radius_y"]
+  rect.margin = Thickness.new(rect_params["margin_left"], rect_params["margin_top"], 0, 0)
+  rect.stroke = SolidColorBrush.new(rect_params["stroke_color"])
+  rect.stroke_thickness = rect_params["stroke_thickness"]
+  
+  $canvas.children.add(rect)
+end
+    
+init if $initialized .nil?

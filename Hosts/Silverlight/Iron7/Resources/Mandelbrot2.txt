@@ -1,0 +1,165 @@
+# not used - it's the same alg...
+
+# mandelbrot algortithm adapted from http://knol.google.com/k/mandelbrot-set-c#
+# note that this is not a very optimal drawing mechanism!
+
+include System
+include System::Windows
+include System::Windows::Media
+include System::Windows::Media::Imaging
+include System::Windows::Controls
+include System::Windows::Shapes
+include Microsoft::Phone::Controls::Maps
+
+def complex_new(i, j)
+  return [i,j]
+end
+
+def complex_add(c1,c2)
+  return [
+      c1[0] + c2[0],
+      c1[1] + c2[1]]
+end
+def complex_subtract(c1,c2)
+  return [
+      c1[0] - c2[0],
+      c1[1] - c2[1]]
+end
+def complex_multiply(c1,c2)
+  return [
+      c1[0]*c2[0]-c1[1]*c2[1],
+      c1[1]*c2[0]+c1[0]*c2[1]]
+end
+
+def complex_module_squared(c)
+  return c[0]*c[0] + c[1]*c1[1]
+end
+
+def complex_diverg(c_old) 
+  i=0 
+  c_new = complex_new(c_old[0], c_old[1] 
+
+  while i<IMAX_ITER && complex_module_squared(c_new)<MODULE_LIMIT_SQUARED do 
+    c_new = complex_add(complex_multiply(c_new, c_new), c_old)
+	i = i+1
+  end
+
+  return i
+end 
+
+# playing with this color array can produce some lovely effects
+def color_array
+  $colors = []
+  for i in 0...128
+    $colors.push(Color.from_argb(255,255-(i*2),255-(i*2),0))
+  end
+  for i in 0...128
+    $colors.push(Color.from_argb(255,i*2,i*2,0))
+  end
+end
+
+def init
+  # create the color array
+  color_array
+
+  MessageBox.show("keep watching... I'm doing a lot of mathematics")
+  
+  # to help get through the maths we only process every $SCALE_DOWN point...
+  # then draw each calculation represent $SCALE_UP pixels square
+  $SCALE_DOWN = 256
+  $SCALE_UP = 256
+  $FINISH_SCALE = 2
+
+  $BASE_WIDTH = 400
+  $BASE_HEIGHT = 400
+
+  # Creates the Canvas we draw to
+  $canvas = Canvas.new
+  $canvas.width = 400
+  $canvas.height = 400
+
+  Host.content_holder.children.add($canvas)
+  Host.content_holder.background = SolidColorBrush.new(Colors.black)
+
+  $text_progress = TextBlock.new
+  $text_progress.foreground = SolidColorBrush.new(Colors.white)
+  Host.content_holder.children.add($text_progress)
+
+  next_level
+
+  $init = 1
+  Host.start_timer("myTimer", TimeSpan.from_seconds(0.1))
+end
+
+def next_level
+  if $SCALE_UP < $FINISH_SCALE
+    Host.stop_timer("myTimer")
+    return
+  end
+
+  $SCALE_DOWN = $SCALE_DOWN/2
+  $SCALE_UP = $SCALE_UP/2
+
+  $WIDTH = $BASE_WIDTH/$SCALE_DOWN
+  $HEIGHT = $BASE_HEIGHT/$SCALE_DOWN
+
+  $xmin = -1.8 # Start x value, normally -2.1
+  $xmax = 0.7 # Finish x value, normally 1
+  $ymin = -1.0 # Start y value, normally -1.3
+  $ymax = 1.0 # Finish y value, normally 1.3
+
+  $xIncrement = ($xmax - $xmin) / $WIDTH
+  $yIncrement = ($ymax - $ymin) / $HEIGHT
+
+  $x = $xmin
+  $s = 0
+
+end
+
+init if $init.nil?
+
+def set_pixel(x,y,color)
+  # very inefficient... add a small rectangle!
+  rec = Rectangle.new
+  rec.margin = Thickness.new(x *$SCALE_UP,y*$SCALE_UP,0,0)
+  rec.width = $SCALE_UP
+  rec.height = $SCALE_UP
+  rec.fill = SolidColorBrush.new(color)
+  $canvas.children.add(rec)
+end
+
+def next_line
+  if $s >= $WIDTH
+    next_level
+    return
+  end
+
+  y = $ymin
+
+  for z in 0...$HEIGHT
+    x1 = 0
+    y1 = 0
+    looper = 0.0
+    while looper < 100 && x1 *x1 + y1* y1 < 4 do
+      looper = looper +1.0
+      xx = (x1 * x1) - (y1 * y1) + $x
+      y1 = 2 * x1 * y1 + y
+      x1 = xx
+    end
+
+    # Get the percent of where the looper stopped
+    perc = looper / (100.0)
+
+    # Get that part of a 255 scale
+    val = System::Math.floor(perc * 255)
+
+    # Use that number to set the color
+    set_pixel($s,z,$colors[val])
+    y = $yIncrement + y
+  end
+  $x = $x + $xIncrement
+  $s = $s + 1
+end
+
+$text_progress.text = "Detail level " << $SCALE_UP.to_s << ", " << $s.to_s << " lines out of " << $WIDTH.to_s
+next_line

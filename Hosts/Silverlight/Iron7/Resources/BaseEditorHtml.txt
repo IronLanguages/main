@@ -1,0 +1,75 @@
+<html>
+<head>
+<title></title>
+<meta name='viewport' content='width=device-width,height=device-height' /> 
+<meta name="viewport" content="user-scalable=no" />
+<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7" />
+<link rel='Stylesheet' type="text/css" href='rubycolors.css' />
+<script type="text/javascript" src="util.js"></script>
+<script type="text/javascript" src="stringstream.js"></script>
+<script type="text/javascript" src="select.js"></script>
+<script type="text/javascript" src="undo.js"></script>
+<script type="text/javascript" src="editor.js"></script>
+<script type="text/javascript" src="tokenize.js"></script>
+<script type="text/javascript" src="tokenizeruby.js"></script>
+<script type="text/javascript" src="parseruby.js"></script>
+<script type='text/javascript'>
+function showCode(str)
+{
+	if (editor) {
+		editor.importCode(str);
+		return "1";
+	}
+	return "0";
+}
+function getCode()
+{
+	if (editor)
+		return editor.getCode();
+}
+var editor;
+var CodeMirror = {
+    options : {
+		passDelay: 1000,
+		passTime: 3000,
+		lineNumberDelay: 20000,
+		lineNumberTime: 20000,
+		continuousScanning: false,
+        saveFunction: null,
+        onChange: null,
+        undoDepth: 1,
+        undoDelay: 100,
+        disableSpellcheck: true,
+        readOnly: false,
+        autoMatchParens: false,
+        parserConfig: null,
+        tabMode: "indent", // or "spaces", "default", "shift"
+        reindentOnLoad: false,
+        activeTokens: null,
+        cursorActivity: null,
+        parserfile: [],
+        stylesheet: "",
+        path: "./",
+        lineNumbers: false,
+        textWrapping: false,
+        indentUnit: 2,
+        parserConfig: {}
+    }
+};
+function setBackground(light)
+{
+	if (light == "true")
+	{
+		document.body.className += ' editbox-light';
+	}
+	else
+	{
+		document.body.className += ' editbox-dark';
+	}
+}
+</script>
+</head>
+<body style="border-top-width: 0px; border-right-width: 0px; border-bottom-width: 0px;
+    border-left-width: 0px; white-space: nowrap;" class="editbox" spellcheck="false">
+</body>
+</html>

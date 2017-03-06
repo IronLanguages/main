@@ -1,0 +1,268 @@
+# mandelbrot algortithm adapted from http://www.codeproject.com/KB/graphics/mandelbrot.aspx
+# note that this is not a very optimal drawing mechanism!
+# there are lots of interesting (beautiful) mandelbrot sites online
+# note that different algorithm draw the axes at different angles - can get very confusing!
+
+include System
+include System::Windows
+include System::Windows::Media
+include System::Windows::Media::Imaging
+include System::Windows::Controls
+include System::Windows::Shapes
+include Microsoft::Phone::Controls::Maps
+
+# playing with this color array can produce some lovely effects
+def color_array_one
+  $colors = []
+  for i in 0...128
+    $colors.push(Color.from_argb(255,255-(i*2),255-(i*2),0))
+  end
+  for i in 0...128
+    $colors.push(Color.from_argb(255,i*2,i*2,0))
+  end
+end
+
+def color_array_two
+  $colors = []
+  red = 0
+  green = 0
+  blue = 0
+
+  # red to yellow
+  red = 255
+  for i in 0...64
+    $colors.push(Color.from_argb(255,red,green,blue))
+    green = green + 4     
+  end
+  # yellow to green
+  green = 255
+  for i in 0...64
+    $colors.push(Color.from_argb(255,red,green,blue))
+    red = red - 4     
+  end
+  red=0
+  # green to cyan
+  green = 255
+  for i in 0...64
+    $colors.push(Color.from_argb(255,red,green,blue))
+    blue = blue + 4     
+  end
+  # green to cyan
+  blue = 255
+  for i in 0...64
+    $colors.push(Color.from_argb(255,red,green,blue))
+    green = green - 4     
+  end
+end
+
+def color_array_three
+  $colors = []
+  red = 0
+  green = 0
+  blue = 0
+
+  # black to red
+  red = 0
+  for i in 0...64
+    $colors.push(Color.from_argb(255,red,green,blue))
+    red = red + 4     
+  end
+
+  # red to magenta
+  red = 255
+  for i in 0...64
+    $colors.push(Color.from_argb(255,red,green,blue))
+    blue = blue + 4     
+  end
+  red = 255
+  blue = 255
+
+  # magenta to yellow
+  for i in 0...64
+    $colors.push(Color.from_argb(255,red,green,blue))
+    blue = blue - 4     
+    green = green + 4     
+  end
+  green = 255
+  blue = 0
+
+  # yellow to white
+  for i in 0...64
+    $colors.push(Color.from_argb(255,red,green,blue))
+    blue = blue + 4     
+  end
+  
+  $colors = $colors.reverse
+end
+
+def create_button(name)
+  button = Button.new
+  button.content = "preset " + name
+  Host.monitor_control(name, button, "button_listener")
+  $stack.children.add(button)
+end
+
+def init
+  #MessageBox.show("keep watching... I'm doing a lot of mathematics")
+  
+  $BASE_WIDTH = 320
+  $BASE_HEIGHT = 240
+
+  # Creates the Canvas we draw to
+  $canvas = Canvas.new
+  $canvas.width = 320
+  $canvas.height = 240
+
+  Host.fix_orientation_portrait
+  Host.content_holder.background = SolidColorBrush.new(Colors.black)
+
+  $text_settings = TextBlock.new
+  $text_settings.foreground = SolidColorBrush.new(Colors.white)
+  $text_progress = TextBlock.new
+  $text_progress.foreground = SolidColorBrush.new(Colors.white)
+  
+  $stack = StackPanel.new
+  $stack.horizontal_alignment = HorizontalAlignment.center
+  create_button("1")
+  create_button("2")
+  create_button("3")
+  $stack.children.add($canvas)
+  $stack.children.add($text_settings)
+  $stack.children.add($text_progress)
+
+  Host.content_holder.children.add($stack)
+
+  init_settings_one
+
+  $init = 1
+  Host.start_timer("myTimer", TimeSpan.from_seconds(0.1), "timer_listener")
+end
+
+def init_settings_one
+  color_array_one
+
+  $xmin = -1.8 # Start x value, normally -2.1
+  $xmax = 0.7 # Finish x value, normally 1
+  $ymin = -1.0 # Start y value, normally -1.3
+  $ymax = 1.0 # Finish y value, normally 1.3
+
+  init_settings_common
+end
+
+def init_settings_two
+  color_array_two
+
+  $xmin = -1.30989899
+  $xmax = -1.19878788
+  $ymin = -0.40390572
+  $ymax = -0.26922559
+
+  init_settings_common
+end
+
+def init_settings_three
+  color_array_three
+
+  $xmin = 0.28689
+  $xmax = 0.28694
+  $ymin = 0.0142
+  $ymax = 0.0143
+
+  init_settings_common
+end
+
+def init_settings_common
+  # to help get through the maths we only process every $SCALE_DOWN point...
+  # then draw each calculation represent $SCALE_UP pixels square
+  $SCALE_DOWN = 256
+  $SCALE_UP = 256
+  $FINISH_SCALE = 2
+
+  $text_settings.text = "x in %.4f,%.4f; y in %.4f,%.4f" % [$xmin,$xmax,$ymin,$ymax]
+
+  $canvas.children.clear
+
+  next_level
+end
+
+def next_level
+  if $SCALE_UP < $FINISH_SCALE
+    Host.stop_timer("myTimer")
+    return
+  end
+
+  $SCALE_DOWN = $SCALE_DOWN/2
+  $SCALE_UP = $SCALE_UP/2
+
+  $WIDTH = $BASE_WIDTH/$SCALE_DOWN
+  $HEIGHT = $BASE_HEIGHT/$SCALE_DOWN
+
+  $xIncrement = ($xmax - $xmin) / $WIDTH
+  $yIncrement = ($ymax - $ymin) / $HEIGHT
+
+  $x = $xmin
+  $s = 0
+
+end
+
+init if $init.nil?
+
+def set_pixel(x,y,color)
+  # very inefficient... add a small rectangle!
+  rec = Rectangle.new
+  rec.margin = Thickness.new(x *$SCALE_UP,y*$SCALE_UP,0,0)
+  rec.width = $SCALE_UP
+  rec.height = $SCALE_UP
+  rec.fill = SolidColorBrush.new(color)
+  $canvas.children.add(rec)
+end
+
+def next_line
+  if $s >= $WIDTH
+    next_level
+    return
+  end
+
+  y = $ymin
+
+  for z in 0...$HEIGHT
+    x1 = 0
+    y1 = 0
+    looper = 0.0
+    while looper < 100 && x1 *x1 + y1* y1 < 4 do
+      looper = looper +1.0
+      xx = (x1 * x1) - (y1 * y1) + $x
+      y1 = 2 * x1 * y1 + y
+      x1 = xx
+    end
+
+    # Get the percent of where the looper stopped
+    perc = looper / (100.0)
+
+    # Get that part of a 255 scale
+    val = (perc * 255).floor
+
+    # Use that number to set the color
+    set_pixel($s,z,$colors[val])
+    y = $yIncrement + y
+  end
+  $x = $x + $xIncrement
+  $s = $s + 1
+end
+
+def button_listener
+  case Calling_hint
+    when "1"
+	  init_settings_one
+	when "2"
+	  init_settings_two	  
+    when "3"
+	  init_settings_three
+  end
+end
+
+def timer_listener
+  $text_progress.text = "Detail level " << $SCALE_UP.to_s << ", " << $s.to_s << " lines out of " << $WIDTH.to_s
+  next_line
+end
+

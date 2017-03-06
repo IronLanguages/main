@@ -1,0 +1,94 @@
+# based loosely on https://github.com/jschementi/ironruby-rubyinside-article/blob/master/ruby-circles.html
+
+include System
+include System::Windows
+include System::Windows::Shapes
+include System::Windows::Media
+include System::Windows::Controls
+
+# called once at startup
+def setup
+  $draw_on = false
+  $d = $d_start = 10
+  $color_set = [[255,0,  113,118],
+                [255,0,  173,239],
+                [255,68, 199,244],
+                [255,157,220,249],
+                [255,255,235,149]]
+  
+  $drawing_canvas = Canvas.new
+  $drawing_canvas.width = $drawing_canvas.height= 800
+  $drawing_canvas.background = SolidColorBrush.new(Colors.black)
+  Host.content_holder.children.add($drawing_canvas)
+
+  $transparent_canvas = Canvas.new
+  $transparent_canvas.background = SolidColorBrush.new(Colors.black)
+  $transparent_canvas.opacity = 0.000
+  Host.content_holder.children.add($transparent_canvas)
+
+  Host.monitor_control($transparent_canvas, $transparent_canvas, "on_canvas_event")
+end
+
+def on_canvas_event
+  case Calling_event
+    when "mouse_left_button_down"
+	  mouse_pressed
+	when "mouse_left_button_up"
+	  mouse_released
+	when "mouse_move"
+	  mouse_dragged
+  end
+end
+
+def mouse_pressed
+  $draw_on = true
+  add_circle
+end
+
+def mouse_released
+  $draw_on = false
+  $d = $d_start
+end
+
+def mouse_dragged
+  $d += 2
+  add_circle
+end
+
+def add_circle
+  return unless $draw_on
+  my_circle(Mouse_x, Mouse_y, $d)
+end 
+
+def random_color
+  $color_set[rand($color_set.size)]
+end
+
+def random_brush
+  SolidColorBrush.new(Color.from_argb(*random_color))
+end
+
+def random_transparency
+  rand
+end
+
+def keep_circle_total_low
+  while $drawing_canvas.children.count > 100 do
+    $drawing_canvas.children.remove_at(0)
+  end
+end
+
+def my_circle(x,y,d)
+  circle = Ellipse.new
+  circle.height = circle.width=d
+  circle.fill =random_brush
+  circle.fill.opacity = random_transparency
+  circle.stroke = random_brush
+  circle.stroke.opacity = random_transparency
+  circle.stroke_thickness = 10
+  circle.margin = Thickness.new(x-d/2, y-d/2, 0, 0)
+  $drawing_canvas.children.add(circle)
+  keep_circle_total_low
+end
+      
+setup

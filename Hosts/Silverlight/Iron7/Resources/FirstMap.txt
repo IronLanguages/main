@@ -1,0 +1,33 @@
+# for a full bing maps tutorial, see
+# http://msdn.microsoft.com/en-us/wp7trainingcourse_usingbingmapslab_topic2
+
+include System
+include System::Windows
+include System::Windows::Media
+include System::Windows::Media::Imaging
+include System::Windows::Controls
+include System::Windows::Shapes
+include Microsoft::Phone::Controls::Maps
+
+def init
+  $initialized = 1
+  stack_panel = StackPanel.new
+  map = Map.new
+  map.height = 400
+  map.width = 400
+  # this key for Iron7 use only
+  # to create your own apps, register for a key at www.bingmapsportal.com
+  map.credentials_provider = ApplicationIdCredentialsProvider.new("YOUR_KEY")
+  rect = LocationRect.new(90,180,-90,-180)
+  map.set_view(rect)
+  stack_panel.children.add(map)
+
+  textBlock = TextBlock.new
+  textBlock.font_size = 40
+  textBlock.text = "hello world!"
+  stack_panel.children.add(textBlock)
+
+  Host.content_holder.children.add(stack_panel)
+end
+
+init if $initialized.nil?

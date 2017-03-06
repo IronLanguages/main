@@ -1,0 +1,66 @@
+include System
+include System::Windows
+include System::Windows::Media
+include System::Windows::Media::Imaging
+include System::Windows::Controls
+include System::Windows::Shapes
+include Microsoft::Phone::Controls::Maps
+
+def init
+  $WIDTH = 480
+  $HEIGHT = 800
+  $SHIP_SIZE = 100
+  $HALF_SHIP_SIZE = 50
+
+  $mid_x = ($WIDTH - $SHIP_SIZE)/2
+  $mid_y = ($HEIGHT - $SHIP_SIZE)/2
+  $x = $mid_x
+  $y = $mid_y
+
+  # note - if no internet connection, then no ship will show!
+  # could work around this by calling 
+  ship_src = Uri.new("http://iron7.com/forapp/spaceship.png")
+  ship_image = BitmapImage.new(ship_src)
+  ship = Image.new
+  ship.source = ship_image
+  ship.width = $SHIP_SIZE
+  ship.height = $SHIP_SIZE
+    
+  $ship_border = Border.new
+  $ship_border.border_brush = SolidColorBrush.new(Colors.red)  
+  $ship_border.border_thickness = Thickness.new(1)
+  $ship_border.child = ship
+  show_ship
+
+  $canvas = Canvas.new
+  $canvas.width = $WIDTH
+  $canvas.height = $HEIGHT
+  $canvas.children.add($ship_border)
+
+  Host.monitor_control("ship", ship, "image_listener")
+  Host.content_holder.children.add($canvas);
+  Host.fix_orientation_portrait
+  Host.start_accelerometer(0.05, "show_current_accel")
+end
+
+def show_ship
+  $ship_border.margin = Thickness.new($x,$y,0,0)
+end
+
+def show_current_accel
+  x = AccelerometerReading.x
+  y = AccelerometerReading.y
+
+  # could do with some smoothing here really...
+  $x = $mid_x * (1 - x)
+  $y = $mid_y * (1 + 0.75 * y)
+  $ship_border.margin = Thickness.new($x,$y,0,0)
+  show_ship
+end
+
+def image_listener
+  MessageBox.show("Sorry - could not load image") if Calling_event == "image_failed"
+  $ship_border.border_thickness = Thickness.new(0) if Calling_event == "image_opened"
+end
+
+init if $ship_border.nil?

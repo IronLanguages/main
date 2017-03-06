@@ -1,0 +1,149 @@
+# Include namespaces for ease of use
+include System::Windows::Media
+include System::Windows::Controls
+include System::Windows::Threading
+include System::Windows
+
+
+def init
+    $WIDTH     = 300
+    $HEIGHT    = 300
+	$BUBBLE_RADIUS = 25
+	$MAX_MOVEMENT = 5
+
+	# build our canvas
+    $canvas = System::Windows::Controls::Canvas.new
+    $canvas.width = $WIDTH
+    $canvas.height = $HEIGHT
+
+	rect = System::Windows::Shapes::Rectangle.new
+	rect.width = $WIDTH 
+	rect.height = $HEIGHT
+	rect_brush = System::Windows::Media::SolidColorBrush.new
+	rect_brush.Color = System::Windows::Media::Colors.white
+	rect.fill = rect_brush
+	rect_brush = System::Windows::Media::SolidColorBrush.new
+	rect_brush.Color = System::Windows::Media::Colors.light_gray
+	rect.stroke = rect_brush
+	$canvas.children.add(rect)
+
+	$bubble = System::Windows::Shapes::Ellipse.new
+	bubble_brush = System::Windows::Media::SolidColorBrush.new
+	bubble_brush.Color = System::Windows::Media::Colors.blue
+	$bubble.fill = bubble_brush
+    $bubble.width = $BUBBLE_RADIUS
+    $bubble.height = $BUBBLE_RADIUS
+
+	$mid_x = ($WIDTH - $BUBBLE_RADIUS)/2
+	$mid_y = ($HEIGHT - $BUBBLE_RADIUS)/2
+	$last_x = $mid_x
+	$last_y = $mid_y
+    $bubble.margin = System::Windows::Thickness.new($last_x, $last_y, 0, 0)
+    
+	$canvas.children.add($bubble)
+
+	$text_block_x = TextBlock.new
+	$text_block_y = TextBlock.new
+	$text_block_z = TextBlock.new
+
+	stack_panel = StackPanel.new
+	stack_panel.horizontal_alignment = HorizontalAlignment.center
+	stack_panel.children.add($canvas)
+	stack_panel.children.add($text_block_x)
+	stack_panel.children.add($text_block_y)
+	stack_panel.children.add($text_block_z)
+
+	Phone.find_name("ContentGrid").children.add(stack_panel)
+
+	Phone.fix_orientation_portrait
+	Phone.start_accelerometer(0.1)
+end
+
+def show_current_accel
+	x = AccelerometerReading.x
+	y = AccelerometerReading.y
+	z = AccelerometerReading.z
+
+	$text_block_x.text = "x is " + x.to_s
+	$text_block_y.text = "y is " + y.to_s
+	$text_block_z.text = "z is " + z.to_s
+
+	$last_x = $mid_x * (1 - x)
+	$last_y = $mid_y * (1 + y)
+		
+    $bubble.margin = System::Windows::Thickness.new($last_x, $last_y, 0, 0)
+end
+
+if $canvas.nil?
+	init 
+end
+
+if Calling_sender == "accelerometer"
+	show_current_accel
+end
+
+def ignore_this
+	case Orientation
+		when 34 # Microsoft::Phone::PageOrientation.LandscapeRight
+			x = y0
+			y = -x0
+			z = z0
+		when 18 # Microsoft::Phone::PageOrientation.LandscapeLeft
+			x = y0
+			y = x0
+			z = z0
+		when 2 # Microsoft::Phone::PageOrientation.Landscape
+			x = y0
+			y = x0
+			z = z0
+		when 9 # Microsoft::Phone::PageOrientation.PortraitDown
+			x = -x0
+			y = y0
+			z = z0
+		when 5 # Microsoft::Phone::PageOrientation.PortraitUp
+			x = x0
+			y = y0
+			z = z0
+		when 1 # Microsoft::Phone::PageOrientation.Portrait
+			x = x0
+			y = y0
+			z = z0
+		else
+			x = x0
+			y = y0
+			z = z0
+	end
+
+
+	new_x_ideal = $mid_x * (1 - x)
+	new_y_ideal = $mid_y * (1 + y)
+
+	# TODO - make this more DRY
+	if new_y_ideal > $last_y
+		if new_y_ideal - $last_y > $MAX_MOVEMENT
+			$last_y = $last_y + $MAX_MOVEMENT
+		else
+			$last_y = new_y_ideal
+		end
+	else
+		if $last_y - new_y_ideal > $MAX_MOVEMENT
+			$last_y = $last_y - $MAX_MOVEMENT
+		else
+			$last_y = new_y_ideal
+		end
+	end
+
+	if new_x_ideal > $last_x
+		if new_x_ideal - $last_x > $MAX_MOVEMENT
+			$last_x = $last_x + $MAX_MOVEMENT
+		else
+			$last_x = new_x_ideal
+		end
+	else
+		if $last_x - new_x_ideal > $MAX_MOVEMENT
+			$last_x = $last_x - $MAX_MOVEMENT
+		else
+			$last_x = new_x_ideal
+		end
+	end
+end

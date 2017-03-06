@@ -1,0 +1,564 @@
+# Credit for code logic (license open - see original sites for more info) to:
+# http://www.silverlight.net/community/samples/silverlight-samples/yygames---yytetris/
+# http://sigurdsnorteland.wordpress.com/2010/11/15/tetris7-a-wp7-game-source-code-included/
+# Credit for sound effects (creative commons 2) to:
+# Grunz - http://www.freesound.org/samplesViewSingle.php?id=109663
+# Synapse - http://www.freesound.org/samplesViewSingle.php?id=2324
+# Stuckinthemud - http://www.freesound.org/samplesViewSingle.php?id=27882
+
+include System
+include System::Windows
+include System::Windows::Shapes
+include System::Windows::Media
+include System::Windows::Media::Imaging
+include System::Windows::Controls
+
+class WrappedRect
+  def initialize(rect)
+    @rect = rect
+	@filled = false
+	@color_brush = $blank_brush
+  end
+  def fill(color_brush)
+    @rect.fill = color_brush
+	@filled = true
+	@color_brush = color_brush
+  end
+  def is_filled?
+    @filled
+  end
+  def brush
+    @color_brush
+  end
+  def copy(rhs)
+    if rhs.is_filled?
+	  fill(rhs.brush)
+	else
+	  clear
+	end
+  end
+  def clear()
+    @rect.fill = $blank_brush
+	@filled = false
+	@color_brush = $blank_brush
+  end
+end
+
+class ShapeTemplate
+  def initialize(color)
+    @patterns = []
+	@brush = SolidColorBrush.new(color)
+	@current_rotation = 0
+  end
+  def brush
+    @brush
+  end
+  def add_pattern(matrix)
+    @patterns.push(matrix)
+  end
+  def pattern_count
+    @patterns.length
+  end
+  def pattern(i)
+    @patterns[i]
+  end
+end
+
+class ShapeInstance
+  def initialize(template)
+    @template = template
+	@current_rotation = 0
+    @positionX = 3
+    @positionY = 0
+  end
+  def brush
+    return @template.brush
+  end
+  def get_positionX
+    return @positionX
+  end
+  def get_positionY
+    return @positionY
+  end
+  def move(x,y)
+    @positionX = @positionX+x
+    @positionY = @positionY+y
+  end
+  def is_piece_blocked
+    matrix = current_pattern
+	for i in 0...4
+	  for j in 0...4
+		if matrix[i][j] == 1
+		  if j + @positionX > $columns - 1 ||
+			 i + @positionY > $rows - 1 ||
+			 j + @positionX < 0 ||
+			 $container[i + @positionY][j + @positionX].is_filled?
+			 return true
+		  end
+		end
+	  end
+	end
+
+	return false
+  end
+
+  def rotate_right
+    @current_rotation = @current_rotation + 1
+	@current_rotation = 0 if @current_rotation >= @template.pattern_count
+  end
+  def rotate_left
+    @current_rotation = @current_rotation - 1
+	@current_rotation = @template.pattern_count - 1 if @current_rotation < 0
+  end
+  def current_pattern
+    return @template.pattern(@current_rotation)
+  end
+end
+
+def init_templates
+
+  $templates = []
+
+  template_I = ShapeTemplate.new(Color.from_argb(255,40,40,255))
+  template_I.add_pattern([[0,1,0,0],
+                   [0,1,0,0],
+                   [0,1,0,0],
+                   [0,1,0,0]])
+  template_I.add_pattern([[0,0,0,0],
+                   [1,1,1,1],
+                   [0,0,0,0],
+                   [0,0,0,0]])
+  $templates.push(template_I)
+
+  template_L = ShapeTemplate.new(Color.from_argb(255,60,168,60))
+  template_L.add_pattern([[0,1,0,0],
+                   [0,1,0,0],
+                   [0,1,1,0],
+                   [0,0,0,0]])
+  template_L.add_pattern([[0,0,0,0],
+                   [1,1,1,0],
+                   [1,0,0,0],
+                   [0,0,0,0]])
+  template_L.add_pattern([[1,1,0,0],
+                   [0,1,0,0],
+                   [0,1,0,0],
+                   [0,0,0,0]])
+  template_L.add_pattern([[0,0,1,0],
+                   [1,1,1,0],
+                   [0,0,0,0],
+                   [0,0,0,0]])
+  $templates.push(template_L)
+
+  template_L2 = ShapeTemplate.new(Color.from_argb(255,255,192,0))
+  template_L2.add_pattern([[0,0,1,0],
+                   [0,0,1,0],
+                   [0,1,1,0],
+                   [0,0,0,0]])
+  template_L2.add_pattern([[0,1,0,0],
+                   [0,1,1,1],
+                   [0,0,0,0],
+                   [0,0,0,0]])
+  template_L2.add_pattern([[0,0,1,1],
+                   [0,0,1,0],
+                   [0,0,1,0],
+                   [0,0,0,0]])
+  template_L2.add_pattern([[0,0,0,0],
+                   [0,1,1,1],
+                   [0,0,0,1],
+                   [0,0,0,0]])
+  $templates.push(template_L2)
+
+  template_N = ShapeTemplate.new(Color.from_argb(255,255,34,34))
+  template_N.add_pattern([[0,0,1,0],
+                   [0,1,1,0],
+                   [0,1,0,0],
+                   [0,0,0,0]])
+  template_N.add_pattern([[0,1,1,0],
+                   [0,0,1,1],
+                   [0,0,0,0],
+                   [0,0,0,0]])
+  $templates.push(template_N)
+
+  template_N2 = ShapeTemplate.new(Color.from_argb(255,255,34,255))
+  template_N2.add_pattern([[0,1,0,0],
+                   [0,1,1,0],
+                   [0,0,1,0],
+                   [0,0,0,0]])
+  template_N2.add_pattern([[0,0,1,1],
+                   [0,1,1,0],
+                   [0,0,0,0],
+                   [0,0,0,0]])
+  $templates.push(template_N2)
+
+  template_O = ShapeTemplate.new(Color.from_argb(255,0,255,255))
+  template_O.add_pattern([[0,1,1,0],
+                   [0,1,1,0],
+                   [0,0,0,0],
+                   [0,0,0,0]])
+  $templates.push(template_O)
+
+  template_T = ShapeTemplate.new(Color.from_argb(255,192,192,192))
+  template_T.add_pattern([[0,1,1,1],
+                   [0,0,1,0],
+                   [0,0,0,0],
+                   [0,0,0,0]])
+  template_T.add_pattern([[0,0,1,0],
+                   [0,1,1,0],
+                   [0,0,1,0],
+                   [0,0,0,0]])
+  template_T.add_pattern([[0,0,1,0],
+                   [0,1,1,1],
+                   [0,0,0,0],
+                   [0,0,0,0]])
+  template_T.add_pattern([[0,0,1,0],
+                   [0,0,1,1],
+                   [0,0,1,0],
+                   [0,0,0,0]])
+  $templates.push(template_T)
+end
+
+def init
+  init_templates
+
+  $blank_brush = SolidColorBrush.new(Color.from_argb(0,0,0,0))
+  
+  $container = []
+  $next_container = []
+  $game_status = "play"
+  
+  $rows = 20
+  $columns = 10
+  
+  $current_piece = nil
+  $next_piece = nil
+  
+  $init_speed = 0.4
+  $level_speed = 50
+  $square_size = 30
+
+  $score = 0
+  $level = 0
+  $remove_row_count = 0
+
+  $canvas = Canvas.new
+  $canvas.height = 800
+  $canvas.width = 480
+  Host.content_holder.children.add($canvas)
+
+  game_canvas = Canvas.new
+  game_canvas.margin = Thickness.new(20,20,0,0)
+  $canvas.children.add(game_canvas)
+  $container = create_game_grid(game_canvas, $rows, $columns)
+    
+  add_button(0,480,160,160, "\\", "rotate_left")
+  add_button(320,480,160,160, "/", "rotate_right")
+  add_button(0,640,160,160, "L", "move_to_left")
+  add_button(320,640,160,160,  "R", "move_to_right")
+  add_button(160,640,160,160,  "D", "move_to_down")
+
+  rhs_stack_panel = StackPanel.new
+  rhs_stack_panel.margin = Thickness.new(340,30,0,0)
+  $canvas.children.add(rhs_stack_panel)
+    
+  add_text(rhs_stack_panel, 24, "Score:")
+  $text_score = add_text(rhs_stack_panel, 36, "0")
+
+  add_text(rhs_stack_panel, 24, "Lines:")
+  $text_lines = add_text(rhs_stack_panel, 36, "0")
+  
+  add_text(rhs_stack_panel, 24, "Level:")
+  $text_level = add_text(rhs_stack_panel, 36, "1")
+
+  add_text(rhs_stack_panel, 24, "Next:")
+  next_canvas = Canvas.new
+  $next_container = create_game_grid(next_canvas, 4, 4)
+  rhs_stack_panel.children.add(next_canvas)
+
+  create_piece
+  add_piece
+  
+  Host.start_timer("game_timer", TimeSpan.from_seconds($init_speed), "timer_tick")
+
+  $sound_effects = {}
+  load_sound_effect("level_up", "sound_effect_callback")
+  load_sound_effect("row_done_1", "sound_effect_callback")
+  load_sound_effect("row_done_2", "sound_effect_callback")
+  load_sound_effect("row_done_3", "sound_effect_callback")
+  load_sound_effect("row_done_4", "sound_effect_callback")
+end
+
+def play_sound_effect(name)
+  effect = $sound_effects[name]
+  return if effect.nil?
+  effect.play
+end
+
+def play_level_up_sound
+  play_sound_effect("level_up")
+end
+
+def play_row_done_sound(num_rows)
+  play_sound_effect("row_done_" << num_rows.floor.to_s)
+end
+
+def load_sound_effect(name, callback)
+  $sound_effects[name] = nil
+  Host.load_sound_effect(name, "http://iron7.com/forapp/tts/" << name << ".wav", callback)
+end
+
+def sound_effect_callback
+  return if Calling_event != "sound_effect_loaded"
+
+  # note that to_s is needed here - not 100% sure why - some issue with Ruby/.Net strings?
+  $sound_effects[Calling_hint.to_s] = Calling_sender
+end
+
+def create_game_grid(panel, rows, cols)
+  container = []
+  for i in 0...rows
+    current_row = []
+    for j in 0...cols 
+      rect = Rectangle.new
+  	  rect.height = $square_size 
+  	  rect.width = $square_size
+  	  rect.fill = $blank_brush
+	  rect.margin = Thickness.new(j*$square_size, i*$square_size,0,0)
+	  rect.stroke = SolidColorBrush.new(Color.from_argb(48,255,255,255))
+	  panel.children.add(rect)
+      current_row.push(WrappedRect.new(rect))
+    end
+    container.push(current_row)
+  end  
+  return container
+end
+
+def add_text(parent, font_size, text)
+  tb = TextBlock.new
+  tb.font_size = font_size
+  tb.text = text
+  parent.children.add(tb)
+  return tb
+end
+
+def add_button(left, top, width, height, text, callback)
+  button = Button.new
+  button.content = text
+  button.margin = Thickness.new(left,top,0,0)
+  button.height = height
+  button.width = width
+  button.foreground = SolidColorBrush.new(Color.from_argb(96,128,128,128))
+  button.border_brush = SolidColorBrush.new(Color.from_argb(96,128,128,128))
+  button.background = SolidColorBrush.new(Color.from_argb(32,128,128,128))
+  $canvas.children.add(button)
+  Host.monitor_control(button,button,callback)
+end
+
+def play()
+  $game_status = "play"
+end
+
+def pause()
+  $game_status = "pause"
+end
+
+def create_piece
+  for x in 0...$columns
+    if $container[0][x].is_filled?
+      on_game_over
+      return
+    end
+  end
+
+  if $next_piece.nil?
+     $current_piece = ShapeInstance.new($templates[rand($templates.length)])
+  else
+     $current_piece = $next_piece
+  end
+
+  $next_piece = ShapeInstance.new($templates[rand($templates.length)])
+
+  set_next_container_UI
+end
+
+def timer_tick
+  move_to_down
+end
+
+def move_to(x,y)
+  return if $game_status != "play"
+
+  remove_piece
+  $current_piece.move(x,y)
+  if false == $current_piece.is_piece_blocked
+    add_piece
+	return true
+  end
+  $current_piece.move(-x,-y)
+  add_piece
+  return false
+end
+
+def move_to_left
+  move_to(-1,0)
+end
+
+def move_to_right()
+  move_to(1,0)
+end
+
+def increment_score(increment)
+  $score = $score + increment
+  $text_score.text = $score.to_s
+end
+
+def move_to_down()
+  return if $game_status != "play"
+
+  result = move_to(0,1)
+
+  increment_score(1)
+
+  return if result
+
+  remove_row
+  create_piece
+end
+
+def rotate(is_left)
+  return if $game_status != "play"
+
+  remove_piece
+
+  if is_left 
+    $current_piece.rotate_left
+  else
+    $current_piece.rotate_right  
+  end
+
+  blocked = $current_piece.is_piece_blocked
+
+  if blocked
+    if is_left 
+      $current_piece.rotate_right 
+    else
+      $current_piece.rotate_left 
+	end
+  end
+
+  add_piece
+end
+
+def rotate_left
+  rotate(true)
+end
+
+def rotate_right
+  rotate(false)
+end
+
+def clear
+  for row in $container
+    for cell in row
+	  cell.clear
+	end
+  end
+end
+
+def set_next_container_UI
+  next_pattern = $next_piece.current_pattern
+  for x in 0...4
+    for y in 0...4
+      if next_pattern[x][y] == 1
+        $next_container[x][y].fill($next_piece.brush)
+	  else
+	    $next_container[x][y].clear
+	  end
+    end
+  end
+end
+
+def remove_piece
+  pattern = $current_piece.current_pattern
+  for i in 0...4
+    for j in 0...4
+      if pattern[i][j] == 1
+        obj = $container[i + $current_piece.get_positionY][j + $current_piece.get_positionX]
+		obj.clear
+	  end
+	end
+  end
+end
+
+def add_piece
+  pattern = $current_piece.current_pattern
+  for i in 0...4
+    for j in 0...4
+      if pattern[i][j] == 1
+        obj = $container[i + $current_piece.get_positionY][j + $current_piece.get_positionX]
+		obj.fill($current_piece.brush)
+	  end
+	end
+  end
+end
+
+def is_complete_line(y)
+  for x in 0...$columns
+	return false if not $container[y][x].is_filled?
+  end
+  return true
+end
+
+def process_complete_line(y)
+  for x in 0...$columns
+	$container[y][x].clear
+  end
+
+  y.downto(1) { |i|
+    for x in 0...$columns
+	  $container[i][x].copy($container[i - 1][x])
+    end
+  }
+end
+
+def remove_row
+  remove_row_count = 0
+
+  for y in 0...$rows
+	if is_complete_line(y)
+      process_complete_line(y)
+      remove_row_count = remove_row_count + 1
+	end
+  end
+  
+  return if remove_row_count <= 0
+
+  increment_score(10 ** remove_row_count)
+  play_row_done_sound(remove_row_count)
+
+  $remove_row_count += remove_row_count
+  $text_lines.text = $remove_row_count.to_s
+
+  test_for_new_level
+end
+
+def test_for_new_level
+  new_level = Math.sqrt($remove_row_count / 5)
+  new_level = new_level.floor
+
+  return if new_level <= $level
+
+  $level = new_level
+  $text_level.text = ($level + 1).to_s
+  play_level_up_sound
+
+  level_seconds = $init_speed - $level_speed * $level
+  level_seconds = $level_speed if level_seconds < $level_speed 
+  Host.change_timer("game_timer", TimeSpan.from_seconds(level_seconds))
+end
+
+def on_game_over
+  $game_status = "game over"
+  MessageBox.show("game over");
+end
+
+init

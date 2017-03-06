@@ -1,0 +1,127 @@
+# a simple button game
+
+include System
+include System::Windows
+include System::Windows::Media
+include System::Windows::Media::Imaging
+include System::Windows::Controls
+include System::Windows::Shapes
+include Microsoft::Phone::Controls::Maps
+
+CLICKS_PER_GAME = 5
+BUTTON_DIMENSION = 100
+SPARE_WIDTH = 380
+SPARE_HEIGHT = 700
+
+def set_button_idle_state
+  $button.content = "go"
+  $button.margin = Thickness.new(0,0,0,0)
+  $button.background = SolidColorBrush.new(Colors.red)
+  $button.foreground = SolidColorBrush.new(Colors.white)
+end
+
+def set_button_playing_state
+  # commented out - they just never worked!
+  # maybe some issue like http://forums.silverlight.net/forums/p/17896/207999.aspx
+  $button.background = SolidColorBrush.new(Colors.cyan)
+  $button.foreground = SolidColorBrush.new(Colors.magenta)
+end
+
+def update_button_game_state
+  $button.content = $clicks_left.to_s
+  new_x = $random.next(SPARE_WIDTH)
+  new_y = $random.next(SPARE_HEIGHT)
+  $button.margin = Thickness.new(new_x,new_y,SPARE_WIDTH-new_x,SPARE_HEIGHT-new_y)
+end
+
+def format_score(name, score)
+  return System::String.format("{0}: not played", name) if score.nil? 
+  return System::String.format("{0}: {1:0.000}", name, score)
+end
+
+def update_scores_text
+  $text_block_best.text = format_score("best", $best_score)
+  $text_block_last.text = format_score("last", $last_score)
+  $text_block_worst.text = format_score("worst", $worst_score)
+end
+
+def create_text_block_in(panel)
+  text_block = TextBlock.new
+  text_block.font_size = 30
+  panel.children.add(text_block)
+  return text_block
+end
+
+def init
+  $last_score = nil
+  $best_score = nil
+  $worst_score = nil
+
+  stack = StackPanel.new
+  stack.horizontal_alignment=HorizontalAlignment.center
+
+  $text_block_best = create_text_block_in(stack)
+  $text_block_last = create_text_block_in(stack)
+  $text_block_worst = create_text_block_in(stack)
+  
+  $button = Button.new
+  $button.width = BUTTON_DIMENSION
+  $button.height = BUTTON_DIMENSION
+
+  $clicks_left = 0
+  $started = false
+  $when_game_started = Environment.tick_count
+  $random = Random.new
+
+  Host.content_holder.children.add(stack)
+  Host.monitor_control("button_go", $button, "button_listener")
+  Host.content_holder.children.add($button)  
+  Host.fix_orientation_portrait
+
+  update_scores_text
+  set_button_idle_state  
+end
+
+def end_game
+  $started = false
+  time_taken = Environment.tick_count - $when_game_started
+  $last_score = time_taken.to_f / 1000.0
+  if $best_score.nil? || $best_score > $last_score
+    $best_score = $last_score
+  end
+  if $worst_score.nil? || $worst_score < $last_score
+    $worst_score = $last_score
+  end
+  update_scores_text
+  set_button_idle_state
+end
+
+def test_for_end_of_game
+  return $clicks_left <= 0
+end
+
+def start_new_game
+  set_button_playing_state
+  $clicks_left = CLICKS_PER_GAME
+  $when_game_started = Environment.tick_count
+  $started = true
+end
+
+init if $button.nil?
+
+def button_listener
+  if Calling_event=='button_clicked'
+    if $started
+      $clicks_left = $clicks_left - 1
+      if test_for_end_of_game
+        end_game 
+      else
+        update_button_game_state
+      end
+    else
+      start_new_game
+      update_button_game_state
+    end
+	Host.vibrate(TimeSpan.from_seconds(0.05))
+  end
+end

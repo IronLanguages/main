@@ -1,0 +1,258 @@
+# adapted from MonoDroid sample - used under MIT license
+# original https://github.com/mono/monodroid-samples
+# thanks to jpobst
+
+include System
+include System::Windows
+include System::Windows::Media
+include System::Windows::Media::Imaging
+include System::Windows::Controls
+include System::Windows::Shapes
+include Microsoft::Phone::Controls::Maps
+
+def init
+  $pixels_per_square = 40
+  $WIDTH = 480/$pixels_per_square
+  $HEIGHT = 800/$pixels_per_square
+
+  $color_head = Color.from_argb(255,0,255,0)
+  $color_head_eating = Color.from_argb(255,0,255,255)
+  $color_body = Colors.green
+  $color_apple = Colors.yellow
+  $color_collision = Colors.red
+
+  $vibrate_duration = TimeSpan.from_seconds(0.1)
+
+  $text_score = TextBlock.new
+  $canvas = Canvas.new
+  $canvas.height = 800
+  $canvas.width = 480
+
+  init_new_game
+
+  Host.fix_orientation_portrait
+  Host.content_holder.children.add($text_score)
+  Host.content_holder.children.add($canvas)
+  Host.start_accelerometer(0.05, "on_tick")
+end
+
+def setup_lookup
+  $lookup = []
+  for x in 0...$WIDTH
+    $lookup[x] = []
+    for y in 0...$HEIGHT
+      $lookup[x][y] = nil
+    end
+  end
+end
+
+def set_lookup(x,y,content)
+  $lookup[x][y] = content
+end
+
+def make_part(color, x, y, code)
+  set_lookup(x, y, code)
+  part = [x, y, create_and_add_tile(x, y)]
+  set_part_color(part, color)
+  return part
+end
+
+def make_snake_part(color, x, y)
+  return make_part(color, x, y, 's')
+end
+
+def make_apple_part(color, x, y)
+  return make_part(color, x, y, 'a')
+end
+
+def set_part_color(part, color)
+  part[2].fill = SolidColorBrush.new(color)
+end
+
+def remove_part(part)
+  $lookup[part[0]][part[1]]=nil
+  remove_tile(part[2])
+end
+
+def init_new_game
+  $mode = "running"
+  $canvas.children.clear
+
+  $snake = []
+  $apples = []
+  setup_lookup
+
+  for i in 2...8
+    $snake.insert(0, make_snake_part($color_body,7,i))
+  end
+  set_part_color($snake[0], $color_head)
+
+  add_random_apple
+  add_random_apple
+  
+  $direction = "S"
+  $next_direction = "S"
+  $score = 0
+  $move_delay = 600
+  $last_played = Environment.tick_count
+  update_score_display
+end
+
+def add_random_apple
+  new_x = 0
+  new_y = 0
+
+  rng = System::Random.new
+  
+  found = false
+  while found == false do
+    # Choose a new location for our apple
+    new_x = 1 + rng.next($WIDTH - 2)
+    new_y = 1 + rng.next($HEIGHT - 2)
+
+    # if we're here and there's no collision, then we have
+    # a good location for an apple. Otherwise, we'll circle back
+    # and try again
+    found = $lookup[new_x][new_y].nil?
+  end
+  
+  new_coord = make_apple_part($color_apple, new_x, new_y)
+  $apples.push(new_coord)
+end
+
+def remove_tile(rec)
+  $canvas.children.remove(rec)
+end
+
+def create_and_add_tile(x, y)
+  # a bit inefficient... add a small rectangle!
+  rec = Rectangle.new
+  rec.margin = Thickness.new(x *$pixels_per_square,y*$pixels_per_square,0,0)
+  rec.width = $pixels_per_square
+  rec.height = $pixels_per_square
+  $canvas.children.add(rec)
+  return rec
+end
+
+def update
+  if $mode == "running"
+	update_snake
+  else
+   	MessageBox.show("game over - you scored " << $score.to_s)
+    init_new_game
+  end
+end
+
+def do_collision
+  set_part_color($snake[0], $color_collision)
+  $mode = "stop"
+end
+
+
+def update_snake
+  apple_eaten = false
+
+  # grab the snake by the head
+  head = $snake[0]
+  new_x = head[0]
+  new_y = head[1]
+
+  get_next_direction
+  $direction = $next_direction
+
+  case $direction
+    when "E"
+      new_x = new_x + 1
+    when "W"
+      new_x = new_x - 1
+    when "N"
+      new_y = new_y - 1
+    when "S"
+      new_y = new_y + 1
+  end
+
+  # Collision detection
+  # Have we gone off screen?
+  if (new_x < 0) || (new_y < 0) || (new_x >= $WIDTH) || (new_y >= $HEIGHT)
+    do_collision
+    return
+  end
+	
+  # Look for collisions with itself
+  current_lookup = $lookup[new_x][new_y]
+  if current_lookup == 's'
+    do_collision
+	return
+  end
+
+
+  # Look for apples
+  if current_lookup == 'a'
+    Host.vibrate($vibrate_duration)
+	$score = $score+1
+	$move_delay = $move_delay * 0.9
+    add_random_apple
+
+	apple_eaten = true
+	$apples.each { |apple| 
+	  if apple[0] == new_x && apple[1] == new_y
+		remove_part(apple)
+		$apples.delete(apple)
+      end
+    }
+  end
+
+  # make the old head "part of the body"
+  set_part_color(head, $color_body)
+
+  # Push a new head onto the List
+  new_head_color = apple_eaten ? $color_head_eating : $color_head
+  new_head = make_snake_part(new_head_color, new_x, new_y)
+  $snake.insert(0, new_head)
+
+  # Unless we want the snake to grow, remove the last tail piece
+  if false == apple_eaten
+    last = $snake.pop
+	remove_part(last)
+  end
+end
+
+def get_next_direction
+  $next_direction = $direction
+
+  begin
+    return if AccelerometerReading.nil?
+  rescue
+    return
+  end
+
+  x = AccelerometerReading.x
+  y = AccelerometerReading.y
+  if x.abs > y.abs
+    if x < -0.12    
+      $next_direction = "W" if $direction != "E"
+	elsif x > 0.12
+	  $next_direction = "E" if $direction != "W"
+	end
+  else
+    if y < -0.12
+      $next_direction = "S" if $direction != "N"
+    elsif y > 0.12
+      $next_direction = "N" if $direction != "S"
+    end
+  end
+end
+
+def on_tick
+  current = Environment.tick_count
+  if (current - $last_played) > $move_delay
+    update
+    $last_played = Environment.tick_count	
+	update_score_display
+  end
+end
+
+def update_score_display
+  $text_score.text = "Score: " << $score.to_s
+end
+init if $canvas.nil?

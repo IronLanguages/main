@@ -1,0 +1,37 @@
+include System
+include System::Windows
+include System::Windows::Media
+include System::Windows::Media::Imaging
+include System::Windows::Controls
+include System::Windows::Shapes
+include Microsoft::Phone::Controls::Maps
+
+def init
+  $initialized=1
+  $counter_timer=0
+
+  stack_panel = StackPanel.new
+
+  $text_block = TextBlock.new
+  $text_block.font_size = 40
+  $text_block.text_wrapping = TextWrapping.wrap
+  stack_panel.children.add($text_block)
+
+  Host.content_holder.horizontal_alignment = HorizontalAlignment.center
+  Host.content_holder.children.add(stack_panel)
+  Host.start_timer("timer1",System::TimeSpan.FromSeconds(1), "timer_listener")
+
+  update_text
+end
+
+def timer_listener
+  $counter_timer=$counter_timer+1
+  update_text
+end
+
+def update_text
+  text = "timer ticked " + $counter_timer.to_s + " times"
+  $text_block.text=text
+end
+
+init if $initialized.nil?

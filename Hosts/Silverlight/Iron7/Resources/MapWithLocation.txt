@@ -1,0 +1,93 @@
+# for full bing maps sample, see
+# http://msdn.microsoft.com/en-us/wp7trainingcourse_usingbingmapslab_topic2
+
+include System
+include System::Windows
+include System::Windows::Media
+include System::Windows::Media::Imaging
+include System::Windows::Controls
+include System::Windows::Shapes
+include Microsoft::Phone::Controls::Maps
+
+def create_text_block(color, size, text)
+  textBlock = TextBlock.new
+  textBlock.text = text
+  textBlock.foreground = SolidColorBrush.new(color) unless color.nil?
+  textBlock.font_size = size
+  textBlock.text_wrapping = TextWrapping.Wrap
+  return textBlock
+end
+
+if $initialized.nil?
+  stack_panel = StackPanel.new
+  stack_panel.horizontal_alignment = HorizontalAlignment.center
+
+  $map = Map.new
+  $map.height = 400
+  $map.width = 400
+  # this key for Iron7 use only
+  # to create your own apps, register for a key at www.bingmapsportal.com
+  $map.credentials_provider = ApplicationIdCredentialsProvider.new("YOUR_KEY")
+  rect = LocationRect.new(90,180,-90,-180)
+  $map.set_view(rect)
+  stack_panel.children.add($map)
+
+  $text_block_state = create_text_block(Colors.blue, 40, "?")
+  stack_panel.children.add($text_block_state)
+
+  $text_block_longitude = create_text_block(nil, 20, "")
+  $text_block_latitude = create_text_block(nil, 20, "")
+  $text_block_horizontal_accuracy = create_text_block(nil, 20, "")
+  $text_block_speed = create_text_block(nil, 20, "")
+  $text_block_altitude = create_text_block(nil, 20, "")
+  $text_block_vertical_accuracy = create_text_block(nil, 20, "")
+
+  stack_panel.children.add($text_block_longitude)
+  stack_panel.children.add($text_block_latitude)
+  stack_panel.children.add($text_block_horizontal_accuracy)
+  stack_panel.children.add($text_block_speed)
+  stack_panel.children.add($text_block_altitude)
+  stack_panel.children.add($text_block_vertical_accuracy)
+
+  Host.content_holder.children.add(stack_panel)
+  Host.start_geo_coordinate_watcher("high", "handle_status_changed", "handle_position_changed")
+  Host.fix_orientation_portrait
+
+  $initialized=1
+end
+
+def handle_position_changed
+  return if GeoPositionChange.nil?
+  return if GeoPositionChange.position.nil?
+  return if GeoPositionChange.position.location.nil?
+	
+  loc = GeoPositionChange.position.location
+
+  $text_block_longitude.text = "lng: " + loc.longitude.to_s
+  $text_block_latitude.text = "lat: " + loc.latitude.to_s
+  $text_block_altitude.text = "alt: " + loc.altitude.to_s
+  $text_block_speed.text = "speed: " + loc.speed.to_s
+  $text_block_horizontal_accuracy.text = "h-acc: " + loc.horizontal_accuracy.to_s
+  $text_block_vertical_accuracy.text = "v-acc: " + loc.vertical_accuracy.to_s
+
+  if $pushpin.nil?
+    $pushpin = Pushpin.new
+	$pushpin.content = "*"
+	# technically it might be better to add a pushpin layer here
+    $map.children.add($pushpin) 
+  end
+
+  $pushpin.location = loc
+  $map.set_view(loc, 12)
+
+end
+
+def handle_status_changed
+  if GeoStatusChange == 1 # magic numbers here - sorry!
+    $text_block_state.text = "GPS lock"
+	$text_block_state.foreground = SolidColorBrush.new(Colors.green)
+  else
+    $text_block_state.text = "waiting"
+    $text_block_state.foreground = SolidColorBrush.new(Colors.red)
+  end
+end
