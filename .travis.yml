@@ -15,8 +15,10 @@ install:
   - nuget restore Solutions/IronPython.sln
 
 script:
-  - xbuild Build.proj /t:Build "/p:Mono=true;BaseConfiguration=$CONFIGURATION"
-  - xbuild Test/TestRunner/TestRunner.sln /p:Configuration=$CONFIGURATION
+  - xbuild Build.proj /t:Build "/p:Mono=true;BaseConfiguration=$CONFIGURATION" /verbosity:minimal /nologo
+  - xbuild Test/ClrAssembly/ClrAssembly.csproj /t:Rebuild /p:Configuration=$CONFIGURATION /verbosity:minimal /nologo
+  - xbuild Test/TestRunner/TestRunner.sln /p:Configuration=$CONFIGURATION /verbosity:minimal /nologo
+  - rm -rf bin/$CONFIGURATION/DLLs/PresentationFramework.dll bin/$CONFIGURATION/DLLs/IronPython.Wpf.dll bin/$CONFIGURATION/DLLs/WindowsBase.dll bin/$CONFIGURATION/DLLs/System.Xaml.dll
   - DLR_ROOT=`pwd` DLR_BIN=`pwd`bin/$CONFIGURATION mono ./Test/TestRunner/TestRunner/bin/$CONFIGURATION/TestRunner.exe Test/IronPython.tests /verbose /binpath:bin/$CONFIGURATION /all
 
 notifications:
