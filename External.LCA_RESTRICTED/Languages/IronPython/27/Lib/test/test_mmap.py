@@ -412,6 +412,7 @@ class MmapTests(unittest.TestCase):
 
         # TODO: mono has an issue with passing 1 for the second parameter
         # need to investigate more
+        # https://github.com/IronLanguages/main/issues/1604
         if not (sys.platform == "cli" and os.name == "posix"):
             m = mmap.mmap(-1, 1) # single byte
             self.assertRaises(ValueError, m.move, 0, 0, 2)
@@ -546,7 +547,8 @@ class MmapTests(unittest.TestCase):
         anon_mmap(PAGESIZE)
 
     @unittest.skipUnless(hasattr(mmap, 'PROT_READ'), "needs mmap.PROT_READ")
-    @unittest.skipIf(sys.platform=='cli' and os.name=='posix', 'IronPython does not support this yet')
+    @unittest.skipIf(sys.platform=='cli' and os.name=='posix', 
+                     'IronPython does not support this yet https://github.com/IronLanguages/main/issues/1605')
     def test_prot_readonly(self):
         mapsize = 10
         open(TESTFN, "wb").write("a"*mapsize)

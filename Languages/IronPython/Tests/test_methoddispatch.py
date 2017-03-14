@@ -880,6 +880,7 @@ def test_missing_value():
     AreEqual(tst.Test_46(), "(EnumSByte)Zero")
     # TODO: determine if this is a mono bug or not
     # both Zero and MinByte have the value of 0, Mono
+    # https://github.com/IronLanguages/main/issues/1596
     if not is_posix:
         AreEqual(tst.Test_47(), "(EnumByte)Zero")
         AreEqual(tst.Test_48(), "(EnumByte)Zero")

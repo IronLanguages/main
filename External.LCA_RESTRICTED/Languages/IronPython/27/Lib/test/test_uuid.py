@@ -376,7 +376,8 @@ class TestUUID(unittest.TestCase):
             equal(str(u), v)
 
     @unittest.skipUnless(os.name == 'posix', 'requires Posix')
-    @unittest.skipIf(os.name == 'posix' and sys.platform == 'cli', 'IronPython does not implement pipe yet')
+    @unittest.skipIf(os.name == 'posix' and sys.platform == 'cli', 
+                     'IronPython does not implement pipe yet https://github.com/IronLanguages/main/issues/1606')
     def testIssue8621(self):
         # On at least some versions of OSX uuid.uuid4 generates
         # the same sequence of UUIDs in the parent and any
