@@ -401,7 +401,7 @@ def test_charmap_encode():
         AssertError(UnicodeEncodeError, codecs.charmap_encode, "abc", "strict", {})
 
 
-@skip("silverlight") # only UTF8 on Silverlight
+@skip("silverlight", "posix") # only UTF8 on Silverlight
 def test_mbcs_decode():
     '''
     '''
@@ -416,7 +416,7 @@ def test_mbcs_decode():
         AreEqual(codecs.mbcs_encode(codecs.mbcs_decode(allchars, mode)[0])[0], allchars)
 
 
-@skip("silverlight") # only UTF8 on Silverlight
+@skip("silverlight", "posix") # only UTF8 on Silverlight
 def test_mbcs_encode():
     '''
     '''

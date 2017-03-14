@@ -1031,7 +1031,7 @@ i = int
         public void ScenarioDlrInterop() {
             string actionOfT = typeof(Action<>).FullName.Split('`')[0];
 
-#if !SILVERLIGHT
+#if FEATURE_WINDOWS
             ScriptScope scope = _env.CreateScope();
             ScriptSource src = _pe.CreateScriptSourceFromString(@"
 import clr

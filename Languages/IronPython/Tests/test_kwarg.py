@@ -561,6 +561,7 @@ a = ListSubcls(a='abc')
 @skip("netstandard") # no System.Windows.Forms in netstandard
 @skip("silverlight")
 @skip("win32")
+@skip("posix")
 def test_builtintypes():
     import clr
     clr.AddReferenceByPartialName('System.Windows.Forms')

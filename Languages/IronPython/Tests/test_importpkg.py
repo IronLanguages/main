@@ -479,6 +479,7 @@ import pkg_d.mod_d
 @skip("netstandard") # no System.Windows.Forms in netstandard
 @skip("silverlight")
 @skip("win32")
+@skip("posix")
 def test_importwinform():
     import clr
     clr.AddReferenceByPartialName("System.Windows.Forms")

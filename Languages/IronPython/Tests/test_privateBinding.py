@@ -94,7 +94,7 @@ else:
         AreEqual("_InternalClsPart__Property" in dir(InternalClsPart), True)
         AreEqual("_InternalClsPart__Method" in dir(InternalClsPart), True)
 
-    @skip("silverlight", "netstandard") # no System.Windows.Forms
+    @skip("silverlight", "netstandard", "posix") # no System.Windows.Forms
     def test_override_createparams():
         """verify we can override the CreateParams property and get the expected value from the base class"""
     
