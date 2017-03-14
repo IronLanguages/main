@@ -18,6 +18,8 @@ namespace TestRunner
         private int _threadCount = 1;
         private List<TestResult> _results = new List<TestResult>();
 
+        private readonly Regex _variableRegex = new Regex("%([^%]*)%");
+
         static int Main(string[] args) {
             return new Program().MainBody(args);
         }
@@ -320,6 +322,19 @@ namespace TestRunner
             }
         }
 
+        private string ConvertVariables(string input) {
+            string res = input;
+            if(_isUnix) {
+                Match m = _variableRegex.Match(res);
+                while(m.Success) {
+                    string var = m.Value;
+                    res = res.Replace(var, "$" + m.Groups[1].Value);
+                    m = m.NextMatch();
+                }
+            }
+            return res;
+        }
+
         private void DisplayOutput(Test test, TestResult result) {
             Console.WriteLine("Repro:");
             if (test.EnvironmentVariables != null) {
@@ -329,8 +344,8 @@ namespace TestRunner
             }
 
             if(_isUnix) {
-                Console.WriteLine("cd {0}", test.WorkingDirectory.Replace("\\", "/"));
-                Console.WriteLine("{0} {1}", test.Filename.Replace(".bat", ".sh").Replace("\\", "/"), test.Arguments.Replace("\\", "/"));
+                Console.WriteLine("cd {0}", ConvertVariables(test.WorkingDirectory).Replace("\\", "/"));
+                Console.WriteLine("{0} {1}", ConvertVariables(test.Filename).Replace(".bat", ".sh").Replace("\\", "/"), test.Arguments.Replace("\\", "/"));                
             } else {
                 Console.WriteLine("CD /D {0}", test.WorkingDirectory);
                 Console.WriteLine("{0} {1}", test.Filename, test.Arguments);

@@ -1762,6 +1762,7 @@
           <Arguments>test\test_asynchat.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
+          <Condition>'$(OS)' != 'Unix'</Condition> <!-- Missing fnctl module -->
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>

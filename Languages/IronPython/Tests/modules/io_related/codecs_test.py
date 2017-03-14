@@ -498,8 +498,7 @@ def test_file_encodings():
         sys.path.remove(path_combine(os.getcwd(), "tmp_encodings"))
         os.rmdir(path_combine(os.getcwd(), "tmp_encodings"))
 
-@skip("silverlight")
-@skip("netstandard") # sys.executable isn't an executable
+@skip("silverlight", "posix", "netstandard") # netstandard because sys.executable isn't an executable
 def test_cp11334():
     
     #--Test that not using "# coding ..." results in a warning

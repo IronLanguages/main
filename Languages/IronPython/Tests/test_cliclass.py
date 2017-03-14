@@ -2004,7 +2004,11 @@ AreEqual(''.join(prod for prod in pd), 'Cat: Flange, ID: F423, Qty: 12')
 """
 ]
     
-    for test_case in test_cases:
+    for i, test_case in enumerate(test_cases):
+        # remove this when the following issue is fixed in mono
+        # https://bugzilla.xamarin.com/show_bug.cgi?id=53295
+        if is_posix and i == 5: continue
+
         try:
             with file('temp_module.py', 'w+') as f:
                 f.write('from iptest.assert_util import *\n')

@@ -36,7 +36,10 @@ def evalTest(N):
     startTime = clock()
     evalLoop(N)
     endTime = clock()
-    gc.collect(2)
+    if is_posix:
+        gc.collect()
+    else:
+        gc.collect(2)
     endMem = GetTotalMemory()
     return max(endMem-startMem, 0)
     
@@ -133,8 +136,8 @@ def test_cp26005():
     from System import GC
     def get_memory():
         for _ in xrange(4):
-                    GC.Collect()
-                    GC.WaitForPendingFinalizers()
+            GC.Collect()
+            GC.WaitForPendingFinalizers()
         return GC.GetTotalMemory(True)/1e6
     before = get_memory()
     for j in xrange(10000):

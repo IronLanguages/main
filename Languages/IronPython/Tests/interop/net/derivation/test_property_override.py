@@ -193,6 +193,7 @@ def test_vbindexer():
     class C(CVbIndexer30):
         pass
     
+@skip("posix") # mono doesn't handle this properly, needs debug
 def test_virtual_property():
     class C(CProperty30):
         pass
