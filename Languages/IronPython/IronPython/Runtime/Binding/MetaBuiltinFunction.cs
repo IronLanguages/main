@@ -32,6 +32,7 @@ using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
@@ -242,8 +243,9 @@ namespace IronPython.Runtime.Binding {
                     selfType = Value.DeclaringType;
 
                     Type genericTypeDefinition = null;
+                    // the behavior is different on Mono, it sets FullName for the DeclaringType
                     if (Value.DeclaringType.IsGenericType() &&
-                        Value.DeclaringType.FullName == null && 
+                        (ClrModule.IsMono || Value.DeclaringType.FullName == null) &&
                         Value.DeclaringType.ContainsGenericParameters() &&
                         !Value.DeclaringType.IsGenericTypeDefinition()) {
                         // from MSDN: If the current type contains generic type parameters that have not been replaced by 

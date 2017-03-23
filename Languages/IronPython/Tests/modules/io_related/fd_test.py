@@ -44,6 +44,7 @@ def xtest_unlink():
     os.close(fd)
     os.unlink("tmp.unlink.test-1")
 
+@skip("posix") # https://github.com/IronLanguages/main/issues/1609
 def test_dup2():
     test_filename = "tmp.dup2.test-1"
     # test inspired by gsasl dup2 test cases
@@ -176,6 +177,7 @@ def test_write():
     os.close(fd)
     os.unlink(test_filename)
 
+@skip("posix") # https://github.com/IronLanguages/main/issues/1606
 def test_pipe():
     # basic
     r, w = os.pipe()
@@ -185,12 +187,14 @@ def test_pipe():
     AreEqual(os.read(r, 1), '')
     os.close(r)
 
+@skip("posix") # https://github.com/IronLanguages/main/issues/1606
 def test_pipe_write_closed():
     r, w = os.pipe()
     os.close(r)
     AssertError(OSError, os.write, w, "x")
     os.close(w)
 
+@skip("posix") # https://github.com/IronLanguages/main/issues/1606
 def test_pipe_block():
     r, w = os.pipe()
 
@@ -205,6 +209,7 @@ def test_pipe_block():
     os.close(r)
     os.close(w)
 
+@skip("posix") # https://github.com/IronLanguages/main/issues/1606
 def test_pipe_fds():
     # make sure the fds assigned by os.open, os.pipe and file do not collide
     # part of cp7267

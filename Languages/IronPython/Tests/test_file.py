@@ -417,6 +417,7 @@ def test_newlines_attribute():
         f.close()
     
 ## coverage: a sequence of file operation
+@skip("posix")
 def test_coverage():
     f = file(temp_file, 'w')
     Assert(str(f).startswith("<open file '%s', mode 'w'" % temp_file))
@@ -443,7 +444,6 @@ def test_coverage():
     # read
     f = file(temp_file, 'r+', 512)
     f.seek(-1 * pos - 2, 2)
-
     AreEqual(f.readline(), 'e\n')
     AreEqual(f.readline(5), 'third')
     AreEqual(f.read(-1), 'line\n')
@@ -453,7 +453,6 @@ def test_coverage():
     # read
     f = file(temp_file, 'rb', 512)
     f.seek(-1 * pos - 2, 2)
-
     AreEqual(f.readline(), 'e\r\n')
     AreEqual(f.readline(5), 'third')
     AreEqual(f.read(-1), 'line\r\n')

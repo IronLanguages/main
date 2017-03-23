@@ -58,6 +58,16 @@ namespace IronPython.Runtime {
         public static readonly bool IsNetStandard = false;
 #endif
 
+        private static int _isMono = -1;
+        public static bool IsMono {
+            get {
+                if(_isMono == -1) {
+                    _isMono = Type.GetType ("Mono.Runtime") != null ? 1 : 0;
+                }
+                return _isMono == 1;
+            }
+        }
+
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             if (!dict.ContainsKey("References")) {
