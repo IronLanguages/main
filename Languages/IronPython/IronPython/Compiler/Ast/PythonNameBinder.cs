@@ -549,7 +549,7 @@ namespace IronPython.Compiler.Ast {
             node.Parent = _currentScope;
             return base.Walk(node);
         }
-        
+
         // *** END GENERATED CODE ***
 
         #endregion
