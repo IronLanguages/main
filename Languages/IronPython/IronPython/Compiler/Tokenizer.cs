@@ -1878,6 +1878,9 @@ namespace IronPython.Compiler {
                 ResizeInternal(ref _buffer, new_size, _start, _end - _start);
                 _end -= _start;
                 _position -= _start;
+                _tokenEnd -= _start;
+                if (_tokenEnd < 0)
+                    _tokenEnd = -1;
                 _start = 0;
                 _bufferResized = true;
             }

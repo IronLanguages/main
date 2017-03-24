@@ -69,6 +69,10 @@ namespace Microsoft.Scripting {
             return _length == other._length && _start == other._start;
         }
 
+        public override string ToString()
+        {
+            return string.Format("Index Span: [{0} .. {1})", Start, End);
+        }
         #endregion
     }
 }
