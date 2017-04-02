@@ -425,8 +425,8 @@ def test_coverage():
         AssertError(TypeError, f.writelines, [3])
         f.writelines(["firstline\n"])
 
-    f.close()
-    Assert(str(f).startswith("<closed file '%s', mode 'w'" % temp_file))
+        f.close()
+        Assert(str(f).startswith("<closed file '%s', mode 'w'" % temp_file))
 
     # append
     with file(temp_file, 'a+') as f:
