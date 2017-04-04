@@ -21,6 +21,7 @@ from iptest.process_util import *
 skiptest("netstandard") # no assembly saving in netstandard
 skiptest("silverlight")
 skiptest("win32")
+skiptest("mono") # mono doesn't add a debuggable attribute
 
 import sys, System
 
