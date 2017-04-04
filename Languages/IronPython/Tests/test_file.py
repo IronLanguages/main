@@ -457,19 +457,16 @@ def test_coverage():
     os.unlink(temp_file)
 
     fd = os.open(temp_file, os.O_CREAT | os.O_WRONLY)
-    try:
-        os.write(fd, "hello ")
-        os.close(fd)
+    os.write(fd, "hello ")
+    os.close(fd)
 
-        fd = os.open(temp_file, os.O_APPEND | os.O_WRONLY)
-        os.write(fd, "world")
-        os.close(fd)
+    fd = os.open(temp_file, os.O_APPEND | os.O_WRONLY)
+    os.write(fd, "world")
+    os.close(fd)
 
-        fd = os.open(temp_file, 0)
-        AreEqual(os.read(fd, 1024), "hello world")
-        os.close(fd)
-    finally:
-        os.close(fd)
+    fd = os.open(temp_file, 0)
+    AreEqual(os.read(fd, 1024), "hello world")
+    os.close(fd)
 
     os.unlink(temp_file)
 
