@@ -497,7 +497,7 @@ if not is_silverlight:
     if not is_posix: # Finalizers run differently on mono
         SimpleTest()
     DelBuiltin()
-    Assert(UnboundLocalError, EnclosingFunction)
+    AssertError(UnboundLocalError, EnclosingFunction)
     DelUndefinedGlobal()
     glb = 100
     DelDefinedGlobal()

@@ -177,7 +177,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
         public static object getfilesystemencoding() {
             if(Environment.OSVersion.Platform == PlatformID.Unix)
-                return "UTF-8";
+                return "utf-8";
             return "mbcs";
         }
 
