@@ -1280,6 +1280,7 @@
           <Arguments>test_namebinding.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
+          <Condition>'$(OS)' != 'Unix'</Condition> <!-- See https://bugzilla.xamarin.com/show_bug.cgi?id=45677 and https://github.com/IronLanguages/main/issues/1473 -->
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
