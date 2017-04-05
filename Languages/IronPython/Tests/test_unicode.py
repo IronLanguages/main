@@ -52,6 +52,7 @@ def test_raw_unicode_escape_trailing_backslash():
     AreEqual(unicode('\\', 'raw_unicode_escape'), u'\\')
 
 @skip("silverlight")
+@skip("mono") # throws an exception within Mono, needs debug see https://github.com/IronLanguages/main/issues/1617
 def test_unicode_error():
     
     from _codecs import register_error

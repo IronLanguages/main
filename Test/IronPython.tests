@@ -158,6 +158,7 @@
           <Arguments>test_file.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
+          <Condition>'$(OS)' != 'Unix'</Condition> <!-- Currently getting a mutex error see https://github.com/IronLanguages/main/issues/1618 -->
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>

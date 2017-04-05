@@ -22,6 +22,7 @@ from System import *
 from System.Threading import *
 
 @skip("multiple_execute")
+@skip("mono") # this causes an exception on mono, need to file a bug see https://github.com/IronLanguages/main/issues/1619
 def test_all():
 
     class MyOC:
