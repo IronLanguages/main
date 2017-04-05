@@ -213,7 +213,7 @@ def test_encoding_backslashreplace():
     
     for test in tests:
         # undo this when mono bug https://bugzilla.xamarin.com/show_bug.cgi?id=53296 is fixed
-        if is_posix and test[0] == 'latin-1': continue
+        if is_mono and test[0] in ['latin-1', 'iso-8859-15']: continue
         AreEqual(test[1].encode(test[0], 'backslashreplace'), test[2])
 
 @skip("silverlight") # not implemented exception on Silverlight
@@ -224,7 +224,7 @@ def test_encoding_xmlcharrefreplace():
                 ('iso-8859-15', u"a\xac\u1234\u20ac\u8000", "a\xac&#4660;\xa4&#32768;") ]
     for test in tests:
         # undo this when mono bug https://bugzilla.xamarin.com/show_bug.cgi?id=53296 is fixed
-        if is_posix and test[0] == 'latin-1': continue
+        if is_mono and test[0] in ['latin-1', 'iso-8859-15']: continue
         AreEqual(test[1].encode(test[0], 'xmlcharrefreplace'), test[2])
 
 def test_encode_decode():
