@@ -736,7 +736,7 @@ for case in cases:
 
 # verify we can call the base init directly
 
-if is_cli and not is_netstandard: # no System.Windows.Forms in netstandard
+if is_cli and not is_netstandard and not is_posix: # no System.Windows.Forms in netstandard
     import clr
     clr.AddReferenceByPartialName('System.Windows.Forms')
     from System.Windows.Forms import *
