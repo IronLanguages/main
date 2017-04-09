@@ -5293,6 +5293,7 @@
           <Arguments>harness.py modules.network_related</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
+          <Condition>'$(OS)' != 'Unix'</Condition> <!-- Throws an exception on completion on Mono -->
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
