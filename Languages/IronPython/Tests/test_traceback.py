@@ -308,7 +308,7 @@ cp11116_a.a()
 """) 
         
         #Actual test
-        t_out, t_in, t_err = os.popen3(sys.executable + " " + os.getcwd() + r"\cp11116_main.py")
+        t_out, t_in, t_err = os.popen3(sys.executable + " " + os.path.join(os.getcwd(), "cp11116_main.py"))
         lines = t_err.readlines()
         t_err.close()
         t_out.close()

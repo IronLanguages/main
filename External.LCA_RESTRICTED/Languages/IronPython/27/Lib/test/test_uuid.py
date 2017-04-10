@@ -2,6 +2,7 @@ import unittest
 from test import test_support
 import io
 import os
+import sys
 import uuid
 
 def importable(name):
@@ -375,6 +376,8 @@ class TestUUID(unittest.TestCase):
             equal(str(u), v)
 
     @unittest.skipUnless(os.name == 'posix', 'requires Posix')
+    @unittest.skipIf(os.name == 'posix' and sys.platform == 'cli', 
+                     'IronPython does not implement pipe yet https://github.com/IronLanguages/main/issues/1606')
     def testIssue8621(self):
         # On at least some versions of OSX uuid.uuid4 generates
         # the same sequence of UUIDs in the parent and any
@@ -407,6 +410,8 @@ cscotun0  Link encap:UNSPEC  HWaddr 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00
 eth0      Link encap:Ethernet  HWaddr 12:34:56:78:90:ab
 '''
         def mock_popen(cmd):
+            if sys.platform == 'cli':
+                return io.StringIO(data)
             return io.BytesIO(data)
 
         path = os.environ.get("PATH", os.defpath).split(os.pathsep)

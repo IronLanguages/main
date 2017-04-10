@@ -240,6 +240,7 @@ public class test2{
 
 @skip("multiple_execute")
 @skip("netstandard") # code doesn't compile in netstandard?
+@skip("posix") # mono may have a bug here...need to investigate https://github.com/IronLanguages/main/issues/1595
 def test_assembly_resolve_isolation():
     # CodePlex issue 23506. This feature only works with .NET 4.0
     # builds of IronPython

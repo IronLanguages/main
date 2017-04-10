@@ -158,6 +158,7 @@
           <Arguments>test_file.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
+          <Condition>'$(OS)' != 'Unix'</Condition> <!-- Currently getting a mutex error see https://github.com/IronLanguages/main/issues/1618 -->
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
@@ -1279,6 +1280,7 @@
           <Arguments>test_namebinding.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
+          <Condition>'$(OS)' != 'Unix'</Condition> <!-- See https://bugzilla.xamarin.com/show_bug.cgi?id=45677 and https://github.com/IronLanguages/main/issues/1473 -->
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
@@ -1762,6 +1764,7 @@
           <Arguments>test\test_asynchat.py</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
+          <Condition>'$(OS)' != 'Unix'</Condition> <!-- Missing fnctl module -->
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>
@@ -5290,6 +5293,7 @@
           <Arguments>harness.py modules.network_related</Arguments>
           <MaxDuration>600000</MaxDuration>
           <LongRunning>false</LongRunning>
+          <Condition>'$(OS)' != 'Unix'</Condition> <!-- Throws an exception on completion on Mono -->
           <Disabled>false</Disabled>
           <RequiresAdmin>false</RequiresAdmin>
           <NotParallelSafe>false</NotParallelSafe>

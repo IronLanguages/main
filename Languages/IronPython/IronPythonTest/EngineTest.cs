@@ -1031,13 +1031,12 @@ i = int
         public void ScenarioDlrInterop() {
             string actionOfT = typeof(Action<>).FullName.Split('`')[0];
 
-#if !SILVERLIGHT
             ScriptScope scope = _env.CreateScope();
             ScriptSource src = _pe.CreateScriptSourceFromString(@"
 import clr
 if clr.IsNetStandard:
     clr.AddReference('System.Collections.NonGeneric')
-else:
+elif not clr.IsMono:
     clr.AddReference('System.Windows.Forms')
     from System.Windows.Forms import Control
 
@@ -1046,7 +1045,7 @@ from System.Collections import ArrayList
 
 somecallable = " + actionOfT + @"[object](lambda : 'Delegate')
 
-if not clr.IsNetStandard:
+if not clr.IsNetStandard and not clr.IsMono:
     class control(Control):
         pass
 
@@ -1265,7 +1264,7 @@ TestFunc.TestFunc = TestFunc
 TestFunc.InstVal = 'InstVal'
 TestFunc.ClassVal = 'ClassVal'  # just here to simplify tests
 
-if not clr.IsNetStandard:
+if not clr.IsNetStandard and not clr.IsMono:
     controlinst = control()
 nsinst = ns()
 iterable = IterableObject()
@@ -1458,21 +1457,23 @@ xrange = xrange
             // get on .NET member should fallback
 
 #if !NETSTANDARD
-            // property
-            site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("AllowDrop"));
-            AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
+            if(!ClrModule.IsMono) {
+                // property
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("AllowDrop"));
+                AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
 
-            // method
-            site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("BringToFront"));
-            AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
+                // method
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("BringToFront"));
+                AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
 
-            // protected method
-            site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("OnParentChanged"));
-            AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
+                // protected method
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("OnParentChanged"));
+                AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
 
-            // event
-            site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("DoubleClick"));
-            AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
+                // event
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("DoubleClick"));
+                AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
+            }
 #endif
 
             site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("something", new CallInfo(0)));
@@ -1553,7 +1554,6 @@ xrange = xrange
 
             site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("DoesNotExist", new CallInfo(0)));
             AreEqual(site.Target(site, (object)scope.GetVariable("TestFunc")), "FallbackInvokeMember");
-#endif
         }
 
         class MyDynamicObject : DynamicObject {

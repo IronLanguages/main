@@ -714,6 +714,7 @@ def test_cp23878():
     Assert(is_complete)
     AreEqual(Flag.Value, 32)
 
+@skip("posix") # mono's GC behaves differently so we get another print when GC occurs
 def test_cp23914():
     class C(object):
         def __init__(self, x,y,z):

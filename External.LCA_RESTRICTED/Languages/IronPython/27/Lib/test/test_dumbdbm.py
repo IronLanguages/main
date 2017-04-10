@@ -3,6 +3,7 @@
 """
 
 import os
+import sys
 import unittest
 import dumbdbm
 from test import test_support
@@ -48,8 +49,8 @@ class DumbDBMTestCase(unittest.TestCase):
             os.umask(old_umask)
 
         expected_mode = 0635
-        if os.name != 'posix':
-            # Windows only supports setting the read-only attribute.
+        if os.name != 'posix' or sys.platform == 'cli':
+            # Windows and IronPython only support setting the read-only attribute.
             # This shouldn't fail, but doesn't work like Unix either.
             expected_mode = 0666
 

@@ -208,6 +208,7 @@ class TestNtpath(unittest.TestCase):
             tester('ntpath.expandvars("\'%foo%\'%bar")', "\'%foo%\'%bar")
             tester('ntpath.expandvars("bar\'%foo%")', "bar\'%foo%")
 
+    @unittest.skipIf(sys.platform=='cli' and os.name=='posix', 'Mono has differences in encoding handling, so this test fails on Mono')
     @unittest.skipUnless(test_support.FS_NONASCII, 'need test_support.FS_NONASCII')
     def test_expandvars_nonascii(self):
         encoding = sys.getfilesystemencoding()

@@ -736,7 +736,7 @@ for case in cases:
 
 # verify we can call the base init directly
 
-if is_cli and not is_netstandard: # no System.Windows.Forms in netstandard
+if is_cli and not is_netstandard and not is_posix: # no System.Windows.Forms in netstandard
     import clr
     clr.AddReferenceByPartialName('System.Windows.Forms')
     from System.Windows.Forms import *
@@ -785,10 +785,15 @@ def test_func_flags():
     AreEqual(foo8.func_code.co_argcount, 6)
     AreEqual(foo9.func_code.co_argcount, 2)
 
-    
 def test_big_calls():
     # check various function call sizes and boundaries
-    for size in [3, 4, 5, 7, 8, 9, 13, 15, 16, 17, 23, 24, 25, 31, 32, 33, 47, 48, 49, 63, 64, 65, 127, 128, 129, 254, 255, 256, 257, 258, 511, 512, 513, 1023, 1024, 1025, 2047, 2048, 2049]:
+    sizes = sizes = [3, 4, 5, 7, 8, 9, 13, 15, 16, 17, 23, 24, 25, 31, 32, 33, 47, 48, 49, 63, 64, 65, 127, 128, 129, 254, 255, 256, 257, 258, 511, 512, 513, 1023, 1024]
+
+    # mono has a limitation of 1024 for sizes
+    if not is_mono:
+        sizes.extend([1025, 2047, 2048, 2049])
+
+    for size in sizes:
         # w/o defaults
         exec 'def f(' + ','.join(['a' + str(i) for i in range(size)]) + '): return ' + ','.join(['a' + str(i) for i in range(size)])
         # w/ defaults

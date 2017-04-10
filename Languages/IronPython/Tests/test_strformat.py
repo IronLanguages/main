@@ -883,6 +883,7 @@ def test_int___format___errors():
     for error, value, errorFmt, errorMsg in errors:
         AssertErrorWithPartialMessage(error, errorMsg, value.__format__, errorFmt)
 
+@skip("posix") # mono doesn't support some of the formatting specifiers https://github.com/IronLanguages/main/issues/1598
 def test_long___format__():
     tests = [ 
               (0L,    '+',        '+0'),
@@ -1158,6 +1159,7 @@ def test_long___format__():
         AreEqual(100000L.__format__('n'), '100000')
         AreEqual(100000000L.__format__('n'), '100000000')
 
+@skip("posix") # mono doesn't support some of the formatting specifiers https://github.com/IronLanguages/main/issues/1598
 def test_long___format___errors():
     errors = [
                 (ValueError, 2L, '6.1', "Precision not allowed in integer format specifier"),

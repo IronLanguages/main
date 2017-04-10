@@ -205,6 +205,7 @@ class CommonTest(GenericTest):
             self.assertEqual(expandvars("$foo$foo"), "barbar")
             self.assertEqual(expandvars("$bar$bar"), "$bar$bar")
 
+    @unittest.skipIf(sys.platform=='cli' and os.name=='posix', 'Mono has differences in encoding handling, so this test fails on Mono')
     @unittest.skipUnless(test_support.FS_NONASCII, 'need test_support.FS_NONASCII')
     def test_expandvars_nonascii(self):
         if self.pathmodule.__name__ == 'macpath':

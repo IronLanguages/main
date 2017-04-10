@@ -424,6 +424,7 @@ if mswindows:
     class pywintypes:
         error = IOError
 elif mono:
+    import threading
     _has_poll = False
     import clr
     if clr.IsNetStandard:
@@ -1136,33 +1137,46 @@ class Popen(object):
             if stdin is None and stdout is None and stderr is None:
                 return (None, None, None, None, None, None)
 
+            to_close = set()
             p2cread, p2cwrite = None, None
             c2pread, c2pwrite = None, None
             errread, errwrite = None, None
 
+            self._redirectStdin = stdin == PIPE
+            self._redirectStdout = stdout == PIPE
+            self._redirectStderr = stderr == PIPE
+
             return (p2cread, p2cwrite,
                     c2pread, c2pwrite,
-                    errread, errwrite)
+                    errread, errwrite), to_close
 
 
         def _execute_child(self, args, executable, preexec_fn, close_fds,
                            cwd, env, universal_newlines,
-                           startupinfo, creationflags, shell,
+                           startupinfo, creationflags, shell, to_close,
                            p2cread, p2cwrite,
                            c2pread, c2pwrite,
                            errread, errwrite):
             
-            args = args if not isinstance(args, str) else args.split()
+            if isinstance(args, types.StringTypes):
+                args = [args]
+            else:
+                args = list(args)
+
+            if shell:
+                args = ["/bin/sh", "-c"] + args
+                if executable:
+                    args[0] = executable
+
+            if executable is None:
+                executable = args[0]
+
             self.process = Process()
             self.process.StartInfo.UseShellExecute = False
         
-            if not shell:
-                self.process.StartInfo.FileName = executable or args[0]
-                self.process.StartInfo.Arguments = list2cmdline(args[1:])
-            else:
-                self.process.StartInfo.FileName = executable or os.environ['COMSPEC']
-                self.process.StartInfo.Arguments = list2cmdline(['/C'] + args)
-        
+            self.process.StartInfo.FileName = executable
+            self.process.StartInfo.Arguments = list2cmdline(args[1:])
+
             if env:
                 self.process.StartInfo.EnvironmentVariables.Clear()
                 for k, v in env.items():
@@ -1170,34 +1184,17 @@ class Popen(object):
         
             self.process.StartInfo.WorkingDirectory = cwd or os.getcwd()
         
-            self.process.StartInfo.RedirectStandardInput = stdin is not None
-            self.process.StartInfo.RedirectStandardOutput = stdout is not None
-            self.process.StartInfo.RedirectStandardError = stderr is not None
-        
-            combinedOutput = file(MemoryStream()) if stdout == PIPE and stderr == STDOUT else None
-            #~ print combinedOutput
-        
-            if (stdout is not None and stdout != PIPE) or (stdout == PIPE and stderr == STDOUT):
-                self.process.OutputDataReceived += Redirector(combinedOutput or stdout, "stdout")
-        
-            if stderr is not None and stderr != PIPE:
-                self.process.ErrorDataReceived += Redirector(combinedOutput or stderr, "stderr")
-        
+            self.process.StartInfo.RedirectStandardInput = self._redirectStdin
+            self.process.StartInfo.RedirectStandardOutput = self._redirectStdout
+            self.process.StartInfo.RedirectStandardError = self._redirectStderr
+
             self.process.Start()
             self.pid = self.process.Id
         
-            if (stdout is not None and stdout != PIPE) or (stdout == PIPE and stderr == STDOUT):
-                #~ print "stdout: start async"
-                self.process.BeginOutputReadLine()
+            self.stdin = file(self.process.StandardInput.BaseStream) if self._redirectStdin else None
+            self.stdout = file(self.process.StandardOutput.BaseStream) if self._redirectStdout else None
+            self.stderr = file(self.process.StandardError.BaseStream) if self._redirectStderr else None
         
-            if stderr is not None and stderr != PIPE:
-                #~ print "stderr: start async"
-                self.process.BeginErrorReadLine()
-        
-            self.stdin = file(self.process.StandardInput.BaseStream) if stdin == PIPE else None
-            self.stdout = combinedOutput or (file(self.process.StandardOutput.BaseStream) if stdout == PIPE else None)
-            self.stderr = combinedOutput or (file(self.process.StandardError.BaseStream) if stderr == PIPE else None)
-
 
         def _internal_poll(self):
             return self.process.ExitCode if self.process.HasExited else None
@@ -1208,9 +1205,66 @@ class Popen(object):
             self.process.WaitForExit()
             return self.process.ExitCode
 
+        def _readerthread(self, fh, buffer):
+            buffer.append(fh.read())
 
         def _communicate(self, input):
-            raise NotImplementedError("Popen.communicate")
+            stdout = None # Return
+            stderr = None # Return
+
+            if self.stdout:
+                stdout = []
+                stdout_thread = threading.Thread(target=self._readerthread,
+                                                 args=(self.stdout, stdout))
+                stdout_thread.setDaemon(True)
+                stdout_thread.start()
+            if self.stderr:
+                stderr = []
+                stderr_thread = threading.Thread(target=self._readerthread,
+                                                 args=(self.stderr, stderr))
+                stderr_thread.setDaemon(True)
+                stderr_thread.start()
+
+            if self.stdin:
+                if input is not None:
+                    try:
+                        self.stdin.write(input)
+                    except IOError as e:
+                        if e.errno == errno.EPIPE:
+                            # communicate() should ignore broken pipe error
+                            pass
+                        elif (e.errno == errno.EINVAL
+                              and self.poll() is not None):
+                            # Issue #19612: stdin.write() fails with EINVAL
+                            # if the process already exited before the write
+                            pass
+                        else:
+                            raise
+                self.stdin.close()
+
+            if self.stdout:
+                stdout_thread.join()
+            if self.stderr:
+                stderr_thread.join()
+
+            # All data exchanged.  Translate lists into strings.
+            if stdout is not None:
+                stdout = stdout[0]
+            if stderr is not None:
+                stderr = stderr[0]
+
+            # Translate newlines, if requested.  We cannot let the file
+            # object do the translation: It is based on stdio, which is
+            # impossible to combine with select (unless forcing no
+            # buffering).
+            if self.universal_newlines and hasattr(file, 'newlines'):
+                if stdout:
+                    stdout = self._translate_newlines(stdout)
+                if stderr:
+                    stderr = self._translate_newlines(stderr)
+
+            self.wait()
+            return (stdout, stderr)
 
     else:
         #

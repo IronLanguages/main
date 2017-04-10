@@ -35,7 +35,7 @@ def test_clrload2():
 def test_nested_classes():
     import UseCLI
 
-    if not is_netstandard: # no System.Windows.Forms in netstandard
+    if not is_netstandard and not is_posix: # no System.Windows.Forms in netstandard
         UseCLI.Form().Controls.Add(UseCLI.Control())
 
     nc = UseCLI.NestedClass()

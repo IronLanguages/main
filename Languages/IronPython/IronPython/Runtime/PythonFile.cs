@@ -462,6 +462,8 @@ namespace IronPython.Runtime {
                 int c = _reader.Read();
                 if (c == -1) {
                     return String.Empty;
+                } else {
+                    _position++;
                 }
                 if (c == '\r') c = '\n';
                 return ScriptingRuntimeHelpers.CharToString((char)c);
@@ -553,6 +555,8 @@ namespace IronPython.Runtime {
                 int c = _reader.Read();
                 if (c == -1) {
                     return String.Empty;
+                } else {
+                    _position++;
                 }
 
                 return ScriptingRuntimeHelpers.CharToString((char)c);

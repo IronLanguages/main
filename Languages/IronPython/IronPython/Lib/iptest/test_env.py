@@ -25,6 +25,7 @@ is_ironpython =  is_silverlight or is_cli
 is_cpython    =  sys.platform == 'win32' or sys.platform == 'posix'
 is_posix      =  sys.platform == 'posix'
 is_netstandard = False
+is_mono = False
 
 if is_ironpython:
     #We'll use System, if available, to figure out more info on the test
@@ -37,6 +38,8 @@ if is_ironpython:
         is_posix = System.FakeEnvironment.OSVersion.Platform == System.PlatformID.Unix
     else:
         is_posix = sys.platform == 'posix' or System.Environment.OSVersion.Platform == System.PlatformID.Unix
+
+    is_mono = clr.IsMono
 
 
 #--The bittedness of the Python implementation

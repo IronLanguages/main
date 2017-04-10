@@ -401,7 +401,7 @@ def test_charmap_encode():
         AssertError(UnicodeEncodeError, codecs.charmap_encode, "abc", "strict", {})
 
 
-@skip("silverlight") # only UTF8 on Silverlight
+@skip("silverlight", "posix") # only UTF8 on Silverlight/posix - mbcs_decode/encode only exist on windows versions of python
 def test_mbcs_decode():
     '''
     '''
@@ -416,7 +416,7 @@ def test_mbcs_decode():
         AreEqual(codecs.mbcs_encode(codecs.mbcs_decode(allchars, mode)[0])[0], allchars)
 
 
-@skip("silverlight") # only UTF8 on Silverlight
+@skip("silverlight", "posix") # only UTF8 on Silverlight/posix - mbcs_decode/encode only exist on windows versions of python
 def test_mbcs_encode():
     '''
     '''
@@ -498,8 +498,8 @@ def test_file_encodings():
         sys.path.remove(path_combine(os.getcwd(), "tmp_encodings"))
         os.rmdir(path_combine(os.getcwd(), "tmp_encodings"))
 
-@skip("silverlight")
-@skip("netstandard") # sys.executable isn't an executable
+# https://github.com/IronLanguages/main/issues/1608
+@skip("silverlight", "posix", "netstandard") # netstandard because sys.executable isn't an executable
 def test_cp11334():
     
     #--Test that not using "# coding ..." results in a warning
