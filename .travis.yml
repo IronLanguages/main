@@ -1,3 +1,7 @@
+os:
+  - linux
+  - osx
+
 language: csharp
 
 sudo: required
@@ -11,7 +15,7 @@ mono:
 solution: Solutions/IronPython.sln
 
 install:
-  - sudo apt-get install -y binfmt-support libmono-system-windows-forms4.0-cil
+  - if [[ "$TRAVIS_OS_NAME" != "osx" ]]; then sudo apt-get install -y binfmt-support libmono-system-windows-forms4.0-cil ; fi
   - nuget restore Solutions/IronPython.sln
 
 script:
