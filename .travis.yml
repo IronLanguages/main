@@ -15,7 +15,7 @@ mono:
 solution: Solutions/IronPython.sln
 
 install:
-  - sudo apt-get install -y binfmt-support libmono-system-windows-forms4.0-cil
+  - if [[ "$TRAVIS_OS_NAME" != "osx" ]] sudo apt-get install -y binfmt-support libmono-system-windows-forms4.0-cil
   - nuget restore Solutions/IronPython.sln
 
 script:
