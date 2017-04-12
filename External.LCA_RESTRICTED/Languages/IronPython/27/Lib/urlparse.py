@@ -333,16 +333,16 @@ _hextochr = dict((a+b, chr(int(a+b,16)))
                  for a in _hexdig for b in _hexdig)
 _asciire = re.compile('([\x00-\x7f]+)')
 
-def unquote(s):
+def unquote(s, recurse=False):
     """unquote('abc%20def') -> 'abc def'."""
-    if _is_unicode(s):
+    if _is_unicode(s) and not recurse:
         if '%' not in s:
             return s
         bits = _asciire.split(s)
         res = [bits[0]]
         append = res.append
         for i in range(1, len(bits), 2):
-            append(unquote(str(bits[i])).decode('latin1'))
+            append(unquote(str(bits[i]), True).decode('latin1'))
             append(bits[i + 1])
         return ''.join(res)
 

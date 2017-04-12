@@ -257,6 +257,7 @@ Content-Type: text/html; charset=iso-8859-1
         finally:
             self.unfakehttp()
 
+    @unittest.skipIf(sys.platform=='cli', 'https://github.com/IronLanguages/main/issues/1626') 
     def test_invalid_redirect(self):
         # urlopen() should raise IOError for many error codes.
         self.fakehttp("""HTTP/1.1 302 Found
