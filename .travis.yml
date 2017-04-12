@@ -19,7 +19,7 @@ install:
   - nuget restore Solutions/IronPython.sln
 
 script:
-  - make test-ipy-release 
+  - travis_wait 120 make test-ipy-release 
 
 notifications:
   email:
