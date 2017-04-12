@@ -70,7 +70,7 @@ def test_functionality():
         AreEqual(x, x2)
         
         # on 64-bit the order in set/frozenset isn't the same after dumps/loads
-        if is_cli64 and isinstance(x, (set, frozenset)): continue
+        if (is_cli64 or is_osx) and isinstance(x, (set, frozenset)): continue
 
         s2 = marshal.dumps(x2)
         AreEqual(s, s2)

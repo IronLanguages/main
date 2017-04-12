@@ -407,6 +407,8 @@ class skip:
         return is_posix
     def mono_test(self):
         return is_mono
+    def osx_test(self):
+        return is_osx
     
     def __call__(self, f):
         #skip questionable tests
@@ -419,7 +421,7 @@ class skip:
             return _do_nothing(msg)
 		
         
-        platforms = 'silverlight', 'cli64', 'orcas', 'interactive', 'multiple_execute', 'stdlib', 'posix', 'netstandard', 'mono'
+        platforms = 'silverlight', 'cli64', 'orcas', 'interactive', 'multiple_execute', 'stdlib', 'posix', 'netstandard', 'mono', 'osx'
         for to_skip in platforms:
             platform_test = getattr(self, to_skip + '_test')
             if to_skip in self.platforms and platform_test():

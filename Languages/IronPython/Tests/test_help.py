@@ -456,7 +456,7 @@ def test_clr_addreference():
     
     Assert(x.find("Adds a reference to a .NET assembly.") != -1)
 
-@skip("win32", "silverlight", "cli64")
+@skip("win32", "silverlight", "cli64", "posix") # this is windows specific?
 def test_paramrefs():
     # System.DateTime.Parse (for example) has a paramrefs in its help text which get substitued
     # by paramnames.

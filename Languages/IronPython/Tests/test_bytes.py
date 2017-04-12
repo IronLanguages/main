@@ -1190,9 +1190,9 @@ def test_bytearray():
     AssertError(TypeError, f)
 
     def f(): x[0:1] = sys.maxint
-    # mono doesn't throw an OutOfMemoryException when the size is too large,
+    # mono doesn't throw an OutOfMemoryException on Linux when the size is too large,
     # it does get a value error for trying to set capacity to a negative number
-    if is_posix:
+    if is_mono and not is_osx:
         AssertError(ValueError, f)
     else:
         AssertError(MemoryError, f)
