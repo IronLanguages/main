@@ -44,7 +44,8 @@ def test_proxy_dir():
         prxy = run_test()
         if not is_silverlight:
             gc.collect()
-            time.sleep(2)
+            # gc collection seems to take longer on OSX
+            if is_osx: time.sleep(2)
             #This will fail if original object has not been garbage collected.
             AreEqual(dir(prxy), [])
 
