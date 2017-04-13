@@ -151,7 +151,7 @@ def get_platform_string(current = None):
         import sys
         current = sys.platform
     
-    if any(current.startswith(x) for x in ["win", "linux", "darwin"): return "nat"
+    if any(current.startswith(x) for x in ["win", "linux", "darwin"]): return "nat"
     if current.startswith("cli"): return "cli"
     return "non"
 
