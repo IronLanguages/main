@@ -1,7 +1,3 @@
-os:
-  - linux
-  - osx
-
 language: csharp
 
 sudo: required
@@ -19,7 +15,7 @@ install:
   - nuget restore Solutions/IronPython.sln
 
 script:
-  - travis_wait 120 make test-ipy-release 
+  - make test-ipy-release 
 
 notifications:
   email:
