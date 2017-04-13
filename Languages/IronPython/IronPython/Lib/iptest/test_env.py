@@ -13,7 +13,7 @@
 #
 #####################################################################################
 
-import sys
+import sys, os
 from iptest.util import get_env_var, get_temp_dir
 
 #------------------------------------------------------------------------------
@@ -22,8 +22,9 @@ from iptest.util import get_env_var, get_temp_dir
 is_silverlight = sys.platform == 'silverlight'
 is_cli =         sys.platform == 'cli'
 is_ironpython =  is_silverlight or is_cli
-is_cpython    =  sys.platform == 'win32' or sys.platform == 'posix'
+is_cpython    =  not is_ironpython
 is_posix      =  sys.platform == 'posix'
+is_osx        =  sys.platform == 'darwin'
 is_netstandard = False
 is_mono = False
 
@@ -38,6 +39,7 @@ if is_ironpython:
         is_posix = System.FakeEnvironment.OSVersion.Platform == System.PlatformID.Unix
     else:
         is_posix = sys.platform == 'posix' or System.Environment.OSVersion.Platform == System.PlatformID.Unix
+        is_osx = os.path.exists('/System/Library/CoreServices/SystemVersion.plist')
 
     is_mono = clr.IsMono
 

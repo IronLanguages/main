@@ -17,7 +17,7 @@
 
 import os
 import sys
-from assert_util import testpath, is_cli, is_posix, is_netstandard
+from assert_util import testpath, is_cli, is_posix, is_netstandard, is_osx
 
 one_arg_params = ("-X:Optimize", "-W", "-c", "-X:MaxRecursion", "-X:AssembliesDir")
 
@@ -127,21 +127,27 @@ def run_unregister_com_component(pathToDll):
 
 def run_csc(args):
     import file_util
-    if is_posix:
+    if is_osx:
+        return run_tool("/Library/Frameworks/Mono.framework/Versions/Current/Commands/mcs", args)
+    elif is_posix:
         return run_tool("/usr/bin/mcs", args)
     else:
         return run_tool(file_util.path_combine(get_clr_dir(),"csc.exe"), args)
 
 def run_vbc(args):
     import file_util
-    if is_posix:
+    if is_osx:
+        return run_tool("/Library/Frameworks/Mono.framework/Versions/Current/Commands/vbnc", args)
+    elif is_posix:
         return run_tool("/usr/bin/vbnc", args)
     else:
         return run_tool(file_util.path_combine(get_clr_dir(),"vbc.exe"), args)
 
 def run_ilasm(args):
     import file_util
-    if is_posix:
+    if is_osx:
+        return run_tool("/Library/Frameworks/Mono.framework/Versions/Current/Commands/ilasm", args)
+    elif is_posix:
         return run_tool("/usr/bin/ilasm", args)
     else:
         return run_tool(file_util.path_combine(get_clr_dir(),"ilasm.exe"), args)

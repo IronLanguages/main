@@ -787,11 +787,12 @@ def test_func_flags():
 
 def test_big_calls():
     # check various function call sizes and boundaries
-    sizes = sizes = [3, 4, 5, 7, 8, 9, 13, 15, 16, 17, 23, 24, 25, 31, 32, 33, 47, 48, 49, 63, 64, 65, 127, 128, 129, 254, 255, 256, 257, 258, 511, 512, 513, 1023, 1024]
+    sizes = [3, 4, 5, 7, 8, 9, 13, 15, 16, 17, 23, 24, 25, 31, 32, 33, 47, 48, 49, 63, 64, 65, 127, 128, 129, 254, 255, 256, 257, 258, 511, 512, 513]
 
-    # mono has a limitation of 1024 for sizes
+
+    # mono has a limitation of < 1023
     if not is_mono:
-        sizes.extend([1025, 2047, 2048, 2049])
+        sizes.extend([1023, 1024, 1025, 2047, 2048, 2049])
 
     for size in sizes:
         # w/o defaults
