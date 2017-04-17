@@ -79,13 +79,9 @@ test_script:
   #- Test\test-ipy-tc.cmd /category:Languages\IronPython\IronPython\2.X
 
 # to run custom scripts after tests
-#after_test:
-  # upload results to AppVeyor
-  # NOTE: our test runner returns an exit code with number of failures
-  # AppVeyor misinterprets that and does not upload test results
-  # Workaround in that case is to add to "on_failure:" and "on_success:"
-  # to force an upload
-  #- ps: $wc = New-Object 'System.Net.WebClient'; $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\Test\TestResult.xml))
+after_test:
+  - make package-release
+  - ps: Get-ChildItem -recurse .\Packages\Release\* -Include *.zip,*.msi | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name }
 
 #---------------------------------#
 #      artifacts configuration    #
