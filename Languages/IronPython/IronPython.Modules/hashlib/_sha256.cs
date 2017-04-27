@@ -88,15 +88,6 @@ namespace IronPython.Modules {
             }
         }
 
-#if NETSTANDARD
-        public static Sha256Object sha224(object data) {
-            throw new NotImplementedException();
-        }
-
-        public static Sha256Object sha224() {
-            throw new NotImplementedException();
-        }
-#else
         public static Sha224Object sha224(object data) {
             return new Sha224Object(data);
         }
@@ -144,6 +135,5 @@ namespace IronPython.Modules {
                 return res;
             }
         }
-#endif
     }
 }

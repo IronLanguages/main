@@ -6,13 +6,13 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-#if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE || SQLITE_WINRT || NETSTANDARD)
+#if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE || SQLITE_WINRT || NETCOREAPP2_0)
 using System.Management;
 #endif
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-#if SQLITE_WINRT || NETSTANDARD
+#if SQLITE_WINRT
 using System.Reflection;
 #endif
 
@@ -360,7 +360,7 @@ static Token va_arg( object[] ap, Token sysType )
 
 static UInt32 va_arg( object[] ap, UInt32 sysType )
 {
-#if SQLITE_WINRT || NETSTANDARD
+#if SQLITE_WINRT
   Type t = ap[vaNEXT].GetType();
   if ( t.GetTypeInfo().IsClass )
 #else
@@ -377,7 +377,7 @@ static UInt32 va_arg( object[] ap, UInt32 sysType )
 
 static UInt64 va_arg( object[] ap, UInt64 sysType )
 {
-#if SQLITE_WINRT || NETSTANDARD
+#if SQLITE_WINRT
   Type t = ap[vaNEXT].GetType();
   if (t.GetTypeInfo().IsClass)
 #else
@@ -464,7 +464,7 @@ public struct FILETIME
 // Example (C#)
 public static int GetbytesPerSector( StringBuilder diskPath )
 {
-#if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE || SQLITE_WINRT || NETSTANDARD)
+#if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE || SQLITE_WINRT || NETCOREAPP2_0)
   ManagementObjectSearcher mosLogicalDisks = new ManagementObjectSearcher( "select * from Win32_LogicalDisk where DeviceID = '" + diskPath.ToString().Remove( diskPath.Length - 1, 1 ) + "'" );
   try
   {

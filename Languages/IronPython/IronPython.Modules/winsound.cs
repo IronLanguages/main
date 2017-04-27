@@ -16,7 +16,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 
-#if FEATURE_NATIVE || NETSTANDARD
+#if FEATURE_NATIVE || NETCOREAPP2_0
 [assembly: PythonModule("winsound", typeof(IronPython.Modules.PythonWinsoundModule), PlatformID.MacOSX, PlatformID.Unix)]
 namespace IronPython.Modules {
     public static class PythonWinsoundModule {

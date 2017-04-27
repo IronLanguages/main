@@ -501,11 +501,6 @@ def test_encoding():
 if is_cli:
     def test_net_stream():
         import System
-        if is_netstandard:
-            import clr
-            clr.AddReference("System.IO.FileSystem")
-            clr.AddReference("System.IO.FileSystem.Primitives")
-
         fs = System.IO.FileStream(temp_file, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.ReadWrite)
         with file(fs, "wb") as f:
             f.write('hello\rworld\ngoodbye\r\n')

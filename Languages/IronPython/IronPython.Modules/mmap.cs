@@ -201,9 +201,8 @@ namespace IronPython.Modules {
                             throw WindowsError(PythonExceptions._WindowsError.ERROR_NOT_ENOUGH_MEMORY);
                         }
                     }
-
-                    _file = MemoryMappedFile.CreateFromFile(
-                        _sourceStream, _mapName, _sourceStream.Length, _fileAccess, null, HandleInheritability.None, true
+                    _file = CreateFromFile(
+                        _sourceStream, _mapName, _sourceStream.Length, _fileAccess, HandleInheritability.None, true
                     );
                 }
 
@@ -596,8 +595,8 @@ namespace IronPython.Modules {
                             _sourceStream.SetLength(capacity);
                         }
 
-                        _file = MemoryMappedFile.CreateFromFile(
-                            _sourceStream, _mapName, _sourceStream.Length, _fileAccess, null, HandleInheritability.None, leaveOpen
+                        _file = CreateFromFile(
+                            _sourceStream, _mapName, _sourceStream.Length, _fileAccess, HandleInheritability.None, leaveOpen
                         );
 
                         _view = _file.CreateViewAccessor(_offset, newsize, _fileAccess);
@@ -897,6 +896,14 @@ namespace IronPython.Modules {
         }
 
         #endregion
+
+        private static MemoryMappedFile CreateFromFile(System.IO.FileStream fileStream, string mapName, long capacity, System.IO.MemoryMappedFiles.MemoryMappedFileAccess access, System.IO.HandleInheritability inheritability, bool leaveOpen) {
+#if NETCOREAPP2_0
+            return MemoryMappedFile.CreateFromFile(fileStream, mapName, capacity, access, inheritability, leaveOpen);
+#else
+            return MemoryMappedFile.CreateFromFile(fileStream, mapName, capacity, access, null, inheritability, leaveOpen);
+#endif
+        }
     }
 }
 

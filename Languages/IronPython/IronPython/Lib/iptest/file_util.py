@@ -16,7 +16,7 @@
 ## BE PLATFORM NETURAL
 import os
 import sys
-from test_env import is_netstandard
+from test_env import is_netcoreapp
 
 colon = ':'
 separator = os.sep
@@ -91,7 +91,7 @@ def get_full_dir_name(path):
     """removes ~# from short file names"""
     if sys.platform == "win32": return path
     import System
-    if is_netstandard:
+    if is_netcoreapp:
         import clr
         clr.AddReference("System.IO.FileSystem")
     return System.IO.DirectoryInfo(path).FullName

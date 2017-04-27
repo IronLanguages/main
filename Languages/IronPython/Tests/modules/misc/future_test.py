@@ -136,7 +136,7 @@ if is_cli or is_silverlight:
 
 if is_cli:    
     #Verify true division of a overloaded / operator in a C# class
-    add_clr_assemblies("operators")
+    add_clr_assemblies("typesamples", "operators") # load typesamples first otherwise .NET Core is not happy
     from Merlin.Testing.Call import *
     x = AllOpsClass(5)
     y = AllOpsClass(4)    

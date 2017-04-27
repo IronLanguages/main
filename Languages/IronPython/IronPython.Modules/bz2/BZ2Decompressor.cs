@@ -47,11 +47,7 @@ decompress() function instead.
                     var unusedCount = this.input.Length - this.lastSuccessfulPosition;
                     var unused = new byte[unusedCount];
 
-#if NETSTANDARD
-                    ArraySegment<byte> buffer;
-                    this.input.TryGetBuffer(out buffer);
-                    Array.Copy(buffer.Array, (int)this.lastSuccessfulPosition, unused, 0, (int)unusedCount);
-#elif !SILVERLIGHT && !WP75
+#if !SILVERLIGHT && !WP75
                     Array.Copy(this.input.GetBuffer(), this.lastSuccessfulPosition, unused, 0, unusedCount);
 #else
                     Array.Copy(this.input.GetBuffer(), (int)this.lastSuccessfulPosition, unused, 0, (int)unusedCount);

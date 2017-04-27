@@ -671,14 +671,14 @@ namespace IronPython.Modules {
             encoding = (Encoding)encoding.Clone();
             ExceptionFallBack fallback = null;
             if (fAlwaysThrow) {
-                StringOps.SetDecoderFallback(encoding, DecoderFallback.ExceptionFallback);
+                encoding.DecoderFallback = DecoderFallback.ExceptionFallback;
             } else {
                 fallback = (encoding is UTF8Encoding && DotNet) ?
                     // This is a workaround for a bug, see ExceptionFallbackBufferUtf8DotNet
                     // for more details.
                     new ExceptionFallBackUtf8DotNet(bytes):
                     new ExceptionFallBack(bytes);
-                StringOps.SetDecoderFallback(encoding, fallback);
+                encoding.DecoderFallback = fallback;
             }
 #endif
             string decoded = encoding.GetString(bytes, 0, bytes.Length);
@@ -737,7 +737,7 @@ namespace IronPython.Modules {
                 encoding = (Encoding)encoding.Clone();
 
 #if FEATURE_ENCODING // EncoderFallback
-                StringOps.SetEncoderFallback(encoding, EncoderFallback.ExceptionFallback);
+                encoding.EncoderFallback = EncoderFallback.ExceptionFallback;
 #endif
 
                 if (includePreamble) {

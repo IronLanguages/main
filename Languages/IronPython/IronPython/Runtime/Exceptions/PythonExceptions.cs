@@ -1054,11 +1054,7 @@ for k, v in toError.iteritems():
                 pyExcep = new BaseException(TypeError);
             } else if (clrException is Win32Exception) {
                 Win32Exception win32 = (Win32Exception)clrException;
-#if NETSTANDARD
-                int errorCode = win32.HResult;
-#else
                 int errorCode = win32.ErrorCode;
-#endif
                 pyExcep = new _WindowsError();
                 if ((errorCode & 0x80070000) == 0x80070000) {
                     pyExcep.__init__(errorCode & 0xffff, win32.Message);

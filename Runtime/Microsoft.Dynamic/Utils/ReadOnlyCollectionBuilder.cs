@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-#if WIN8 || NETSTANDARD
+#if WIN8
 
 using System.Linq.Expressions;
 using System.Collections.Generic;

@@ -36,10 +36,6 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting.Utils;
 
-#if NETCOREAPP1_0
-using Environment = System.FakeEnvironment;
-#endif
-
 [assembly: PythonModule("sys", typeof(IronPython.Modules.SysModule))]
 namespace IronPython.Modules {
     public static class SysModule {

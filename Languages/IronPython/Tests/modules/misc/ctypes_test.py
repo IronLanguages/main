@@ -14,7 +14,7 @@
 #####################################################################################
 
 from iptest.assert_util import *
-skiptest("netstandard") # ctypes is not implemented
+skiptest("netcoreapp") # ctypes is not implemented
 import ctypes
 import ctypes.wintypes
 

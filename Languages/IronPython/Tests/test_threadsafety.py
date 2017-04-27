@@ -18,6 +18,11 @@
 from iptest.assert_util import *
 skiptest("win32")
 skiptest("interpreted") #Too slow
+
+if is_netcoreapp:
+    import clr
+    clr.AddReference("System.Threading.Thread")
+
 from System import *
 from System.Threading import *
 

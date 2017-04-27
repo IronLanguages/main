@@ -29,7 +29,7 @@ if System.Environment.Version.Major<4:
     print "Will not run this test against versions of the CLR earlier than 4.0"
     sys.exit(0)
 
-if is_netstandard:
+if is_netcoreapp:
     import clr
     clr.AddReference("System.Threading.Tasks.Parallel")
 

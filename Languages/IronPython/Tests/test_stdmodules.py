@@ -185,7 +185,6 @@ def test_cp17040():
                    (sys.executable))
     AreEqual(ec, 0)
 
-@skip("netstandard") # TODO: figure out why this doesn't work
 @skip("win32")
 def test_cp13401():
     import copy
@@ -237,8 +236,7 @@ def test_get_set_locale():
     AreEqual(loc, (None,None))
 
     Assert(locale.setlocale(locale.LC_ALL, '') != None)
-    if not (is_netstandard and is_posix): # TODO: figure this out
-        Assert(locale.getlocale() != None)
+    Assert(locale.getlocale() != None)
 
 def test_cp17819():
     import xml.sax
@@ -265,7 +263,6 @@ def test_cp21929():
              os.listdir(os.getcwd()))
     AssertError(WindowsError, os.listdir, "")
 
-@skip("netstandard") # missing FEATURE_SORTKEY
 def test_cp34188():
     import locale
     locale.setlocale(locale.LC_COLLATE,"de_CH")

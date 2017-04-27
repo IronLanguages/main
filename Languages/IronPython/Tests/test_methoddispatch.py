@@ -142,7 +142,7 @@ def test_sanity():
 
 @skip("silverlight")
 def test_system_drawing():
-    if is_netstandard:
+    if is_netcoreapp:
         clr.AddReference("System.Drawing.Primitives")
     else:
         clr.AddReference("System.Drawing")
@@ -1400,7 +1400,7 @@ def test_explicit():
 
 @skip("silverlight")
 def test_security_crypto():
-    if is_netstandard:
+    if is_netcoreapp:
         clr.AddReference("System.Security.Cryptography.Algorithms")
         Assert(issubclass(type(System.Security.Cryptography.MD5.Create()),
                  System.Security.Cryptography.MD5))

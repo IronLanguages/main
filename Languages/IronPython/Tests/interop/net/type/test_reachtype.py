@@ -27,8 +27,6 @@ bultin_types = ['complex', 'StandardError']
 bultin_constants = ['None', 'False']
 modules = ['__builtin__', 'datetime', '_collections', 'site']
 
-if is_netstandard: SystemError = Exception # TODO: revert this once System.SystemException is added to netstandard (https://github.com/IronLanguages/main/issues/1399)
-
 def test_interesting_names_as_namespace():
     # import
     for x in keywords + ['None']: 
@@ -117,7 +115,7 @@ def test_generic_types():
                                "The number of generic arguments provided doesn't equal the arity of the generic type definition.\nParameter name: instantiation", 
                                lambda: G3[()])
     
-    if is_posix and not is_netstandard:
+    if is_mono:
         AssertErrorWithMessage(ValueError, "Invalid generic arguments\nParameter name: typeArguments", lambda: G3[System.Exception])
     else:
         AssertErrorWithMessage(ValueError, "GenericArguments[0], 'System.Exception', on 'NSwGeneric.G3`1[T]' violates the constraint of type 'T'.", lambda: G3[System.Exception])
@@ -169,14 +167,11 @@ if '-X:SaveAssemblies' not in System.Environment.GetCommandLineArgs():
     # snippets.dll (if saved) has the reference to temp.dll, which is not saved.
     @runonly("orcas")
     def test_type_from_reflection_emit():
-        if is_netstandard:
-            clr.AddReference("System.Reflection.Emit")
-        
         sr = System.Reflection
         sre = System.Reflection.Emit
         array = System.Array
         cab = array[sre.CustomAttributeBuilder]([sre.CustomAttributeBuilder(clr.GetClrType(System.Security.SecurityTransparentAttribute).GetConstructor(System.Type.EmptyTypes), array[object]([]))])
-        if is_netstandard: # no System.AppDomain in netstandard
+        if is_netcoreapp: # no System.AppDomain.DefineDynamicAssembly in .NET Core
             ab = sre.AssemblyBuilder.DefineDynamicAssembly(sr.AssemblyName("temp"), sre.AssemblyBuilderAccess.Run, cab)  # tracking: 291888
         else:
             ab = System.AppDomain.CurrentDomain.DefineDynamicAssembly(sr.AssemblyName("temp"), sre.AssemblyBuilderAccess.RunAndSave, "temp", None, None, None, None, True, cab)  # tracking: 291888

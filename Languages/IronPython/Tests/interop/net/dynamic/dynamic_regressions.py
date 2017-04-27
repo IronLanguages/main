@@ -63,7 +63,6 @@ class Method01(object):
   def Optional01(self, a, b=1):
     return a + b
 
-@skip("netstandard") # TODO: investigate cause of failure
 def test_cp24118():
     #TODO: once 26089 gets fixed the following needs actual verification.  That is,
     #right now DR.cp24118 just calls GetMethodTest without doing much validation.
@@ -161,7 +160,7 @@ Module CodePlex20519
 End Module
 '''
 
-@skip("netstandard") # can't compile snippet due to missing references
+@skip("netcoreapp") # TODO
 def test_cp20519():
     import os
     import System

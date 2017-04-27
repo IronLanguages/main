@@ -1049,7 +1049,7 @@ def test__getfullpathname_neg():
     for bad in [None, 0, 34, -12345L, 3.14, object, test__getfullpathname]:
         AssertError(TypeError, nt._getfullpathname, bad)
 
-@skip("netstandard") # TODO: figure out
+@skip("netcoreapp") # TODO: figure out
 def test_cp15514():
     cmd_variation_list = ['%s -c "print __name__"' % sys.executable,
                           '"%s -c "print __name__""' % sys.executable,
@@ -1105,7 +1105,6 @@ def test_strerror():
     for key, value in test_dict.iteritems():
         AreEqual(nt.strerror(key), value)
 
-@skip("netstandard") # TODO: figure out
 def test_popen_cp34837():
     import subprocess
     import os

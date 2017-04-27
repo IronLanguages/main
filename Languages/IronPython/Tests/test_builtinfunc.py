@@ -426,8 +426,8 @@ def test_dir():
             clr.AddReference("Microsoft.Scripting.Core")
         except Exception, e:
             if is_net40:
-                if is_netstandard:
-                    clr.AddReference("System.Dynamic.Runtime")
+                if is_netcoreapp:
+                    clr.AddReference("System.Linq.Expressions")
                 else:
                     clr.AddReference("System.Core")
             else:

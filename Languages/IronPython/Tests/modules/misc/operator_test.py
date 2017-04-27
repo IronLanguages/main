@@ -21,7 +21,7 @@ if sys.platform!="win32":
     
     import clr
     if not is_silverlight:
-        if is_netstandard:
+        if is_netcoreapp:
             clr.AddReference("System.Drawing.Primitives")
         else:
             clr.AddReference("System.Drawing")
@@ -131,7 +131,6 @@ def test_sys_drawing():
     Assert(not DaysInt.Mon == None)
     Assert(DaysInt.Mon != None)
 
-@skip("netstandard") # no System.Drawing.Color in netstandard
 @skip("win32 silverlight")
 def test_cp3982():
     from System.Drawing import Color

@@ -95,9 +95,6 @@ else:
         if not rowan_root:
             rowan_root = sys.prefix
             if is_cli:
-                if is_netstandard:
-                    import clr
-                    clr.AddReference("System.IO.FileSystem")
                 if System.IO.Directory.Exists(path_combine(rowan_root, '../../Src')):
                     basePyDir = '../../Src'
 
@@ -335,7 +332,7 @@ else:
 
     def load_iron_python_dll():
         import clr
-        if is_netstandard:
+        if is_netcoreapp:
             clr.AddReference("System.IO.FileSystem")
         from System.IO import File
         #When assemblies are installed into the GAC, we should not expect
@@ -389,8 +386,8 @@ class skip:
         else: 
             self.platforms = platforms
 
-    def netstandard_test(self):
-        return is_netstandard
+    def netcoreapp_test(self):
+        return is_netcoreapp
     def silverlight_test(self):
         return is_silverlight
     def cli64_test(self):
@@ -411,6 +408,8 @@ class skip:
         return is_osx
     
     def __call__(self, f):
+        if f is None: return f # already skipped?
+
         #skip questionable tests
         if is_silverlight and 'silverlightbug?' in self.platforms:
             msg = '... TODO, investigate Silverlight failure @ %s' % f.func_name
@@ -419,9 +418,8 @@ class skip:
             msg = '... Decorated with @skip(%s), skipping %s ...' % (
                 self.platforms, f.func_name)
             return _do_nothing(msg)
-		
         
-        platforms = 'silverlight', 'cli64', 'orcas', 'interactive', 'multiple_execute', 'stdlib', 'posix', 'netstandard', 'mono', 'osx'
+        platforms = 'silverlight', 'cli64', 'orcas', 'interactive', 'multiple_execute', 'stdlib', 'posix', 'netcoreapp', 'mono', 'osx'
         for to_skip in platforms:
             platform_test = getattr(self, to_skip + '_test')
             if to_skip in self.platforms and platform_test():
@@ -460,8 +458,8 @@ def skiptest(*args):
     elif is_silverlight and 'silverlight' in args:
         print '... %s, skipping whole test module...' % sys.platform
         exit_module()
-    elif is_netstandard and 'netstandard' in args:
-        print '... %s, skipping whole test module...' % sys.platform
+    elif is_netcoreapp and 'netcoreapp' in args:
+        print '... %s, skipping whole test module on .NET Core...' % sys.platform
         exit_module()
     elif is_interactive() and 'interactive' in args:
         print '... %s, skipping whole test module under "interactive" mode...' % sys.platform
@@ -561,7 +559,7 @@ def run_test(mod_name, noOutputPlease=False):
                     print ">>> skipping %-40s" % name
     if failures:
         print_failures(total, failures)
-        if is_cli and not is_netstandard: # System.Environment.CommandLine not in netstandard1.6
+        if is_cli:
             cmd_line = System.Environment.CurrentDirectory + "> " + System.Environment.CommandLine
             print "Please run the following command to repro:"
             print "\t" + cmd_line
@@ -588,8 +586,7 @@ def AddReferenceToDlrCore():
     import clr
     import System
     if System.Environment.Version.Major >=4:
-        if not is_netstandard:
-            clr.AddReference("System.Core")
+        clr.AddReference("System.Core")
     else:
         clr.AddReference("Microsoft.Scripting.Core")
 

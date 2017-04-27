@@ -476,7 +476,7 @@ import pkg_d.mod_d
     AreEqual(dir(test).count('del'), 0)     # assigned to, deleted, never used
 
 #########################################################################################
-@skip("netstandard") # no System.Windows.Forms in netstandard
+@skip("netcoreapp") # no System.Windows.Forms
 @skip("silverlight")
 @skip("win32")
 @skip("posix")

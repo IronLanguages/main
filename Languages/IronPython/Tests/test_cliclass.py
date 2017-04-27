@@ -26,15 +26,14 @@ if __name__  == '__main__':
     def f(): print 'hello'
     try:
         System.Action(f)
-        if not System.Environment.Version.Major>3:
+        if hasattr(System, "Environment") and not System.Environment.Version.Major>3:
             raise Exception('action[t] test failed')
     except TypeError, e:
         if e.message!="cannot create instances of Action[T] because it is a generic type definition":
             raise Exception(e.message)
     
     import clr
-    if not clr.IsNetStandard:
-        clr.AddReference("System.Core")
+    clr.AddReference("System.Core")
     System.Action(f)
 
 
@@ -338,6 +337,8 @@ def test_generic_only_TypeGroup():
         Assert(str(e).find('GenericOnlyConflict') != -1)
 
 def test_autodoc():
+    if is_netcoreapp:
+        clr.AddReference("System.Threading.Thread")
     from System.Threading import Thread, ThreadStart
     
     Assert(Thread.__doc__.find('Thread(start: ThreadStart)') != -1)
@@ -350,7 +351,7 @@ def test_autodoc():
 #IronPythonTest.TypeDescTests is not available for silverlight
 @skip("silverlight")    
 def test_type_descs():
-    if is_netstandard:
+    if is_netcoreapp:
         clr.AddReference("System.ComponentModel.Primitives")
 
     test = TypeDescTests()
@@ -520,7 +521,7 @@ def test_char():
 
 def test_repr():
     if not is_silverlight:
-        if is_netstandard:
+        if is_netcoreapp:
             clr.AddReference('System.Drawing.Primitives')
         else:
             clr.AddReference('System.Drawing')
@@ -947,7 +948,7 @@ def test_virtual_event():
 
 @skip("silverlight")
 def test_property_get_set():
-    if is_netstandard:
+    if is_netcoreapp:
         clr.AddReference("System.Drawing.Primitives")
     else:
         clr.AddReference("System.Drawing")
@@ -979,7 +980,7 @@ def test_constructor_function():
     AreEqual(System.DateTime.__new__.__name__, '__new__')
     Assert(System.DateTime.__new__.__doc__.find('__new__(cls: type, year: int, month: int, day: int)') != -1)
                 
-    if not is_silverlight and not is_netstandard: # no System.AssemblyLoadEventArgs in netstandard
+    if not is_silverlight:
         Assert(System.AssemblyLoadEventArgs.__new__.__doc__.find('__new__(cls: type, loadedAssembly: Assembly)') != -1)
 
 def test_class_property():
@@ -1000,7 +1001,7 @@ def test_keyword_construction_readonly():
 
 @skip("silverlight") # no FileSystemWatcher in Silverlight
 def test_kw_construction_types():
-    if is_netstandard:
+    if is_netcoreapp:
         clr.AddReference("System.IO.FileSystem.Watcher")
 
     for val in [True, False]:
@@ -1011,10 +1012,11 @@ def test_as_bool():
     """verify using expressions in if statements works correctly.  This generates an
     site whose return type is bool so it's important this works for various ways we can
     generate the body of the site, and use the site both w/ the initial & generated targets"""
-    if is_netstandard:
+    if is_netcoreapp:
         clr.AddReference("System.Runtime")
+        clr.AddReference("System.Threading.Thread")
     else:
-        clr.AddReference('System') # ensure test passes in ipt
+        clr.AddReference('System') # ensure test passes in ipy
     
     # instance property
     x = System.Uri('http://foo')
@@ -1066,7 +1068,7 @@ def test_as_bool():
     
 @skip("silverlight") # no Stack on Silverlight
 def test_generic_getitem():
-    if is_netstandard:
+    if is_netcoreapp:
         clr.AddReference("System.Collections")
 
     # calling __getitem__ is the same as indexing
@@ -1083,7 +1085,7 @@ def test_generic_getitem():
     
 
 @skip("silverlight") # no WinForms on Silverlight
-@skip("netstandard") # no System.Windows.Forms in netstandard
+@skip("netcoreapp") # no System.Windows.Forms in .NET Core
 def test_multiple_inheritance():
     """multiple inheritance from two types in the same hierarchy should work, this is similar to class foo(int, object)"""
     clr.AddReference("System.Windows.Forms")
@@ -1158,7 +1160,7 @@ def test_disposable():
 
 def test_dbnull():
     """DBNull should not be true"""
-    if is_netstandard:
+    if is_netcoreapp:
         clr.AddReference("System.Data.Common")
     
     if System.DBNull.Value:
@@ -1216,14 +1218,13 @@ def test_explicit_interface_impl():
     
 @skip("silverlight") # no ArrayList on Silverlight
 def test_interface_isinstance():
-    if is_netstandard:
+    if is_netcoreapp:
         clr.AddReference("System.Collections.NonGeneric")
 
     l = System.Collections.ArrayList()
     AreEqual(isinstance(l, System.Collections.IList), True)
 
 @skip("silverlight") # no serialization support in Silverlight
-@skip("netstandard") # no ClrModule.Serialize/Deserialize in netstandard
 def test_serialization():
     """
     TODO:
@@ -1354,7 +1355,7 @@ def test_serialization():
     #    AreEqual(temp_except.Message, "another message")
 
 def test_generic_method_error():
-    if is_netstandard:
+    if is_netcoreapp:
         clr.AddReference("System.Linq.Queryable")
     else:
         clr.AddReference('System.Core')
@@ -1469,8 +1470,9 @@ def test_array_contains():
 
 def test_a_override_patching():
     if System.Environment.Version.Major >=4:
-        if is_netstandard:
+        if is_netcoreapp:
             clr.AddReference("System.Dynamic.Runtime")
+            clr.AddReference("System.Linq.Expressions")
         else:
             clr.AddReference("System.Core")
     else:
@@ -1506,10 +1508,11 @@ def test_dir():
     # make sure you can do dir on everything in System which 
     # includes special types like ArgIterator and Func
     for attr in dir(System):
+        if is_netcoreapp and attr == "ReadOnlySpan": continue
         dir(getattr(System, attr))
 
     if not is_silverlight:
-        if is_netstandard:
+        if is_netcoreapp:
             clr.AddReference("System.Collections")
     
         for x in [System.Collections.Generic.SortedList,
@@ -1778,7 +1781,7 @@ def test_silverlight_access_isolated_storage():
         # IsolatedStorage may not actually be available
         pass
     
-@skip("silverlight", "posix", "netstandard") # no WPF in netstandard
+@skip("silverlight", "posix", "netcoreapp") # no WPF
 def test_xaml_support():
     text = """<custom:XamlTestObject 
    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -1861,7 +1864,7 @@ def test_xaml_support():
 @skip("silverlight")
 def test_extension_methods():
     import clr, imp
-    if is_netstandard:
+    if is_netcoreapp:
         clr.AddReference('System.Linq')
     else:
         clr.AddReference('System.Core')

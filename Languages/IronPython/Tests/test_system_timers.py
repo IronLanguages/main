@@ -16,7 +16,10 @@
 from iptest.assert_util import *
 skiptest("win32")
 skiptest("silverlight")
-skiptest("netstandard") # no System.Timers in netstandard
+
+if is_netcoreapp:
+    import clr
+    clr.AddReference("System.ComponentModel.TypeConverter")
 
 from time   import sleep
 from thread import start_new_thread

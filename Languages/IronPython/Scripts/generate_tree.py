@@ -294,10 +294,14 @@ def main():
                     ("StackSpiller Switch", gen_stackspiller_switch),
                     ("Expression Compiler", gen_compiler)
                     ]
-    import System
-    if System.Environment.Version.Major<4:
-        temp_list.append(("Expression Debugger Proxies", gen_debug_proxies))
-    
+
+    try:
+        import System
+        if System.Environment.Version.Major<4:
+            temp_list.append(("Expression Debugger Proxies", gen_debug_proxies))
+    except:
+        pass
+
     return generate(*temp_list)
 
 if __name__ == "__main__":

@@ -80,7 +80,7 @@
   </Target>
   <Target Name="CSManyArea" Inputs="@(AreaCSFile)" Outputs="@(AreaCSFile->'$(OutputPath)\$(Prefix)%(Filename).dll')" DependsOnTargets="TypeSample">
     <Csc TargetType="library" EmitDebugInformation="true" Sources="Src\fieldtests.cs" OutputAssembly="$(OutputPath)\$(Prefix)fieldtests.dll" References="$(OutputPath)\$(Prefix)typesamples.dll" />
-    <Csc TargetType="library" EmitDebugInformation="true" Sources="Src\methodargs.cs" OutputAssembly="$(OutputPath)\$(Prefix)methodargs.dll" References="System.dll;$(OutputPath)\Microsoft.Scripting.dll;$(OutputPath)\$(Prefix)typesamples.dll" />
+    <Csc TargetType="library" EmitDebugInformation="true" Sources="Src\methodargs.cs" OutputAssembly="$(OutputPath)\$(Prefix)methodargs.dll" References="System.dll;System.Runtime.dll;$(OutputPath)\Microsoft.Scripting.dll;$(OutputPath)\$(Prefix)typesamples.dll" />
     <Csc TargetType="library" EmitDebugInformation="true" Sources="Src\returnvalues.cs" OutputAssembly="$(OutputPath)\$(Prefix)returnvalues.dll" References="$(OutputPath)\$(Prefix)typesamples.dll" />
     <Csc TargetType="library" EmitDebugInformation="true" Sources="Src\operators.cs" OutputAssembly="$(OutputPath)\$(Prefix)operators.dll" References="$(OutputPath)\$(Prefix)typesamples.dll" />
     <Csc TargetType="library" EmitDebugInformation="true" Sources="Src\userdefinedconversions.cs" OutputAssembly="$(OutputPath)\$(Prefix)userdefinedconversions.dll" References="$(OutputPath)\$(Prefix)typesamples.dll" />
@@ -90,7 +90,7 @@
     <Csc TargetType="library" EmitDebugInformation="true" Sources="Src\indexerdefinitionscs.cs" OutputAssembly="$(OutputPath)\$(Prefix)indexerdefinitionscs.dll" References="$(OutputPath)\$(Prefix)typesamples.dll" />
     <Csc TargetType="library" EmitDebugInformation="true" Sources="Src\defaultmemberscs.cs" OutputAssembly="$(OutputPath)\$(Prefix)defaultmemberscs.dll" References="$(OutputPath)\$(Prefix)typesamples.dll" />
     <Csc TargetType="library" EmitDebugInformation="true" Sources="Src\baseclasscs.cs" OutputAssembly="$(OutputPath)\$(Prefix)baseclasscs.dll" References="$(OutputPath)\$(Prefix)typesamples.dll" />
-    <Csc TargetType="library" EmitDebugInformation="true" Sources="Src\dynamicobjmodel.cs" OutputAssembly="$(OutputPath)\$(Prefix)dynamicobjmodel.dll" References="$(OutputPath)\Microsoft.Dynamic.dll" />
+    <Csc TargetType="library" EmitDebugInformation="true" Sources="Src\dynamicobjmodel.cs" OutputAssembly="$(OutputPath)\$(Prefix)dynamicobjmodel.dll" References="System.Runtime.dll;$(OutputPath)\Microsoft.Dynamic.dll" />
   </Target>
   <Target Name="VBManyArea" Inputs="@(AreaVBFile)" Outputs="@(AreaCSFile->'$(OutputPath)\$(Prefix)%(Filename).dll')" DependsOnTargets="TypeSample" Condition="'$(OS)' != 'Unix'">
     <Vbc TargetType="library" EmitDebugInformation="true" Sources="Src\indexerdefinitionsvb.vb" OutputAssembly="$(OutputPath)\$(Prefix)indexerdefinitionsvb.dll" References="$(OutputPath)\$(Prefix)typesamples.dll" />

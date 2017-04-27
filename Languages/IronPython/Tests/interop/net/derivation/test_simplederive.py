@@ -121,7 +121,6 @@ def test_system_type_cs0644():
     pass
 
 
-@skip("netstandard") # no System.MarshalByRefObject in netstandard
 def test_mbr():
     class C(System.MarshalByRefObject): pass
 

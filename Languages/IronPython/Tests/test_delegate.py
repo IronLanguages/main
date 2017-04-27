@@ -19,6 +19,9 @@ load_iron_python_test()
 import IronPythonTest
 import clr
 
+if is_netcoreapp:
+    clr.AddReference("System.Threading.Thread")
+
 from System.Threading import *
 from System import EventArgs
 

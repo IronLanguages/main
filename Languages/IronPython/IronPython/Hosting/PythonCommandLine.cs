@@ -265,9 +265,13 @@ namespace IronPython.Hosting {
             if (entryAssembly != null) {
                 executable = entryAssembly.Location;
                 prefix = Path.GetDirectoryName(executable);
-#if NETSTANDARD
+#if NETCOREAPP2_0
                 if (Path.GetExtension(executable) == ".dll") {
-                    var runner = Path.Combine(prefix, "ipy.bat");
+                    var name = Path.GetFileNameWithoutExtension(executable);
+                    var runner = Path.Combine(prefix, name + ".bat");
+                    if (Environment.OSVersion.Platform == PlatformID.Unix) {
+                        runner = Path.Combine(prefix, name);
+                    }
                     if (File.Exists(runner)) executable = runner;
                 }
 #endif

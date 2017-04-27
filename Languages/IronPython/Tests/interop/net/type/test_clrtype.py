@@ -208,8 +208,7 @@ def test_type___clrtype__():
     Assert(hasattr(type, "__clrtype__"))
     
     #Make sure the documentation is useful
-    if not is_netstandard: # TODO: figure out why this doesn't work
-        Assert("Gets the .NET type which is" in type.__clrtype__.__doc__, type.__clrtype__.__doc__)
+    Assert("Gets the .NET type which is" in type.__clrtype__.__doc__, type.__clrtype__.__doc__)
     
     AreEqual(type.__clrtype__(type),  type)
     AreEqual(type.__clrtype__(float), float)
@@ -275,7 +274,8 @@ def test_clrtype_returns_existing_clr_types():
     instead of subclassing from type or System.Type.
     '''
     global called
-    if is_netstandard:
+    if is_netcoreapp:
+        clr.AddReference("System.Collections")
         clr.AddReference("System.Data.Common")
     else:
         clr.AddReference("System.Data")
@@ -288,6 +288,7 @@ def test_clrtype_returns_existing_clr_types():
                 System.Int64,
                 System.Double,
                 System.Data.CommandType,
+                System.Data.Common.DataAdapter,
                 System.Boolean,
                 System.Char,
                 System.Decimal,
@@ -297,9 +298,6 @@ def test_clrtype_returns_existing_clr_types():
                 System.Collections.BitArray,
                 System.Collections.Generic.List[System.Char],
                 ]
-
-    if not is_netstandard: # no System.Data.Common.DataAdapter in netstandard
-        types.append(System.Data.Common.DataAdapter)
 
     for x in types:
         called = False
@@ -405,10 +403,9 @@ def test_critical_custom_attributes():
     clr.AddReference("Microsoft.Scripting")
     from Microsoft.Scripting.Generation import Snippets
     
-    if is_netstandard:
-        clr.AddReference("System.Xml.XmlSerializer")
-    else:
-        clr.AddReference("System.Xml")
+    if is_netcoreapp:
+        clr.AddReference("System.Private.Xml")
+    clr.AddReference("System.Xml")
     from System.Xml.Serialization import XmlRootAttribute
     
     xmlroot_clrtype = clr.GetClrType(XmlRootAttribute)

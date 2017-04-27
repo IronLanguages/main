@@ -297,11 +297,7 @@ namespace IronPython.Runtime.Operations {
                     typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(BuiltinFunction)), null);
 
                     // type dict needs to be ensured to be fully initialized before assigning back
-#if NETSTANDARD
-                    Interlocked.MemoryBarrier();
-#else
                     Thread.MemoryBarrier();
-#endif
                     _nativelyPickleableTypes = typeDict;
                 }
                 return _nativelyPickleableTypes;

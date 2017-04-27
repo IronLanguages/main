@@ -22,7 +22,7 @@ import sys
 import re
 
 import clr
-if is_netstandard:
+if is_netcoreapp:
     clr.AddReference("System.Diagnostics.Process")
     clr.AddReference("System.IO.FileSystem")
 

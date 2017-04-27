@@ -316,11 +316,7 @@ namespace IronPython.Modules {
 
             } finally {
                 if(store != null) {
-#if NETSTANDARD
-                    store.Dispose();
-#else
                     store.Close();
-#endif
                 }
             }
             return new List();
@@ -343,11 +339,7 @@ namespace IronPython.Modules {
 
             } finally {
                 if (store != null) {
-#if NETSTANDARD
-                    store.Dispose();
-#else
                     store.Close();
-#endif
                 }
             }
             return new List();
@@ -405,27 +397,6 @@ namespace IronPython.Modules {
         private static string ToPythonDateFormat(string date) {
             return DateTime.Parse(date).ToUniversalTime().ToString("MMM d HH:mm:ss yyyy") + " GMT";
         }
-
-#if NETSTANDARD
-        private static string ByteArrayToString(IEnumerable<byte> bytes) {
-            var builder = new StringBuilder();
-            foreach (byte b in bytes)
-                builder.Append(b.ToString("X2"));
-            return builder.ToString();
-        }
-
-        private static string GetSerialNumberString(this X509Certificate cert) {
-            return ByteArrayToString(cert.GetSerialNumber().Reverse()); // must be reversed
-        }
-
-        private static string GetCertHashString(this X509Certificate cert) {
-            return ByteArrayToString(cert.GetCertHash());
-        }
-
-        internal static byte[] GetRawCertData(this X509Certificate cert) {
-            return cert.Export(X509ContentType.Cert);
-        }
-#endif
 
         private static string SerialNumberToPython(X509Certificate cert) {
             var res = cert.GetSerialNumberString();
@@ -533,7 +504,6 @@ namespace IronPython.Modules {
             }
 
             if (cert != null) {
-#if !NETSTANDARD
                 if (key != null) {
                     try {
                         cert.PrivateKey = key;
@@ -541,7 +511,6 @@ namespace IronPython.Modules {
                         throw ErrorDecoding(context, filename, "cert and private key are incompatible", e);
                     }
                 }
-#endif
                 return cert;
             }
             throw ErrorDecoding(context, filename, "certificate not found");

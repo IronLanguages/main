@@ -50,7 +50,7 @@ namespace IronPython.Compiler {
             _moduleName = moduleName;
         }
 
-#if !NETSTANDARD
+#if !NETCOREAPP2_0
         protected override KeyValuePair<MethodBuilder, Type> CompileForSave(TypeGen typeGen) {
             var lambda = RewriteForSave(typeGen, _code);
 

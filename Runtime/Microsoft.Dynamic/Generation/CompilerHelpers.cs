@@ -304,7 +304,6 @@ namespace Microsoft.Scripting.Generation {
             }
 
             switch (self.MemberType) {
-#if !NETSTANDARD
                 case MemberTypes.Field:
                     return ((FieldInfo)self).FieldHandle.Equals(((FieldInfo)other).FieldHandle);
                 case MemberTypes.Method:
@@ -316,7 +315,6 @@ namespace Microsoft.Scripting.Generation {
                     return ((Type)self).TypeHandle.Equals(((Type)other).TypeHandle);
                 case MemberTypes.Event:
                 case MemberTypes.Property:
-#endif
                 default:
                     return
                         ((MemberInfo)self).Module == ((MemberInfo)other).Module &&
@@ -380,7 +378,7 @@ namespace Microsoft.Scripting.Generation {
             }
 
             if (t.IsValueType()
-#if !SILVERLIGHT && !WIN8 && !WP75 && !NETSTANDARD
+#if !SILVERLIGHT && !WIN8 && !WP75
                 && t != typeof(ArgIterator)
 #endif
 ) {
@@ -643,7 +641,7 @@ namespace Microsoft.Scripting.Generation {
             return (T)(object)LightCompile((LambdaExpression)lambda, compilationThreshold);
         }
 
-#if FEATURE_REFEMIT && !NETSTANDARD
+#if FEATURE_REFEMIT && !NETCOREAPP2_0
         /// <summary>
         /// Compiles the lambda into a method definition.
         /// </summary>
