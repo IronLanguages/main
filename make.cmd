@@ -77,6 +77,14 @@ goto :main
 msbuild /t:%_target% /p:BaseConfiguration=%_flavour% /verbosity:minimal /nologo
 goto :exit
 
+:ngen-release
+if "%DLR_BIN%"=="" (
+  echo "You must set DLR_BIN before running this command"
+  exit /b -1
+)
+%SystemRoot%\Microsoft.NET\Framework\v4.0.30319\ngen.exe install %DLR_BIN%\ipy.exe
+goto :exit
+
 :core
 dotnet restore
 set _flavour=Release
