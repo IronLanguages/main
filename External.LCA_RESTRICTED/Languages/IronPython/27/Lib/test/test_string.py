@@ -1,5 +1,6 @@
 import unittest
 import string
+import sys
 from string import Template
 from test import test_support, string_tests
 from UserList import UserList
@@ -208,6 +209,7 @@ class ModuleTest(unittest.TestCase):
         self.assertEqual(fmt.format(arg='test', format_string="-{arg}-"),
                          '-test-')
 
+@unittest.skipIf(sys.platform == 'cli', 'bytes is not an alias for str in IronPython')
 class BytesAliasTest(unittest.TestCase):
 
     def test_builtin(self):
