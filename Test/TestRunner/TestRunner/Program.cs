@@ -263,7 +263,7 @@ namespace TestRunner
 
         private void RunTestForConsole(Test test) {
             lock (this) {
-                if (!_quiet) {
+                if (!_quiet && _threadCount == 1) {
                     Console.Write("{0,-80}", test.Category.Name + " " + test.Name);
                 }
             }
@@ -282,6 +282,10 @@ namespace TestRunner
 
             lock (this) {
                 if (!_quiet) {
+                    if (_threadCount != 1) {
+                        Console.Write("{0,-80}", test.Category.Name + " " + test.Name);
+                    }
+
                     const string resultFormat = "{0,-25}";
                     var originalColor = Console.ForegroundColor;
                     switch (result.Status) {
