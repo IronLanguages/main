@@ -712,7 +712,7 @@ namespace Microsoft.Scripting.Utils {
         #endregion
 
         #region Win8
-#if WIN8 || CLR45
+#if WIN8
         public static TypeCode GetTypeCode(this Enum e) {
             return GetTypeCode(Enum.GetUnderlyingType(e.GetType()));
         }
@@ -771,7 +771,6 @@ namespace Microsoft.Scripting.Utils {
             }
             return TypeCode.Object;
         }
-
         public static IEnumerable<Type> GetImplementedInterfaces(this Type type) {
             return type.GetTypeInfo().ImplementedInterfaces;
         }
@@ -923,6 +922,7 @@ namespace Microsoft.Scripting.Utils {
             return assembly.IsDefined(attributeType, false);
         }
 
+#if !CLR45
         public static T GetCustomAttribute<T>(this Assembly assembly, bool inherit = false) where T : Attribute {
             return (T)Attribute.GetCustomAttribute(assembly, typeof(T), inherit);
         }
@@ -938,6 +938,7 @@ namespace Microsoft.Scripting.Utils {
         public static IEnumerable<T> GetCustomAttributes<T>(this MemberInfo member, bool inherit = false) where T : Attribute {
             return Attribute.GetCustomAttributes(member, typeof(T), inherit).Cast<T>();
         }
+#endif
 #endif
 
         public static MethodInfo GetMethod(this Delegate d) {
