@@ -461,19 +461,9 @@ namespace IronPython.Modules {
             }
         }
 
-        public static object eval(CodeContext/*!*/ context, FunctionCode code) {
-            Debug.Assert(context != null);
-            if (code == null) throw PythonOps.TypeError("eval() argument 1 must be string or code object");
+        public static object eval(CodeContext/*!*/ context, FunctionCode code) => eval(context, code, null, null);
 
-            return eval(context, code, null);
-        }
-
-        public static object eval(CodeContext/*!*/ context, FunctionCode code, PythonDictionary globals) {
-            Debug.Assert(context != null);
-            if (code == null) throw PythonOps.TypeError("eval() argument 1 must be string or code object");
-
-            return eval(context, code, globals, globals);
-        }
+        public static object eval(CodeContext/*!*/ context, FunctionCode code, PythonDictionary globals) => eval(context, code, globals, null);
 
         public static object eval(CodeContext/*!*/ context, FunctionCode code, PythonDictionary globals, object locals) {
             Debug.Assert(context != null);
@@ -495,20 +485,10 @@ namespace IronPython.Modules {
         }
 
         [LightThrowing]
-        public static object eval(CodeContext/*!*/ context, string expression) {
-            Debug.Assert(context != null);
-            if (expression == null) throw PythonOps.TypeError("eval() argument 1 must be string or code object");
-
-            return eval(context, expression, globals(context), locals(context));
-        }
+        public static object eval(CodeContext/*!*/ context, string expression) => eval(context, expression, null, null);
 
         [LightThrowing]
-        public static object eval(CodeContext/*!*/ context, string expression, PythonDictionary globals) {
-            Debug.Assert(context != null);
-            if (expression == null) throw PythonOps.TypeError("eval() argument 1 must be string or code object");
-
-            return eval(context, expression, globals, globals);
-        }
+        public static object eval(CodeContext/*!*/ context, string expression, PythonDictionary globals) => eval(context, expression, globals, null);
 
         [LightThrowing]
         public static object eval(CodeContext/*!*/ context, string expression, PythonDictionary globals, object locals) {
@@ -2481,6 +2461,7 @@ namespace IronPython.Modules {
         private static CodeContext/*!*/ GetExecEvalScopeOptional(CodeContext/*!*/ context, PythonDictionary globals, object localsDict, bool copyModule) {
             Assert.NotNull(context);
 
+            if (localsDict == null) localsDict = globals;
             if (globals == null) globals = Builtin.globals(context);
             if (localsDict == null) localsDict = locals(context);
 
