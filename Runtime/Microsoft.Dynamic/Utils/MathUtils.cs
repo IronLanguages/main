@@ -572,9 +572,10 @@ namespace Microsoft.Scripting.Utils {
         /// Lanczos parameters are N=13 and G=13.144565.
         /// </summary>
         private static double PositiveLGamma(double v0) {
-            double vg = v0 + 12.644565; // v0 + g - 0.5
-            double res = Math.Log(GammaRationalFunc(v0)) - vg;
-            res += (v0 - 0.5) * Math.Log(vg);
+            const double g = 13.144565;
+            double vg = v0 + g - 0.5;
+            double res = Math.Log(GammaRationalFunc(v0)) - g;
+            res += (v0 - 0.5) * (Math.Log(vg) - 1);
 
             return res;
         }
