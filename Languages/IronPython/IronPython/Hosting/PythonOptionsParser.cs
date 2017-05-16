@@ -140,17 +140,20 @@ namespace IronPython.Hosting {
 
                 case "-X:NoFrames":
                     if(LanguageSetup.Options.ContainsKey("Frames") && LanguageSetup.Options["Frames"] != ScriptingRuntimeHelpers.False) {
-                        throw new InvalidOptionException("Only one of -X:Frames/-X:NoFrames may be specified");
+                        throw new InvalidOptionException("Only one of -X:[Full]Frames/-X:NoFrames may be specified");
                     }
                     LanguageSetup.Options["Frames"] = ScriptingRuntimeHelpers.False;
                     break;
                 case "-X:Frames":
                     if (LanguageSetup.Options.ContainsKey("Frames") && LanguageSetup.Options["Frames"] != ScriptingRuntimeHelpers.True) {
-                        throw new InvalidOptionException("Only one of -X:Frames/-X:NoFrames may be specified");
+                        throw new InvalidOptionException("Only one of -X:[Full]Frames/-X:NoFrames may be specified");
                     }
                     LanguageSetup.Options["Frames"] = ScriptingRuntimeHelpers.True;
                     break;
                 case "-X:FullFrames":
+                    if(LanguageSetup.Options.ContainsKey("Frames") && LanguageSetup.Options["Frames"] != ScriptingRuntimeHelpers.True) {
+                        throw new InvalidOptionException("Only one of -X:[Full]Frames/-X:NoFrames may be specified");
+                    }
                     LanguageSetup.Options["Frames"] = LanguageSetup.Options["FullFrames"] = ScriptingRuntimeHelpers.True;
                     break;
                 case "-X:Tracing":
