@@ -139,9 +139,15 @@ namespace IronPython.Hosting {
                     break;
 
                 case "-X:NoFrames":
+                    if(LanguageSetup.Options.ContainsKey("Frames") && LanguageSetup.Options["Frames"] != ScriptingRuntimeHelpers.False) {
+                        throw new InvalidOptionException("Only one of -X:Frames/-X:NoFrames may be specified");
+                    }
                     LanguageSetup.Options["Frames"] = ScriptingRuntimeHelpers.False;
                     break;
                 case "-X:Frames":
+                    if (LanguageSetup.Options.ContainsKey("Frames") && LanguageSetup.Options["Frames"] != ScriptingRuntimeHelpers.True) {
+                        throw new InvalidOptionException("Only one of -X:Frames/-X:NoFrames may be specified");
+                    }
                     LanguageSetup.Options["Frames"] = ScriptingRuntimeHelpers.True;
                     break;
                 case "-X:FullFrames":
