@@ -138,6 +138,9 @@ namespace IronPython.Hosting {
                     LanguageSetup.Options["Arguments"] = PopRemainingArgs();
                     break;
 
+                case "-X:NoFrames":
+                    LanguageSetup.Options["Frames"] = ScriptingRuntimeHelpers.False;
+                    break;
                 case "-X:Frames":
                     LanguageSetup.Options["Frames"] = ScriptingRuntimeHelpers.True;
                     break;
@@ -264,6 +267,7 @@ namespace IronPython.Hosting {
                 { "-W arg",                 "Warning control (arg is action:message:category:module:lineno) also IRONPYTHONWARNINGS=arg" },
                 { "-3",                     "Warn about Python 3.x incompatibilities" },
 
+                { "-X:NoFrames",            "Disable sys._getframe support, can improve execution speed" },
                 { "-X:Frames",              "Enable basic sys._getframe support" },
                 { "-X:FullFrames",          "Enable sys._getframe with access to locals" },
                 { "-X:Tracing",             "Enable support for tracing all methods even before sys.settrace is called" },
