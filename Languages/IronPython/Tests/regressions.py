@@ -1006,6 +1006,11 @@ def test_gh1612():
 
     test()
 
+def test_gh1629():
+    AreEqual('Bool is True', 'Bool is {}'.format(True))
+    AreEqual('Bool is 1', 'Bool is {:^}'.format(True))
+    AreEqual('Bool is     1     ', 'Bool is {:^10}'.format(True))
+
 #------------------------------------------------------------------------------
 #--Main
 run_test(__name__)
