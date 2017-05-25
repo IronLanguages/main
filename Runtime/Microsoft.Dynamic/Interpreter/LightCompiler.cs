@@ -39,15 +39,17 @@ namespace Microsoft.Scripting.Interpreter {
         public readonly int EndIndex;
         public readonly int LabelIndex;
         public readonly int HandlerStartIndex;
+        public readonly int HandlerEndIndex; // index of LeaveExceptionHandlerInstruction, etc.
 
         public bool IsFault { get { return ExceptionType == null; } }
 
-        internal ExceptionHandler(int start, int end, int labelIndex, int handlerStartIndex, Type exceptionType) {
+        internal ExceptionHandler(int start, int end, int labelIndex, int handlerStartIndex, int handlerEndIndex, Type exceptionType) {
             StartIndex = start;
             EndIndex = end;
             LabelIndex = labelIndex;
             ExceptionType = exceptionType;
             HandlerStartIndex = handlerStartIndex;
+            HandlerEndIndex = handlerEndIndex;
         }
 
         public bool Matches(Type exceptionType, int index) {
@@ -1106,10 +1108,12 @@ namespace Microsoft.Scripting.Interpreter {
                             int handlerStart = _instructions.Count;
 
                             CompileAsVoidRemoveRethrow(handler.Body);
+
+                            int handlerEnd = _instructions.Count;
                             _instructions.EmitLeaveFault(hasValue);
                             _instructions.MarkLabel(end);
 
-                            _handlers.Add(new ExceptionHandler(tryStart, tryEnd, handlerLabel, handlerStart, null));
+                            _handlers.Add(new ExceptionHandler(tryStart, tryEnd, handlerLabel, handlerStart, handlerEnd, null));
                             PopLabelBlock(LabelScopeKind.Try);
                             return;
                         }
@@ -1148,9 +1152,10 @@ namespace Microsoft.Scripting.Interpreter {
 
                     // keep the value of the body on the stack:
                     Debug.Assert(hasValue == (handler.Body.Type != typeof(void)));
+                    int handlerEnd = _instructions.Count;
                     _instructions.EmitLeaveExceptionHandler(hasValue, gotoEnd);
 
-                    _handlers.Add(new ExceptionHandler(tryStart, tryEnd, handlerLabel, handlerStart, handler.Test));
+                    _handlers.Add(new ExceptionHandler(tryStart, tryEnd, handlerLabel, handlerStart, handlerEnd, handler.Test));
 
                     PopLabelBlock(LabelScopeKind.Catch);
                 

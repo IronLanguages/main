@@ -37,7 +37,7 @@ namespace Microsoft.Scripting.Interpreter {
     /// For code that is only run a small number of times this can be a 
     /// sweet spot.
     /// 
-    /// The core loop in the interpreter is the RunInstructions method.
+    /// The core loop in the interpreter is the Run method.
     /// </summary>
     internal sealed class Interpreter {
         internal static readonly object NoValue = new object();
@@ -161,21 +161,36 @@ namespace Microsoft.Scripting.Interpreter {
                 frame.CurrentAbortHandler = handler;
             }
 #endif
+
+            // find the range of instruction indices valid for this handler
+            // note: handler.IsInside() uses a different range
+            int handlerStartIndex = handler.HandlerStartIndex;
+            int handlerEndIndex = handler.HandlerEndIndex;
+
             while (true) {
                 try {
                     var instructions = _instructions.Instructions;
                     int index = frame.InstructionIndex;
 
                     while (index < instructions.Length) {
-                        var curInstr = instructions[index];                        
+                        if (handlerStartIndex > index || index >= handlerEndIndex) {
+                            // we've completed handling this exception, if we skipped
+                            // the LeaveExceptionHandler, then execute it here. Otherwise
+                            // we let our caller do it.
+                            if (index != handlerEndIndex) {
+                                instructions[handlerEndIndex].Run(frame);
 
-                        index += curInstr.Run(frame);
-                        frame.InstructionIndex = index;
-                        
-                        if (curInstr is LeaveExceptionHandlerInstruction) {
-                            // we've completed handling of this exception
+                                // for now, it is known that instructions[handlerEndIndex].Run(frame) doesn't
+                                // alter frame.InstructionIndex. If this ever changes, then we'll need to
+                                // assign frame.InstructionIndex = index here.
+                                Debug.Assert(frame.InstructionIndex == index);
+                            }
+
                             return ExceptionHandlingResult.Continue;
                         }
+
+                        index += instructions[index].Run(frame);
+                        frame.InstructionIndex = index;
                     }
 
                     if (frame.InstructionIndex == RethrowOnReturn) {
