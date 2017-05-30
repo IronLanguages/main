@@ -149,6 +149,7 @@ def test_engine_access_from_within():
     engine = pc.GetModuleState(clr.GetClrType(ScriptEngine))
     Assert(engine is not None)
 
+@skip("netcoreapp") # TODO
 def test_import_clr():
     from IronPython.Hosting import Python
     eng = Python.CreateEngine()

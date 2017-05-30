@@ -39,10 +39,6 @@ using System.Numerics;
 using Microsoft.Scripting.Math;
 #endif
 
-#if NETCOREAPP1_0
-using Environment = System.FakeEnvironment;
-#endif
-
 [assembly: PythonModule("nt", typeof(IronPython.Modules.PythonNT))]
 namespace IronPython.Modules {
     public static class PythonNT {
@@ -295,6 +291,10 @@ namespace IronPython.Modules {
             return context.LanguageContext.DomainManager.Platform.CurrentDirectory;
         }
 
+#if NETCOREAPP2_0
+        private static readonly char[] invalidPathChars = new char[] { '\"', '<', '>' };
+#endif
+
         public static string _getfullpathname(CodeContext/*!*/ context, [NotNull]string/*!*/ dir) {
             PlatformAdaptationLayer pal = context.LanguageContext.DomainManager.Platform;
 
@@ -331,7 +331,13 @@ namespace IronPython.Modules {
                 foreach (char c in Path.GetInvalidPathChars()) {
                     newdir = newdir.Replace(c, Char.MaxValue);
                 }
-                
+
+#if NETCOREAPP2_0
+                foreach (char c in invalidPathChars) {
+                    newdir = newdir.Replace(c, Char.MaxValue);
+                }
+#endif
+
                 // walk backwards through the path replacing the same characters.  We should have
                 // only updated the directory leaving the filename which we're fixing.
                 string res = pal.GetFullPath(newdir);
@@ -612,6 +618,14 @@ namespace IronPython.Modules {
 
         public static void rename(string src, string dst) {
             try {
+#if NETCOREAPP2_0
+                // temporary workaround until https://github.com/dotnet/corefx/issues/19710 is fixed
+                var info = new FileInfo(src);
+                if (info.Exists) {
+                    info.MoveTo(dst);
+                    return;
+                }
+#endif
                 Directory.Move(src, dst);
             } catch (Exception e) {
                 throw ToPythonException(e);
@@ -660,11 +674,7 @@ namespace IronPython.Modules {
             object[] slicedArgs = ArrayUtils.RemoveFirst(args);
 
             Process process = MakeProcess();
-#if NETSTANDARD
-            SetEnvironment(process.StartInfo.Environment, env);
-#else
             SetEnvironment(process.StartInfo.EnvironmentVariables, env);
-#endif
 
             return SpawnProcessImpl(context, process, mode, path, slicedArgs);
         }
@@ -695,12 +705,7 @@ namespace IronPython.Modules {
         /// </summary>
         public static object spawnve(CodeContext/*!*/ context, int mode, string path, object args, object env) {
             Process process = MakeProcess();
-#if NETSTANDARD
-            SetEnvironment(process.StartInfo.Environment, env);
-#else
             SetEnvironment(process.StartInfo.EnvironmentVariables, env);
-#endif
-
             return SpawnProcessImpl(context, process, mode, path, args);
         }
 
@@ -754,11 +759,7 @@ namespace IronPython.Modules {
         /// <summary>
         /// Copy elements from a Python mapping of dict environment variables to a StringDictionary.
         /// </summary>
-#if NETSTANDARD
-        private static void SetEnvironment(IDictionary<string, string> currentEnvironment, object newEnvironment) {
-#else
         private static void SetEnvironment(System.Collections.Specialized.StringDictionary currentEnvironment, object newEnvironment) {
-#endif
             PythonDictionary env = newEnvironment as PythonDictionary;
             if (env == null) {
                 throw PythonOps.TypeError("env argument must be a dict");
@@ -821,17 +822,17 @@ namespace IronPython.Modules {
 #if FEATURE_PROCESS
         public static void startfile(string filename, [DefaultParameterValue("open")]string operation) {
             System.Diagnostics.Process process = new System.Diagnostics.Process();
-#if NETSTANDARD
+#if NETCOREAPP2_0
             process.StartInfo.FileName = "cmd";
             process.StartInfo.Arguments = "/c " + filename;
-            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.UseShellExecute = false; // this must alays be set to false with .NET Core
 #else
             process.StartInfo.FileName = filename;
             process.StartInfo.UseShellExecute = true;
             process.StartInfo.Verb = operation;
 #endif
             try {
-#if NETSTANDARD
+#if NETCOREAPP2_0
                 if (!File.Exists(filename)) throw new Win32Exception("The system cannot find the file specified");
 #endif
                 process.Start();
@@ -840,6 +841,7 @@ namespace IronPython.Modules {
             }
         }
 #endif
+
 
         [PythonType, DontMapIEnumerableToIter]
         public class stat_result : IList, IList<object> {
@@ -1825,7 +1827,6 @@ are defined in the signal module.")]
                 return true;
             }
 
-#if !NETCOREAPP1_0
             // TODO: need revisit
             string sysdir = System.Environment.GetFolderPath(System.Environment.SpecialFolder.System);
             foreach (string suffix in new string[] { string.Empty, ".com", ".exe", "cmd", ".bat" }) {
@@ -1835,7 +1836,6 @@ are defined in the signal module.")]
                     return true;
                 }
             }
-#endif
 
             return false;
         }

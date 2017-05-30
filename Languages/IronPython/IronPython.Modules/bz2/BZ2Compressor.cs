@@ -88,11 +88,7 @@ You must not use the compressor object after calling this method.
 
                 byte[] result = new byte[newDataCount];
                 if (newDataCount > 0) {
-#if NETSTANDARD
-                    ArraySegment<byte> buffer;
-                    this.output.TryGetBuffer(out buffer);
-                    Array.Copy(buffer.Array, (int)this.lastPosition, result, 0, (int)newDataCount);
-#elif !SILVERLIGHT && !WP75
+#if !SILVERLIGHT && !WP75
                     Array.Copy(this.output.GetBuffer(), this.lastPosition, result, 0, newDataCount);
 #else
                     Array.Copy(this.output.GetBuffer(), (int)this.lastPosition, result, 0, (int)newDataCount);

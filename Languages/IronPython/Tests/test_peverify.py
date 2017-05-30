@@ -18,7 +18,7 @@
 from iptest.assert_util import *
 from iptest.process_util import *
 
-skiptest("netstandard") # no assembly saving in netstandard
+skiptest("netcoreapp")
 skiptest("silverlight")
 skiptest("win32")
 skiptest("mono") # mono doesn't add a debuggable attribute

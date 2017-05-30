@@ -261,9 +261,6 @@ if is_cli or is_silverlight:
     # (Hashtable is not available)
     htlist = [System.Collections.Generic.Dictionary[System.Object, System.Object]()]
     if not is_silverlight:
-        if is_netstandard:
-            import clr
-            clr.AddReference("System.Collections.NonGeneric")
         htlist += [System.Collections.Hashtable()]
 
     for ht in htlist:
@@ -308,7 +305,7 @@ if is_cli or is_silverlight:
     # an OpsExtensibleType and doesn't define __str__ on this
     # overload
     
-    AreEqual(System.Double.ToString(1.0, 'f'), '1.00')
+    AreEqual(System.Double.ToString(1.0, 'f', System.Globalization.CultureInfo.InvariantCulture), '1.00')
 
 ######################################################################################
 # Incorrect number of arguments
@@ -736,7 +733,7 @@ for case in cases:
 
 # verify we can call the base init directly
 
-if is_cli and not is_netstandard and not is_posix: # no System.Windows.Forms in netstandard
+if is_cli and not is_netcoreapp and not is_posix: # no System.Windows.Forms in .NET Core
     import clr
     clr.AddReferenceByPartialName('System.Windows.Forms')
     from System.Windows.Forms import *
@@ -799,7 +796,7 @@ def test_big_calls():
         exec 'def f(' + ','.join(['a' + str(i) for i in range(size)]) + '): return ' + ','.join(['a' + str(i) for i in range(size)])
         # w/ defaults
         exec 'def g(' + ','.join(['a' + str(i) + '=' + str(i) for i in range(size)]) + '): return ' + ','.join(['a' + str(i) for i in range(size)])
-        if (size <= 255 or is_cli) and not is_netstandard or size <= 13: # PlatformNotSupportedException when > 13
+        if size <= 255 or is_cli:
             # CPython allows function definitions > 255, but not calls w/ > 255 params.
             exec 'a = f(' + ', '.join([str(x) for x in xrange(size)]) + ')'
             AreEqual(a, tuple(xrange(size)))

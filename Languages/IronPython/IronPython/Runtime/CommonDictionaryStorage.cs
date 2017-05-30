@@ -469,11 +469,7 @@ namespace IronPython.Runtime {
                     value = bucket.Value;
                     _version++;
                     _buckets[index].Key = _removed;
-#if NETSTANDARD
-                    Interlocked.MemoryBarrier();
-#else
                     Thread.MemoryBarrier();
-#endif
                     _buckets[index].Value = null;
                     _count--;
 

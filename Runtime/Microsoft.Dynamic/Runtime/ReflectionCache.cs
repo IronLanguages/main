@@ -136,7 +136,7 @@ namespace Microsoft.Scripting.Runtime {
 
                     if (member.DeclaringType != otherMember.DeclaringType ||
                         member.IsGenericMethod != otherMember.IsGenericMethod ||
-#if NETSTANDARD
+#if NETCOREAPP2_0
                         member.HasMetadataToken() && otherMember.HasMetadataToken() &&
 #endif
                         member.GetMetadataToken() != otherMember.GetMetadataToken()) {

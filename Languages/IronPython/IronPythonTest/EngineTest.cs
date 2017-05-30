@@ -466,7 +466,6 @@ x = 42", scope);
 #endif
 
         public void ScenarioInterpreterNestedVariables() {
-#if !NETSTANDARD
             ParameterExpression arg = Expression.Parameter(typeof(object), "tmp");
             var argBody = Expression.Lambda<Func<object, IRuntimeVariables>>(
                 Expression.RuntimeVariables(
@@ -477,7 +476,6 @@ x = 42", scope);
 
             var vars = CompilerHelpers.LightCompile(argBody)(42);
             AreEqual(vars[0], 42);
-#endif
 
             ParameterExpression tmp = Expression.Parameter(typeof(object), "tmp");
             var body = Expression.Lambda<Func<object>>(
@@ -1034,7 +1032,7 @@ i = int
             ScriptScope scope = _env.CreateScope();
             ScriptSource src = _pe.CreateScriptSourceFromString(@"
 import clr
-if clr.IsNetStandard:
+if clr.IsNetCoreApp:
     clr.AddReference('System.Collections.NonGeneric')
 elif not clr.IsMono:
     clr.AddReference('System.Windows.Forms')
@@ -1045,7 +1043,7 @@ from System.Collections import ArrayList
 
 somecallable = " + actionOfT + @"[object](lambda : 'Delegate')
 
-if not clr.IsNetStandard and not clr.IsMono:
+if not clr.IsNetCoreApp and not clr.IsMono:
     class control(Control):
         pass
 
@@ -1264,7 +1262,7 @@ TestFunc.TestFunc = TestFunc
 TestFunc.InstVal = 'InstVal'
 TestFunc.ClassVal = 'ClassVal'  # just here to simplify tests
 
-if not clr.IsNetStandard and not clr.IsMono:
+if not clr.IsNetCoreApp and not clr.IsMono:
     controlinst = control()
 nsinst = ns()
 iterable = IterableObject()
@@ -1456,7 +1454,7 @@ xrange = xrange
 
             // get on .NET member should fallback
 
-#if !NETSTANDARD
+#if !NETCOREAPP2_0
             if(!ClrModule.IsMono) {
                 // property
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("AllowDrop"));

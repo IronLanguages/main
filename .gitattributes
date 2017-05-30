@@ -21,6 +21,15 @@
 *.vcxproj text eol=crlf
 *.vdproj text eol=crlf
 
+# Declare files that will always have LF line endings on checkout.
+*.sh text eol=lf
+External.LCA_RESTRICTED/Languages/IronPython/27/Lib/abc.py text eol=lf
+External.LCA_RESTRICTED/Languages/IronPython/27/Lib/linecache.py text eol=lf
+External.LCA_RESTRICTED/Languages/IronPython/27/Lib/test/inspect_fodder.py text eol=lf
+External.LCA_RESTRICTED/Languages/IronPython/27/Lib/test/inspect_fodder2.py text eol=lf
+External.LCA_RESTRICTED/Languages/IronPython/27/Lib/test/mapping_tests.py text eol=lf
+External.LCA_RESTRICTED/Languages/IronPython/27/Lib/abc.py text eol=lf
+
 # Denote all files that are truly binary and should not be modified.
 *.png binary
 *.jpg binary

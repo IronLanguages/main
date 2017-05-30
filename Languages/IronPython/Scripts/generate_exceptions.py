@@ -17,8 +17,6 @@ from generate import generate
 import System
 import clr
 
-is_netstandard = clr.IsNetStandard
-
 import exceptions
 
 def collect_excs():
@@ -114,8 +112,6 @@ class ExceptionInfo(object):
         else:
             return 'new PythonExceptions.%s(PythonExceptions.%s)' % (self.ConcreteParent.ClrType, self.name)
 
-warning_exception = "IronPython.Runtime.Exceptions.WarningException" if is_netstandard else "System.ComponentModel.WarningException"
-
 # format is name, args, (fields, ...), (subclasses, ...)
 exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptions.PythonException', None, None, (
             ExceptionInfo('GeneratorExit', 'IronPython.Runtime.Exceptions.GeneratorExitException', None, (), ()),
@@ -180,7 +176,7 @@ exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptio
                             ),
                         ),
                     ),
-                    ExceptionInfo('Warning', warning_exception, None, (), (
+                    ExceptionInfo('Warning', "System.ComponentModel.WarningException", None, (), (
                             ExceptionInfo('DeprecationWarning', 'IronPython.Runtime.Exceptions.DeprecationWarningException', None, (), ()),
                             ExceptionInfo('PendingDeprecationWarning', 'IronPython.Runtime.Exceptions.PendingDeprecationWarningException', None, (), ()),
                             ExceptionInfo('RuntimeWarning', 'IronPython.Runtime.Exceptions.RuntimeWarningException', None, (), ()),
@@ -226,20 +222,13 @@ def get_all_exceps(l, curHierarchy):
 ip = clr.LoadAssemblyByName('IronPython')
 ms = clr.LoadAssemblyByName('Microsoft.Scripting')
 md = clr.LoadAssemblyByName('Microsoft.Dynamic')
-if is_netstandard:
-    sysdll = clr.LoadAssemblyByName('System.Runtime')
-    win32dll = clr.LoadAssemblyByName('Microsoft.Win32.Primitives')
-else:
-    sysdll = clr.LoadAssemblyByPartialName('System')
+sysdll = clr.LoadAssemblyByPartialName('System')
 
 def get_type(name):
     if name.startswith('IronPython'):            return ip.GetType(name)
     if name.startswith('Microsoft.Scripting'):   
         res = ms.GetType(name)
         return res if res is not None else md.GetType(name)
-
-    if is_netstandard and name == "System.ComponentModel.Win32Exception":
-        return win32dll.GetType(name)
 
     if name.startswith('System.ComponentModel'): return sysdll.GetType(name)
     
@@ -496,8 +485,6 @@ def main():
         ("Python New-Style Exceptions", newstyle_gen),
         ("builtin exceptions", builtin_gen),
     ]
-
-    if is_netstandard: del gens[0] # skip since it outputs results in a different order
 
     for e in pythonExcs:
         gens.append((get_clr_name(e), gen_one_exception_maker(e)))

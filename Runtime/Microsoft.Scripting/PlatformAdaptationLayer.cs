@@ -29,10 +29,6 @@ using Microsoft.Scripting.Utils;
 using System.Runtime.CompilerServices;
 using System.Collections;
 
-#if NETCOREAPP1_0
-using Environment = System.FakeEnvironment;
-#endif
-
 namespace Microsoft.Scripting {
 
 #if !FEATURE_PROCESS
@@ -58,7 +54,7 @@ namespace Microsoft.Scripting {
         public static readonly PlatformAdaptationLayer Default = new PlatformAdaptationLayer();
 
         public static readonly bool IsCompactFramework =
-#if WIN8 || NETSTANDARD
+#if WIN8
             false;
 #else
             Environment.OSVersion.Platform == PlatformID.WinCE ||
@@ -138,6 +134,22 @@ namespace Microsoft.Scripting {
 #endif
         #region Assembly Loading
 
+#if NETCOREAPP2_0
+        static PlatformAdaptationLayer() {
+            // https://github.com/dotnet/coreclr/issues/11498
+            // attempt to resolve dependencies in the requesting directory
+            AppDomain.CurrentDomain.AssemblyResolve += (sender, args) => {
+                if (args.RequestingAssembly == null) return null;
+                var path = Path.Combine(Path.GetDirectoryName(args.RequestingAssembly.Location), new AssemblyName(args.Name).Name + ".dll");
+                if (File.Exists(path)) {
+                    try { return Assembly.LoadFrom(path); }
+                    catch { }
+                }
+                return null;
+            };
+        }
+#endif
+
         public virtual Assembly LoadAssembly(string name) {
 #if WIN8
             throw new NotImplementedException();
@@ -151,11 +163,7 @@ namespace Microsoft.Scripting {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadFile")]
         public virtual Assembly LoadAssemblyFromPath(string path) {
 #if FEATURE_FILESYSTEM
-#if NETSTANDARD
-            return System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyPath(path);
-#else
             return Assembly.LoadFile(path);
-#endif
 #else
             throw new NotImplementedException();
 #endif
@@ -393,7 +401,7 @@ namespace Microsoft.Scripting {
 #endif
         }
 
-#if !NETSTANDARD
+#if FEATURE_NATIVE
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         public virtual void SetEnvironmentVariable(string key, string value) {
 #if FEATURE_PROCESS

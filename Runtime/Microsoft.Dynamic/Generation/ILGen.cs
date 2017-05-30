@@ -262,7 +262,7 @@ namespace Microsoft.Scripting.Generation {
         }
 
 #if !SILVERLIGHT && !WP75
-#if !WIN8 && !NETSTANDARD
+#if !WIN8 && !NETCOREAPP2_0
         /// <summary>
         /// Emits an unmanaged indirect call instruction.
         /// </summary>
@@ -814,7 +814,7 @@ namespace Microsoft.Scripting.Generation {
         // TODO: Can we always ldtoken and let restrictedSkipVisibility sort things out?
         public static bool ShouldLdtoken(Type t) {
 #if FEATURE_REFEMIT
-            if (t.GetTypeInfo() is TypeBuilder) {
+            if (t is TypeBuilder) {
                 return true;
             }
 #endif

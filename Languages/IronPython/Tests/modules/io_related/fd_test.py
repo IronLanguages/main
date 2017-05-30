@@ -15,10 +15,6 @@
 
 from iptest.assert_util import *
 
-if is_netstandard and is_posix: # TODO: figure this out
-    import sys
-    sys.exit(0)
-
 import os
 from threading import Timer
 

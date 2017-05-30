@@ -1,4 +1,4 @@
-﻿#if WIN8 || NETSTANDARD
+﻿#if WIN8
 
 using System;
 

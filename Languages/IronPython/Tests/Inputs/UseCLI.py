@@ -15,7 +15,7 @@
 
 from iptest.assert_util import *
 
-if not is_netstandard: # no System.Windows.Forms in netstandard
+if not is_netcoreapp: # no System.Windows.Forms
     import clr
     clr.AddReference('System.Windows.Forms')
     from System.Windows.Forms import Form, Control

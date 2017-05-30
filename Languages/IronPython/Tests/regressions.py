@@ -36,7 +36,7 @@ import sys
 
 #------------------------------------------------------------------------------
 #--Test cases
-@skip("netstandard") # no System.AppDomain in netstandard
+@skip("netcoreapp") # no AppDomain.DoCallBack in .NET Core
 @skip("win32", "silverlight")
 def test_cp18345():
     import System
@@ -51,7 +51,7 @@ def test_cp18345():
     AreEqual(z, 100)
 
 #------------------------------------------------------------------------------
-@skip("netstandard") # TODO: figure out
+@skip("netcoreapp") # TODO
 @skip("silverlight")
 def test_cp17420():
     #Create a temporary Python file
@@ -303,7 +303,7 @@ def test_winreg_error_cp17050():
 @skip("win32", "silverlight")
 def test_indexing_value_types_cp20370():
     import clr
-    if is_netstandard:
+    if is_netcoreapp:
         clr.AddReference("System.Drawing.Primitives")
     else:
         clr.AddReference("System.Drawing")
@@ -542,7 +542,7 @@ def test_cp24573():
     AssertErrorWithMessage(TypeError, "f() got multiple values for keyword argument 'a'",
                            lambda: f(1, a=3))
 
-@skip("netstandard") # no System.Drawing.Pen in netstandard
+@skip("netcoreapp") # no System.Drawing.Pen in .NET Core
 @skip("win32")
 def test_cp24802():
     import clr
@@ -680,7 +680,7 @@ class C:
 @skip("win32")
 def test_cp20370():
     import clr
-    if is_netstandard:
+    if is_netcoreapp:
         clr.AddReference("System.Drawing.Primitives")
     else:
         clr.AddReference("System.Drawing")
@@ -693,7 +693,7 @@ def test_cp20370():
     l[-1] = p2
     AreEqual(id(l[-1]), id(p2))
 
-@skip("netstandard") # PlatformNotSupportedException
+@skip("netcoreapp") # PlatformNotSupportedException
 @skip("win32", "silverlight")
 def test_cp23878():
     import clr
@@ -846,7 +846,7 @@ def test_cp24677():
         pass
 
 
-@skip("netstandard") # no clr.CompileModules
+@skip("netcoreapp") # clr.CompileModules
 def test_gh1357():
     import os
     filename = os.path.join(testpath.temporary_dir, 'gh1357.py')

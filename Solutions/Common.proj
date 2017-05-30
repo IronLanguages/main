@@ -10,6 +10,18 @@
     <!-- The following two lines prevent csc.rsp and Microsoft.NETFramework.props from adding additional assembly references -->
     <NoConfig>true</NoConfig>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
+
+    <!--  -->
+    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
+    <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
+    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
+    <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
+    <GenerateAssemblyInformationalVersionAttribute>false</GenerateAssemblyInformationalVersionAttribute>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -19,22 +31,6 @@
     <ConfigurationFlavor>Debug</ConfigurationFlavor>
     <ConfigurationFlavor Condition="'$(Configuration)' == 'FxCop'">Release</ConfigurationFlavor>
     <ConfigurationFlavor Condition="'$(Configuration)' == 'Release'">Release</ConfigurationFlavor>
-    <ConfigurationFlavor Condition="'$(Configuration)' == 'v2Release'">Release</ConfigurationFlavor>
-    <ConfigurationFlavor Condition="'$(Configuration)' == 'v45Release'">Release</ConfigurationFlavor>
-    <ConfigurationFlavor Condition="'$(Configuration)' == 'Win8Release'">Release</ConfigurationFlavor>
-    <ConfigurationFlavor Condition="'$(Configuration)' == 'WP7Release'">Release</ConfigurationFlavor>
-    <ConfigurationFlavor Condition="'$(Configuration)' == 'Silverlight4Release'">Release</ConfigurationFlavor>
-    <ConfigurationFlavor Condition="'$(Configuration)' == 'Silverlight5Release'">Release</ConfigurationFlavor>
-    <ConfigurationFlavor Condition="'$(Configuration)' == 'AndroidRelease'">Release</ConfigurationFlavor>
-
-    <ReferencedPlatform>V4</ReferencedPlatform>
-    <ReferencedPlatform Condition="'$(Configuration)' == 'v2Release' or '$(Configuration)' == 'v2Debug'">V2</ReferencedPlatform>
-    <ReferencedPlatform Condition="'$(Configuration)' == 'v45Release' or '$(Configuration)' == 'v45Debug'">V45</ReferencedPlatform>
-    <ReferencedPlatform Condition="'$(Configuration)' == 'Win8Release' or '$(Configuration)' == 'Win8Debug'">Win8</ReferencedPlatform>
-    <ReferencedPlatform Condition="'$(Configuration)' == 'WP7Release' or '$(Configuration)' == 'WP7Debug'">WP75</ReferencedPlatform>
-    <ReferencedPlatform Condition="'$(Configuration)' == 'Silverlight4Release' or '$(Configuration)' == 'Silverlight4Debug'">Silverlight4</ReferencedPlatform>
-    <ReferencedPlatform Condition="'$(Configuration)' == 'Silverlight5Release' or '$(Configuration)' == 'Silverlight5Debug'">Silverlight5</ReferencedPlatform>
-    <ReferencedPlatform Condition="'$(Configuration)' == 'AndroidRelease' or '$(Configuration)' == 'AndroidDebug'">Android</ReferencedPlatform>
   </PropertyGroup>
 
   <!-- Signing -->
@@ -45,17 +41,20 @@
 
   <PropertyGroup Condition="Exists('$(PublicKey)') and '$(AssemblyOriginatorKeyFile)'==''">
     <AssemblyOriginatorKeyFile>$(PublicKey)</AssemblyOriginatorKeyFile>
-    <SignAssembly Condition="'$(SignAssembly)' == ''">true</SignAssembly>
+    <SignAssembly>true</SignAssembly>
     <SignedDir>Unsigned</SignedDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(SignAssembly)' == 'true'">
+    <SignedSym>SIGNED</SignedSym>
   </PropertyGroup>
 
   <PropertyGroup>
     <CSharpTargets Condition="'$(CSharpTargets)' == ''">$(MSBuildBinPath)\Microsoft.CSharp.targets</CSharpTargets>
-    <CSharpTargets Condition="'$(CSharpTargets)' == '' and '$(ReferencedPlatform)' == 'Android'">$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets</CSharpTargets>
   </PropertyGroup>
 
   <!-- References -->
-  <PropertyGroup Condition="'$(ReferencedPlatform)' == 'V2'">
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net35'">
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <Features>FEATURE_CUSTOM_MODIFIERS;FEATURE_NATIVE;FEATURE_EXCEPTION_STATE;FEATURE_DEFAULT_PARAMETER_VALUE;FEATURE_CRYPTOGRAPHY;FEATURE_SYNC_SOCKETS;FEATURE_ASSEMBLY_RESOLVE;FEATURE_CUSTOM_TYPE_DESCRIPTOR;FEATURE_ENCODING;FEATURE_DBNULL;FEATURE_FILESYSTEM;FEATURE_THREAD;FEATURE_PROCESS;FEATURE_PIPES;FEATURE_STACK_TRACE;FEATURE_TYPECONVERTER;FEATURE_PDBEMIT;FEATURE_FULL_CONSOLE;FEATURE_BASIC_CONSOLE;FEATURE_SERIALIZATION;FEATURE_REMOTING;FEATURE_CONFIGURATION;FEATURE_REFEMIT;FEATURE_CODEDOM;FEATURE_COMPRESSION;FEATURE_WARNING_EXCEPTION;FEATURE_APTCA;FEATURE_WIN32EXCEPTION;FEATURE_ASSEMBLY_LOCATION;FEATURE_ENUM_NAMES_VALUES;FEATURE_OS_SERVICEPACK;FEATURE_APPLICATIONEXCEPTION;FEATURE_STOPWATCH;FEATURE_APARTMENTSTATE;FEATURE_GETINVALIDFILENAMECHARS;FEATURE_LOADWITHPARTIALNAME;FEATURE_DRIVENOTFOUNDEXCEPTION;FEATURE_ASSEMBLY_CODEBASE;FEATURE_FULL_NET;FEATURE_FULL_CRYPTO;FEATURE_ICLONEABLE;FEATURE_ANSICP;FEATURE_TIMEZONE;FEATURE_SORTKEY</Features>
     <Features Condition="'$(Mono)' != 'true'">$(Features);FEATURE_WINDOWS;FEATURE_COM</Features>
@@ -64,9 +63,11 @@
     <IsSilverlight>false</IsSilverlight>
     <IsFullFramework>true</IsFullFramework>
     <FeatureCoreDlr>false</FeatureCoreDlr>
+
+    <FrameworkPathOverride>C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v3.5\Profile\Client</FrameworkPathOverride>
   </PropertyGroup>
   
-  <PropertyGroup Condition="'$(ReferencedPlatform)' == 'V4'">
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net40'">
     <WpfReferences Condition="'$(WpfReferences)' == '' And '$(Mono)' != 'true'">$(SolutionDir)..\Util\References\WPF\4.0</WpfReferences>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <Features>FEATURE_CUSTOM_MODIFIERS;FEATURE_NATIVE;FEATURE_XMLDOC;FEATURE_EXCEPTION_STATE;FEATURE_DEFAULT_PARAMETER_VALUE;FEATURE_FUNCS_5_16;FEATURE_VARIANCE;FEATURE_CORE_DLR;FEATURE_TASKS;FEATURE_CRYPTOGRAPHY;FEATURE_SYNC_SOCKETS;FEATURE_ASSEMBLY_RESOLVE;FEATURE_CUSTOM_TYPE_DESCRIPTOR;FEATURE_ENCODING;FEATURE_DBNULL;FEATURE_FILESYSTEM;FEATURE_THREAD;FEATURE_PROCESS;FEATURE_PIPES;FEATURE_STACK_TRACE;FEATURE_TYPE_EQUIVALENCE;FEATURE_NUMERICS;FEATURE_TYPECONVERTER;FEATURE_PDBEMIT;FEATURE_METADATA_READER;FEATURE_FULL_CONSOLE;FEATURE_BASIC_CONSOLE;FEATURE_SERIALIZATION;FEATURE_REMOTING;FEATURE_CONFIGURATION;FEATURE_REFEMIT;FEATURE_CODEDOM;FEATURE_VALUE_EQUALITY;FEATURE_COMPRESSION;FEATURE_WARNING_EXCEPTION;FEATURE_SECURITY_RULES;FEATURE_APTCA;FEATURE_WIN32EXCEPTION;FEATURE_ASSEMBLY_LOCATION;FEATURE_ENUM_NAMES_VALUES;FEATURE_OS_SERVICEPACK;FEATURE_APPLICATIONEXCEPTION;FEATURE_STOPWATCH;FEATURE_APARTMENTSTATE;FEATURE_GETINVALIDFILENAMECHARS;FEATURE_LOADWITHPARTIALNAME;FEATURE_DRIVENOTFOUNDEXCEPTION;FEATURE_ASSEMBLY_CODEBASE;FEATURE_MMAP;FEATURE_FULL_NET;FEATURE_FULL_CRYPTO;FEATURE_ICLONEABLE;FEATURE_ANSICP;FEATURE_TIMEZONE;FEATURE_SORTKEY;FEATURE_IPV6</Features>
@@ -78,7 +79,7 @@
     <FeatureCoreDlr>true</FeatureCoreDlr>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(ReferencedPlatform)' == 'V45'">
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net45'">
     <WpfReferences Condition="'$(WpfReferences)' == '' And '$(Mono)' != 'true'">$(SolutionDir)..\Util\References\WPF\4.0</WpfReferences>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <Features>FEATURE_CUSTOM_MODIFIERS;FEATURE_NATIVE;FEATURE_XMLDOC;FEATURE_EXCEPTION_STATE;FEATURE_DEFAULT_PARAMETER_VALUE;FEATURE_FUNCS_5_16;FEATURE_VARIANCE;FEATURE_CORE_DLR;FEATURE_TASKS;FEATURE_CRYPTOGRAPHY;FEATURE_SYNC_SOCKETS;FEATURE_ASSEMBLY_RESOLVE;FEATURE_CUSTOM_TYPE_DESCRIPTOR;FEATURE_ENCODING;FEATURE_DBNULL;FEATURE_FILESYSTEM;FEATURE_THREAD;FEATURE_PROCESS;FEATURE_PIPES;FEATURE_STACK_TRACE;FEATURE_TYPE_EQUIVALENCE;FEATURE_NUMERICS;FEATURE_TYPECONVERTER;FEATURE_PDBEMIT;FEATURE_METADATA_READER;FEATURE_WPF;FEATURE_FULL_CONSOLE;FEATURE_BASIC_CONSOLE;FEATURE_SERIALIZATION;FEATURE_REMOTING;FEATURE_CONFIGURATION;FEATURE_REFEMIT;FEATURE_LCG;FEATURE_CODEDOM;FEATURE_VALUE_EQUALITY;FEATURE_COMPRESSION;FEATURE_WARNING_EXCEPTION;FEATURE_SECURITY_RULES;FEATURE_APTCA;FEATURE_WIN32EXCEPTION;FEATURE_ASSEMBLY_LOCATION;FEATURE_ENUM_NAMES_VALUES;FEATURE_OS_SERVICEPACK;FEATURE_APPLICATIONEXCEPTION;FEATURE_STOPWATCH;FEATURE_APARTMENTSTATE;FEATURE_GETINVALIDFILENAMECHARS;FEATURE_LOADWITHPARTIALNAME;FEATURE_DRIVENOTFOUNDEXCEPTION;FEATURE_ASSEMBLY_CODEBASE;FEATURE_MMAP;FEATURE_FULL_NET;FEATURE_FULL_CRYPTO;FEATURE_ICLONEABLE;FEATURE_ANSICP;FEATURE_TIMEZONE;FEATURE_ASYNC;FEATURE_TYPE_INFO;FEATURE_DYNAMIC_EXPRESSION_VISITOR;FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY;FEATURE_READONLY_DICTIONARY;FEATURE_SORTKEY;FEATURE_IPV6;FEATURE_GET_METHOD_INFO</Features>
@@ -89,72 +90,23 @@
     <IsFullFramework>true</IsFullFramework>
     <FeatureCoreDlr>true</FeatureCoreDlr>
   </PropertyGroup>
-  
-  <PropertyGroup Condition="'$(ReferencedPlatform)' == 'Win8'">
-    <FrameworkReferences Condition="'$(FrameworkReferences)' == ''">$(ProgramFiles)\Reference Assemblies\Microsoft\Framework\.NETCore\v4.5</FrameworkReferences>
-    <NoStdLib>true</NoStdLib>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <TargetFrameworkIdentifier>.NETCore</TargetFrameworkIdentifier>
-    <Features>FEATURE_DEFAULT_PARAMETER_VALUE;FEATURE_FUNCS_5_16;FEATURE_VARIANCE;FEATURE_CORE_DLR;FEATURE_TASKS;FEATURE_NUMERICS;FEATURE_VALUE_EQUALITY;FEATURE_ASSEMBLY_LOCATION;FEATURE_ENUM_NAMES_VALUES;FEATURE_OS_SERVICEPACK;FEATURE_WIN32EXCEPTION;FEATURE_APPLICATIONEXCEPTION;FEATURE_STOPWATCH;FEATURE_APARTMENTSTATE;FEATURE_GETINVALIDFILENAMECHARS;FEATURE_LOADWITHPARTIALNAME;FEATURE_DRIVENOTFOUNDEXCEPTION;FEATURE_ASSEMBLY_CODEBASE;FEATURE_FULL_NET;FEATURE_TYPE_INFO;FEATURE_DYNAMIC_EXPRESSION_VISITOR;FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY;FEATURE_IPV6;FEATURE_GET_METHOD_INFO</Features>
-    <PlatformSymbols>WIN8;CLR4;CLR45</PlatformSymbols>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp2.0'">
+    <!--<Features>FEATURE_APTCA;FEATURE_ASSEMBLY_CODEBASE;FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY;FEATURE_BASIC_CONSOLE;FEATURE_COMPRESSION;FEATURE_CORE_DLR;FEATURE_CUSTOM_MODIFIERS;FEATURE_CUSTOM_TYPE_DESCRIPTOR;FEATURE_DBNULL;FEATURE_DEFAULT_PARAMETER_VALUE;FEATURE_DRIVENOTFOUNDEXCEPTION;FEATURE_DYNAMIC_EXPRESSION_VISITOR;FEATURE_ENCODING;FEATURE_ENUM_NAMES_VALUES;FEATURE_FILESYSTEM;FEATURE_FULL_CONSOLE;FEATURE_FULL_CRYPTO;FEATURE_FULL_NET;FEATURE_FUNCS_5_16;FEATURE_GETINVALIDFILENAMECHARS;FEATURE_GET_METHOD_INFO;FEATURE_IPV6;FEATURE_NUMERICS;FEATURE_PIPES;FEATURE_PROCESS;FEATURE_READONLY_DICTIONARY;FEATURE_REFEMIT;FEATURE_REGISTRY;FEATURE_STACK_TRACE;FEATURE_STOPWATCH;FEATURE_SYNC_SOCKETS;FEATURE_TASKS;FEATURE_TYPE_INFO;FEATURE_TYPECONVERTER;FEATURE_VALUE_EQUALITY;FEATURE_VARIANCE;FEATURE_WIN32EXCEPTION;FEATURE_XMLDOC</Features>-->
+    <Features>FEATURE_ANSICP;FEATURE_APARTMENTSTATE;FEATURE_APPLICATIONEXCEPTION;FEATURE_APTCA;FEATURE_ASSEMBLY_CODEBASE;FEATURE_ASSEMBLY_LOCATION;FEATURE_ASSEMBLY_RESOLVE;FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY;FEATURE_ASYNC;FEATURE_BASIC_CONSOLE;FEATURE_COMPRESSION;FEATURE_CORE_DLR;FEATURE_CRYPTOGRAPHY;FEATURE_CUSTOM_MODIFIERS;FEATURE_CUSTOM_TYPE_DESCRIPTOR;FEATURE_DBNULL;FEATURE_DEFAULT_PARAMETER_VALUE;FEATURE_DRIVENOTFOUNDEXCEPTION;FEATURE_DYNAMIC_EXPRESSION_VISITOR;FEATURE_ENCODING;FEATURE_ENUM_NAMES_VALUES;FEATURE_EXCEPTION_STATE;FEATURE_FILESYSTEM;FEATURE_FULL_CONSOLE;FEATURE_FULL_CRYPTO;FEATURE_FULL_NET;FEATURE_FUNCS_5_16;FEATURE_GET_METHOD_INFO;FEATURE_GETINVALIDFILENAMECHARS;FEATURE_ICLONEABLE;FEATURE_IPV6;FEATURE_LCG;FEATURE_LOADWITHPARTIALNAME;FEATURE_MMAP;FEATURE_NUMERICS;FEATURE_OS_SERVICEPACK;FEATURE_PIPES;FEATURE_PROCESS;FEATURE_READONLY_DICTIONARY;FEATURE_REFEMIT;FEATURE_REGISTRY;FEATURE_SECURITY_RULES;FEATURE_SERIALIZATION;FEATURE_SORTKEY;FEATURE_STACK_TRACE;FEATURE_STOPWATCH;FEATURE_SYNC_SOCKETS;FEATURE_TASKS;FEATURE_THREAD;FEATURE_TYPE_EQUIVALENCE;FEATURE_TYPE_INFO;FEATURE_TYPECONVERTER;FEATURE_VALUE_EQUALITY;FEATURE_VARIANCE;FEATURE_WARNING_EXCEPTION;FEATURE_WIN32EXCEPTION;FEATURE_XMLDOC</Features>
+    <!--<Features>FEATURE_METADATA_READER;FEATURE_NATIVE;FEATURE_REMOTING;FEATURE_CONFIGURATION;FEATURE_CODEDOM;FEATURE_WPF;FEATURE_COM;FEATURE_PDBEMIT;FEATURE_TIMEZONE</Features>-->
+    <Features Condition="'$(Mono)' != 'true'">$(Features);FEATURE_WINDOWS</Features>
+    <Features Condition="'$(Mono)' == 'true'">$(Features);FEATURE_UNIX</Features>
+    <PlatformSymbols>CLR4;CLR45</PlatformSymbols>
     <IsSilverlight>false</IsSilverlight>
-    <IsFullFramework>false</IsFullFramework>
-    <FeatureCoreDlr>true</FeatureCoreDlr>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(ReferencedPlatform)' == 'WP75'">
-    <FrameworkReferences Condition="'$(FrameworkReferences)' == ''">$(SolutionDir)..\Util\References\WindowsPhone\7.1</FrameworkReferences>
-    <NoStdLib>true</NoStdLib>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <TargetFrameworkProfile>WindowsPhone71</TargetFrameworkProfile>
-    <TargetFrameworkIdentifier>Silverlight</TargetFrameworkIdentifier>
-    <Features>FEATURE_DBNULL;FEATURE_THREAD;FEATURE_STACK_TRACE;FEATURE_STOPWATCH</Features>
-    <PlatformSymbols>WP75</PlatformSymbols>
-    <IsSilverlight>true</IsSilverlight>
-    <IsFullFramework>false</IsFullFramework>
-    <FeatureCoreDlr>false</FeatureCoreDlr>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(ReferencedPlatform)' == 'Android'">
-    <FrameworkReferences Condition="'$(FrameworkReferences)' == ''">$(SolutionDir)..\Util\References\MonoAndroid\1.0</FrameworkReferences>
-    <NoStdLib>true</NoStdLib>
-    <TargetFrameworkIdentifier>MonoAndroid</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion>v2.2</TargetFrameworkVersion>
-    <MonoAndroidVersion>v1.0</MonoAndroidVersion>
-    <AndroidLinkMode Condition="'$(AndroidLinkMode)' == ''">SdkOnly</AndroidLinkMode>
-    <Features>FEATURE_CUSTOM_MODIFIERS;FEATURE_FUNCS_5_16;FEATURE_SERIALIZATION;FEATURE_ASSEMBLY_RESOLVE;FEATURE_DBNULL;FEATURE_FILESYSTEM;FEATURE_THREAD;FEATURE_STACK_TRACE;FEATURE_REFEMIT;FEATURE_NUMERICS;FEATURE_VALUE_EQUALITY;FEATURE_COMPRESSION;FEATURE_APTCA;FEATURE_WIN32EXCEPTION;FEATURE_ASSEMBLY_LOCATION;FEATURE_ENUM_NAMES_VALUES;FEATURE_OS_SERVICEPACK;FEATURE_APPLICATIONEXCEPTION;FEATURE_STOPWATCH;FEATURE_APARTMENTSTATE;FEATURE_GETINVALIDFILENAMECHARS;FEATURE_LOADWITHPARTIALNAME;FEATURE_DRIVENOTFOUNDEXCEPTION;FEATURE_ASSEMBLY_CODEBASE;FEATURE_FULL_NET;FEATURE_FULL_CRYPTO;FEATURE_ICLONEABLE;FEATURE_ANSICP;FEATURE_TIMEZONE;FEATURE_SORTKEY</Features>
-    <PlatformSymbols>ANDROID</PlatformSymbols>
-    <IsSilverlight>false</IsSilverlight>
-    <IsFullFramework>false</IsFullFramework>
-    <FeatureCoreDlr>false</FeatureCoreDlr>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(ReferencedPlatform)' == 'Silverlight4'">
-    <FrameworkReferences Condition="'$(FrameworkReferences)' == ''">$(SolutionDir)..\Util\References\Silverlight\4.0</FrameworkReferences>
-    <NoStdLib>true</NoStdLib>
-    <TargetFrameworkIdentifier>Silverlight</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <Features>FEATURE_DEFAULT_PARAMETER_VALUE;FEATURE_FUNCS_5_16;FEATURE_VARIANCE;FEATURE_CORE_DLR;FEATURE_CRYPTOGRAPHY;FEATURE_ASSEMBLY_RESOLVE;FEATURE_DBNULL;FEATURE_THREAD;FEATURE_STACK_TRACE;FEATURE_NUMERICS;FEATURE_PDBEMIT;FEATURE_REFEMIT;FEATURE_BASIC_CONSOLE;FEATURE_VALUE_EQUALITY;FEATURE_ASSEMBLY_LOCATION;FEATURE_IPV6</Features>
-    <PlatformSymbols>SILVERLIGHT;SILVERLIGHT4;CLR4</PlatformSymbols>
-    <IsSilverlight>true</IsSilverlight>
-    <IsFullFramework>false</IsFullFramework>
-    <FeatureCoreDlr>true</FeatureCoreDlr>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(ReferencedPlatform)' == 'Silverlight5'">
-    <FrameworkReferences Condition="'$(FrameworkReferences)' == ''">$(SolutionDir)..\Util\References\Silverlight\5.0</FrameworkReferences>
-    <NoStdLib>true</NoStdLib>
-    <TargetFrameworkIdentifier>Silverlight</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion>v5.0</TargetFrameworkVersion>
-    <Features>FEATURE_DEFAULT_PARAMETER_VALUE;FEATURE_FUNCS_5_16;FEATURE_VARIANCE;FEATURE_CORE_DLR;FEATURE_TASKS;FEATURE_CRYPTOGRAPHY;FEATURE_ASSEMBLY_RESOLVE;FEATURE_DBNULL;FEATURE_THREAD;FEATURE_STACK_TRACE;FEATURE_NUMERICS;FEATURE_PDBEMIT;FEATURE_REFEMIT;FEATURE_BASIC_CONSOLE;FEATURE_VALUE_EQUALITY;FEATURE_APTCA;FEATURE_ASSEMBLY_LOCATION;FEATURE_ENUM_NAMES_VALUES;FEATURE_IPV6</Features>
-    <PlatformSymbols>SILVERLIGHT;SILVERLIGHT5;CLR4</PlatformSymbols>
-    <IsSilverlight>true</IsSilverlight>
     <IsFullFramework>false</IsFullFramework>
     <FeatureCoreDlr>true</FeatureCoreDlr>
   </PropertyGroup>
 
   <PropertyGroup>
-    <OutputPath>$(SolutionDir)..\bin\$(Configuration)</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(Configuration)\$(TargetFramework)</IntermediateOutputPath>
+    <OutputPath>$(SolutionDir)..\bin\$(Configuration)\$(TargetFramework)</OutputPath>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsNotAsErrors>618;429;219;1717;162;414</WarningsNotAsErrors>
     <NoWarn>1591;1584;1574;1685;1573</NoWarn>
@@ -184,304 +136,23 @@
   </PropertyGroup>
 
   <!-- Common BCL References -->
-  <ItemGroup Condition="'$(ReferencedPlatform)' == 'V4'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net40'">
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Numerics" />
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
-  <ItemGroup Condition="'$(ReferencedPlatform)' == 'V45'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Numerics" />
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
-  <ItemGroup Condition="'$(ReferencedPlatform)' == 'V2'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net35'">
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(ReferencedPlatform)' == 'WP75'">
-    <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\mscorlib.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="mscorlib.Extensions, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\mscorlib.Extensions.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Core, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Core.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Net, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Net.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.Phone, Version=7.0.0.0, Culture=neutral, PublicKeyToken=24eec0d8c86cda1e">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\Microsoft.Phone.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup Condition="'$(ReferencedPlatform)' == 'Android'">
-    <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\mscorlib.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Core, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Core.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Numerics, Version=2.0.5.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Numerics.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Mono.Security, Version=2.0.5.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\Mono.Security.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup Condition="'$(ReferencedPlatform)' == 'Silverlight4'">
-    <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\mscorlib.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Core, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Core.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Net, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Net.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Numerics, Version=2.0.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Numerics.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Xml, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798ex">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Xml.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup Condition="'$(ReferencedPlatform)' == 'Silverlight5'">
-    <Reference Include="mscorlib, Version=5.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\mscorlib.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System, Version=5.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Core, Version=5.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Core.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Net, Version=5.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Net.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Numerics, Version=5.0.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Numerics.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Xml, Version=5.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798ex">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Xml.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(ReferencedPlatform)' == 'Win8' ">
-    <Reference Include="mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\mscorlib.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Core.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Runtime.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Runtime.Numerics.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.CSharp, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\Microsoft.CSharp.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Runtime, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Runtime.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Threading.Tasks, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Threading.Tasks.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Runtime.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <Private>true</Private>
-      <HintPath>$(FrameworkReferences)\System.Runtime.Extensions.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Collections, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Collections.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Collections.Concurrent, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Collections.Concurrent.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.ObjectModel, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.ObjectModel.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Runtime.InteropServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Runtime.InteropServices.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Diagnostics.Tools, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Diagnostics.Tools.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Diagnostics.Contracts, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Diagnostics.Contracts.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Diagnostics.Debug, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Diagnostics.Debug.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Globalization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Globalization.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.IO, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.IO.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Reflection, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Reflection.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Reflection.Primitives, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Reflection.Primitives.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Reflection.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Reflection.Extensions.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Reflection.Emit, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Reflection.Emit.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Reflection.Emit.ILGeneration, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Reflection.Emit.ILGeneration.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Reflection.Emit.Lightweight, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Reflection.Emit.Lightweight.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Dynamic.Runtime, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Dynamic.Runtime.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Text.Encoding.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Text.Encoding.Extensions.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Text.Encoding, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Text.Encoding.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Threading, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Threading.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Threading.Tasks.Parallel, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Threading.Tasks.Parallel.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Linq, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Linq.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Linq.Expressions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Linq.Expressions.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Resources.ResourceManager, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Resources.ResourceManager.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Text.RegularExpressions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, ProcessorArchitecture=MSIL">
-      <SpecificVersion>True</SpecificVersion>
-      <HintPath>$(FrameworkReferences)\System.Text.RegularExpressions.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
   </ItemGroup>
 </Project>

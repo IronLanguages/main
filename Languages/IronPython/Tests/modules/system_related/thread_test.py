@@ -18,6 +18,9 @@ import thread
 import time
 import sys
 if not is_cpython:
+    if is_netcoreapp:
+        import clr
+        clr.AddReference("System.Threading.Thread")
     from System import *
     from System.Threading import *
 

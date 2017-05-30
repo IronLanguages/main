@@ -17,7 +17,7 @@ from iptest.assert_util import *
 skiptest("silverlight")
 skiptest("win32")
 skiptest("multiple_execute")
-skiptest("netstandard") # no clr.CompileModules in netstandard
+skiptest("netcoreapp") # TODO
 
 import clr
 from System import Array

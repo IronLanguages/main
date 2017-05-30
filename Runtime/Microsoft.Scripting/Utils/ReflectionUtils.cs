@@ -76,7 +76,7 @@ namespace Microsoft.Scripting.Utils {
         }
 #endif
 
-#if WIN8 || NETSTANDARD
+#if WIN8
         public static Type CreateType(this TypeBuilder builder) {
             return builder.CreateTypeInfo().AsType();
         }

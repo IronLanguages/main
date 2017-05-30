@@ -43,32 +43,22 @@ def test_negative_assembly_names():
         clr.AddReferenceToFile,
         clr.AddReferenceToFileAndPath,
         clr.AddReferenceByName,
+        clr.AddReferenceByPartialName,
         clr.LoadAssemblyFromFileWithPath,
         clr.LoadAssemblyFromFile,
         clr.LoadAssemblyByName,
+        clr.LoadAssemblyByPartialName,
         ]:
         AssertError(TypeError, method, None)
-
-    if not is_netstandard:
-        for method in [
-                clr.AddReferenceByPartialName,
-                clr.LoadAssemblyByPartialName,
-            ]:
-            AssertError(TypeError, method, None)
 
     for method in [
         clr.AddReference,
         clr.AddReferenceToFile,
         clr.AddReferenceToFileAndPath,
         clr.AddReferenceByName,
+        clr.AddReferenceByPartialName,
         ]:
         AssertError(TypeError, method, None, None)
-
-    if not is_netstandard:
-        for method in [
-            clr.AddReferenceByPartialName,
-            ]:
-            AssertError(TypeError, method, None, None)
 
     import System
     AssertError(ValueError, clr.LoadAssemblyFromFile, System.IO.Path.DirectorySeparatorChar)
@@ -92,10 +82,9 @@ def test_references():
     temp = ',' + newline
     AreEqual(s, '(' + temp.join(map((lambda x:'<'+x.ToString()+'>'), refs)) + ')' + newline)
 
+@skip("netcoreapp") # no GAC in .NET Core
 def test_gac():
     import System
-    if is_netstandard:
-        clr.AddReference("System.Diagnostics.Process")
     def get_gac():
             process = System.Diagnostics.Process()
             if is_osx:
@@ -137,7 +126,6 @@ def test_nonamespaceloadtest():
     AreEqual(a.HelloWorld(), 'Hello World')
 
 @skip("multiple_execute")
-@skip("netstandard") # code doesn't compile in netstandard?
 def test_addreferencetofileandpath_conflict():
     """verify AddReferenceToFileAndPath picks up the path specified, not some arbitrary assembly somewhere in your path already"""
     code1 = """
@@ -178,7 +166,6 @@ public class CollisionTest {
 #####################
 # VERIFY clr.AddReferenceToFile behavior...
 @skip("multiple_execute")
-@skip("netstandard") # code doesn't compile in netstandard?
 def test_addreferencetofile_verification():
     tmp = testpath.temporary_dir
     sys.path.append(tmp)
@@ -241,7 +228,7 @@ public class test2{
     filecopy(test1_dll, test1_dll_along_with_ipy)
 
 @skip("multiple_execute")
-@skip("netstandard") # code doesn't compile in netstandard?
+@skip("netcoreapp") # TODO
 @skip("posix") # mono may have a bug here...need to investigate https://github.com/IronLanguages/main/issues/1595
 def test_assembly_resolve_isolation():
     # CodePlex issue 23506. This feature only works with .NET 4.0
@@ -356,11 +343,7 @@ def test_addreference_sanity():
     # add reference directly to assembly
     clr.AddReference(''.GetType().Assembly)
     # add reference via partial name
-    if is_netstandard:
-        clr.AddReference('System.Xml.XmlDocument')
-    else:
-        clr.AddReference('System.Xml')
-
+    clr.AddReference('System.Xml')
     # add a reference via a fully qualified name
     clr.AddReference(''.GetType().Assembly.FullName)
 
@@ -377,7 +360,6 @@ def compileAndLoad(name, filename, *args):
     return clr.LoadAssemblyFromFile(name)
 
 @skip("multiple_execute")
-@skip("netstandard") # code doesn't compile in netstandard?
 def test_classname_same_as_ns():
     sys.path.append(sys.exec_prefix)
     AreEqual(run_csc("/nologo /t:library /out:\"" + path_combine(sys.exec_prefix, "c4.dll") + "\" \"" + get_local_filename('c4.cs') + "\""), 0)
@@ -414,7 +396,7 @@ def test_local_dll():
     AssertError(AttributeError, f)
 
 @skip("multiple_execute")
-@skip("netstandard") # code doesn't compile in netstandard?
+@skip("netcoreapp") # TODO
 def test_namespaceimport():
     tmp = testpath.temporary_dir
     if tmp not in sys.path:
@@ -443,13 +425,11 @@ def test_no_names_provided():
     AssertError(TypeError, clr.AddReference, None)
     AssertError(TypeError, clr.AddReferenceToFile, None)
     AssertError(TypeError, clr.AddReferenceByName, None)
-    if not is_netstandard:
-        AssertError(TypeError, clr.AddReferenceByPartialName, None)
+    AssertError(TypeError, clr.AddReferenceByPartialName, None)
     AssertError(ValueError, clr.AddReference)
     AssertError(ValueError, clr.AddReferenceToFile)
     AssertError(ValueError, clr.AddReferenceByName)
-    if not is_netstandard:
-        AssertError(ValueError, clr.AddReferenceByPartialName)
+    AssertError(ValueError, clr.AddReferenceByPartialName)
 
 @skip("multiple_execute")
 def test_load_count():
@@ -458,7 +438,7 @@ def test_load_count():
     # need to be updated
     import clr, System
     before = repr(System)
-    if is_netstandard:
+    if is_netcoreapp:
         clr.AddReference('System.Drawing.Primitives')
     else:
         clr.AddReference('System.Drawing')

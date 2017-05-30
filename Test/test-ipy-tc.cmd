@@ -29,6 +29,6 @@ endlocal
 goto:eof
 
 :build_runner
-%windir%\Microsoft.NET\Framework\v4.0.30319\MSBuild.exe /t:Rebuild %_test_root%\ClrAssembly\ClrAssembly.csproj /p:Configuration=%_config% /v:quiet /nologo
+%windir%\Microsoft.NET\Framework\v4.0.30319\MSBuild.exe /t:Rebuild %_test_root%\ClrAssembly\ClrAssembly.csproj /p:Configuration=%_config% /v:quiet /nologo /p:OutputPath="%DLR_BIN%"
 %windir%\Microsoft.NET\Framework\v4.0.30319\MSBuild.exe /t:Rebuild %_test_root%\TestRunner\TestRunner.sln /p:Configuration=%_config% /v:quiet /nologo
 goto:eof

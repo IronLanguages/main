@@ -20,7 +20,7 @@ import System
 sys.path.append(sys.exec_prefix)
 clr.AddReference("Microsoft.Scripting")
 clr.AddReference("Microsoft.Dynamic")
-if clr.IsNetStandard:
+if clr.IsNetCoreApp:
     clr.AddReference("System.IO.FileSystem")
     clr.AddReference("System.Runtime.Extensions")
 else:
@@ -81,7 +81,7 @@ class FileConsole(object):
         searchPath.append(entryDir)
         siteDir = Path.Combine(entryDir, "Lib")
         searchPath.append(siteDir)
-        devStdLibDir = Path.Combine(entryDir, '../../External.LCA_RESTRICTED/Languages/IronPython/27/Lib')
+        devStdLibDir = Path.Combine(entryDir, '../../../External.LCA_RESTRICTED/Languages/IronPython/27/Lib')
         searchPath.append(devStdLibDir)
         dllsDir = Path.Combine(entryDir, "DLLs")
         if Directory.Exists(dllsDir):

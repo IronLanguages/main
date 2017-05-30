@@ -558,7 +558,7 @@ a = ListSubcls(a='abc')
 
 # verify we can call built in types w/ named args & have the args
 # set properties.
-@skip("netstandard") # no System.Windows.Forms in netstandard
+@skip("netcoreapp") # no System.Windows.Forms in .NET Core
 @skip("silverlight")
 @skip("win32")
 @skip("posix")

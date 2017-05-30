@@ -773,7 +773,7 @@ def test_nullable_parameter():
 
 # Skip on silverlight because the System.Configuration is not available
 @skip("silverlight")
-@skip("netstandard") # no System.Configuration in netstandard
+@skip("netcoreapp") # no System.Configuration in .NET Core
 def test_xequals_call_for_optimization():
     """
     Testing specifically for System.Configuration.ConfigurationManager
