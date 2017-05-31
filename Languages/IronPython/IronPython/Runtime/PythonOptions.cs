@@ -268,7 +268,10 @@ namespace IronPython {
             _optimize = GetOption(options, "Optimize", false);
             _stripDocStrings = GetOption(options, "StripDocStrings", false);
             _division = GetOption(options, "DivisionOptions", PythonDivisionOptions.Old);
-            _recursionLimit = GetOption(options, "RecursionLimit", Int32.MaxValue);
+            _recursionLimit = GetOption(options, "RecursionLimit", 2000); 
+            // CPython has 1000 as default recursion limit, which is reported (e.g. www.stackoverflow.com) to be somewhat 
+            // conservative. Not limiting recursion on the other hand obfuscates user code issues and the 
+            // resulting StackOverflowException be interpreted as an interpreter bug.
             _indentationInconsistencySeverity = GetOption(options, "IndentationInconsistencySeverity", Severity.Ignore);
             _enableProfiler = GetOption(options, "EnableProfiler", false);
             _lightweightScopes = GetOption(options, "LightweightScopes", false);
